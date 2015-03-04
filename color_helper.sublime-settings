@@ -1,4 +1,9 @@
 {
+    // Favorites
+    "bookmarks": [
+    ],
+
+    // Palette lists
     "palettes": [
         {
             "name": "Favorites",
@@ -67,5 +72,17 @@
                 "#99cc99"
             ]
         }
-    ]
+    ],
+
+    // Use webcolor names when value of non-alpha
+    // color matches a webcolor name.
+    "use_webcolor_names": true,
+
+    // Preferred format to output color as:
+    // (none|hex|rgb|hsl)
+    "preferred_format": "hex",
+
+    // Preferred alpha format to output color as:
+    // (none|rgba|hsla)
+    "preferred_alpha_format": "rgba"
 }

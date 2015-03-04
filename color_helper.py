@@ -40,6 +40,171 @@ if 'ch_thread' not in globals():
     ch_thread = None
 
 
+class InsertionCalc(object):
+    def __init__(self, view, point, target_color):
+        """ Init insertion object """
+        self.view = view
+        self.convert_rgb = False
+        self.convert_hsl = False
+        self.alpha = None
+        self.region = sublime.Region(point)
+        self.format_override = False
+        self.start = point - 50
+        self.end = point + 50
+        self.point = point
+        visible = self.view.visible_region()
+        if self.start < visible.begin():
+            self.start = visible.begin()
+        if self.end > visible.end():
+            self.end = visible.end()
+        self.use_web_colors = bool(ch_settings.get('use_webcolor_names', True))
+        self.preferred_format = ch_settings.get('preferred_format', 'hex')
+        self.preferred_alpha_format = ch_settings.get('preferred_alpha_format', 'rgba')
+        self.target_color = target_color
+        try:
+            self.web_color = webcolors.hex_to_name(target_color) if self.use_web_colors else None
+        except:
+            self.web_color = None
+
+    def replacement(self, m):
+        """ See if match is a replacement of an existing color """
+        found = True
+        if m.group('hex'):
+            self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
+            if self.preferred_format in ('rgb', 'hsl'):
+                self.format_override = True
+                if self.preferred_format == 'rgb':
+                    self.convert_rgb = True
+                else:
+                    self.convert_hsl = True
+        elif m.group('rgb'):
+            if self.web_color:
+                self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
+            else:
+                if self.preferred_format in ('hex', 'hsl'):
+                    self.format_override = True
+                    self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
+                    if self.preferred_format == 'hsl':
+                        self.convert_hsl = True
+                else:
+                    self.region = sublime.Region(m.start('rgb_content') + self.start, m.end('rgb_content') + self.start)
+                    self.convert_rgb = True
+        elif m.group('rgba'):
+            self.web_color = None
+            if self.preferred_alpha_format == 'hsla':
+                self.format_override = True
+                self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
+                self.convert_hsl = True
+            else:
+                self.region = sublime.Region(m.start('rgba_content') + self.start, m.end('rgba_content') + self.start)
+                self.convert_rgb = True
+            content = [x.strip() for x in m.group('rgba_content').split(',')]
+            self.alpha = content[3]
+        elif m.group('hsl'):
+            if self.web_color:
+                self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
+            else:
+                if self.preferred_format in ('hex', 'rgb'):
+                    self.format_override = True
+                    self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
+                    if self.preferred_format == 'rgb':
+                        self.convert_rgb = True
+                self.region = sublime.Region(m.start('hsl_content') + self.start, m.end('hsl_content') + self.start)
+                self.convert_hsl = True
+        elif m.group('hsla'):
+            self.web_color = None
+            if self.preferred_alpha_format == 'rgba':
+                self.format_override = True
+                self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
+                self.convert_rgb = True
+            else:
+                self.region = sublime.Region(m.start('hsla_content') + self.start, m.end('hsla_content') + self.start)
+                self.convert_hsl = True
+            content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+            self.alpha = content[3]
+        else:
+            found = False
+        return found
+
+    def completion(self, m):
+        """ See if match is completing an color """
+        found = False
+        if m.group('hash'):
+            self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
+            if self.preferred_format in ('rgb', 'hsl'):
+                self.format_override = True
+                if self.preferred_format == 'rgb':
+                    self.convert_rgb = True
+                else:
+                    self.convert_hsl = True
+        elif m.group('rgb_open'):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            if self.web_color:
+                self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
+            elif self.preferred_format in ('hex', 'hsl'):
+                    self.format_override = True
+                    self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
+                    if self.preferred_format == 'hsl':
+                        self.convert_hsl = True
+            else:
+                self.convert_rgb = True
+        elif m.group('rgba_open'):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            if self.preferred_alpha_format == 'hsla':
+                self.format_override = True
+                self.region = sublime.Region(m.start('rgba_open') + self.start, m.end('rgb_open') + self.start + offset)
+                self.convert_hsl = True
+            else:
+                self.convert_rgb = True
+            self.alpha = '1'
+        elif m.group('hsl_open'):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            if self.web_color:
+                self.region = sublime.Region(m.start('hsl_open') + self.start, m.end('hsl_open') + self.start + offset)
+            elif self.preferred_format in ('hex', 'rgb'):
+                self.format_override = True
+                self.region = sublime.Region(m.start('hsl_open') + self.start, m.end('hsl_open') + self.start + offset)
+                if self.preferred_format == 'rgb':
+                    self.convert_rgb = True
+            else:
+                self.convert_hsl = True
+        elif m.group('hsla_open'):
+            self.offset = 1 if self.view.substr(self.point) == ')' else 0
+            if self.preferred_alpha_format == 'rgba':
+                self.format_override = True
+                self.region = sublime.Region(m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset)
+                self.convert_rgb = True
+            else:
+                self.convert_hsl = True
+            self.alpha = '1'
+        else:
+            found = False
+        return found
+
+    def calc(self):
+        """ Calculate how we are to insert the target_color """
+        bfr = self.view.substr(sublime.Region(self.start, self.end))
+        ref = self.point - self.start
+        found = False
+        for m in COLOR_RE.finditer(bfr):
+            if ref >= m.start(0) and ref < m.end(0):
+                found = self.replacement(m)
+            elif ref == m.end(0):
+                found = self.completion(m)
+            if found:
+                break
+
+        if not found:
+            word_region = self.view.word(sublime.Region(self.point))
+            word = self.view.substr(word_region)
+            try:
+                webcolors.name_to_hex(word).lower()
+                self.region = word_region
+            except:
+                pass
+        return found
+
+
 ###########################
 # Main Code
 ###########################
@@ -58,108 +223,25 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.show_color_info(update=True)
 
     def insert_color(self, target_color):
+        """ Insert colors """
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
-            try:
-                web_color = webcolors.hex_to_name(target_color)
-            except:
-                web_color = None
             point = sels[0].begin()
-            visible = self.view.visible_region()
-            start = point - 50
-            end = point + 50
-            convert_rgb = False
-            convert_hsl = False
-            alpha = None
-            region = sublime.Region(point)
-            if start < visible.begin():
-                start = visible.begin()
-            if end > visible.end():
-                end = visible.end()
-            bfr = self.view.substr(sublime.Region(start, end))
-            ref = point - start
-            found = False
-            for m in COLOR_RE.finditer(bfr):
-                if ref >= m.start(0) and ref < m.end(0):
-                    found = True
-                    if m.group('hex'):
-                        region = sublime.Region(m.start('hex') + start, m.end('hex') + start)
-                        break
-                    elif m.group('rgb'):
-                        if web_color:
-                            region = sublime.Region(m.start('rgb') + start, m.end('rgb') + start)
-                        else:
-                            region = sublime.Region(m.start('rgb_content') + start, m.end('rgb_content') + start)
-                            convert_rgb = True
-                        break
-                    elif m.group('rgba'):
-                        web_color = None
-                        region = sublime.Region(m.start('rgba_content') + start, m.end('rgba_content') + start)
-                        convert_rgb = True
-                        content = [x.strip() for x in m.group('rgba_content').split(',')]
-                        alpha = content[3]
-                        break
-                    elif m.group('hsl'):
-                        if web_color:
-                            region = sublime.Region(m.start('hsl') + start, m.end('hsl') + start)
-                        else:
-                            region = sublime.Region(m.start('hsl_content') + start, m.end('hsl_content') + start)
-                            convert_hsl = True
-                        break
-                    elif m.group('hsla'):
-                        web_color = None
-                        region = sublime.Region(m.start('hsla_content') + start, m.end('hsla_content') + start)
-                        convert_hsl = True
-                        content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
-                        alpha = content[3]
-                        break
-                    else:
-                        found = False
-                elif ref == m.end(0):
-                    if m.group('hash'):
-                        region = sublime.Region(m.start('hash') + start, m.end('hash') + start)
-                        break
-                    elif m.group('rgb_open'):
-                        if web_color:
-                            region = sublime.Region(m.start('rgb_open') + start, m.end('rgb_open') + start)
-                        else:
-                            convert_rgb = True
-                        break
-                    elif m.group('rgba_open'):
-                        convert_rgb = True
-                        alpha = '1'
-                        break
-                    elif m.group('hsl_open'):
-                        if web_color:
-                            region = sublime.Region(m.start('hsl_open') + start, m.end('hsl_open') + start)
-                        else:
-                            convert_hsl = True
-                        break
-                    elif m.group('hsla_open'):
-                        convert_hsl = True
-                        alpha = '1'
-                        break
-                    else:
-                        found = False
-            if not found:
-                word_region = self.view.word(sels[0])
-                word = self.view.substr(word_region)
-                try:
-                    webcolors.name_to_hex(word).lower()
-                    region = word_region
-                except:
-                    pass
-            if web_color:
-                value = web_color
-            elif convert_rgb:
+            insert_calc = InsertionCalc(self.view, point, target_color)
+            insert_calc.calc()
+            if insert_calc.web_color:
+                value = insert_calc.web_color
+            elif insert_calc.convert_rgb:
                 value = "%d, %d, %d" % (
                     int(target_color[1:3], 16),
                     int(target_color[3:5], 16),
                     int(target_color[5:7], 16)
                 )
-                if alpha:
-                    value += ', %s' % alpha
-            elif convert_hsl:
+                if insert_calc.alpha:
+                    value += ', %s' % insert_calc.alpha
+                if insert_calc.format_override:
+                    value = ("rgba(%s)" if insert_calc.alpha else "rgb(%s)") % value
+            elif insert_calc.convert_hsl:
                 hsl = RGBA(target_color)
                 h, l, s = hsl.tohls()
                 value = "%d, %d%%, %d%%" % (
@@ -167,12 +249,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     int('%.0f' % (s * 100.0)),
                     int('%.0f' % (l * 100.0))
                 )
-                if alpha:
-                    value += ', %s' % alpha
+                if insert_calc.alpha:
+                    value += ', %s' % insert_calc.alpha
+                if insert_calc.format_override:
+                    value = ("hsla(%s)" if insert_calc.alpha else "hsl(%s)") % value
             else:
                 value = target_color
             self.view.sel().subtract(sels[0])
-            self.view.sel().add(region)
+            self.view.sel().add(insert_calc.region)
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
@@ -246,7 +330,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         ]
         if not self.no_info:
             html.append('<a href="__info__"><img style="width: 16px; height: 16px;" src="%s"></a>' % back_arrow)
-        for palette in ch_settings.get("palettes", []):
+
+        bookmark_colors = ch_settings.get("bookmarks", [])
+        if len(bookmark_colors):
+            bookmarks = [{"name": "Bookmarks", "colors": bookmark_colors}]
+        else:
+            bookmarks = []
+
+        for palette in (bookmarks + ch_settings.get("palettes", [])):
             html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption')))
         html.append('</div>')
 
