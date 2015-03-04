@@ -113,22 +113,29 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
                         alpha = content[3]
                         break
-                    elif m.group('hash'):
+                    else:
+                        found = False
+                elif ref == m.end(0):
+                    if m.group('hash'):
                         region = sublime.Region(m.start('hash') + start, m.end('hash') + start)
                         break
-                    elif m.group('rgb'):
-                        if not web_color:
+                    elif m.group('rgb_open'):
+                        if web_color:
+                            region = sublime.Region(m.start('rgb_open') + start, m.end('rgb_open') + start)
+                        else:
                             convert_rgb = True
                         break
-                    elif m.group('rgba'):
+                    elif m.group('rgba_open'):
                         convert_rgb = True
                         alpha = '1'
                         break
-                    elif m.group('hsl'):
-                        if not web_color:
+                    elif m.group('hsl_open'):
+                        if web_color:
+                            region = sublime.Region(m.start('hsl_open') + start, m.end('hsl_open') + start)
+                        else:
                             convert_hsl = True
                         break
-                    elif m.group('rgb'):
+                    elif m.group('hsla_open'):
                         convert_hsl = True
                         alpha = '1'
                         break
