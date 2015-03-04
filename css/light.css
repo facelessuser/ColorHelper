@@ -1,0 +1,46 @@
+html {
+    background-color: #e6f5ff;
+    color: #4d4d4c;
+}
+
+body {
+    background-color: #FAFDFF;
+    margin: 1px;
+    font-size: 1em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-size: 1.2em;
+}
+
+p {
+    padding-left: 1em;
+}
+
+.content {
+    margin: 1em;
+}
+
+.control-link, .file-link {
+    color: #3e999f;
+}
+
+.copy-link {
+    color: #3e999f;
+    font-size: 0.8em;
+}
+
+.key {
+    color: #8959a8;
+    font-weight: bold;
+}
+
+.header {
+    color: #718c00;
+}
+
+.divider {
+    padding: 1px;
+    margin: 2em 3em;
+    background-color: #e6f5ff;
+}
