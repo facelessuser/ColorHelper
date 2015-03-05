@@ -211,7 +211,7 @@ class InsertionCalc(object):
             word_region = self.view.word(sublime.Region(self.point))
             word = self.view.substr(word_region)
             try:
-                webcolors.name_to_hex(word).lower()
+                webcolors.name_to_hex(word)
                 self.region = word_region
             except:
                 pass
@@ -267,7 +267,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 if insert_calc.format_override:
                     value = ("hsla(%s)" if insert_calc.alpha else "hsl(%s)") % value
             else:
-                value = target_color
+                use_upper = ch_settings.get("upper_case_hex", False)
+                value = target_color.upper() if use_upper else target_color.lower()
             self.view.sel().subtract(sels[0])
             self.view.sel().add(insert_calc.region)
             self.view.run_command("insert", {"characters": value})
@@ -623,7 +624,7 @@ def init_css():
         back_arrow = 'res://Packages/ColorHelper/res/back_light.png'
 
     try:
-        css = sublime.load_resource(css_file).replace('\r', '\n')
+        css = sublime.load_resource(css_file).replace('\r', '')
     except:
         css = None
     ch_settings.clear_on_change('reload')

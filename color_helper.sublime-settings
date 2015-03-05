@@ -74,6 +74,9 @@
         }
     ],
 
+    // Upper case hex when inserting
+    "upper_case_hex": false,
+
     // Use webcolor names when value of non-alpha
     // color matches a webcolor name.
     "use_webcolor_names": true,
