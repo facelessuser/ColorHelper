@@ -1,0 +1,17 @@
+[
+    {
+        "caption": "Color Helper: Index Colors in File",
+        "command": "color_helper_file_index"
+    },
+    {
+        "caption": "Color Helper: Select Palette",
+        "command": "color_helper"
+    },
+    {
+        "caption": "Color Helper: Show Color Info",
+        "command": "color_helper",
+        "args": {
+            "mode": "info"
+        }
+    }
+]

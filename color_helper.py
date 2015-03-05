@@ -41,6 +41,9 @@ COLOR_RE = re.compile(
 if 'ch_thread' not in globals():
     ch_thread = None
 
+if 'ch_file_thread' not in globals():
+    ch_file_thread = None
+
 
 def fmt_float(f, p=0):
     """ Set float pring precision and trim precision zeros """
@@ -351,7 +354,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             bookmarks = []
 
-        for palette in (bookmarks + ch_settings.get("palettes", [])):
+        current_colors = self.view.settings().get('color_helper_file_palette', [])
+        if len(current_colors):
+            css_colors = [{"name": "Current Colors", "colors": current_colors}]
+        else:
+            css_colors = []
+
+        for palette in (bookmarks + css_colors + ch_settings.get("palettes", [])):
             html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption')))
         html.append('</div>')
 
@@ -366,6 +375,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def show_colors(self, palette_name, update=False):
         """ Show colors under the given palette """
         target = None
+        if palette_name == "Current Colors":
+            target = {
+                "name": "Current Colors",
+                "colors": self.view.settings().get('color_helper_file_palette', [])
+            }
+        if palette_name == "Bookmarks":
+            target = {
+                "name": "Bookmarks",
+                "colors": ch_settings.get("bookmarks", [])
+            }
+
         for palette in ch_settings.get("palettes", []):
             if palette_name == palette['name']:
                 target = palette
@@ -473,16 +493,36 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif update:
             self.view.hide_popup()
 
-    def run(self, edit, palette_picker=False, palette_name=None):
+    def run(self, edit, mode="palette", palette_name=None):
         """ Run the specified tooltip """
         self.no_info = True
-        if palette_name:
-            self.show_colors(palette_name)
-        elif palette_picker:
-            self.show_palettes()
-        else:
+        if mode == "palette":
+            if palette_name is not None:
+                self.show_colors(palette_name)
+            else:
+                self.show_palettes()
+        elif mode == "info":
             self.no_info = False
             self.show_color_info()
+
+
+class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        name = self.view.file_name()
+        if name is not None and name.endswith(('.css', '.html', '.php')):
+            count = 0
+            while ch_file_thread.busy:
+                if count == 3:
+                    sublime.error_message("File indexer is busy!")
+                    break
+                sleep(1)
+                count += 1
+            if not ch_file_thread.busy:
+                source = []
+                for r in self.view.find_by_selector("meta.property-value.css -comment"):
+                    source.append(self.view.substr(r))
+                ch_file_thread.set_index(self.view, source)
+                sublime.status_message('File color indexer started...')
 
 
 ###########################
@@ -497,13 +537,18 @@ class ColorHelperListener(sublime_plugin.EventListener):
         ch_thread.modified = True
         ch_thread.time = now
 
-    def on_modified(self, view):
-        """ Flag that we need to show a tooltip """
-        if ch_thread.ignore_all:
-            return
-        now = time()
-        ch_thread.modified = True
-        ch_thread.time = now
+    on_modified = on_selection_modified
+
+    def on_load(self, view):
+        name = view.file_name()
+        if name is not None and name.endswith(('.css', '.html', '.php')) and not ch_file_thread.busy:
+            source = []
+            for r in view.find_by_selector("meta.property-value.css -comment"):
+                source.append(view.substr(r))
+            ch_file_thread.set_index(view, source)
+
+    on_post_save = on_load
+    on_clone = on_load
 
 
 class ChThread(threading.Thread):
@@ -571,7 +616,7 @@ class ChThread(threading.Thread):
                     except:
                         pass
                 if execute:
-                    view.run_command('color_helper', {"palette_picker": not info})
+                    view.run_command('color_helper', {"mode": "palette" if not info else "info"})
         self.ignore_all = False
         self.time = time()
 
@@ -588,6 +633,115 @@ class ChThread(threading.Thread):
             if self.modified is True and time() - self.time > self.wait_time:
                 sublime.set_timeout(lambda: self.payload(), 0)
             sleep(0.5)
+
+
+class ChFileIndexThread(threading.Thread):
+    """ Load up defaults """
+
+    def __init__(self):
+        """ Setup the thread """
+        self.reset()
+        self.lock = threading.Lock()
+        self.webcolor_names = re.compile(
+            r'\b(%s)\b' % '|'.join(
+                [name for name in webcolors.css3_names_to_hex.keys()]
+            )
+        )
+        threading.Thread.__init__(self)
+
+    def reset(self):
+        """ Reset the thread variables """
+        self.abort = False
+        self.view = None
+        self.sources = []
+        self.busy = False
+
+    def update_index(self, view, colors):
+        """ Code to run """
+        try:
+            view.settings().set('color_helper_file_palette', colors)
+            print(colors)
+        except Exception as e:
+            print(e)
+            pass
+
+    def set_index(self, view, sources):
+        with self.lock:
+            self.view = view
+            self.sources = sources
+
+    def kill(self):
+        """ Kill thread """
+        self.abort = True
+        while self.is_alive():
+            pass
+        self.reset()
+
+    def run(self):
+        """ Thread loop """
+        while not self.abort:
+            sleep(0.5)
+            with self.lock:
+                if self.sources:
+                    self.busy = True
+                    self.index_colors()
+                    if not self.abort:
+                        self.reset()
+
+    def index_colors(self):
+        colors = set()
+        for source in self.sources:
+            if self.abort:
+                break
+            for m in COLOR_RE.finditer(source):
+                if self.abort:
+                    break
+                if m.group('hex'):
+                    content = m.group('hex_content')
+                    if len(content) == 6:
+                        color = "%02x%02x%02x" % (
+                            int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
+                        )
+                    else:
+                        color = "%02x%02x%02x" % (
+                            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
+                        )
+                elif m.group('rgb'):
+                    content = [x.strip() for x in m.group('rgb_content').split(',')]
+                    color = "%02x%02x%02x" % (
+                        int(content[0]), int(content[1]), int(content[2])
+                    )
+                elif m.group('rgba'):
+                    content = [x.strip() for x in m.group('rgba_content').split(',')]
+                    color = "%02x%02x%02x" % (
+                        int(content[0]), int(content[1]), int(content[2])
+                    )
+                elif m.group('hsl'):
+                    content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
+                    rgba = RGBA()
+                    h = float(content[0]) / 360.0
+                    s = float(content[1]) / 100.0
+                    l = float(content[2]) / 100.0
+                    rgba.fromhls(h, l, s)
+                    color = rgba.get_rgb()[1:]
+                elif m.group('hsla'):
+                    content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+                    rgba = RGBA()
+                    h = float(content[0]) / 360.0
+                    s = float(content[1]) / 100.0
+                    l = float(content[2]) / 100.0
+                    rgba.fromhls(h, l, s)
+                    color = rgba.get_rgb()[1:]
+                if color is not None:
+                    colors.add('#' + color)
+            for m in self.webcolor_names.finditer(source):
+                if self.abort:
+                    break
+                colors.add(webcolors.name_to_hex(m.group(0)))
+        if not self.abort:
+            sublime.set_timeout(
+                lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
+            )
 
 
 ###########################
@@ -647,6 +801,7 @@ def init_plugin():
     """ Setup plugin variables and objects """
     global ch_settings
     global ch_thread
+    global ch_file_thread
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
@@ -659,6 +814,11 @@ def init_plugin():
     ch_thread = ChThread()
     ch_thread.start()
 
+    if ch_file_thread is not None:
+        ch_file_thread.kill()
+    ch_file_thread = ChFileIndexThread()
+    ch_file_thread.start()
+
 
 def plugin_loaded():
     """ Setup plugin """
@@ -667,3 +827,4 @@ def plugin_loaded():
 
 def plugin_unloaded():
     ch_thread.kill()
+    ch_file_thread.kill()

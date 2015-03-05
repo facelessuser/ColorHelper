@@ -6,8 +6,8 @@
     // Palette lists
     "palettes": [
         {
-            "name": "Favorites",
-            "caption": "Example: Random colors",
+            "name": "Random Colors",
+            // "caption": "Example: Random colors",
             "colors": [
                 "#000000",
                 "#ddbdff",
@@ -56,7 +56,7 @@
         },
         {
             "name": "Old Clover",
-            "caption": "Captions are optional",
+            // "caption": "Captions are optional",
             "colors": [
                 "#abb88e",
                 "#a0a97f",
