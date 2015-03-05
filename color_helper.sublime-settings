@@ -1,4 +1,7 @@
 {
+    // Show debug logging
+    "debug": false,
+
     // Favorites
     "bookmarks": [
     ],
@@ -74,6 +77,9 @@
         }
     ],
 
+    // Location of theme.  Use forward slashes
+    "tooltip_theme": "ColorHelper/tt_theme",
+
     // Upper case hex when inserting
     "upper_case_hex": false,
 
@@ -87,5 +93,11 @@
 
     // Preferred alpha format to output color as:
     // (none|rgba|hsla)
-    "preferred_alpha_format": "rgba"
+    "preferred_alpha_format": "rgba",
+
+    // File syntaxes that will be scanned on file open, save.
+    // These are the syntaxes in which the auto popup tooltip uses as well.
+    "supported_syntaxes": {
+        "CSS": "meta.property-value.css -comment"
+    }
 }

@@ -13,6 +13,7 @@ import ColorHelper.lib.webcolors as webcolors
 import threading
 from time import time, sleep
 import re
+import os
 
 css = None
 pref_settings = None
@@ -23,26 +24,45 @@ cross = None
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
-COLOR_RE = re.compile(
-    r'''(?x)
+COMPLETE = r'''(?x)
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2})) |
     (?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     (?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
     (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d)%\s*,\s*(?:(?:\d*\.\d+)|\d)%)\s*\)) |
-    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\)) |
+    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
+
+INCOMPLETE = r''' |
     (?P<hash>\#) |
     (?P<rgb_open>rgb\() |
     (?P<rgba_open>rgba\() |
     (?P<hsl_open>hsl\() |
-    (?P<hsla_open>hsla\()
-    '''
-)
+    (?P<hsla_open>hsla\()'''
+
+COLOR_RE = re.compile(COMPLETE)
+
+COLOR_ALL_RE = re.compile(COMPLETE + INCOMPLETE)
 
 if 'ch_thread' not in globals():
     ch_thread = None
 
 if 'ch_file_thread' not in globals():
     ch_file_thread = None
+
+
+###########################
+# Helper Classes/Functions
+###########################
+def log(*args):
+    text = ['\nColorHelper: ']
+    for arg in args:
+        text.append(str(arg))
+    text.append('\n')
+    print(''.join(text))
+
+
+def debug(*args):
+    if sublime.load_settings("color_helper.sublime-settings").get('debug', False):
+        log(*args)
 
 
 def fmt_float(f, p=0):
@@ -54,6 +74,34 @@ def fmt_float(f, p=0):
         if m.group('keep2'):
             string += m.group('keep2')
     return string
+
+
+def get_theme_res(tt_theme, *args):
+    return '/'.join(('Packages', tt_theme) + args)
+
+
+def get_scope(view):
+    file_scope = None
+    syntax = view.settings().get('syntax')
+    language = os.path.basename(syntax).replace('.tmLanguage', '').lower() if syntax is not None else "plain text"
+    supported = ch_settings.get('supported_syntax', {"CSS": "meta.property-value.css -comment"})
+    for lang, scope in supported.items():
+        if lang.lower() == language:
+            file_scope = scope
+            break
+    return file_scope
+
+
+def start_file_index(view):
+    if not ch_file_thread.busy:
+        scope = get_scope(view)
+        if scope is not None:
+            source = []
+            for r in view.find_by_selector(scope):
+                source.append(view.substr(r))
+            debug('Regions to search:\n', source)
+            ch_file_thread.set_index(view, ''.join(source))
+            sublime.status_message('File color indexer started...')
 
 
 class InsertionCalc(object):
@@ -202,7 +250,7 @@ class InsertionCalc(object):
         bfr = self.view.substr(sublime.Region(self.start, self.end))
         ref = self.point - self.start
         found = False
-        for m in COLOR_RE.finditer(bfr):
+        for m in COLOR_ALL_RE.finditer(bfr):
             if ref >= m.start(0) and ref < m.end(0):
                 found = self.replacement(m)
             elif ref == m.end(0):
@@ -508,21 +556,20 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
 class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        name = self.view.file_name()
-        if name is not None and name.endswith(('.css', '.html', '.php')):
+        busy = False
+        if get_scope(self.view) is not None:
             count = 0
             while ch_file_thread.busy:
                 if count == 3:
                     sublime.error_message("File indexer is busy!")
+                    busy = True
                     break
                 sleep(1)
                 count += 1
-            if not ch_file_thread.busy:
-                source = []
-                for r in self.view.find_by_selector("meta.property-value.css -comment"):
-                    source.append(self.view.substr(r))
-                ch_file_thread.set_index(self.view, source)
-                sublime.status_message('File color indexer started...')
+            if not busy:
+                start_file_index(self.view)
+        else:
+            sublime.error_message('Cannot index colors in this file!')
 
 
 ###########################
@@ -539,16 +586,16 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
     on_modified = on_selection_modified
 
-    def on_load(self, view):
-        name = view.file_name()
-        if name is not None and name.endswith(('.css', '.html', '.php')) and not ch_file_thread.busy:
-            source = []
-            for r in view.find_by_selector("meta.property-value.css -comment"):
-                source.append(view.substr(r))
-            ch_file_thread.set_index(view, source)
+    def on_activated(self, view):
+        if view.settings().get('color_helper_file_palette', None) is None:
+            view.settings().set('color_helper_file_palette', [])
+            self.on_index(view)
 
-    on_post_save = on_load
-    on_clone = on_load
+    def on_index(self, view):
+        start_file_index(view)
+
+    on_post_save = on_index
+    on_clone = on_index
 
 
 class ChThread(threading.Thread):
@@ -577,9 +624,11 @@ class ChThread(threading.Thread):
             info = False
             execute = False
             sels = view.sel()
+            scope = get_scope(view)
             if (
+                scope is not None and
                 len(sels) == 1 and sels[0].size() == 0
-                and view.score_selector(sels[0].begin(), 'meta.property-value.css')
+                and view.score_selector(sels[0].begin(), scope)
             ):
                 point = sels[0].begin()
                 visible = view.visible_region()
@@ -591,7 +640,7 @@ class ChThread(threading.Thread):
                     end = visible.end()
                 bfr = view.substr(sublime.Region(start, end))
                 ref = point - start
-                for m in COLOR_RE.finditer(bfr):
+                for m in COLOR_ALL_RE.finditer(bfr):
                     if ref >= m.start(0) and ref < m.end(0):
                         if (
                             m.group('hex') or m.group('rgb') or m.group('rgba') or
@@ -653,22 +702,23 @@ class ChFileIndexThread(threading.Thread):
         """ Reset the thread variables """
         self.abort = False
         self.view = None
-        self.sources = []
+        self.source = ''
         self.busy = False
 
     def update_index(self, view, colors):
         """ Code to run """
         try:
+            sublime.status_message('File color index complete...')
             view.settings().set('color_helper_file_palette', colors)
-            print(colors)
+            debug('Colors:\n', colors)
         except Exception as e:
-            print(e)
+            debug(e)
             pass
 
-    def set_index(self, view, sources):
+    def set_index(self, view, source):
         with self.lock:
             self.view = view
-            self.sources = sources
+            self.source = source
 
     def kill(self):
         """ Kill thread """
@@ -682,7 +732,7 @@ class ChFileIndexThread(threading.Thread):
         while not self.abort:
             sleep(0.5)
             with self.lock:
-                if self.sources:
+                if self.source:
                     self.busy = True
                     self.index_colors()
                     if not self.abort:
@@ -690,54 +740,51 @@ class ChFileIndexThread(threading.Thread):
 
     def index_colors(self):
         colors = set()
-        for source in self.sources:
+        for m in COLOR_RE.finditer(self.source):
             if self.abort:
                 break
-            for m in COLOR_RE.finditer(source):
-                if self.abort:
-                    break
-                if m.group('hex'):
-                    content = m.group('hex_content')
-                    if len(content) == 6:
-                        color = "%02x%02x%02x" % (
-                            int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-                        )
-                    else:
-                        color = "%02x%02x%02x" % (
-                            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-                        )
-                elif m.group('rgb'):
-                    content = [x.strip() for x in m.group('rgb_content').split(',')]
+            if m.group('hex'):
+                content = m.group('hex_content')
+                if len(content) == 6:
                     color = "%02x%02x%02x" % (
-                        int(content[0]), int(content[1]), int(content[2])
+                        int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
                     )
-                elif m.group('rgba'):
-                    content = [x.strip() for x in m.group('rgba_content').split(',')]
+                else:
                     color = "%02x%02x%02x" % (
-                        int(content[0]), int(content[1]), int(content[2])
+                        int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
                     )
-                elif m.group('hsl'):
-                    content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
-                    rgba = RGBA()
-                    h = float(content[0]) / 360.0
-                    s = float(content[1]) / 100.0
-                    l = float(content[2]) / 100.0
-                    rgba.fromhls(h, l, s)
-                    color = rgba.get_rgb()[1:]
-                elif m.group('hsla'):
-                    content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
-                    rgba = RGBA()
-                    h = float(content[0]) / 360.0
-                    s = float(content[1]) / 100.0
-                    l = float(content[2]) / 100.0
-                    rgba.fromhls(h, l, s)
-                    color = rgba.get_rgb()[1:]
-                if color is not None:
-                    colors.add('#' + color)
-            for m in self.webcolor_names.finditer(source):
-                if self.abort:
-                    break
-                colors.add(webcolors.name_to_hex(m.group(0)))
+            elif m.group('rgb'):
+                content = [x.strip() for x in m.group('rgb_content').split(',')]
+                color = "%02x%02x%02x" % (
+                    int(content[0]), int(content[1]), int(content[2])
+                )
+            elif m.group('rgba'):
+                content = [x.strip() for x in m.group('rgba_content').split(',')]
+                color = "%02x%02x%02x" % (
+                    int(content[0]), int(content[1]), int(content[2])
+                )
+            elif m.group('hsl'):
+                content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
+                rgba = RGBA()
+                h = float(content[0]) / 360.0
+                s = float(content[1]) / 100.0
+                l = float(content[2]) / 100.0
+                rgba.fromhls(h, l, s)
+                color = rgba.get_rgb()[1:]
+            elif m.group('hsla'):
+                content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+                rgba = RGBA()
+                h = float(content[0]) / 360.0
+                s = float(content[1]) / 100.0
+                l = float(content[2]) / 100.0
+                rgba.fromhls(h, l, s)
+                color = rgba.get_rgb()[1:]
+            if color is not None:
+                colors.add('#' + color)
+        for m in self.webcolor_names.finditer(self.source):
+            if self.abort:
+                break
+            colors.add(webcolors.name_to_hex(m.group(0)))
         if not self.abort:
             sublime.set_timeout(
                 lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
@@ -760,22 +807,17 @@ def init_css():
     except:
         lums = 128
 
+    tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme')
+
     if lums <= 127:
-        css_file = 'Packages/' + ch_settings.get(
-            'dark_css_override',
-            'ColorHelper/css/dark.css'
-        )
         border_color = '#CCCCCC'
-        cross = 'res://Packages/ColorHelper/res/cross_dark.png'
-        back_arrow = 'res://Packages/ColorHelper/res/back_dark.png'
+        css_file = get_theme_res(tt_theme, 'css', 'dark.css')
+        cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_dark.png')
+        back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_dark.png')
     else:
-        css_file = 'Packages/' + ch_settings.get(
-            'light_css_override',
-            'ColorHelper/css/light.css'
-        )
-        border_color = '#333333'
-        cross = 'res://Packages/ColorHelper/res/cross_light.png'
-        back_arrow = 'res://Packages/ColorHelper/res/back_light.png'
+        css_file = get_theme_res(tt_theme, 'css', 'light.css')
+        cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_light.png')
+        back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_light.png')
 
     try:
         css = sublime.load_resource(css_file).replace('\r', '')
