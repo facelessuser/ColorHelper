@@ -21,13 +21,15 @@ border_color = '#333333'
 back_arrow = None
 cross = None
 
+FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
+
 COLOR_RE = re.compile(
     r'''(?x)
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2})) |
     (?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     (?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
-    (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*\d+%\s*,\s*\d+%)\s*\)) |
-    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:\d+%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\)) |
+    (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d)%\s*,\s*(?:(?:\d*\.\d+)|\d)%)\s*\)) |
+    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\)) |
     (?P<hash>\#) |
     (?P<rgb_open>rgb\() |
     (?P<rgba_open>rgba\() |
@@ -38,6 +40,17 @@ COLOR_RE = re.compile(
 
 if 'ch_thread' not in globals():
     ch_thread = None
+
+
+def fmt_float(f, p=0):
+    """ Set float pring precision and trim precision zeros """
+    string = ("%." + "%d" % p + "f") % f
+    m = FLOAT_TRIM_RE.match(string)
+    if m:
+        string = m.group('keep')
+        if m.group('keep2'):
+            string += m.group('keep2')
+    return string
 
 
 class InsertionCalc(object):
@@ -244,10 +257,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             elif insert_calc.convert_hsl:
                 hsl = RGBA(target_color)
                 h, l, s = hsl.tohls()
-                value = "%d, %d%%, %d%%" % (
-                    int('%.0f' % (h * 360.0)),
-                    int('%.0f' % (s * 100.0)),
-                    int('%.0f' % (l * 100.0))
+                value = "%s, %s%%, %s%%" % (
+                    fmt_float(h * 360.0),
+                    fmt_float(s * 100.0),
+                    fmt_float(l * 100.0)
                 )
                 if insert_calc.alpha:
                     value += ', %s' % insert_calc.alpha
@@ -307,17 +320,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             '<span class="key">g:</span> %d ' % rgba.g +
             '<span class="key">b:</span> %d<br>' % rgba.b
         )
-        h, s, v = rgba.tohsv()
-        info.append(
-            '<span class="key">h:</span> %.0f ' % (h * 360.0) +
-            '<span class="key">s:</span> %.0f ' % (s * 100.0) +
-            '<span class="key">v:</span> %.0f<br>' % (v * 100.0)
-        )
         h, l, s = rgba.tohls()
         info.append(
-            '<span class="key">h:</span> %.0f ' % (h * 360.0) +
-            '<span class="key">s:</span> %.0f ' % (s * 100.0) +
-            '<span class="key">l:</span> %.0f<br>' % (l * 100.0)
+            '<span class="key">h:</span> %s ' % fmt_float(h * 360.0) +
+            '<span class="key">s:</span> %s%% ' % fmt_float(s * 100.0) +
+            '<span class="key">l:</span> %s%%<br>' % fmt_float(l * 100.0)
+        )
+        h, s, v = rgba.tohsv()
+        info.append(
+            '<span class="key">h:</span> %s ' % fmt_float(h * 360.0) +
+            '<span class="key">s:</span> %s%% ' % fmt_float(s * 100.0) +
+            '<span class="key">v:</span> %s%%<br>' % fmt_float(v * 100.0)
         )
         return ''.join(info)
 
