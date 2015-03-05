@@ -1,7 +1,7 @@
 # ColorHelper
 Experimental Sublime plugin that offers color tooltip info, and access to user defined color palettes.
 
-This is currently in an **ALPHA** state which means I am likely to break thing with a commit at any time.  Though you might find it usable, I may change how things work in the next commit.
+This is currently in an **ALPHA** state which means I am likely to break things with a commit at any time.  Though you might find it usable, I may change how things work in the next commit.
 
 ![Color Info](https://dl.dropboxusercontent.com/u/342698/General/color_info.png)
 
