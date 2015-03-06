@@ -465,11 +465,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 "name": "Current Colors",
                 "colors": self.view.settings().get('color_helper_file_palette', [])
             }
-        if palette_name == "Bookmarks":
-            target = {
-                "name": "Bookmarks",
-                "colors": ch_settings.get("bookmarks", [])
-            }
+        elif palette_name == "Favorites":
+            target = get_favs()
 
         for palette in get_palettes():
             if palette_name == palette['name']:
