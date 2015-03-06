@@ -690,13 +690,15 @@ class ChThread(threading.Thread):
                             execute = True
                         break
                 if not execute:
+                    region = view.word(sels[0])
                     word = view.substr(view.word(sels[0]))
-                    try:
-                        webcolors.name_to_hex(word)
-                        execute = True
-                        info = True
-                    except:
-                        pass
+                    if point != region.end():
+                        try:
+                            webcolors.name_to_hex(word)
+                            execute = True
+                            info = True
+                        except:
+                            pass
                 if execute:
                     view.run_command('color_helper', {"mode": "palette" if not info else "info"})
         self.ignore_all = False
