@@ -27,6 +27,8 @@ bookmark_selected = None
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
+HEX_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))$')
+
 COMPLETE = r'''(?x)
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2})) |
     (?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
@@ -77,6 +79,10 @@ def fmt_float(f, p=0):
         if m.group('keep2'):
             string += m.group('keep2')
     return string
+
+
+def is_hex_color(color):
+    return color is not None and HEX_RE.match(color) is not None
 
 
 def get_theme_res(tt_theme, *args):
@@ -574,7 +580,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif update:
             self.view.hide_popup()
 
-    def run(self, edit, mode="palette", palette_name=None):
+    def run(self, edit, mode="palette", palette_name=None, color=None):
         """ Run the specified tooltip """
         self.no_info = True
         if mode == "palette":
@@ -582,6 +588,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_colors(palette_name)
             else:
                 self.show_palettes()
+        elif mode == "color" and is_hex_color(color):
+            self.insert_color(color)
         elif mode == "info":
             self.no_info = False
             self.show_color_info()
