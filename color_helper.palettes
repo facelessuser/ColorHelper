@@ -1,0 +1,76 @@
+{
+    // Favorites
+    "favorites": [
+    ],
+
+    // Palette lists
+    "palettes": [
+        {
+            "name": "Random Colors",
+            // "caption": "Example: Random colors",
+            "colors": [
+                "#000000",
+                "#ddbdff",
+                "#fbdb65",
+                "#bc1339",
+                "#b3bc20",
+                "#d6655c",
+                "#6f8197",
+                "#fbdb65",
+                "#fce17e",
+                "#fca27e",
+                "#fc9870",
+                "#5dbede",
+                "#cd4236",
+                "#032149",
+                "#1c375b",
+                "#ae323b",
+                "#93d6c3",
+                "#91e374",
+                "#f08c78",
+                "#bab3b2",
+                "#ff748c",
+                "#9fd6c2",
+                "#ff748c",
+                "#bab3b2",
+                "#9fd6c2",
+                "#f08c78",
+                "#b78d78",
+                "#93d6c3",
+                "#a0294c",
+                "#ae323b",
+                "#a369af",
+                "#b0e2ff",
+                "#a4d3ee",
+                "#d3c99b",
+                "#dcc6ad",
+                "#a77658",
+                "#fd8e2f",
+                "#e52325",
+                "#abe2f7",
+                "#6cccf2",
+                "#2eb7ed",
+                "#ffdfe5",
+                "#ffc0cb"
+            ]
+        },
+        {
+            "name": "Old Clover",
+            // "caption": "Captions are optional",
+            "colors": [
+                "#abb88e",
+                "#a0a97f",
+                "#838b75",
+                "#968f7e",
+                "#988177"
+            ]
+        },
+        {
+            "name": "Yet Another",
+            "colors": [
+                "#6699cc",
+                "#99cc99"
+            ]
+        }
+    ]
+}

@@ -21,6 +21,9 @@ ch_settings = None
 border_color = '#333333'
 back_arrow = None
 cross = None
+bookmark = None
+bookmark_selected = None
+
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
@@ -90,6 +93,15 @@ def get_scope(view):
             file_scope = scope
             break
     return file_scope
+
+
+def get_favs():
+    bookmark_colors = sublime.load_settings('color_helper.palettes').get("favorites", [])
+    return {"name": "Favorites", "colors": bookmark_colors}
+
+
+def get_palettes():
+    return sublime.load_settings('color_helper.palettes').get("palettes", [])
 
 
 def start_file_index(view):
@@ -285,6 +297,22 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.show_palettes(update=True)
         elif href == '__info__':
             self.show_color_info(update=True)
+        elif href.startswith('__add_fav__'):
+            color = href.split(':')[1]
+            favs = get_favs()
+            favs['colors'].append(color)
+            settings = sublime.load_settings('color_helper.palettes')
+            settings.set('favorites', favs['colors'])
+            sublime.save_settings('color_helper.palettes')
+            self.show_color_info(update=True)
+        elif href.startswith('__remove_fav__'):
+            color = href.split(':')[1]
+            favs = get_favs()
+            favs['colors'].remove(color)
+            settings = sublime.load_settings('color_helper.palettes')
+            settings.set('favorites', favs['colors'])
+            sublime.save_settings('color_helper.palettes')
+            self.show_color_info(update=True)
 
     def insert_color(self, target_color):
         """ Insert colors """
@@ -366,7 +394,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         info = ['<h1 class="header">%s</h1>' % color]
         if web_color is not None:
             info.append('<strong>%s</strong><br><br>' % web_color)
-        info.append('<a href="__palettes__">%s</a><br><br>' % color_box(color, border_color, size=64))
+        info.append('<a href="__palettes__">%s</a> ' % color_box(color, border_color, size=64))
+        if color in get_favs()['colors']:
+            info.append(
+                '<a href="__remove_fav__:%s">' % color.lower() +
+                '<img style="width: 16px; height: 16px;" src="%s">' % bookmark_selected +
+                '</a><br><br><br>'
+            )
+        else:
+            info.append(
+                '<a href="__add_fav__:%s">' % color.lower() +
+                '<img style="width: 16px; height: 16px;" src="%s">' % bookmark +
+                '</a><br><br><br>'
+            )
         info.append(
             '<span class="key">r:</span> %d ' % rgba.r +
             '<span class="key">g:</span> %d ' % rgba.g +
@@ -396,19 +436,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if not self.no_info:
             html.append('<a href="__info__"><img style="width: 16px; height: 16px;" src="%s"></a>' % back_arrow)
 
-        bookmark_colors = ch_settings.get("bookmarks", [])
-        if len(bookmark_colors):
-            bookmarks = [{"name": "Bookmarks", "colors": bookmark_colors}]
-        else:
-            bookmarks = []
+        favs = get_favs()
+        palettes = []
+        if len(favs['colors']):
+            palettes += [favs]
 
         current_colors = self.view.settings().get('color_helper_file_palette', [])
         if len(current_colors):
-            css_colors = [{"name": "Current Colors", "colors": current_colors}]
-        else:
-            css_colors = []
+            palettes += [{"name": "Current Colors", "colors": current_colors}]
 
-        for palette in (bookmarks + css_colors + ch_settings.get("palettes", [])):
+        for palette in (palettes + get_palettes()):
             html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption')))
         html.append('</div>')
 
@@ -434,7 +471,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 "colors": ch_settings.get("bookmarks", [])
             }
 
-        for palette in ch_settings.get("palettes", []):
+        for palette in get_palettes():
             if palette_name == palette['name']:
                 target = palette
 
@@ -442,7 +479,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             html = [
                 '<style>%s</style>' % (css if css is not None else '') +
                 '<div class="content">' +
-                # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross +
                 '<a href="__palettes__"><img style="width: 16px; height: 16px;" src="%s"></a>' % back_arrow +
                 self.format_colors(target['colors'], target['name']) +
                 '</div>'
@@ -477,23 +513,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     if m.group('hex'):
                         content = m.group('hex_content')
                         if len(content) == 6:
-                            color = "%02x%02x%02x" % (
+                            color = "#%02x%02x%02x" % (
                                 int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
                             )
                         else:
-                            color = "%02x%02x%02x" % (
+                            color = "#%02x%02x%02x" % (
                                 int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
                             )
                         break
                     elif m.group('rgb'):
                         content = [x.strip() for x in m.group('rgb_content').split(',')]
-                        color = "%02x%02x%02x" % (
+                        color = "#%02x%02x%02x" % (
                             int(content[0]), int(content[1]), int(content[2])
                         )
                         break
                     elif m.group('rgba'):
                         content = [x.strip() for x in m.group('rgba_content').split(',')]
-                        color = "%02x%02x%02x%02x" % (
+                        color = "#%02x%02x%02x%02x" % (
                             int(content[0]), int(content[1]), int(content[2]),
                             int('%.0f' % (float(content[3]) * 255.0))
                         )
@@ -505,7 +541,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         s = float(content[1]) / 100.0
                         l = float(content[2]) / 100.0
                         rgba.fromhls(h, l, s)
-                        color = rgba.get_rgb()[1:]
+                        color = rgba.get_rgb()
                         break
                     elif m.group('hsla'):
                         content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
@@ -514,23 +550,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         s = float(content[1]) / 100.0
                         l = float(content[2]) / 100.0
                         rgba.fromhls(h, l, s)
-                        color = rgba.get_rgb()[1:]
+                        color = rgba.get_rgb()
                         color += "%02X" % int('%.0f' % (float(content[3]) * 255.0))
                         break
             if color is None:
                 word = self.view.substr(self.view.word(sels[0]))
                 try:
-                    color = webcolors.name_to_hex(word).lower()[1:]
+                    color = webcolors.name_to_hex(word).lower()
                 except:
                     pass
         if color is not None:
             html = [
                 '<style>%s</style>' % (css if css is not None else '') +
                 '<div class="content">' +
-                # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross +
-                self.format_info('#' + color.lower()) +
+                self.format_info(color.lower()) +
                 '</div>'
             ]
+
             if update:
                 self.view.update_popup(''.join(html))
             else:
@@ -800,6 +836,8 @@ def init_css():
     global border_color
     global back_arrow
     global cross
+    global bookmark
+    global bookmark_selected
 
     scheme_file = pref_settings.get('color_scheme')
     try:
@@ -814,10 +852,15 @@ def init_css():
         css_file = get_theme_res(tt_theme, 'css', 'dark.css')
         cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_dark.png')
         back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_dark.png')
+        bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_dark.png')
+        bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_dark.png')
     else:
+        border_color = '#333333'
         css_file = get_theme_res(tt_theme, 'css', 'light.css')
         cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_light.png')
         back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_light.png')
+        bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_light.png')
+        bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_light.png')
 
     try:
         css = sublime.load_resource(css_file).replace('\r', '')
