@@ -417,9 +417,36 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('<strong>%s</strong><br><br>' % web_color)
 
         info.append(
-            color_box(color, border_color, size=64) +
-            '<br><br>'
+            color_box(color, border_color, size=64)
         )
+
+        info.append(
+            ' <a href="__palettes__">' +
+            '<img style="width: 20px; height: 20px;" src="%s">' % color_palette +
+            '</a>'
+        )
+
+        s = sublime.load_settings('color_helper_share.sublime-settings')
+        s.set('color_pick_return', None)
+        sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
+        if s.get('color_pick_return', None):
+            info.append(
+                '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, dropper)
+            )
+
+        if color in get_favs()['colors']:
+            info.append(
+                '<a href="__remove_fav__:%s">' % color.lower() +
+                '<img style="width: 20px; height: 20px;" src="%s">' % bookmark_selected +
+                '</a>'
+            )
+        else:
+            info.append(
+                '<a href="__add_fav__:%s">' % color.lower() +
+                '<img style="width: 20px; height: 20px;" src="%s">' % bookmark +
+                '</a>'
+            )
+        info.append('<br><br>')
         info.append(
             '<span class="key">r:</span> %d ' % rgba.r +
             '<span class="key">g:</span> %d ' % rgba.g +
@@ -576,34 +603,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             ]
 
             html.append(
-                '<a href="__palettes__">' +
-                '<img style="width: 20px; height: 20px;" src="%s">' % color_palette +
-                '</a>'
-            )
-
-            s = sublime.load_settings('color_helper_share.sublime-settings')
-            s.set('color_pick_return', None)
-            sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
-            if s.get('color_pick_return', None):
-                html.append(
-                    '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, dropper)
-                )
-
-            if color in get_favs()['colors']:
-                html.append(
-                    '<a href="__remove_fav__:%s">' % color.lower() +
-                    '<img style="width: 20px; height: 20px;" src="%s">' % bookmark_selected +
-                    '</a>'
-                )
-            else:
-                html.append(
-                    '<a href="__add_fav__:%s">' % color.lower() +
-                    '<img style="width: 20px; height: 20px;" src="%s">' % bookmark +
-                    '</a>'
-                )
-
-            html.append(
-                '<br>' +
+                # '<br>' +
                 self.format_info(color.lower()) +
                 '</div>'
             )
@@ -902,7 +902,7 @@ def init_css():
         bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_dark.png')
         bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_dark.png')
         dropper = 'res://' + get_theme_res(tt_theme, 'images', 'dropper_dark.png')
-        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_light.png')
+        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_dark.png')
     else:
         border_color = '#333333'
         css_file = get_theme_res(tt_theme, 'css', 'light.css')
@@ -910,8 +910,8 @@ def init_css():
         back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_light.png')
         bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_light.png')
         bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_light.png')
-        dropper = 'res://' + get_theme_res(tt_theme, 'images', 'dropper_dark.png')
-        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_dark.png')
+        dropper = 'res://' + get_theme_res(tt_theme, 'images', 'dropper_light.png')
+        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_light.png')
 
     try:
         css = sublime.load_resource(css_file).replace('\r', '')
