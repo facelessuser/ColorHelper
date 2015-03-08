@@ -23,8 +23,8 @@
     // File syntaxes that will be scanned on file open, save.
     // These are the syntaxes in which the auto popup tooltip uses as well.
     "supported_syntax": [
-        "meta.property-value.css -comment",              // CSS, CSS in HTML etc.
-        "meta.value.css -comment",                       // CSS3, CSS3 in HTML etc.,
-        "meta.tag.inline.any.html string.quoted.double", // HTML attributes
+        "meta.property-value.css -comment",       // CSS, CSS in HTML etc.
+        "meta.value.css -comment",                // CSS3, CSS3 in HTML etc.,
+        "meta.tag.inline.any.html string.quoted" // HTML attributes
     ]
 }
