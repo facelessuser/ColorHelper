@@ -13,7 +13,6 @@ import ColorHelper.lib.webcolors as webcolors
 import threading
 from time import time, sleep
 import re
-import os
 
 css = None
 pref_settings = None
@@ -92,15 +91,11 @@ def get_theme_res(tt_theme, *args):
 
 
 def get_scope(view):
-    file_scope = None
-    syntax = view.settings().get('syntax')
-    language = os.path.basename(syntax).replace('.tmLanguage', '').lower() if syntax is not None else "plain text"
-    supported = ch_settings.get('supported_syntax', {"CSS": "meta.property-value.css -comment"})
-    for lang, scope in supported.items():
-        if lang.lower() == language:
-            file_scope = scope
-            break
-    return file_scope
+    scopes = ','.join(ch_settings.get('supported_syntax', []))
+    sels = view.sel()
+    if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
+        scopes = None
+    return scopes
 
 
 def get_favs():
