@@ -14,17 +14,6 @@ import threading
 from time import time, sleep
 import re
 
-css = None
-pref_settings = None
-ch_settings = None
-border_color = '#333333'
-back_arrow = None
-cross = None
-bookmark = None
-bookmark_selected = None
-dropper = None
-color_palette = None
-
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
@@ -47,6 +36,9 @@ INCOMPLETE = r''' |
 COLOR_RE = re.compile(COMPLETE)
 
 COLOR_ALL_RE = re.compile(COMPLETE + INCOMPLETE)
+
+ch_theme = None
+ch_settings = None
 
 if 'ch_thread' not in globals():
     ch_thread = None
@@ -84,10 +76,6 @@ def fmt_float(f, p=0):
 
 def is_hex_color(color):
     return color is not None and HEX_RE.match(color) is not None
-
-
-def get_theme_res(tt_theme, *args):
-    return '/'.join(('Packages', tt_theme) + args)
 
 
 def get_scope(view):
@@ -377,7 +365,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         colors.append(
             '<a href="%s">%s</a>' % (
                 label,
-                palette_preview(color_list, border_color)
+                palette_preview(color_list, ch_theme.border_color)
             )
         )
         return ''.join(colors)
@@ -394,7 +382,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     colors.append('&nbsp; ')
                 else:
                     colors.append('&nbsp;')
-            colors.append('<a href="%s">%s</a>' % (f, color_box(f, border_color, size=32)))
+            colors.append('<a href="%s">%s</a>' % (f, color_box(f, ch_theme.border_color, size=32)))
             count += 1
         return ''.join(colors)
 
@@ -412,12 +400,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('<strong>%s</strong><br><br>' % web_color)
 
         info.append(
-            color_box(color, border_color, size=64)
+            color_box(color, ch_theme.border_color, size=64)
         )
 
         info.append(
             ' <a href="__palettes__">' +
-            '<img style="width: 20px; height: 20px;" src="%s">' % color_palette +
+            '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.color_palette +
             '</a>'
         )
 
@@ -426,19 +414,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
         if s.get('color_pick_return', None):
             info.append(
-                '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, dropper)
+                '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, ch_theme.dropper)
             )
 
         if color in get_favs()['colors']:
             info.append(
                 '<a href="__remove_fav__:%s">' % color.lower() +
-                '<img style="width: 20px; height: 20px;" src="%s">' % bookmark_selected +
+                '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.bookmark_selected +
                 '</a>'
             )
         else:
             info.append(
                 '<a href="__add_fav__:%s">' % color.lower() +
-                '<img style="width: 20px; height: 20px;" src="%s">' % bookmark +
+                '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.bookmark +
                 '</a>'
             )
         info.append('<br><br>')
@@ -464,12 +452,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def show_palettes(self, update=False):
         """ Show preview of all palettes """
         html = [
-            '<style>%s</style>' % (css if css is not None else '') +
+            '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
             '<div class="content">'
             # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross
         ]
         if not self.no_info:
-            html.append('<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % back_arrow)
+            html.append('<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow)
 
         favs = get_favs()
         palettes = []
@@ -509,9 +497,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if target is not None:
             html = [
-                '<style>%s</style>' % (css if css is not None else '') +
+                '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
                 '<div class="content">' +
-                '<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % back_arrow +
+                '<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow +
                 self.format_colors(target['colors'], target['name']) +
                 '</div>'
             ]
@@ -593,7 +581,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     pass
         if color is not None:
             html = [
-                '<style>%s</style>' % (css if css is not None else '') +
+                '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
                 '<div class="content">'
             ]
 
@@ -870,81 +858,83 @@ class ChFileIndexThread(threading.Thread):
 ###########################
 # Plugin Initialization
 ###########################
-def init_css():
-    """ Load up desired CSS """
-    global css
-    global border_color
-    global back_arrow
-    global cross
-    global bookmark
-    global bookmark_selected
-    global dropper
-    global color_palette
+class ChTheme(object):
+    def __init__(self):
+        self.setup()
 
-    scheme_file = pref_settings.get('color_scheme')
-    try:
-        lums = scheme_lums(scheme_file)
-    except:
-        lums = 128
+    def has_changed(self):
+        # Reload events recently are always reloading,
+        # So maybe we will use this to check if reload is needed.
+        pref_settings = sublime.load_settings('Preferences.sublime-settings')
+        return self.scheme_file != pref_settings.get('color_scheme')
 
-    tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme')
+    def get_theme_res(self, *args, link=False):
+        res = '/'.join(('Packages', self.tt_theme) + args)
+        return 'res://' + res if link else res
 
-    if lums <= 127:
-        border_color = '#CCCCCC'
-        css_file = get_theme_res(tt_theme, 'css', 'dark.css')
-        cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_dark.png')
-        back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_dark.png')
-        bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_dark.png')
-        bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_dark.png')
-        dropper = 'res://' + get_theme_res(tt_theme, 'images', 'dropper_dark.png')
-        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_dark.png')
-    else:
-        border_color = '#333333'
-        css_file = get_theme_res(tt_theme, 'css', 'light.css')
-        cross = 'res://' + get_theme_res(tt_theme, 'images', 'cross_light.png')
-        back_arrow = 'res://' + get_theme_res(tt_theme, 'images', 'back_light.png')
-        bookmark = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_light.png')
-        bookmark_selected = 'res://' + get_theme_res(tt_theme, 'images', 'bookmark_selected_light.png')
-        dropper = 'res://' + get_theme_res(tt_theme, 'images', 'dropper_light.png')
-        color_palette = 'res://' + get_theme_res(tt_theme, 'images', 'palette_light.png')
+    def setup(self):
+        pref_settings = sublime.load_settings('Preferences.sublime-settings')
 
-    try:
-        css = sublime.load_resource(css_file).replace('\r', '')
-    except:
-        css = None
-    ch_settings.clear_on_change('reload')
-    ch_settings.add_on_change('reload', init_css)
+        self.scheme_file = pref_settings.get('color_scheme')
+        try:
+            self.lums = scheme_lums(self.scheme_file)
+        except:
+            self.lums = 128
 
+        self.tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme')
 
-def init_color_scheme():
-    """ Setup color scheme match object with current scheme """
-    global pref_settings
-    global scheme_matcher
-    pref_settings = sublime.load_settings('Preferences.sublime-settings')
-    pref_settings.clear_on_change('reload')
-    pref_settings.add_on_change('reload', init_color_scheme)
+        if self.lums <= 127:
+            self.border_color = '#CCCCCC'
+            self.css_file = self.get_theme_res('css', 'dark.css')
+            self.cross = self.get_theme_res('images', 'cross_dark.png', link=True)
+            self.back_arrow = self.get_theme_res('images', 'back_dark.png', link=True)
+            self.bookmark = self.get_theme_res('images', 'bookmark_dark.png', link=True)
+            self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_dark.png', link=True)
+            self.dropper = self.get_theme_res('images', 'dropper_dark.png', link=True)
+            self.color_palette = self.get_theme_res('images', 'palette_dark.png', link=True)
+        else:
+            self.border_color = '#333333'
+            self.css_file = self.get_theme_res('css', 'light.css')
+            self.cross = self.get_theme_res('images', 'cross_light.png', link=True)
+            self.back_arrow = self.get_theme_res('images', 'back_light.png', link=True)
+            self.bookmark = self.get_theme_res('images', 'bookmark_light.png', link=True)
+            self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_light.png', link=True)
+            self.dropper = self.get_theme_res('images', 'dropper_light.png', link=True)
+            self.color_palette = self.get_theme_res('images', 'palette_light.png', link=True)
 
-    # Reload the CSS since it can change with scheme luminance
-    init_css()
+        try:
+            self.css = sublime.load_resource(self.css_file).replace('\r', '')
+        except:
+            self.css = None
 
 
 def init_plugin():
     """ Setup plugin variables and objects """
     global ch_settings
     global ch_thread
+    global ch_theme
     global ch_file_thread
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
 
-    # Setup color scheme
-    init_color_scheme()
+    # Theme setup
+    ch_theme = ChTheme()
 
+    # Setup reload events
+    pref_settings = sublime.load_settings('Preferences.sublime-settings')
+    pref_settings.clear_on_change('ch_reload_preferences')
+    pref_settings.add_on_change('ch_reload_preferences', ch_theme.setup)
+    ch_settings.clear_on_change('ch_reload_settings')
+    ch_settings.add_on_change('ch_reload_settings', ch_theme.setup)
+
+    # Start event thread
     if ch_thread is not None:
         ch_thread.kill()
     ch_thread = ChThread()
     ch_thread.start()
 
+    # Start file color index thread
     if ch_file_thread is not None:
         ch_file_thread.kill()
     ch_file_thread = ChFileIndexThread()
