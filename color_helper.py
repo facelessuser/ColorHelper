@@ -294,116 +294,30 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif href == '__info__':
             self.show_color_info(update=True)
         elif href.startswith('__color_picker__'):
-            color = href.split(':', 1)[1]
-            s = sublime.load_settings('color_helper_share.sublime-settings')
-            s.set('color_pick_return', None)
-            self.view.window().run_command(
-                'color_pick_api_get_color',
-                {'settings': 'color_helper_share.sublime-settings', "default_color": color[1:]}
-            )
-            new_color = s.get('color_pick_return', None)
-            if new_color is not None and new_color != color:
-                self.insert_color(new_color)
-            else:
-                sublime.set_timeout(self.show_color_info, 0)
+            self.color_picker(color=href.split(':', 1)[1])
         elif href.startswith('__add_fav__'):
-            color = href.split(':', 1)[1]
-            favs = get_favs()
-            favs['colors'].append(color)
-            settings = sublime.load_settings('color_helper.palettes')
-            settings.set('favorites', favs['colors'])
-            save_palettes()
-            self.show_color_info(update=True)
+            self.add_fav(href.split(':', 1)[1])
         elif href.startswith('__remove_fav__'):
-            color = href.split(':', 1)[1]
-            favs = get_favs()
-            favs['colors'].remove(color)
-            settings = sublime.load_settings('color_helper.palettes')
-            settings.set('favorites', favs['colors'])
-            save_palettes()
-            self.show_color_info(update=True)
+            self.remove_fav(href.split(':', 1)[1])
         elif href.startswith('__delete_colors__'):
-            palette = href.split(':', 1)[1]
-            self.show_colors(palette, delete=True, update=True)
+            self.show_colors(href.split(':', 1)[1], delete=True, update=True)
         elif href.startswith('__delete_color__'):
             parts = href.split(':', 2)
-            color = parts[1]
-            palette_name = parts[2]
-            s = sublime.load_settings('color_helper.palettes')
-            if palette_name == "Favorites":
-                favs = s.get('favorites', [])
-                if color in favs:
-                    favs.remove(color)
-                    s.set('favorites', favs)
-                    save_palettes()
-                    self.show_colors(palette_name, delete=True, update=True)
-            else:
-                color_palettes = s.get("palettes", [])
-                for palette in color_palettes:
-                    if palette_name == palette['name']:
-                        if color in palette['colors']:
-                            palette['colors'].remove(color)
-                            s.set('palettes', color_palettes)
-                            save_palettes()
-                            self.show_colors(palette_name, delete=True, update=True)
-                            break
+            self.delete_color(parts[1], parts[2])
         elif href == '__delete__palettes__':
             self.show_palettes(delete=True, update=True)
         elif href.startswith('__delete__palette__'):
-            palette_name = href.split(':', 1)[1]
-            s = sublime.load_settings('color_helper.palettes')
-            if palette_name == 'Favorites':
-                s.set('favorites', [])
-                save_palettes()
-                self.show_palettes(delete=True, update=True)
-            else:
-                color_palettes = s.get("palettes", [])
-                count = -1
-                index = None
-                for palette in color_palettes:
-                    count += 1
-                    if palette_name == palette['name']:
-                        index = count
-                        break
-                if index is not None:
-                    del color_palettes[index]
-                    s.set('palettes', color_palettes)
-                    save_palettes()
-                    self.show_palettes(delete=True, update=True)
+            self.delete_palette(href.split(':', 1)[1])
         elif href.startswith('__add_color__'):
-            color = href.split(':', 1)[1]
-            self.show_palettes(color=color, update=True)
+            self.show_palettes(color=href.split(':', 1)[1], update=True)
         elif href.startswith('__add_palette_color__'):
             parts = href.split(':', 2)
-            color = parts[1]
-            palette_name = parts[2]
-            s = sublime.load_settings('color_helper.palettes')
-            if palette_name == 'Favorites':
-                favs = s.get('favorites', [])
-                if color not in favs:
-                    favs.append(color)
-                s.set('favorites', favs)
-                save_palettes()
-                self.show_color_info(update=True)
-            else:
-                color_palettes = s.get("palettes", [])
-                for palette in color_palettes:
-                    if palette_name == palette['name']:
-                        if color not in palette['colors']:
-                            palette['colors'].append(color)
-                            s.set('palettes', color_palettes)
-                            save_palettes()
-                            self.show_color_info(update=True)
-                            break
+            self.add_palette(parts[1], parts[2])
         elif href.startswith('__create_palette__'):
-            parts = href.split(':', 1)
-            color = parts[1]
-            win = self.view.window()
-            if win is not None:
-                self.view.hide_popup()
-                win.show_input_panel("Palette Name:", '', on_done=lambda name, c=color: self.create_palette(name, color), on_change=None, on_cancel=self.repop)
+            self.prompt_palette_name(href.split(':', 1)[1])
 
     def repop(self):
+        """ Setup thread to repopup tooltip """
         return
         if ch_thread.ignore_all:
             return
@@ -411,7 +325,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         ch_thread.modified = True
         ch_thread.time = now
 
+    def prompt_palette_name(self, color):
+        """ Prompt user for new palette name """
+        win = self.view.window()
+        if win is not None:
+            self.view.hide_popup()
+            win.show_input_panel("Palette Name:", '', on_done=lambda name, c=color: self.create_palette(name, color), on_change=None, on_cancel=self.repop)
+
     def create_palette(self, palette_name, color):
+        """ Add color to new color palette """
         if palette_name:
             if palette_name.startswith('__'):
                 sublime.error_message('Palettes cannot have names that start with "__" as that is reserved for internal use!')
@@ -428,6 +350,101 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 s.set('palettes', color_palettes)
                 save_palettes()
         self.repop()
+
+    def add_palette(self, color, palette_name):
+        s = sublime.load_settings('color_helper.palettes')
+        if palette_name == 'Favorites':
+            favs = s.get('favorites', [])
+            if color not in favs:
+                favs.append(color)
+            s.set('favorites', favs)
+            save_palettes()
+            self.show_color_info(update=True)
+        else:
+            color_palettes = s.get("palettes", [])
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    if color not in palette['colors']:
+                        palette['colors'].append(color)
+                        s.set('palettes', color_palettes)
+                        save_palettes()
+                        self.show_color_info(update=True)
+                        break
+
+    def delete_palette(self, palette_name):
+        """ Delete palette """
+        s = sublime.load_settings('color_helper.palettes')
+        if palette_name == 'Favorites':
+            s.set('favorites', [])
+            save_palettes()
+            self.show_palettes(delete=True, update=True)
+        else:
+            color_palettes = s.get("palettes", [])
+            count = -1
+            index = None
+            for palette in color_palettes:
+                count += 1
+                if palette_name == palette['name']:
+                    index = count
+                    break
+            if index is not None:
+                del color_palettes[index]
+                s.set('palettes', color_palettes)
+                save_palettes()
+                self.show_palettes(delete=True, update=True)
+
+    def delete_color(self, color, palette_name):
+        """ Delete color """
+        s = sublime.load_settings('color_helper.palettes')
+        if palette_name == "Favorites":
+            favs = s.get('favorites', [])
+            if color in favs:
+                favs.remove(color)
+                s.set('favorites', favs)
+                save_palettes()
+                self.show_colors(palette_name, delete=True, update=True)
+        else:
+            color_palettes = s.get("palettes", [])
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    if color in palette['colors']:
+                        palette['colors'].remove(color)
+                        s.set('palettes', color_palettes)
+                        save_palettes()
+                        self.show_colors(palette_name, delete=True, update=True)
+                        break
+
+    def add_fav(self, color):
+        """ Add favorite """
+        favs = get_favs()
+        favs['colors'].append(color)
+        settings = sublime.load_settings('color_helper.palettes')
+        settings.set('favorites', favs['colors'])
+        save_palettes()
+        self.show_color_info(update=True)
+
+    def remove_fav(self, color):
+        """ Remove favorite """
+        favs = get_favs()
+        favs['colors'].remove(color)
+        settings = sublime.load_settings('color_helper.palettes')
+        settings.set('favorites', favs['colors'])
+        save_palettes()
+        self.show_color_info(update=True)
+
+    def color_picker(self, color):
+        """ Get color with color picker """
+        s = sublime.load_settings('color_helper_share.sublime-settings')
+        s.set('color_pick_return', None)
+        self.view.window().run_command(
+            'color_pick_api_get_color',
+            {'settings': 'color_helper_share.sublime-settings', "default_color": color[1:]}
+        )
+        new_color = s.get('color_pick_return', None)
+        if new_color is not None and new_color != color:
+            self.insert_color(new_color)
+        else:
+            sublime.set_timeout(self.show_color_info, 0)
 
     def insert_color(self, target_color):
         """ Insert colors """
