@@ -355,13 +355,36 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 index = None
                 for palette in color_palettes:
                     count += 1
-                    if palette_name == palette_name['name']:
+                    if palette_name == palette['name']:
                         index = count
                         break
                 if index is not None:
                     del color_palettes[index]
                     s.set('palettes', color_palettes)
                     self.show_palettes(delete=True, update=True)
+        elif href.startswith('__add_color__'):
+            color = href.split(':', 1)[1]
+            self.show_palettes(color=color, update=True)
+        elif href.startswith('__add_palette_color__'):
+            parts = href.split(':', 2)
+            color = parts[1]
+            palette_name = parts[2]
+            s = sublime.load_settings('color_helper.palettes')
+            if palette_name == 'Favorites':
+                favs = s.get('favorites', [])
+                if color not in favs:
+                    favs.append(color)
+                s.set('favorites', favs)
+                self.show_color_info(update=True)
+            else:
+                color_palettes = s.get("palettes", [])
+                for palette in color_palettes:
+                    if palette_name == palette['name']:
+                        if color not in palette['colors']:
+                            palette['colors'].append(color)
+                            s.set('palettes', color_palettes)
+                            self.show_color_info(update=True)
+                            break
 
     def insert_color(self, target_color):
         """ Insert colors """
@@ -402,14 +425,18 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
-    def format_palettes(self, color_list, label, caption=None, delete=False):
+    def format_palettes(self, color_list, label, caption=None, color=None, delete=False):
         """ Format color palette previews """
         colors = ['<h1 class="header">%s</h1>' % label]
         if caption:
             colors.append('<span class="caption">%s</span><br>' % caption)
+        if delete:
+            label = '__delete__palette__:%s' % label
+        elif color:
+            label = '__add_palette_color__:%s:%s' % (color, label)
         colors.append(
             '<a href="%s">%s</a>' % (
-                label if not delete else ('__delete__palette__:%s' % label),
+                label,
                 palette_preview(color_list, ch_theme.border_color)
             )
         )
@@ -473,6 +500,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, ch_theme.dropper)
             )
 
+        info.append(
+            '<a href="__add_color__:%s">' % color.lower() +
+            '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.add +
+            '</a>'
+        )
+
         if color in get_favs()['colors']:
             info.append(
                 '<a href="__remove_fav__:%s">' % color.lower() +
@@ -505,33 +538,36 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         )
         return ''.join(info)
 
-    def show_palettes(self, delete=False, update=False):
+    def show_palettes(self, delete=False, color=None, update=False):
         """ Show preview of all palettes """
         html = [
             '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
             '<div class="content">'
             # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross
         ]
-        if not self.no_info or delete:
-            if not delete:
-                html.append(
-                    '<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow +
-                    '<a href="__delete__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.trash
-                )
-            else:
-                html.append('<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow)
+        if (not self.no_info and not delete) or color:
+            html.append(
+                '<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
+            )
+        elif delete:
+            html.append('<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow)
+
+        if not delete and not color:
+            html.append(
+                '<a href="__delete__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.trash
+            )
 
         favs = get_favs()
         palettes = []
-        if len(favs['colors']):
+        if len(favs['colors']) or color:
             palettes += [favs]
 
         current_colors = self.view.settings().get('color_helper_file_palette', [])
-        if not delete and len(current_colors):
+        if not delete and not color and len(current_colors):
             palettes += [{"name": "Current Colors", "colors": current_colors}]
 
         for palette in (palettes + get_palettes()):
-            html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption'), delete=delete))
+            html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption'), delete=delete, color=color))
         html.append('</div>')
 
         if update:
@@ -669,7 +705,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             ]
 
             html.append(
-                # '<br>' +
                 self.format_info(color.lower()) +
                 '</div>'
             )
@@ -976,6 +1011,7 @@ class ChTheme(object):
             self.dropper = self.get_theme_res('images', 'dropper_dark.png', link=True)
             self.color_palette = self.get_theme_res('images', 'palette_dark.png', link=True)
             self.trash = self.get_theme_res('images', 'trash_dark.png', link=True)
+            self.add = self.get_theme_res('images', 'plus_dark.png', link=True)
         else:
             self.border_color = '#333333'
             self.css_file = self.get_theme_res('css', 'light.css')
@@ -986,6 +1022,7 @@ class ChTheme(object):
             self.dropper = self.get_theme_res('images', 'dropper_light.png', link=True)
             self.color_palette = self.get_theme_res('images', 'palette_light.png', link=True)
             self.trash = self.get_theme_res('images', 'trash_light.png', link=True)
+            self.add = self.get_theme_res('images', 'plus_light.png', link=True)
 
         try:
             self.css = sublime.load_resource(self.css_file).replace('\r', '')
