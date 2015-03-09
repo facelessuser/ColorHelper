@@ -17,6 +17,16 @@ p {
     padding-left: 1em;
 }
 
+.delete {
+    background-color: #c82829;
+    color: #cccccc;
+}
+
+.add {
+    background-color: #718c00;
+    color: #cccccc;
+}
+
 .content {
     margin: 1em;
 }

@@ -540,11 +540,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
     def show_palettes(self, delete=False, color=None, update=False):
         """ Show preview of all palettes """
+        show_div = False
         html = [
             '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
             '<div class="content">'
             # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross
         ]
+
         if (not self.no_info and not delete) or color:
             html.append(
                 '<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
@@ -557,17 +559,28 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 '<a href="__delete__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.trash
             )
 
+        if delete:
+            html.append('<div class="delete">Click to delete palette.</div>')
+        elif color:
+            html.append('<div class="add">Click to add %s to palette.</div>' % color)
+
         favs = get_favs()
-        palettes = []
         if len(favs['colors']) or color:
-            palettes += [favs]
+            show_div = True
+            html.append(self.format_palettes(favs['colors'], favs['name'], delete=delete, color=color))
 
         current_colors = self.view.settings().get('color_helper_file_palette', [])
         if not delete and not color and len(current_colors):
-            palettes += [{"name": "Current Colors", "colors": current_colors}]
+            show_div = True
+            html.append(self.format_palettes(current_colors, "Current Colors", delete=delete, color=color))
 
-        for palette in (palettes + get_palettes()):
-            html.append(self.format_palettes(palette['colors'], palette['name'], palette.get('caption'), delete=delete, color=color))
+        if show_div:
+            html.append('<div class="divider"></div>')
+
+        for palette in get_palettes():
+            name = palette.get("name")
+            if name not in ('Favorites', 'Current Colors'):
+                html.append(self.format_palettes(palette.get('colors', []), name, palette.get('caption'), delete=delete, color=color))
         html.append('</div>')
 
         if update:
@@ -617,6 +630,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         target['name'], ch_theme.back_arrow
                     )
                 )
+
+            if delete:
+                html.append('<div class="delete">Click to delete color.</div>')
 
             html.append(
                 self.format_colors(target['colors'], target['name'], delete) +
