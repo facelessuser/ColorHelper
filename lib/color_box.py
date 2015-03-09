@@ -10,7 +10,7 @@ LIGHT = 0
 DARK = 1
 
 
-def to_list(rgb):
+def split_channels(rgb):
     """
     Take a color of the format #RRGGBBAA (alpha optional and will be stripped)
     and convert to a list with format [r, g, b].
@@ -43,9 +43,9 @@ def color_box(color, border, size=16, border_size=1, check_size=4):
 
     # Mix transparent color with checkered colors
     # And covert colors to to lists containing r, g, b channels
-    light = to_list(checkered_color(color, CHECK_LIGHT))
-    dark = to_list(checkered_color(color, CHECK_DARK))
-    border = to_list(border)
+    light = split_channels(checkered_color(color, CHECK_LIGHT))
+    dark = split_channels(checkered_color(color, CHECK_DARK))
+    border = split_channels(border)
 
     # Size of color swatch between borders
     color_size = size - (border_size * 2)
@@ -77,34 +77,57 @@ def color_box(color, border, size=16, border_size=1, check_size=4):
         base64.b64encode(f.read()).decode('ascii')
     )
 
-def palette_preview(colors, border, height=32, width=32 * 8, border_size=1):
+
+def palette_preview(colors, border, height=32, width=32 * 8, border_size=1, check_size=4):
     assert height - (border_size * 2) >= 0, "Border size too big!"
     assert width - (border_size * 2) >= 0, "Border size too big!"
 
     # Gather preview colors
-    border = to_list(border)
+    border = split_channels(border)
     preview_colors = []
     count = 5 if len(colors) >= 5 else len(colors)
     for c in range(0, count):
-        preview_colors.append(to_list(colors[c]))
+        preview_colors.append(split_channels(colors[c]))
 
     color_height = height - (border_size * 2)
     color_width = width - (border_size * 2)
-    dividers = int(color_width / count)
-    if color_width % count:
-        dividers += 1
 
-    p = [border * width]
-    for y in range(0, color_height):
-        index = 0
-        row = list(border * border_size)
-        for x in range(0, color_width):
-            if x != 0 and x % dividers == 0:
-                index += 1
-            row += preview_colors[index]
-        row += list(border * border_size)
-        p.append(row)
-    p.append(border * width)
+    if count:
+        dividers = int(color_width / count)
+        if color_width % count:
+            dividers += 1
+
+        p = [border * width]
+        for y in range(0, color_height):
+            index = 0
+            row = list(border * border_size)
+            for x in range(0, color_width):
+                if x != 0 and x % dividers == 0:
+                    index += 1
+                row += preview_colors[index]
+            row += list(border * border_size)
+            p.append(row)
+        p.append(border * width)
+    else:
+        # No colors, just show checkered background
+        # Eventually should be combined with the above logic
+        color_size_x = width - (border_size * 2)
+        dark = split_channels(CHECK_DARK)
+        light = split_channels(CHECK_LIGHT)
+        p = [border * width]
+        check_color_y = DARK
+        for y in range(0, color_height):
+            if y % check_size == 0:
+                check_color_y = DARK if check_color_y == LIGHT else LIGHT
+            row = list(border * border_size)
+            check_color_x = check_color_y
+            for x in range(0, color_size_x):
+                if x % check_size == 0:
+                    check_color_x = DARK if check_color_x == LIGHT else LIGHT
+                row += (dark if check_color_x == DARK else light)
+            row += border * border_size
+            p.append(row)
+        p.append(border * width)
 
     # Create bytes buffer for png
     f = io.BytesIO()
