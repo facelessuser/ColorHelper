@@ -925,8 +925,8 @@ def init_plugin():
     pref_settings = sublime.load_settings('Preferences.sublime-settings')
     pref_settings.clear_on_change('colorhelper_reload')
     pref_settings.add_on_change('colorhelper_reload', ch_theme.setup)
-    ch_settings.clear_on_change('colorhelper_reload')
-    ch_settings.add_on_change('colorhelper_reload', ch_theme.setup)
+    ch_settings.clear_on_change('reload')
+    ch_settings.add_on_change('reload', ch_theme.setup)
 
     # Start event thread
     if ch_thread is not None:
