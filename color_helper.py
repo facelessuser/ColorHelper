@@ -332,7 +332,7 @@ class InsertionCalc(object):
             if self.convert:
                 if ref >= m.start(0) and ref < m.end(0):
                     found = self.converting(m)
-                elif ref > m.end(0):
+                elif ref < m.start(0):
                     break
             elif ref >= m.start(0) and ref < m.end(0):
                 found = self.replacement(m)
