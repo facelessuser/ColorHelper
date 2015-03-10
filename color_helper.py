@@ -51,6 +51,7 @@ if 'ch_file_thread' not in globals():
 # Helper Classes/Functions
 ###########################
 def log(*args):
+    """ Log """
     text = ['\nColorHelper: ']
     for arg in args:
         text.append(str(arg))
@@ -59,11 +60,13 @@ def log(*args):
 
 
 def debug(*args):
+    """ Log if debug enabled """
     if sublime.load_settings("color_helper.sublime-settings").get('debug', False):
         log(*args)
 
 
 def color_picker_available():
+    """ Check if color picker is available """
     s = sublime.load_settings('color_helper_share.sublime-settings')
     s.set('color_pick_return', None)
     sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
@@ -82,10 +85,12 @@ def fmt_float(f, p=0):
 
 
 def is_hex_color(color):
+    """ Is color a hex color """
     return color is not None and HEX_RE.match(color) is not None
 
 
 def get_scope(view, skip_sel_check=False):
+    """ Get auto-popup scope rule """
     scopes = ','.join(ch_settings.get('supported_syntax', []))
     sels = view.sel()
     if not skip_sel_check:
@@ -95,19 +100,28 @@ def get_scope(view, skip_sel_check=False):
 
 
 def get_favs():
+    """ Get favorites object """
     bookmark_colors = sublime.load_settings('color_helper.palettes').get("favorites", [])
     return {"name": "Favorites", "colors": bookmark_colors}
 
 
-def save_palettes():
+def save_palettes(palettes, favs=False):
+    """ Save palettes """
+    s = sublime.load_settings('color_helper.palettes')
+    if favs:
+        s.set('favorites', palettes)
+    else:
+        s.set('palettes', palettes)
     sublime.save_settings('color_helper.palettes')
 
 
 def get_palettes():
+    """ Get palettes """
     return sublime.load_settings('color_helper.palettes').get("palettes", [])
 
 
 def start_file_index(view):
+    """ Kick off current file color index """
     if not ch_file_thread.busy:
         scope = get_scope(view, skip_sel_check=True)
         if scope:
@@ -140,34 +154,24 @@ class InsertionCalc(object):
         self.use_web_colors = bool(ch_settings.get('use_webcolor_names', True))
         self.preferred_format = ch_settings.get('preferred_format', 'hex')
         self.preferred_alpha_format = ch_settings.get('preferred_alpha_format', 'rgba')
-        self.force_hex = False
         self.force_alpha = False
-        self.force_no_alpha = False
-        self.force_rgb = False
-        self.force_hsl = False
-        if self.convert == "name":
-            self.use_web_colors = True
-            if len(target_color) > 7:
-                target_color = target_color[:-2]
-        elif self.convert == 'hex':
-            self.force_hex = True
-            self.use_web_colors = False
-        elif self.convert == 'rgb':
-            self.force_rgb = True
-            self.force_no_alpha = True
-            self.use_web_colors = False
-        elif self.convert == 'hsl':
-            self.force_hsl = True
-            self.force_no_alpha = True
-            self.use_web_colors = False
-        elif self.convert == 'rgba':
-            self.force_rgb = True
-            self.force_alpha = True
-            self.use_web_colors = False
-        elif self.convert == 'hsla':
-            self.force_hsl = True
-            self.force_alpha = True
-            self.use_web_colors = False
+        if self.convert:
+            self.format_override = True
+            if self.convert == "name":
+                self.use_web_colors = True
+                if len(target_color) > 7:
+                    target_color = target_color[:-2]
+            elif self.convert == 'hex':
+                self.convert_rgb = False
+                self.use_web_colors = False
+            elif self.convert in ('rgb', 'rgba'):
+                self.convert_rgb = True
+                self.force_alpha = self.convert == 'rgba'
+                self.use_web_colors = False
+            elif self.convert in ('hsl', 'hsla'):
+                self.convert_hsl = True
+                self.force_alpha = self.convert == 'hsla'
+                self.use_web_colors = False
 
         self.target_color = target_color
         try:
@@ -236,6 +240,34 @@ class InsertionCalc(object):
             found = False
         return found
 
+    def converting(self, m):
+        """ See if match is a convert replacement of an existing color """
+        found = True
+        if m.group('hex'):
+            self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
+        elif m.group('rgb'):
+            self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
+        elif m.group('rgba'):
+            self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
+            content = [x.strip() for x in m.group('rgba_content').split(',')]
+            self.alpha = content[3]
+        elif m.group('hsl'):
+            self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
+        elif m.group('hsla'):
+            self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
+            content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+            self.alpha = content[3]
+        else:
+            found = False
+        return found
+
+    def convert_alpha(self):
+        """ Setup conversion alpha """
+        if self.force_alpha and self.alpha is None:
+            self.alpha = '1'
+        elif not self.force_alpha:
+            self.alpha = None
+
     def completion(self, m):
         """ See if match is completing an color """
         found = False
@@ -297,10 +329,17 @@ class InsertionCalc(object):
         ref = self.point - self.start
         found = False
         for m in COLOR_ALL_RE.finditer(bfr):
-            if ref >= m.start(0) and ref < m.end(0):
+            if self.convert:
+                if ref >= m.start(0) and ref < m.end(0):
+                    found = self.converting(m)
+                elif ref > m.end(0):
+                    break
+            elif ref >= m.start(0) and ref < m.end(0):
                 found = self.replacement(m)
             elif ref == m.end(0):
                 found = self.completion(m)
+            elif ref > m.end(0):
+                break
             if found:
                 break
 
@@ -314,21 +353,8 @@ class InsertionCalc(object):
             except:
                 pass
 
-        if found and self.convert:
-            self.format_override = True
-            if self.force_hex:
-                self.convert_rgb = False
-                self.convert_hsl = False
-            elif self.force_hsl:
-                self.convert_hsl = True
-                self.convert_rgb = False
-            elif self.force_rgb:
-                self.convert_rgb = True
-                self.convert_hsl = False
-            if self.force_alpha and self.alpha is None:
-                self.alpha = '1'
-            elif self.force_no_alpha:
-                self.alpha = None
+        if self.convert:
+            self.convert_alpha()
 
         return found
 
@@ -399,46 +425,39 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             elif palette_name in ('Favorites', "Current Colors"):
                 sublime.error_message('Palettes cannot use the name of "Favorites" or "Current Colors" as they are reserved!')
             else:
-                s = sublime.load_settings('color_helper.palettes')
-                color_palettes = s.get("palettes", [])
+                color_palettes = get_palettes()
                 for palette in color_palettes:
                     if palette_name == palette['name']:
                         sublime.error_message('The name of "%s" is already in use!')
                         return
-                color_palettes.append({'name': palette_name, 'colors': [color]})
-                s.set('palettes', color_palettes)
-                save_palettes()
+                save_palettes(color_palettes)
         self.repop()
 
     def add_palette(self, color, palette_name):
-        s = sublime.load_settings('color_helper.palettes')
+        """ Add pallete """
         if palette_name == 'Favorites':
-            favs = s.get('favorites', [])
+            favs = get_favs()['colors']
             if color not in favs:
                 favs.append(color)
-            s.set('favorites', favs)
-            save_palettes()
+            save_palettes(favs, favs=True)
             self.show_color_info(update=True)
         else:
-            color_palettes = s.get("palettes", [])
+            color_palettes = get_palettes()
             for palette in color_palettes:
                 if palette_name == palette['name']:
                     if color not in palette['colors']:
                         palette['colors'].append(color)
-                        s.set('palettes', color_palettes)
-                        save_palettes()
+                        save_palettes(color_palettes)
                         self.show_color_info(update=True)
                         break
 
     def delete_palette(self, palette_name):
         """ Delete palette """
-        s = sublime.load_settings('color_helper.palettes')
         if palette_name == 'Favorites':
-            s.set('favorites', [])
-            save_palettes()
+            save_palettes([], favs=True)
             self.show_palettes(delete=True, update=True)
         else:
-            color_palettes = s.get("palettes", [])
+            color_palettes = get_palettes()
             count = -1
             index = None
             for palette in color_palettes:
@@ -448,47 +467,39 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     break
             if index is not None:
                 del color_palettes[index]
-                s.set('palettes', color_palettes)
-                save_palettes()
+                save_palettes(color_palettes)
                 self.show_palettes(delete=True, update=True)
 
     def delete_color(self, color, palette_name):
         """ Delete color """
-        s = sublime.load_settings('color_helper.palettes')
         if palette_name == "Favorites":
-            favs = s.get('favorites', [])
+            favs = get_favs()['colors']
             if color in favs:
                 favs.remove(color)
-                s.set('favorites', favs)
-                save_palettes()
+                save_palettes(favs, favs=True)
                 self.show_colors(palette_name, delete=True, update=True)
         else:
-            color_palettes = s.get("palettes", [])
+            color_palettes = get_palettes()
             for palette in color_palettes:
                 if palette_name == palette['name']:
                     if color in palette['colors']:
                         palette['colors'].remove(color)
-                        s.set('palettes', color_palettes)
-                        save_palettes()
+                        save_palettes(color_palettes)
                         self.show_colors(palette_name, delete=True, update=True)
                         break
 
     def add_fav(self, color):
         """ Add favorite """
-        favs = get_favs()
-        favs['colors'].append(color)
-        settings = sublime.load_settings('color_helper.palettes')
-        settings.set('favorites', favs['colors'])
-        save_palettes()
+        favs = get_favs()['colors']
+        favs.append(color)
+        save_palettes(favs, favs=True)
         self.show_color_info(update=True)
 
     def remove_fav(self, color):
         """ Remove favorite """
-        favs = get_favs()
-        favs['colors'].remove(color)
-        settings = sublime.load_settings('color_helper.palettes')
-        settings.set('favorites', favs['colors'])
-        save_palettes()
+        favs = get_favs()['colors']
+        favs.remove(color)
+        save_palettes(favs, favs=True)
         self.show_color_info(update=True)
 
     def color_picker(self, color):
@@ -706,7 +717,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         html = [
             '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
             '<div class="content">'
-            # '<a href="__close__"><img style="width: 16px; height: 16px;" src="%s"></a>' % cross
         ]
 
         if (not self.no_info and not delete) or color:
