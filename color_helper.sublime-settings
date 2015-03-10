@@ -20,6 +20,13 @@
     // (none|rgba|hsla)
     "preferred_alpha_format": "rgba",
 
+    // Color picker and palette picker by default
+    // are accessed by clicking an icon on the color info panel.
+    // Click access for one of thesecan be moved to the color box
+    // (visual representation of the color).
+    // (none|color_picker|palette_picker)
+    "click_color_box_to_pick": "none",
+
     // File syntaxes that will be scanned on file open, save.
     // These are the syntaxes in which the auto popup tooltip uses as well.
     "supported_syntax": [

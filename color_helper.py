@@ -63,6 +63,13 @@ def debug(*args):
         log(*args)
 
 
+def color_picker_available():
+    s = sublime.load_settings('color_helper_share.sublime-settings')
+    s.set('color_pick_return', None)
+    sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
+    return s.get('color_pick_return', None)
+
+
 def fmt_float(f, p=0):
     """ Set float pring precision and trim precision zeros """
     string = ("%." + "%d" % p + "f") % f
@@ -538,24 +545,33 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         except:
             web_color = None
 
+        color_picker = color_picker_available()
+        s = sublime.load_settings('color_helper.sublime-settings')
+        click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
+
+        if click_color_box_to_pick == 'color_picker' and color_picker:
+            color_box_wrapper = ('<a href="__color_picker__:%s">' % color) + '%s</a> '
+        elif click_color_box_to_pick == 'palette_picker':
+            color_box_wrapper = '<a href="__palettes__">%s</a> '
+        else:
+            color_box_wrapper = '%s '
+
         info = ['<h1 class="header">%s</h1>' % color]
         if web_color is not None:
             info.append('<strong>%s</strong><br><br>' % web_color)
 
         info.append(
-            color_box(color, ch_theme.border_color, size=64)
+            color_box_wrapper % color_box(color, ch_theme.border_color, size=64)
         )
 
-        info.append(
-            ' <a href="__palettes__">' +
-            '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.color_palette +
-            '</a>'
-        )
+        if click_color_box_to_pick != 'palette_picker':
+            info.append(
+                '<a href="__palettes__">' +
+                '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.color_palette +
+                '</a>'
+            )
 
-        s = sublime.load_settings('color_helper_share.sublime-settings')
-        s.set('color_pick_return', None)
-        sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
-        if s.get('color_pick_return', None):
+        if click_color_box_to_pick != 'color_picker' and color_picker:
             info.append(
                 '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, ch_theme.dropper)
             )
