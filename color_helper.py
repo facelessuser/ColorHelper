@@ -23,8 +23,8 @@ COMPLETE = r'''(?x)
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2})) |
     (?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     (?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
-    (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d)%\s*,\s*(?:(?:\d*\.\d+)|\d)%)\s*\)) |
-    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
+    (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
+    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
 
 INCOMPLETE = r''' |
     (?P<hash>\#) |
@@ -120,8 +120,9 @@ def start_file_index(view):
 
 
 class InsertionCalc(object):
-    def __init__(self, view, point, target_color):
+    def __init__(self, view, point, target_color, convert=None):
         """ Init insertion object """
+        self.convert = '' if convert is None else convert
         self.view = view
         self.convert_rgb = False
         self.convert_hsl = False
@@ -139,6 +140,35 @@ class InsertionCalc(object):
         self.use_web_colors = bool(ch_settings.get('use_webcolor_names', True))
         self.preferred_format = ch_settings.get('preferred_format', 'hex')
         self.preferred_alpha_format = ch_settings.get('preferred_alpha_format', 'rgba')
+        self.force_hex = False
+        self.force_alpha = False
+        self.force_no_alpha = False
+        self.force_rgb = False
+        self.force_hsl = False
+        if self.convert == "name":
+            self.use_web_colors = True
+            if len(target_color) > 7:
+                target_color = target_color[:-2]
+        elif self.convert == 'hex':
+            self.force_hex = True
+            self.use_web_colors = False
+        elif self.convert == 'rgb':
+            self.force_rgb = True
+            self.force_no_alpha = True
+            self.use_web_colors = False
+        elif self.convert == 'hsl':
+            self.force_hsl = True
+            self.force_no_alpha = True
+            self.use_web_colors = False
+        elif self.convert == 'rgba':
+            self.force_rgb = True
+            self.force_alpha = True
+            self.use_web_colors = False
+        elif self.convert == 'hsla':
+            self.force_hsl = True
+            self.force_alpha = True
+            self.use_web_colors = False
+
         self.target_color = target_color
         try:
             self.web_color = webcolors.hex_to_name(target_color) if self.use_web_colors else None
@@ -160,7 +190,7 @@ class InsertionCalc(object):
             if self.web_color:
                 self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
             else:
-                if self.preferred_format in ('hex', 'hsl'):
+                if self.preferred_format in ('hex', 'hsl') or self.convert:
                     self.format_override = True
                     self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
                     if self.preferred_format == 'hsl':
@@ -170,7 +200,7 @@ class InsertionCalc(object):
                     self.convert_rgb = True
         elif m.group('rgba'):
             self.web_color = None
-            if self.preferred_alpha_format == 'hsla':
+            if self.preferred_alpha_format == 'hsla' or self.convert:
                 self.format_override = True
                 self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
                 self.convert_hsl = True
@@ -183,16 +213,17 @@ class InsertionCalc(object):
             if self.web_color:
                 self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
             else:
-                if self.preferred_format in ('hex', 'rgb'):
+                if self.preferred_format in ('hex', 'rgb') or self.convert:
                     self.format_override = True
                     self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
                     if self.preferred_format == 'rgb':
                         self.convert_rgb = True
-                self.region = sublime.Region(m.start('hsl_content') + self.start, m.end('hsl_content') + self.start)
-                self.convert_hsl = True
+                else:
+                    self.region = sublime.Region(m.start('hsl_content') + self.start, m.end('hsl_content') + self.start)
+                    self.convert_hsl = True
         elif m.group('hsla'):
             self.web_color = None
-            if self.preferred_alpha_format == 'rgba':
+            if self.preferred_alpha_format == 'rgba' or self.convert:
                 self.format_override = True
                 self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
                 self.convert_rgb = True
@@ -279,8 +310,26 @@ class InsertionCalc(object):
             try:
                 webcolors.name_to_hex(word)
                 self.region = word_region
+                found = True
             except:
                 pass
+
+        if found and self.convert:
+            self.format_override = True
+            if self.force_hex:
+                self.convert_rgb = False
+                self.convert_hsl = False
+            elif self.force_hsl:
+                self.convert_hsl = True
+                self.convert_rgb = False
+            elif self.force_rgb:
+                self.convert_rgb = True
+                self.convert_hsl = False
+            if self.force_alpha and self.alpha is None:
+                self.alpha = '1'
+            elif self.force_no_alpha:
+                self.alpha = None
+
         return found
 
 
@@ -322,6 +371,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.add_palette(parts[1], parts[2])
         elif href.startswith('__create_palette__'):
             self.prompt_palette_name(href.split(':', 1)[1])
+        elif href.startswith('__convert__'):
+            parts = href.split(':', 2)
+            self.insert_color(parts[1], parts[2])
 
     def repop(self):
         """ Setup thread to repopup tooltip """
@@ -453,12 +505,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             sublime.set_timeout(self.show_color_info, 0)
 
-    def insert_color(self, target_color):
+    def insert_color(self, target_color, convert=None):
         """ Insert colors """
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
-            insert_calc = InsertionCalc(self.view, point, target_color)
+            insert_calc = InsertionCalc(self.view, point, target_color, convert)
             insert_calc.calc()
             if insert_calc.web_color:
                 value = insert_calc.web_color
@@ -536,7 +588,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             count += 1
         return ''.join(colors)
 
-    def format_info(self, color):
+    def format_info(self, color, alpha=None):
         """ Format the selected color info """
         rgba = RGBA(color)
 
@@ -557,8 +609,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             color_box_wrapper = '%s '
 
         info = ['<h1 class="header">%s</h1>' % color]
-        if web_color is not None:
-            info.append('<strong>%s</strong><br><br>' % web_color)
 
         info.append(
             color_box_wrapper % color_box(color, ch_theme.border_color, size=64)
@@ -594,24 +644,60 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.bookmark +
                 '</a>'
             )
-        info.append('<br><br>')
+        info.append('<br><br><h1 class="header">Conversions</h1>')
+        if web_color:
+            info.append(
+                '<span class="key"><a href="__convert__:%s:name" class="convert-link">name</a>:</span> ' % color +
+                '<span class="color-value">%s</span><br>' % web_color
+            )
+
         info.append(
-            '<span class="key">r:</span> %d ' % rgba.r +
-            '<span class="key">g:</span> %d ' % rgba.g +
-            '<span class="key">b:</span> %d<br>' % rgba.b
+            '<span class="key"><a href="__convert__:%s:hex" class="convert-link">hex</a>:</span> ' % color +
+            '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
         )
+
+        info.append(
+            '<span class="key"><a href="__convert__:%s:rgb" class="convert-link">rgb</a>:</span> ' % color +
+            '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (rgba.r, rgba.g, rgba.b) +
+            '<br>'
+        )
+
+        info.append(
+            '<span class="key"><a href="__convert__:%s:rgba" class="convert-link">rgba</a>:</span> ' % color +
+            '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (rgba.r, rgba.g, rgba.b, alpha if alpha else '1') +
+            '<br>'
+        )
+
         h, l, s = rgba.tohls()
+
         info.append(
-            '<span class="key">h:</span> %s ' % fmt_float(h * 360.0) +
-            '<span class="key">s:</span> %s%% ' % fmt_float(s * 100.0) +
-            '<span class="key">l:</span> %s%%<br>' % fmt_float(l * 100.0)
+            '<span class="key"><a href="__convert__:%s:hsl" class="convert-link">hsl</a>:</span> ' % color +
+            '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
+                fmt_float(h * 360.0),
+                fmt_float(s * 100.0),
+                fmt_float(l * 100.0)
+            ) +
+            '<br>'
         )
-        h, s, v = rgba.tohsv()
+
         info.append(
-            '<span class="key">h:</span> %s ' % fmt_float(h * 360.0) +
-            '<span class="key">s:</span> %s%% ' % fmt_float(s * 100.0) +
-            '<span class="key">v:</span> %s%%<br>' % fmt_float(v * 100.0)
+            '<span class="key"><a href="__convert__:%s:hsla" class="convert-link">hsla</a>:</span> ' % color +
+            '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
+                fmt_float(h * 360.0),
+                fmt_float(s * 100.0),
+                fmt_float(l * 100.0),
+                alpha if alpha else '1'
+            ) +
+            '<br>'
         )
+
+        # h, s, v = rgba.tohsv()
+        # info.append(
+        #     '<a><span class="key">h:</span> %s ' % fmt_float(h * 360.0) +
+        #     '<span class="key">s:</span> %s%% ' % fmt_float(s * 100.0) +
+        #     '<span class="key">v:</span> %s%%</a>' % fmt_float(v * 100.0) +
+        #     '<br>'
+        # )
         return ''.join(info)
 
     def show_palettes(self, delete=False, color=None, update=False):
@@ -739,6 +825,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             visible = self.view.visible_region()
             start = point - 50
             end = point + 50
+            alpha = None
             if start < visible.begin():
                 start = visible.begin()
             if end > visible.end():
@@ -770,6 +857,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                             int(content[0]), int(content[1]), int(content[2]),
                             int('%.0f' % (float(content[3]) * 255.0))
                         )
+                        alpha = content[3]
                         break
                     elif m.group('hsl'):
                         content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
@@ -789,6 +877,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         rgba.fromhls(h, l, s)
                         color = rgba.get_rgb()
                         color += "%02X" % int('%.0f' % (float(content[3]) * 255.0))
+                        alpha = content[3]
                         break
             if color is None:
                 word = self.view.substr(self.view.word(sels[0]))
@@ -803,7 +892,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             ]
 
             html.append(
-                self.format_info(color.lower()) +
+                self.format_info(color.lower(), alpha) +
                 '</div>'
             )
 

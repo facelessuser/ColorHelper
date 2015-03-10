@@ -31,7 +31,7 @@ p {
     margin: 1em;
 }
 
-.control-link, .file-link {
+.control-link, .file-link, .convert-link {
     color: #3e999f;
 }
 
@@ -53,4 +53,12 @@ p {
     padding: 1px;
     margin: 2em 3em;
     background-color: #e6f5ff;
+}
+
+.color-value {
+    color: #f5871f;
+}
+
+.color-key {
+    color: #4271ae;
 }
