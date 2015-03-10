@@ -86,8 +86,19 @@ def palette_preview(colors, border, height=32, width=32 * 8, border_size=1, chec
     border = split_channels(border)
     preview_colors = []
     count = 5 if len(colors) >= 5 else len(colors)
-    for c in range(0, count):
-        preview_colors.append(split_channels(colors[c]))
+
+    if count:
+        for c in range(0, count):
+            preview_colors.append(
+                (
+                    split_channels(checkered_color(colors[c], CHECK_LIGHT)),
+                    split_channels(checkered_color(colors[c], CHECK_DARK))
+                )
+            )
+    else:
+        preview_colors.append(
+            (split_channels(CHECK_LIGHT), split_channels(CHECK_DARK))
+        )
 
     color_height = height - (border_size * 2)
     color_width = width - (border_size * 2)
@@ -96,38 +107,27 @@ def palette_preview(colors, border, height=32, width=32 * 8, border_size=1, chec
         dividers = int(color_width / count)
         if color_width % count:
             dividers += 1
-
-        p = [border * width]
-        for y in range(0, color_height):
-            index = 0
-            row = list(border * border_size)
-            for x in range(0, color_width):
-                if x != 0 and x % dividers == 0:
-                    index += 1
-                row += preview_colors[index]
-            row += list(border * border_size)
-            p.append(row)
-        p.append(border * width)
     else:
-        # No colors, just show checkered background
-        # Eventually should be combined with the above logic
-        color_size_x = width - (border_size * 2)
-        dark = split_channels(CHECK_DARK)
-        light = split_channels(CHECK_LIGHT)
-        p = [border * width]
-        check_color_y = DARK
-        for y in range(0, color_height):
-            if y % check_size == 0:
-                check_color_y = DARK if check_color_y == LIGHT else LIGHT
-            row = list(border * border_size)
-            check_color_x = check_color_y
-            for x in range(0, color_size_x):
-                if x % check_size == 0:
-                    check_color_x = DARK if check_color_x == LIGHT else LIGHT
-                row += (dark if check_color_x == DARK else light)
-            row += border * border_size
-            p.append(row)
-        p.append(border * width)
+        dividers = 0
+
+    color_size_x = width - (border_size * 2)
+    p = [border * width]
+    check_color_y = DARK
+    for y in range(0, color_height):
+        index = 0
+        if y % check_size == 0:
+            check_color_y = DARK if check_color_y == LIGHT else LIGHT
+        row = list(border * border_size)
+        check_color_x = check_color_y
+        for x in range(0, color_size_x):
+            if x != 0 and dividers != 0 and x % dividers == 0:
+                index += 1
+            if x % check_size == 0:
+                check_color_x = DARK if check_color_x == LIGHT else LIGHT
+            row += (preview_colors[index][1] if check_color_x == DARK else preview_colors[index][0])
+        row += border * border_size
+        p.append(row)
+    p.append(border * width)
 
     # Create bytes buffer for png
     f = io.BytesIO()
