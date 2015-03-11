@@ -13,6 +13,9 @@ import ColorHelper.lib.webcolors as webcolors
 import threading
 from time import time, sleep
 import re
+import os
+import codecs
+import json
 
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
@@ -39,12 +42,16 @@ COLOR_ALL_RE = re.compile(COMPLETE + INCOMPLETE)
 
 ch_theme = None
 ch_settings = None
+ch_indexer = None
 
 if 'ch_thread' not in globals():
     ch_thread = None
 
 if 'ch_file_thread' not in globals():
     ch_file_thread = None
+
+if 'ch_indexer' not in globals():
+    ch_indexer = None
 
 
 ###########################
@@ -964,15 +971,120 @@ class ColorHelperListener(sublime_plugin.EventListener):
     on_modified = on_selection_modified
 
     def on_activated(self, view):
+        global ch_indexer
         if view.settings().get('color_helper_file_palette', None) is None:
             view.settings().set('color_helper_file_palette', [])
             self.on_index(view)
+        return
+        window = view.window()
+        if window and window.project_data().get('color_helper_palette', None) is None:
+            if (ch_indexer is None or not ch_indexer.is_alive()):
+                ch_indexer = ProjectIndexer(window.id(), window.project_data().get('folders', []))
+                ch_indexer.start()
 
     def on_index(self, view):
         start_file_index(view)
 
-    on_post_save = on_index
+    def on_post_save(self, view):
+        global ch_indexer
+        start_file_index(view)
+        return
+        window = view.window()
+        if (ch_indexer is None or not ch_indexer.is_alive()) and window:
+            ch_indexer = ProjectIndexer(window.id(), window.project_data().get('folders', []))
+            ch_indexer.start()
+
     on_clone = on_index
+
+
+class ProjectIndexer(threading.Thread):
+    def __init__(self, win_id, project_folders):
+        self.project_folders = project_folders
+        self.hex = re.compile(br'\#(?:[\dA-Fa-f]{3}){1,2}\b')
+        self.colors = []
+        self.abort = False
+        self.win_id = win_id
+        threading.Thread.__init__(self)
+
+    def kill(self):
+        """ Kill thread """
+        self.abort = True
+        while self.is_alive():
+            pass
+
+    def save_project_data(self, win_id, colors):
+        for win in sublime.windows():
+            if win.id() == win_id:
+                data = win.project_data()
+                data['color_helper_palette'] = colors
+                win.set_project_data(data)
+
+    def save_results(self, folder, cache):
+        try:
+            with codecs.open(os.path.join(folder, '.color_helper.cache'), 'w', encoding='utf-8') as f:
+                f.write(json.dumps(cache))
+        except:
+            pass
+
+    def crawl_files(self, root, files, colors, old_cache, cache):
+        for file_name in files:
+            if self.abort:
+                break
+            file_path = os.path.join(root, file_name)
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext.lower() in ('.css',):
+                mtime = os.path.getmtime(file_path)
+                if mtime != old_cache.get(file_path, {}).get('time', 0):
+                    local_colors = set()
+                    try:
+                        with codecs.open(file_path, 'rb') as f:
+                            content = f.read()
+                            for m in self.hex.finditer(content):
+                                colors.add(m.group(0).decode('utf-8'))
+                                local_colors.add(m.group(0).decode('utf-8'))
+                            cache[file_path] = {'time': mtime, 'colors': list(local_colors)}
+                    except:
+                        pass
+                else:
+                    cache[file_path] = old_cache[file_path]
+
+    def run(self):
+        colors = set()
+        if len(self.project_folders):
+            to_crawl = [pf['path'] for pf in self.project_folders]
+            sub_crawl = []
+            cache = {}
+            folder = None
+            main_folder = None
+
+            while (len(to_crawl) or len(sub_crawl)):
+                if self.abort:
+                    break
+                if len(sub_crawl):
+                    folder = sub_crawl.pop(0)
+                elif len(to_crawl):
+                    if main_folder is not None:
+                        self.save_results(main_folder, cache)
+                    folder = to_crawl.pop(0)
+                    main_folder = folder
+                    cache = {}
+                    old_cache = {}
+                    cache_file = os.path.join(folder, '.color_helper.cache')
+                    if os.path.exists(cache_file):
+                        try:
+                            with codecs.open(cache_file, 'r', encoding='utf-8') as f:
+                                old_cache = json.loads(f.read())
+                        except:
+                            pass
+                for root, dirs, files in os.walk(folder):
+                    if self.abort:
+                        break
+                    sub_crawl += [os.path.join(root, d) for d in dirs if d not in ('.', '..', '.git', '.svn')]
+                    self.crawl_files(root, files, colors, old_cache, cache)
+
+            if main_folder is not None and not self.abort:
+                self.save_results(main_folder, cache)
+                sublime.set_timeout(lambda i=self.win_id, c=list(colors): self.save_project_data(i, c))
 
 
 class ChThread(threading.Thread):
@@ -1269,3 +1381,5 @@ def plugin_loaded():
 def plugin_unloaded():
     ch_thread.kill()
     ch_file_thread.kill()
+    if ch_indexer is not None:
+        ch_indexer.kill()
