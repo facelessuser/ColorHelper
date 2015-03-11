@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import struct
 import re
 import sys
+from io import BytesIO
 
 PY3 = sys.version_info >= (3, 0)
 
@@ -84,7 +85,10 @@ class _writer(object):
     """ ASE writer """
     def __init__(self, ase):
         """ Open an ASE file for writing """
-        self.bin = open(ase, 'wb')
+        if ase is None:
+            self.bin = BytesIO()
+        else:
+            self.bin = open(ase, 'wb')
 
     def write_header(self, total_blocks):
         """ Write the ASE file header """
@@ -151,9 +155,13 @@ class _writer(object):
 
 class _reader(object):
     """ ASE reader """
-    def __init__(self, ase):
+    def __init__(self, ase, byte_string=False):
         """ Open file for reading """
-        self.bin = open(ase, 'rb')
+        self._string = byte_string
+        if byte_string:
+            self.bin = BytesIO(ase)
+        else:
+            self.bin = open(ase, 'rb')
 
     def read_header(self):
         """" Parse the header """
@@ -241,7 +249,48 @@ class _reader(object):
                 raise Exception('Expected group start block!')
 
 
-def write(ase, palettes):
+def loads(ase):
+    """ Read the ASE file from a byte string and return the palettes """
+    binary = _reader(ase, byte_string=True)
+    try:
+        binary.read_header()
+        palattes = []
+
+        for palette in binary.read_palettes():
+            palattes.append(palette)
+    except:
+        binary.close()
+        raise
+    binary.close()
+    return palattes
+
+
+def dumps(ase, palettes):
+    """ Write an ASE file to a byte string with the given palettes """
+    text = b''
+    total_blocks = len(palettes) * 2
+    for p in palettes:
+        total_blocks += len(p.get("colors", []))
+
+    binary = _writer(None)
+    try:
+        binary.write_header(total_blocks)
+
+        for p in palettes:
+            binary.write_group_start(p["title"])
+            for c in p['colors']:
+                binary.write_color(c['color'], c.get('name'))
+            binary.write_group_end()
+        binary.bin.seek(0)
+        text = binary.bin.read()
+    except:
+        binary.close()
+        raise
+    binary.close()
+    return text
+
+
+def dump(ase, palettes):
     """ Write an ASE file with the given palettes """
     total_blocks = len(palettes) * 2
     for p in palettes:
@@ -262,7 +311,7 @@ def write(ase, palettes):
     binary.close()
 
 
-def read(ase):
+def load(ase):
     """ Read the ASE file and return the palettes """
     binary = _reader(ase)
     try:
@@ -308,8 +357,8 @@ if __name__ == "__main__":
         }
     ]
 
-    write('test1.ase', palettes)
-    palettes2 = read('test1.ase')
+    dump('test1.ase', palettes)
+    palettes2 = load('test1.ase')
 
     test = unittest.TestCase()
     test.assertEqual(palettes, palettes2)
