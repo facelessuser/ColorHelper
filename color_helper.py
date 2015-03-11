@@ -158,14 +158,16 @@ def get_palettes():
 
 def start_file_index(view):
     """ Kick off current file color index """
-    if not ch_file_thread.busy:
+    global ch_file_thread
+    if view is not None and not ch_file_thread.is_alive():
         scope = get_scope(view, skip_sel_check=True)
         if scope:
             source = []
             for r in view.find_by_selector(scope):
                 source.append(view.substr(r))
             debug('Regions to search:\n', source)
-            ch_file_thread.set_index(view, ' '.join(source))
+            ch_file_thread = ChFileIndexThread(view, ' '.join(source))
+            ch_file_thread.start()
             sublime.status_message('File color indexer started...')
 
 
@@ -976,7 +978,7 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
         busy = False
         if get_scope(self.view, skip_sel_check=True):
             count = 0
-            while ch_file_thread.busy:
+            while ch_file_thread.is_alive():
                 if count == 3:
                     sublime.error_message("File indexer is busy!")
                     busy = True
@@ -1372,23 +1374,17 @@ class ChThread(threading.Thread):
 class ChFileIndexThread(threading.Thread):
     """ Load up defaults """
 
-    def __init__(self):
+    def __init__(self, view, source):
         """ Setup the thread """
-        self.reset()
-        self.lock = threading.Lock()
+        self.abort = False
+        self.view = view
         self.webcolor_names = re.compile(
             r'\b(%s)\b' % '|'.join(
                 [name for name in webcolors.css3_names_to_hex.keys()]
             )
         )
+        self.source = source
         threading.Thread.__init__(self)
-
-    def reset(self):
-        """ Reset the thread variables """
-        self.abort = False
-        self.view = None
-        self.source = ''
-        self.busy = False
 
     def update_index(self, view, colors):
         """ Code to run """
@@ -1400,11 +1396,6 @@ class ChFileIndexThread(threading.Thread):
             debug(e)
             pass
 
-    def set_index(self, view, source):
-        with self.lock:
-            self.view = view
-            self.source = source
-
     def kill(self):
         """ Kill thread """
         self.abort = True
@@ -1414,14 +1405,8 @@ class ChFileIndexThread(threading.Thread):
 
     def run(self):
         """ Thread loop """
-        while not self.abort:
-            sleep(0.5)
-            with self.lock:
-                if self.source:
-                    self.busy = True
-                    self.index_colors()
-                    if not self.abort:
-                        self.reset()
+        if self.source:
+            self.index_colors()
 
     def index_colors(self):
         colors = set()
@@ -1559,12 +1544,6 @@ def init_plugin():
     ch_thread = ChThread()
     ch_thread.start()
 
-    # Start file color index thread
-    if ch_file_thread is not None:
-        ch_file_thread.kill()
-    ch_file_thread = ChFileIndexThread()
-    ch_file_thread.start()
-
 
 def plugin_loaded():
     """ Setup plugin """
@@ -1573,6 +1552,7 @@ def plugin_loaded():
 
 def plugin_unloaded():
     ch_thread.kill()
-    ch_file_thread.kill()
+    if ch_file_thread is not None:
+        ch_file_thread.kill()
     if ch_project_thread is not None:
         ch_project_thread.kill()
