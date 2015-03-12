@@ -39,7 +39,7 @@
 
     // Settings for project color indexing.
     "project_file_scan_extensions": {
-        // Folders to
+        // Folders to ignore.
         "ignore_folders": [".svn", ".git"],
         // Scans for html style tags and style attributes
         // and searches CSS content for colors
