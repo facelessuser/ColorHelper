@@ -25,20 +25,20 @@ FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0
 HEX_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))$')
 
 COMPLETE = r'''(?x)
-    (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2})) |
-    (?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
-    (?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
-    (?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
-    (?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
+    (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))\b |
+    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
+    \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
+    \b(?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
+    \b(?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
 
 INCOMPLETE = r''' |
     (?P<hash>\#) |
-    (?P<rgb_open>rgb\() |
-    (?P<rgba_open>rgba\() |
-    (?P<hsl_open>hsl\() |
-    (?P<hsla_open>hsla\()'''
+    \b(?P<rgb_open>rgb\() |
+    \b(?P<rgba_open>rgba\() |
+    \b(?P<hsl_open>hsl\() |
+    \b(?P<hsla_open>hsla\()'''
 
-COLOR_NAMES = r'| (?i)(?P<webcolors>%s)' % '|'.join([name for name in webcolors.css3_names_to_hex.keys()])
+COLOR_NAMES = r'| (?i)\b(?P<webcolors>%s)\b' % '|'.join([name for name in webcolors.css3_names_to_hex.keys()])
 
 TAG_HTML_RE = re.compile(
     br'''(?x)
@@ -159,7 +159,7 @@ def get_palettes():
 def start_file_index(view):
     """ Kick off current file color index """
     global ch_file_thread
-    if view is not None and not ch_file_thread.is_alive():
+    if view is not None and (ch_file_thread is None or not ch_file_thread.is_alive()):
         scope = get_scope(view, skip_sel_check=True)
         if scope:
             source = []
