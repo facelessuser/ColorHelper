@@ -157,9 +157,21 @@ def save_palettes(palettes, favs=False):
     sublime.save_settings('color_helper.palettes')
 
 
+def save_project_palettes(window, palettes):
+    """ Save project palettes """
+    data = window.project_data()
+    data['color_helper_palettes'] = palettes
+    window.set_project_data(data)
+
+
 def get_palettes():
     """ Get palettes """
     return sublime.load_settings('color_helper.palettes').get("palettes", [])
+
+
+def get_project_palettes(window):
+    """ Get project palettes """
+    return window.project_data().get('color_helper_palettes', [])
 
 
 def start_file_index(view):
@@ -172,9 +184,10 @@ def start_file_index(view):
             for r in view.find_by_selector(scope):
                 source.append(view.substr(r))
             debug('Regions to search:\n', source)
-            ch_file_thread = ChFileIndexThread(view, ' '.join(source))
-            ch_file_thread.start()
-            sublime.status_message('File color indexer started...')
+            if len(source):
+                ch_file_thread = ChFileIndexThread(view, ' '.join(source))
+                ch_file_thread.start()
+                sublime.status_message('File color indexer started...')
 
 
 class InsertionCalc(object):
@@ -411,8 +424,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """ Handle link clicks """
         if href.startswith('#'):
             self.insert_color(href)
-        elif not href.startswith('__'):
-            self.show_colors(href, update=True)
+        elif href.startswith('__colors__'):
+            parts = href.split(':', 2)
+            self.show_colors(parts[1], parts[2], update=True)
         elif href == '__close__':
             self.view.hide_popup()
         elif href == '__palettes__':
@@ -426,21 +440,24 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif href.startswith('__remove_fav__'):
             self.remove_fav(href.split(':', 1)[1])
         elif href.startswith('__delete_colors__'):
-            self.show_colors(href.split(':', 1)[1], delete=True, update=True)
-        elif href.startswith('__delete_color__'):
             parts = href.split(':', 2)
-            self.delete_color(parts[1], parts[2])
+            self.show_colors(parts[1], parts[2], delete=True, update=True)
+        elif href.startswith('__delete_color__'):
+            parts = href.split(':', 3)
+            self.delete_color(parts[1], parts[2], parts[3])
         elif href == '__delete__palettes__':
             self.show_palettes(delete=True, update=True)
         elif href.startswith('__delete__palette__'):
-            self.delete_palette(href.split(':', 1)[1])
+            parts = href.split(':', 2)
+            self.delete_palette(parts[1], parts[2])
         elif href.startswith('__add_color__'):
             self.show_palettes(color=href.split(':', 1)[1], update=True)
         elif href.startswith('__add_palette_color__'):
-            parts = href.split(':', 2)
-            self.add_palette(parts[1], parts[2])
+            parts = href.split(':', 3)
+            self.add_palette(parts[1], parts[2], parts[3])
         elif href.startswith('__create_palette__'):
-            self.prompt_palette_name(href.split(':', 1)[1])
+            parts = href.split(':', 2)
+            self.prompt_palette_name(parts[1], parts[2])
         elif href.startswith('__convert__'):
             parts = href.split(':', 2)
             self.insert_color(parts[1], parts[2])
@@ -454,38 +471,43 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         ch_thread.modified = True
         ch_thread.time = now
 
-    def prompt_palette_name(self, color):
+    def prompt_palette_name(self, palette_type, color):
         """ Prompt user for new palette name """
         win = self.view.window()
         if win is not None:
             self.view.hide_popup()
-            win.show_input_panel("Palette Name:", '', on_done=lambda name, c=color: self.create_palette(name, color), on_change=None, on_cancel=self.repop)
+            win.show_input_panel("Palette Name:", '', on_done=lambda name, t=palette_type, c=color: self.create_palette(name, t, color), on_change=None, on_cancel=self.repop)
 
-    def create_palette(self, palette_name, color):
+    def create_palette(self, palette_name, palette_type, color):
         """ Add color to new color palette """
-        if palette_name:
-            if palette_name.startswith('__'):
-                sublime.error_message('Palettes cannot have names that start with "__" as that is reserved for internal use!')
-            elif palette_name in ('Favorites', "Current Colors", "Project Colors"):
-                sublime.error_message('Palettes cannot use the name of "Favorites", "Current Colors", or "Project Colors" as they are reserved!')
-            else:
-                color_palettes = get_palettes()
-                for palette in color_palettes:
-                    if palette_name == palette['name']:
-                        sublime.error_message('The name of "%s" is already in use!')
-                        return
-                save_palettes(color_palettes)
+        if palette_type == '__global__':
+            color_palettes = get_palettes()
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    sublime.error_message('The name of "%s" is already in use!')
+                    return
+            color_palettes.append({"name": palette_name, 'colors': [color]})
+            save_palettes(color_palettes)
+        elif palette_type == '__project__':
+            color_palettes = get_project_palettes(self.view.window())
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    sublime.error_message('The name of "%s" is already in use!')
+                    return
+            color_palettes.append({"name": palette_name, 'colors': [color]})
+            save_project_palettes(self.view.window(), color_palettes)
         self.repop()
 
-    def add_palette(self, color, palette_name):
+    def add_palette(self, color, palette_type, palette_name):
         """ Add pallete """
-        if palette_name == 'Favorites':
-            favs = get_favs()['colors']
-            if color not in favs:
-                favs.append(color)
-            save_palettes(favs, favs=True)
-            self.show_color_info(update=True)
-        else:
+        if palette_type == "__special__":
+            if palette_name == 'Favorites':
+                favs = get_favs()['colors']
+                if color not in favs:
+                    favs.append(color)
+                save_palettes(favs, favs=True)
+                self.show_color_info(update=True)
+        elif palette_type == '__global__':
             color_palettes = get_palettes()
             for palette in color_palettes:
                 if palette_name == palette['name']:
@@ -494,14 +516,24 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         save_palettes(color_palettes)
                         self.show_color_info(update=True)
                         break
+        elif palette_type == '__project__':
+            color_palettes = get_project_palettes(self.view.window())
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    if color not in palette['colors']:
+                        palette['colors'].append(color)
+                        save_project_palettes(self.view.window(), color_palettes)
+                        self.show_color_info(update=True)
+                        break
 
-    def delete_palette(self, palette_name):
+    def delete_palette(self, palette_type, palette_name):
         """ Delete palette """
-        if palette_name == 'Favorites':
-            save_palettes([], favs=True)
-            self.show_palettes(delete=True, update=True)
-        else:
-            color_palettes = get_palettes()
+        if palette_type == "__special__":
+            if palette_name == 'Favorites':
+                save_palettes([], favs=True)
+                self.show_palettes(delete=True, update=True)
+        elif palette_type in ('__global__', '__project__'):
+            color_palettes = get_palettes() if palette_type == '__global__' else get_project_palettes(self.view.window())
             count = -1
             index = None
             for palette in color_palettes:
@@ -511,25 +543,35 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     break
             if index is not None:
                 del color_palettes[index]
-                save_palettes(color_palettes)
+                save_palettes(color_palettes) if palette_type == '__global__' else save_project_palettes(self.view.window(), color_palettes)
                 self.show_palettes(delete=True, update=True)
 
-    def delete_color(self, color, palette_name):
+    def delete_color(self, color, palette_type, palette_name):
         """ Delete color """
-        if palette_name == "Favorites":
-            favs = get_favs()['colors']
-            if color in favs:
-                favs.remove(color)
-                save_palettes(favs, favs=True)
-                self.show_colors(palette_name, delete=True, update=True)
-        else:
+        if palette_type == '__special__':
+            if palette_name == "Favorites":
+                favs = get_favs()['colors']
+                if color in favs:
+                    favs.remove(color)
+                    save_palettes(favs, favs=True)
+                    self.show_colors(palette_type, palette_name, delete=True, update=True)
+        elif palette_type == '__global__':
             color_palettes = get_palettes()
             for palette in color_palettes:
                 if palette_name == palette['name']:
                     if color in palette['colors']:
                         palette['colors'].remove(color)
                         save_palettes(color_palettes)
-                        self.show_colors(palette_name, delete=True, update=True)
+                        self.show_colors(palette_type, palette_name, delete=True, update=True)
+                        break
+        elif palette_type == '__project__':
+            color_palettes = get_project_palettes(self.view.window())
+            for palette in color_palettes:
+                if palette_name == palette['name']:
+                    if color in palette['colors']:
+                        palette['colors'].remove(color)
+                        save_project_palettes(self.view.window(), color_palettes)
+                        self.show_colors(palette_type, palette_name, delete=True, update=True)
                         break
 
     def add_fav(self, color):
@@ -599,15 +641,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
-    def format_palettes(self, color_list, label, caption=None, color=None, delete=False):
+    def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
         """ Format color palette previews """
         colors = ['<h1 class="header">%s</h1>' % label]
         if caption:
             colors.append('<span class="caption">%s</span><br>' % caption)
         if delete:
-            label = '__delete__palette__:%s' % label
+            label = '__delete__palette__:%s:%s' % (palette_type, label)
         elif color:
-            label = '__add_palette_color__:%s:%s' % (color, label)
+            label = '__add_palette_color__:%s:%s:%s' % (color, palette_type, label)
+        else:
+            label = '__colors__:%s:%s' % (palette_type, label)
         colors.append(
             '<a href="%s">%s</a>' % (
                 label,
@@ -616,7 +660,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         )
         return ''.join(colors)
 
-    def format_colors(self, color_list, label, delete=None):
+    def format_colors(self, color_list, label, palette_type, delete=None):
         """ Format colors under palette """
         colors = ['<h1 class="header">%s</h1>' % label]
         count = 0
@@ -630,8 +674,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     colors.append('&nbsp;')
             if delete:
                 colors.append(
-                    '<a href="__delete_color__:%s:%s">%s</a>' % (
-                        f, label, color_box(f, ch_theme.border_color, size=32)
+                    '<a href="__delete_color__:%s:%s:%s">%s</a>' % (
+                        f, palette_type, label, color_box(f, ch_theme.border_color, size=32)
                     )
                 )
             else:
@@ -776,31 +820,42 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if color:
             html.append(
                 '<h1 class="header">New Palette</h1>' +
-                '<a href="__create_palette__:%s" class="control-link">Create New Palette</a><div class="divider"></div>' % color
+                '<a href="__create_palette__:__global__:%s" class="control-link">Create New Palette</a><br><br>' % color +
+                '<a href="__create_palette__:__project__:%s" class="control-link">Create New Project Palette</a>' % color +
+                '<div class="divider"></div>'
             )
 
         favs = get_favs()
         if len(favs['colors']) or color:
             show_div = True
-            html.append(self.format_palettes(favs['colors'], favs['name'], delete=delete, color=color))
+            html.append(self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color))
 
         current_colors = self.view.settings().get('color_helper_file_palette', [])
         if not delete and not color and len(current_colors):
             show_div = True
-            html.append(self.format_palettes(current_colors, "Current Colors", delete=delete, color=color))
+            html.append(self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color))
 
         project_colors = self.view.window().project_data().get('color_helper_project_palette', [])
         if not delete and not color and len(project_colors):
             show_div = True
-            html.append(self.format_palettes(project_colors, "Project Colors", delete=delete, color=color))
+            html.append(self.format_palettes(project_colors, "Project Colors", '__special__', delete=delete, color=color))
 
         if show_div:
             html.append('<div class="divider"></div>')
+            show_div = False
 
         for palette in get_palettes():
+            show_div = True
             name = palette.get("name")
-            if name not in ('Favorites', 'Current Colors', 'Project Colors'):
-                html.append(self.format_palettes(palette.get('colors', []), name, palette.get('caption'), delete=delete, color=color))
+            html.append(self.format_palettes(palette.get('colors', []), name, '__global__', palette.get('caption'), delete=delete, color=color))
+
+        for palette in get_project_palettes(self.view.window()):
+            if show_div:
+                show_div = False
+                html.append('<div class="divider"></div>')
+            name = palette.get("name")
+            html.append(self.format_palettes(palette.get('colors', []), name, '__project__', palette.get('caption'), delete=delete, color=color))
+
         html.append('</div>')
 
         if update:
@@ -811,26 +866,31 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 on_navigate=self.on_navigate
             )
 
-    def show_colors(self, palette_name, delete=False, update=False):
+    def show_colors(self, palette_type, palette_name, delete=False, update=False):
         """ Show colors under the given palette """
         target = None
         current = False
-        if palette_name == "Current Colors":
-            current = True
-            target = {
-                "name": palette_name,
-                "colors": self.view.settings().get('color_helper_file_palette', [])
-            }
-        elif palette_name == "Project Colors":
-            current = True
-            target = {
-                "name": palette_name,
-                "colors": self.view.window().project_data().get('color_helper_project_palette', [])
-            }
-        elif palette_name == "Favorites":
-            target = get_favs()
-        else:
+        if palette_type == "__special__":
+            if palette_name == "Current Colors":
+                current = True
+                target = {
+                    "name": palette_name,
+                    "colors": self.view.settings().get('color_helper_file_palette', [])
+                }
+            elif palette_name == "Project Colors":
+                current = True
+                target = {
+                    "name": palette_name,
+                    "colors": self.view.window().project_data().get('color_helper_project_palette', [])
+                }
+            elif palette_name == "Favorites":
+                target = get_favs()
+        elif palette_type == "__global__":
             for palette in get_palettes():
+                if palette_name == palette['name']:
+                    target = palette
+        elif palette_type == "__project__":
+            for palette in get_project_palettes(self.view_window()):
                 if palette_name == palette['name']:
                     target = palette
 
@@ -846,14 +906,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
                 if not current:
                     html.append(
-                        '<a href="__delete_colors__:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
-                            target['name'], ch_theme.trash
+                        '<a href="__delete_colors__:%s:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
+                            palette_type, target['name'], ch_theme.trash
                         )
                     )
             else:
                 html.append(
-                    '<a href="%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
-                        target['name'], ch_theme.back_arrow
+                    '<a href="__colors__:%s:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
+                        palette_type, target['name'], ch_theme.back_arrow
                     )
                 )
 
@@ -861,7 +921,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 html.append('<div class="delete">Click to delete color.</div>')
 
             html.append(
-                self.format_colors(target['colors'], target['name'], delete) +
+                self.format_colors(target['colors'], target['name'], palette_type, delete) +
                 '</div>'
             )
 
@@ -1068,6 +1128,7 @@ class ChProjectIndexThread(threading.Thread):
 
     def save_project_data(self, colors):
         """ Store project colors in project data """
+        colors.sort()
         data = self.window.project_data()
         debug('Project Colors = ', colors)
         data['color_helper_project_palette'] = colors
@@ -1391,6 +1452,7 @@ class ChFileIndexThread(threading.Thread):
     def update_index(self, view, colors):
         """ Code to run """
         try:
+            colors.sort()
             sublime.status_message('File color index complete...')
             view.settings().set('color_helper_file_palette', colors)
             debug('Colors:\n', colors)
