@@ -1086,7 +1086,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if view.settings().get('color_helper_file_palette', None) is None:
             view.settings().set('color_helper_file_palette', [])
             self.on_index(view)
-        return
         window = view.window()
         if window and window.project_data().get('color_helper_project_palette', None) is None:
             if (ch_project_thread is None or not ch_project_thread.is_alive()):
@@ -1099,7 +1098,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_post_save(self, view):
         global ch_project_thread
         start_file_index(view)
-        return
         window = view.window()
         if (ch_project_thread is None or not ch_project_thread.is_alive()) and window:
             ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
