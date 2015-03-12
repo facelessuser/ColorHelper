@@ -1063,6 +1063,7 @@ class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
         if ch_project_thread is None or not ch_project_thread.is_alive():
             ch_project_thread = ChProjectIndexThread(self.window, self.window.project_data().get('folders', []), clear_cache=clear_cache)
             ch_project_thread.start()
+            sublime.status_message('Project color index started...')
         else:
             sublime.error_message('Project indexer is already running!')
 
@@ -1091,6 +1092,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if (ch_project_thread is None or not ch_project_thread.is_alive()):
                 ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
                 ch_project_thread.start()
+                sublime.status_message("Project color index started...")
 
     def on_index(self, view):
         start_file_index(view)
@@ -1102,6 +1104,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if (ch_project_thread is None or not ch_project_thread.is_alive()) and window:
             ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
             ch_project_thread.start()
+            sublime.status_message("Project color index started...")
 
     on_clone = on_index
 
@@ -1131,6 +1134,7 @@ class ChProjectIndexThread(threading.Thread):
         debug('Project Colors = ', colors)
         data['color_helper_project_palette'] = colors
         self.window.set_project_data(data)
+        sublime.status_message('Project color index complete...')
 
     def translate_color(self, m):
         """ Translaote match group to hex color """
@@ -1343,95 +1347,6 @@ class ChProjectIndexThread(threading.Thread):
                 sublime.set_timeout(lambda c=list(colors): self.save_project_data(c))
 
 
-class ChThread(threading.Thread):
-    """ Load up defaults """
-
-    def __init__(self):
-        """ Setup the thread """
-        self.reset()
-        threading.Thread.__init__(self)
-
-    def reset(self):
-        """ Reset the thread variables """
-        self.wait_time = 0.12
-        self.time = time()
-        self.modified = False
-        self.ignore_all = False
-        self.abort = False
-        self.save_palettes = False
-
-    def payload(self):
-        """ Code to run """
-        self.modified = False
-        self.ignore_all = True
-        window = sublime.active_window()
-        view = window.active_view()
-        if view is not None:
-            info = False
-            execute = False
-            sels = view.sel()
-            scope = get_scope(view)
-            if (
-                scope and
-                len(sels) == 1 and sels[0].size() == 0
-                and view.score_selector(sels[0].begin(), scope)
-            ):
-                point = sels[0].begin()
-                visible = view.visible_region()
-                start = point - 50
-                end = point + 50
-                if start < visible.begin():
-                    start = visible.begin()
-                if end > visible.end():
-                    end = visible.end()
-                bfr = view.substr(sublime.Region(start, end))
-                ref = point - start
-                for m in COLOR_ALL_RE.finditer(bfr):
-                    if ref >= m.start(0) and ref < m.end(0):
-                        if (
-                            m.group('hex') or m.group('rgb') or m.group('rgba') or
-                            m.group('hsl') or m.group('hsla')
-                        ):
-                            info = True
-                            execute = True
-                        break
-                    elif ref == m.end(0):
-                        if (
-                            m.group('hash') or m.group('rgb_open') or m.group('rgba_open') or
-                            m.group('hsl_open') or m.group('hsla_open')
-                        ):
-                            execute = True
-                        break
-                if not execute:
-                    region = view.word(sels[0])
-                    word = view.substr(view.word(sels[0]))
-                    if point != region.end():
-                        try:
-                            webcolors.name_to_hex(word)
-                            execute = True
-                            info = True
-                        except:
-                            pass
-                if execute:
-                    view.run_command('color_helper', {"mode": "palette" if not info else "info"})
-        self.ignore_all = False
-        self.time = time()
-
-    def kill(self):
-        """ Kill thread """
-        self.abort = True
-        while self.is_alive():
-            pass
-        self.reset()
-
-    def run(self):
-        """ Thread loop """
-        while not self.abort:
-            if self.modified is True and time() - self.time > self.wait_time:
-                sublime.set_timeout(lambda: self.payload(), 0)
-            sleep(0.5)
-
-
 class ChFileIndexThread(threading.Thread):
     """ Load up defaults """
 
@@ -1520,6 +1435,95 @@ class ChFileIndexThread(threading.Thread):
             sublime.set_timeout(
                 lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
             )
+
+
+class ChThread(threading.Thread):
+    """ Load up defaults """
+
+    def __init__(self):
+        """ Setup the thread """
+        self.reset()
+        threading.Thread.__init__(self)
+
+    def reset(self):
+        """ Reset the thread variables """
+        self.wait_time = 0.12
+        self.time = time()
+        self.modified = False
+        self.ignore_all = False
+        self.abort = False
+        self.save_palettes = False
+
+    def payload(self):
+        """ Code to run """
+        self.modified = False
+        self.ignore_all = True
+        window = sublime.active_window()
+        view = window.active_view()
+        if view is not None:
+            info = False
+            execute = False
+            sels = view.sel()
+            scope = get_scope(view)
+            if (
+                scope and
+                len(sels) == 1 and sels[0].size() == 0
+                and view.score_selector(sels[0].begin(), scope)
+            ):
+                point = sels[0].begin()
+                visible = view.visible_region()
+                start = point - 50
+                end = point + 50
+                if start < visible.begin():
+                    start = visible.begin()
+                if end > visible.end():
+                    end = visible.end()
+                bfr = view.substr(sublime.Region(start, end))
+                ref = point - start
+                for m in COLOR_ALL_RE.finditer(bfr):
+                    if ref >= m.start(0) and ref < m.end(0):
+                        if (
+                            m.group('hex') or m.group('rgb') or m.group('rgba') or
+                            m.group('hsl') or m.group('hsla')
+                        ):
+                            info = True
+                            execute = True
+                        break
+                    elif ref == m.end(0):
+                        if (
+                            m.group('hash') or m.group('rgb_open') or m.group('rgba_open') or
+                            m.group('hsl_open') or m.group('hsla_open')
+                        ):
+                            execute = True
+                        break
+                if not execute:
+                    region = view.word(sels[0])
+                    word = view.substr(view.word(sels[0]))
+                    if point != region.end():
+                        try:
+                            webcolors.name_to_hex(word)
+                            execute = True
+                            info = True
+                        except:
+                            pass
+                if execute:
+                    view.run_command('color_helper', {"mode": "palette" if not info else "info"})
+        self.ignore_all = False
+        self.time = time()
+
+    def kill(self):
+        """ Kill thread """
+        self.abort = True
+        while self.is_alive():
+            pass
+        self.reset()
+
+    def run(self):
+        """ Thread loop """
+        while not self.abort:
+            if self.modified is True and time() - self.time > self.wait_time:
+                sublime.set_timeout(lambda: self.payload(), 0)
+            sleep(0.5)
 
 
 ###########################

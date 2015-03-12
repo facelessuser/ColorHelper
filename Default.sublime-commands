@@ -4,7 +4,16 @@
         "command": "color_helper_file_index"
     },
     {
-        "caption": "Color Helper: Select Palette",
+        "caption": "Color Helper: Index Colors in Project",
+        "command": "color_helper_project_index"
+    },
+    {
+        "caption": "Color Helper: Index Colors in Project (Clear Cache)",
+        "command": "color_helper_project_index",
+        "args": {"clear_cache": true}
+    },
+    {
+        "caption": "Color Helper: Show Palettes",
         "command": "color_helper"
     },
     {
