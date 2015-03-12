@@ -41,9 +41,10 @@ INCOMPLETE = r''' |
 COLOR_NAMES = r'| (?i)\b(?P<webcolors>%s)\b' % '|'.join([name for name in webcolors.css3_names_to_hex.keys()])
 
 TAG_HTML_RE = re.compile(
-    br'''(?x)
+    br'''(?x)(?i)
     (?:
         (?P<comments>(\r?\n?\s*)<!--[\s\S]*?-->(\s*)(?=\r?\n)|<!--[\s\S]*?-->)|
+        (?P<style><style((?:\s+[\w\-:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^>\s]+))?)*)\s*>(?P<css>.*?)<\/style[^>]*>) |
         (?P<open><[\w\:\.\-]+)
         (?P<attr>(?:\s+[\w\-:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*)
         (?P<close>\s*(?:\/?)>)
@@ -99,6 +100,11 @@ def debug(*args):
     """ Log if debug enabled """
     if sublime.load_settings("color_helper.sublime-settings").get('debug', False):
         log(*args)
+
+
+def get_cache_dir():
+    """ Get the cache dir """
+    return os.path.join(sublime.packages_path(), "User", 'ColorHelper.cache')
 
 
 def color_picker_available():
@@ -995,7 +1001,7 @@ class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
     def run(self, clear_cache=False):
         global ch_project_thread
         if ch_project_thread is None or not ch_project_thread.is_alive():
-            ch_project_thread = ChProjectIndexThread(self.window.id(), self.window.project_data().get('folders', []), clear_cache=clear_cache)
+            ch_project_thread = ChProjectIndexThread(self.window, self.window.project_data().get('folders', []), clear_cache=clear_cache)
             ch_project_thread.start()
         else:
             sublime.error_message('Project indexer is already running!')
@@ -1024,7 +1030,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         window = view.window()
         if window and window.project_data().get('color_helper_project_palette', None) is None:
             if (ch_project_thread is None or not ch_project_thread.is_alive()):
-                ch_project_thread = ChProjectIndexThread(window.id(), window.project_data().get('folders', []))
+                ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
                 ch_project_thread.start()
 
     def on_index(self, view):
@@ -1036,19 +1042,21 @@ class ColorHelperListener(sublime_plugin.EventListener):
         return
         window = view.window()
         if (ch_project_thread is None or not ch_project_thread.is_alive()) and window:
-            ch_project_thread = ChProjectIndexThread(window.id(), window.project_data().get('folders', []))
+            ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
             ch_project_thread.start()
 
     on_clone = on_index
 
 
 class ChProjectIndexThread(threading.Thread):
-    def __init__(self, win_id, project_folders, clear_cache=False):
+    def __init__(self, window, project_folders, clear_cache=False):
         self.project_folders = project_folders
         self.hex = re.compile(br'\#(?:[\dA-Fa-f]{3}){1,2}\b')
         self.colors = []
         self.abort = False
-        self.win_id = win_id
+        self.window = window
+        self.win_id = window.id()
+        self.cache = os.path.join(get_cache_dir(), "%d.cache" % self.window.id())
         self.clear_cache = clear_cache
         threading.Thread.__init__(self)
 
@@ -1058,19 +1066,17 @@ class ChProjectIndexThread(threading.Thread):
         while self.is_alive():
             pass
 
-    def save_project_data(self, win_id, colors):
+    def save_project_data(self, colors):
         """ Store project colors in project data """
-        for win in sublime.windows():
-            if win.id() == win_id:
-                data = win.project_data()
-                debug('Project Colors = ', colors)
-                data['color_helper_project_palette'] = colors
-                win.set_project_data(data)
+        data = self.window.project_data()
+        debug('Project Colors = ', colors)
+        data['color_helper_project_palette'] = colors
+        self.window.set_project_data(data)
 
     def translate_color(self, m):
         """ Translaote match group to hex color """
         if m.group('hex'):
-            content = m.group('hex_content')
+            content = m.group('hex_content').decode('utf-8')
             if len(content) == 6:
                 color = "#%02x%02x%02x" % (
                     int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
@@ -1080,17 +1086,17 @@ class ChProjectIndexThread(threading.Thread):
                     int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
                 )
         elif m.group('rgb'):
-            content = [x.strip() for x in m.group('rgb_content').split(',')]
+            content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
             color = "#%02x%02x%02x" % (
                 int(content[0]), int(content[1]), int(content[2])
             )
         elif m.group('rgba'):
-            content = [x.strip() for x in m.group('rgba_content').split(',')]
+            content = [x.strip() for x in m.group('rgba_content').decode('utf-8').split(',')]
             color = "#%02x%02x%02x" % (
                 int(content[0]), int(content[1]), int(content[2])
             )
         elif m.group('hsl'):
-            content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
+            content = [x.strip().rstrip('%') for x in m.group('hsl_content').decode('utf-8').split(',')]
             rgba = RGBA()
             h = float(content[0]) / 360.0
             s = float(content[1]) / 100.0
@@ -1098,7 +1104,7 @@ class ChProjectIndexThread(threading.Thread):
             rgba.fromhls(h, l, s)
             color = rgba.get_rgb()
         elif m.group('hsla'):
-            content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+            content = [x.strip().rstrip('%') for x in m.group('hsla_content').decode('utf-8').split(',')]
             rgba = RGBA()
             h = float(content[0]) / 360.0
             s = float(content[1]) / 100.0
@@ -1106,13 +1112,13 @@ class ChProjectIndexThread(threading.Thread):
             rgba.fromhls(h, l, s)
             color = rgba.get_rgb()
         elif m.group('webcolors'):
-            color = webcolors.name_to_hex(m.group('webcolors')).lower()
+            color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
         return color
 
-    def save_results(self, folder, cache):
+    def save_results(self, cache_file, cache):
         """ Save cache results """
         try:
-            with codecs.open(os.path.join(folder, '.color_helper.cache'), 'w', encoding='utf-8') as f:
+            with codecs.open(cache_file, 'w', encoding='utf-8') as f:
                 f.write(json.dumps(cache))
         except:
             pass
@@ -1152,6 +1158,7 @@ class ChProjectIndexThread(threading.Thread):
                             cache[file_path] = {'time': mtime, 'colors': list(local_colors)}
                     except:
                         cache[file_path] = {'time': 0, 'colors': []}
+                        # cache[file_path] = {'time': 0, 'colors': [], 'error': str(traceback.format_exc())}
                 else:
                     colors |= set(old_cache[file_path].get('colors', []))
                     cache[file_path] = old_cache[file_path]
@@ -1247,8 +1254,16 @@ class ChProjectIndexThread(threading.Thread):
             to_crawl = [pf['path'] for pf in self.project_folders]
             sub_crawl = []
             cache = {}
+            old_cache = {}
             folder = None
             main_folder = None
+
+            if not self.clear_cache and os.path.exists(self.cache):
+                try:
+                    with codecs.open(self.cache, 'r', encoding='utf-8') as f:
+                        old_cache = json.loads(f.read())
+                except:
+                    pass
 
             while (len(to_crawl) or len(sub_crawl)):
                 if self.abort:
@@ -1256,21 +1271,8 @@ class ChProjectIndexThread(threading.Thread):
                 if len(sub_crawl):
                     folder = sub_crawl.pop(0)
                 elif len(to_crawl):
-                    if main_folder is not None:
-                        self.save_results(main_folder, cache)
                     folder = to_crawl.pop(0)
                     main_folder = folder
-                    cache = {}
-                    old_cache = {}
-                    cache_file = os.path.join(folder, '.color_helper.cache')
-                    if self.clear_cache:
-                        old_cache = {}
-                    elif os.path.exists(cache_file):
-                        try:
-                            with codecs.open(cache_file, 'r', encoding='utf-8') as f:
-                                old_cache = json.loads(f.read())
-                        except:
-                            pass
                 for root, dirs, files in os.walk(folder):
                     if self.abort:
                         break
@@ -1278,8 +1280,8 @@ class ChProjectIndexThread(threading.Thread):
                     self.crawl_files(root, files, colors, old_cache, cache)
 
             if main_folder is not None and not self.abort:
-                self.save_results(main_folder, cache)
-                sublime.set_timeout(lambda i=self.win_id, c=list(colors): self.save_project_data(i, c))
+                self.save_results(self.cache, cache)
+                sublime.set_timeout(lambda c=list(colors): self.save_project_data(c))
 
 
 class ChThread(threading.Thread):
@@ -1401,7 +1403,6 @@ class ChFileIndexThread(threading.Thread):
         self.abort = True
         while self.is_alive():
             pass
-        self.reset()
 
     def run(self):
         """ Thread loop """
@@ -1524,6 +1525,22 @@ def init_plugin():
     global ch_thread
     global ch_theme
     global ch_file_thread
+
+    # Make sure cache folder exists
+    cache_folder = get_cache_dir()
+    if not os.path.exists(cache_folder):
+        os.makedirs(cache_folder)
+
+    # Clean up cache
+    win_ids = [win.id() for win in sublime.windows()]
+    for f in os.listdir(cache_folder):
+        if f.lower().endswith('.cache'):
+            try:
+                win_id = int(os.path.splitext(f)[0])
+                if win_id not in win_ids:
+                    os.remove(os.path.join(cache_folder, f))
+            except:
+                pass
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
