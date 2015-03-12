@@ -27,11 +27,30 @@
     // (none|color_picker|palette_picker)
     "click_color_box_to_pick": "none",
 
-    // File syntaxes that will be scanned on file open, save.
-    // These are the syntaxes in which the auto popup tooltip uses as well.
+    // File scoping that will be used when indexing colors in an opened or saved file.
+    // These are the syntaxes in which the auto popup tooltip uses as well to recogize scannable regions.
     "supported_syntax": [
-        "meta.property-value.css -comment -string",       // CSS, CSS in HTML etc.
-        "meta.value.css -comment -string",                // CSS3, CSS3 in HTML etc.,
-        "meta.tag.inline.any.html string.quoted" // HTML attributes
-    ]
+        "meta.property-value.css -comment -string",          // CSS, CSS in HTML etc. (based on: Sublime Default)
+        "meta.value.css -comment -string",                   // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
+        "meta.property-list.css.sass -comment -string",      // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "sass-script-maps -variable.other -comment -string", // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "meta.tag.inline.any.html string.quoted"             // HTML attributes (based on: Sublime Default)
+    ],
+
+    // Settings for project color indexing.
+    "project_file_scan_extensions": {
+        // Folders to
+        "ignore_folders": [".svn", ".git"],
+        // Scans for html style tags and style attributes
+        // and searches CSS content for colors
+        "html": [".html", ".html"],
+        // These are CSS extensions
+        // If you have some obscure format, it may not be supported.
+        "css": [".css"],
+        // These are Sass and SCSS extensions
+        // If you have some obscure format, it may not be supported.
+        "sass": [".sass", ".scss"],
+        // Adobe swatch exchange file extensions to import.
+        "ase": [".ase"]
+    }
 }

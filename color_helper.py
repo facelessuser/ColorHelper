@@ -17,7 +17,7 @@ import re
 import os
 import codecs
 import json
-# import traceback
+import traceback
 
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
@@ -65,11 +65,11 @@ TAG_STYLE_ATTR_RE = re.compile(
     re.DOTALL
 )
 
-COLOR_RE = re.compile(COMPLETE)
+COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s)(?![@#$.\-_])' % COMPLETE)
 
-COLOR_ALL_RE = re.compile(COMPLETE + INCOMPLETE)
+COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, INCOMPLETE))
 
-INDEX_ALL_RE = re.compile((COMPLETE + COLOR_NAMES).encode('utf-8'))
+INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
 ch_theme = None
 ch_settings = None
@@ -160,7 +160,10 @@ def save_palettes(palettes, favs=False):
 def save_project_palettes(window, palettes):
     """ Save project palettes """
     data = window.project_data()
-    data['color_helper_palettes'] = palettes
+    if data is None:
+        data = {'color_helper_palettes': palettes}
+    else:
+        data['color_helper_palettes'] = palettes
     window.set_project_data(data)
 
 
@@ -171,7 +174,18 @@ def get_palettes():
 
 def get_project_palettes(window):
     """ Get project palettes """
-    return window.project_data().get('color_helper_palettes', [])
+    data = window.project_data()
+    if data is None:
+        data = {}
+    return data.get('color_helper_palettes', [])
+
+
+def get_project_folders(window):
+    """ Get project folder """
+    data = window.project_data()
+    if data is None:
+        data = {'folders': [{'path': f} for f in window.folders()]}
+    return data.get('folders', [])
 
 
 def start_file_index(view):
@@ -188,6 +202,56 @@ def start_file_index(view):
                 ch_file_thread = ChFileIndexThread(view, ' '.join(source))
                 ch_file_thread.start()
                 sublime.status_message('File color indexer started...')
+
+
+def translate_color(m):
+    # Translate the match object to a color w/ alpha
+    color = None
+    alpha = None
+    if m.group('hex'):
+        content = m.group('hex_content')
+        if len(content) == 6:
+            color = "#%02x%02x%02x" % (
+                int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
+            )
+        else:
+            color = "#%02x%02x%02x" % (
+                int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
+            )
+    elif m.group('rgb'):
+        content = [x.strip() for x in m.group('rgb_content').split(',')]
+        color = "#%02x%02x%02x" % (
+            int(content[0]), int(content[1]), int(content[2])
+        )
+    elif m.group('rgba'):
+        content = [x.strip() for x in m.group('rgba_content').split(',')]
+        color = "#%02x%02x%02x" % (
+            int(content[0]), int(content[1]), int(content[2])
+        )
+        alpha = content[3]
+    elif m.group('hsl'):
+        content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
+        rgba = RGBA()
+        h = float(content[0]) / 360.0
+        s = float(content[1]) / 100.0
+        l = float(content[2]) / 100.0
+        rgba.fromhls(h, l, s)
+        color = rgba.get_rgb()
+    elif m.group('hsla'):
+        content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+        rgba = RGBA()
+        h = float(content[0]) / 360.0
+        s = float(content[1]) / 100.0
+        l = float(content[2]) / 100.0
+        rgba.fromhls(h, l, s)
+        color = rgba.get_rgb()
+        alpha = content[3]
+    elif m.group('webcolors'):
+        try:
+            color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
+        except:
+            pass
+    return color, alpha
 
 
 class InsertionCalc(object):
@@ -476,7 +540,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         win = self.view.window()
         if win is not None:
             self.view.hide_popup()
-            win.show_input_panel("Palette Name:", '', on_done=lambda name, t=palette_type, c=color: self.create_palette(name, t, color), on_change=None, on_cancel=self.repop)
+            win.show_input_panel(
+                "Palette Name:", '',
+                on_done=lambda name, t=palette_type, c=color: self.create_palette(name, t, color),
+                on_change=None,
+                on_cancel=self.repop
+            )
 
     def create_palette(self, palette_name, palette_type, color):
         """ Add color to new color palette """
@@ -507,22 +576,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     favs.append(color)
                 save_palettes(favs, favs=True)
                 self.show_color_info(update=True)
-        elif palette_type == '__global__':
-            color_palettes = get_palettes()
+        elif palette_type in ('__global__', '__project__'):
+            if palette_type == '__global__':
+                color_palettes = get_palettes()
+            else:
+                color_palettes = get_project_palettes(self.view.window())
             for palette in color_palettes:
                 if palette_name == palette['name']:
                     if color not in palette['colors']:
                         palette['colors'].append(color)
-                        save_palettes(color_palettes)
-                        self.show_color_info(update=True)
-                        break
-        elif palette_type == '__project__':
-            color_palettes = get_project_palettes(self.view.window())
-            for palette in color_palettes:
-                if palette_name == palette['name']:
-                    if color not in palette['colors']:
-                        palette['colors'].append(color)
-                        save_project_palettes(self.view.window(), color_palettes)
+                        if palette_type == '__global__':
+                            save_palettes(color_palettes)
+                        else:
+                            save_project_palettes(self.view.window(), color_palettes)
                         self.show_color_info(update=True)
                         break
 
@@ -533,7 +599,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 save_palettes([], favs=True)
                 self.show_palettes(delete=True, update=True)
         elif palette_type in ('__global__', '__project__'):
-            color_palettes = get_palettes() if palette_type == '__global__' else get_project_palettes(self.view.window())
+            if palette_type == '__global__':
+                color_palettes = get_palettes()
+            else:
+                color_palettes = get_project_palettes(self.view.window())
             count = -1
             index = None
             for palette in color_palettes:
@@ -543,7 +612,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     break
             if index is not None:
                 del color_palettes[index]
-                save_palettes(color_palettes) if palette_type == '__global__' else save_project_palettes(self.view.window(), color_palettes)
+                if palette_type == '__global__':
+                    save_palettes(color_palettes)
+                else:
+                    save_project_palettes(self.view.window(), color_palettes)
                 self.show_palettes(delete=True, update=True)
 
     def delete_color(self, color, palette_type, palette_name):
@@ -555,22 +627,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     favs.remove(color)
                     save_palettes(favs, favs=True)
                     self.show_colors(palette_type, palette_name, delete=True, update=True)
-        elif palette_type == '__global__':
-            color_palettes = get_palettes()
+        elif palette_type in ('__global__', '__project__'):
+            if palette_type == '__global__':
+                color_palettes = get_palettes()
+            else:
+                color_palettes = get_project_palettes(self.view.window())
             for palette in color_palettes:
                 if palette_name == palette['name']:
                     if color in palette['colors']:
                         palette['colors'].remove(color)
-                        save_palettes(color_palettes)
-                        self.show_colors(palette_type, palette_name, delete=True, update=True)
-                        break
-        elif palette_type == '__project__':
-            color_palettes = get_project_palettes(self.view.window())
-            for palette in color_palettes:
-                if palette_name == palette['name']:
-                    if color in palette['colors']:
-                        palette['colors'].remove(color)
-                        save_project_palettes(self.view.window(), color_palettes)
+                        if palette_type == '__global__':
+                            save_palettes(color_palettes)
+                        else:
+                            save_project_palettes(self.view.window(), color_palettes)
                         self.show_colors(palette_type, palette_name, delete=True, update=True)
                         break
 
@@ -835,7 +904,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             show_div = True
             html.append(self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color))
 
-        project_colors = self.view.window().project_data().get('color_helper_project_palette', [])
+        data = self.view.window().project_data()
+        project_colors = [] if data is None else data.get('color_helper_project_palette', [])
         if not delete and not color and len(project_colors):
             show_div = True
             html.append(self.format_palettes(project_colors, "Project Colors", '__special__', delete=delete, color=color))
@@ -878,10 +948,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     "colors": self.view.settings().get('color_helper_file_palette', [])
                 }
             elif palette_name == "Project Colors":
+                data = self.view.window().project_data()
                 current = True
                 target = {
                     "name": palette_name,
-                    "colors": self.view.window().project_data().get('color_helper_project_palette', [])
+                    "colors": [] if data is None else data.get('color_helper_project_palette', [])
                 }
             elif palette_name == "Favorites":
                 target = get_favs()
@@ -952,57 +1023,25 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             ref = point - start
             for m in COLOR_RE.finditer(bfr):
                 if ref >= m.start(0) and ref < m.end(0):
-                    if m.group('hex'):
-                        content = m.group('hex_content')
-                        if len(content) == 6:
-                            color = "#%02x%02x%02x" % (
-                                int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-                            )
-                        else:
-                            color = "#%02x%02x%02x" % (
-                                int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-                            )
-                        break
-                    elif m.group('rgb'):
-                        content = [x.strip() for x in m.group('rgb_content').split(',')]
-                        color = "#%02x%02x%02x" % (
-                            int(content[0]), int(content[1]), int(content[2])
-                        )
-                        break
-                    elif m.group('rgba'):
-                        content = [x.strip() for x in m.group('rgba_content').split(',')]
-                        color = "#%02x%02x%02x%02x" % (
-                            int(content[0]), int(content[1]), int(content[2]),
-                            int('%.0f' % (float(content[3]) * 255.0))
-                        )
-                        alpha = content[3]
-                        break
-                    elif m.group('hsl'):
-                        content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
-                        rgba = RGBA()
-                        h = float(content[0]) / 360.0
-                        s = float(content[1]) / 100.0
-                        l = float(content[2]) / 100.0
-                        rgba.fromhls(h, l, s)
-                        color = rgba.get_rgb()
-                        break
-                    elif m.group('hsla'):
-                        content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
-                        rgba = RGBA()
-                        h = float(content[0]) / 360.0
-                        s = float(content[1]) / 100.0
-                        l = float(content[2]) / 100.0
-                        rgba.fromhls(h, l, s)
-                        color = rgba.get_rgb()
-                        color += "%02X" % int('%.0f' % (float(content[3]) * 255.0))
-                        alpha = content[3]
-                        break
+                    color, alpha = translate_color(m)
+                    break
             if color is None:
-                word = self.view.substr(self.view.word(sels[0]))
+                wregion = self.view.word(sels[0])
+                word = self.view.substr(wregion)
                 try:
-                    color = webcolors.name_to_hex(word).lower()
+                    match = True
+                    if wregion.begin() > 0:
+                        if self.view.substr(wregion.begin() - 1) in '@#$.-_':
+                            match = False
+                    if wregion.end() < self.view.size():
+                        if self.view.substr(wregion.end() + 1) in '@#$.-_':
+                            match = False
+                    if match:
+                        color = webcolors.name_to_hex(word).lower()
                 except:
                     pass
+            elif alpha is not None:
+                color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
         if color is not None:
             html = [
                 '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
@@ -1061,7 +1100,7 @@ class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
     def run(self, clear_cache=False):
         global ch_project_thread
         if ch_project_thread is None or not ch_project_thread.is_alive():
-            ch_project_thread = ChProjectIndexThread(self.window, self.window.project_data().get('folders', []), clear_cache=clear_cache)
+            ch_project_thread = ChProjectIndexThread(self.window, get_project_folders(self.window), clear_cache=clear_cache)
             ch_project_thread.start()
             sublime.status_message('Project color index started...')
         else:
@@ -1088,9 +1127,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
             view.settings().set('color_helper_file_palette', [])
             self.on_index(view)
         window = view.window()
-        if window and window.project_data().get('color_helper_project_palette', None) is None:
+        data = window.project_data()
+        if window and (None if data is None else data.get('color_helper_project_palette', None)) is None:
             if (ch_project_thread is None or not ch_project_thread.is_alive()):
-                ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
+                ch_project_thread = ChProjectIndexThread(window, get_project_folders(window))
                 ch_project_thread.start()
                 sublime.status_message("Project color index started...")
 
@@ -1102,7 +1142,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         start_file_index(view)
         window = view.window()
         if (ch_project_thread is None or not ch_project_thread.is_alive()) and window:
-            ch_project_thread = ChProjectIndexThread(window, window.project_data().get('folders', []))
+            ch_project_thread = ChProjectIndexThread(window, get_project_folders(window))
             ch_project_thread.start()
             sublime.status_message("Project color index started...")
 
@@ -1111,6 +1151,14 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
 class ChProjectIndexThread(threading.Thread):
     def __init__(self, window, project_folders, clear_cache=False):
+        s = sublime.load_settings('color_helper.sublime-settings')
+        scan_settings = s.get('project_file_scan_extensions', {})
+        self.ignore = ['.', '..'] + scan_settings.get("ignore_folders", [".svn", ".git"])
+        self.html_ext = scan_settings.get("html", [".html", ".html"])
+        self.css_ext = scan_settings.get('css', [".css"])
+        self.sass_ext = scan_settings.get('sass', [".sass", ".scss"])
+        self.ase_ext = scan_settings.get('ase', ['.ase'])
+        self.all_ext = self.html_ext + self.css_ext + self.sass_ext + self.ase_ext
         self.project_folders = project_folders
         self.hex = re.compile(br'\#(?:[\dA-Fa-f]{3}){1,2}\b')
         self.colors = []
@@ -1131,52 +1179,12 @@ class ChProjectIndexThread(threading.Thread):
         """ Store project colors in project data """
         colors.sort()
         data = self.window.project_data()
+        if data is None:
+            data = {'folders': [{'path': f} for f in self.window.folders()]}
         debug('Project Colors = ', colors)
         data['color_helper_project_palette'] = colors
         self.window.set_project_data(data)
         sublime.status_message('Project color index complete...')
-
-    def translate_color(self, m):
-        """ Translaote match group to hex color """
-        if m.group('hex'):
-            content = m.group('hex_content').decode('utf-8')
-            if len(content) == 6:
-                color = "#%02x%02x%02x" % (
-                    int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-                )
-            else:
-                color = "#%02x%02x%02x" % (
-                    int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-                )
-        elif m.group('rgb'):
-            content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
-            color = "#%02x%02x%02x" % (
-                int(content[0]), int(content[1]), int(content[2])
-            )
-        elif m.group('rgba'):
-            content = [x.strip() for x in m.group('rgba_content').decode('utf-8').split(',')]
-            color = "#%02x%02x%02x" % (
-                int(content[0]), int(content[1]), int(content[2])
-            )
-        elif m.group('hsl'):
-            content = [x.strip().rstrip('%') for x in m.group('hsl_content').decode('utf-8').split(',')]
-            rgba = RGBA()
-            h = float(content[0]) / 360.0
-            s = float(content[1]) / 100.0
-            l = float(content[2]) / 100.0
-            rgba.fromhls(h, l, s)
-            color = rgba.get_rgb()
-        elif m.group('hsla'):
-            content = [x.strip().rstrip('%') for x in m.group('hsla_content').decode('utf-8').split(',')]
-            rgba = RGBA()
-            h = float(content[0]) / 360.0
-            s = float(content[1]) / 100.0
-            l = float(content[2]) / 100.0
-            rgba.fromhls(h, l, s)
-            color = rgba.get_rgb()
-        elif m.group('webcolors'):
-            color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
-        return color
 
     def save_results(self, cache_file, cache):
         """ Save cache results """
@@ -1193,20 +1201,23 @@ class ChProjectIndexThread(threading.Thread):
                 break
             file_path = os.path.join(root, file_name)
             ext = os.path.splitext(file_path)[1].lower()
-            if ext in ('.css', '.html', '.htm', '.ase'):
+            if ext in self.all_ext:
                 mtime = os.path.getmtime(file_path)
                 if mtime != old_cache.get(file_path, {}).get('time', 0):
                     local_colors = set()
                     try:
                         with codecs.open(file_path, 'rb') as f:
                             search_text = False
-                            if ext == '.css':
+                            if ext in self.css_ext:
                                 content = self.parse_css(f.read())
                                 search_text = True
-                            elif ext in ('.html', '.htm'):
+                            elif ext in self.sass_ext:
+                                content = self.parse_css(f.read(), single_line_comments=True)
+                                search_text = True
+                            elif ext in self.html_ext:
                                 content = self.parse_html(f.read())
                                 search_text = True
-                            elif ext in ('.ase',):
+                            elif ext in self.ase_ext:
                                 content = ase_load(f.read())
                                 for palette in content:
                                     for color in palette.get('colors', []):
@@ -1215,31 +1226,28 @@ class ChProjectIndexThread(threading.Thread):
                                         local_colors.add(c)
                             if search_text:
                                 for m in INDEX_ALL_RE.finditer(content):
-                                    c = self.translate_color(m)
+                                    c, a = translate_color(m)
                                     colors.add(c)
                                     local_colors.add(c)
                             cache[file_path] = {'time': mtime, 'colors': list(local_colors)}
                     except:
-                        cache[file_path] = {'time': 0, 'colors': []}
-                        # cache[file_path] = {'time': 0, 'colors': [], 'error': str(traceback.format_exc())}
+                        # cache[file_path] = {'time': 0, 'colors': []}
+                        cache[file_path] = {'time': 0, 'colors': [], 'error': str(traceback.format_exc())}
                 else:
                     colors |= set(old_cache[file_path].get('colors', []))
                     cache[file_path] = old_cache[file_path]
 
-    def parse_css(self, content):
-        # Very simple CSS parsing to get the css value
-        # Exclude comments and strings.
+    def parse_css(self, content, single_line_comments=False):
+        # Strip out comment and strings so that we can scan for colors
+        # without worrying about irrelevant text being processed.
         index = 0
-        block = 0
-        value = []
-        slash, star, bslash, squote, dquote, ocurly, ccurly, colon, semicolon, space = b'/*\\\'"{}:; '
-        start_capture = False
+        slash, star, bslash, squote, dquote, space, newline = b'/*\\\'" \n'
         text = [space]
 
         while index < len(content):
             c = content[index]
             if c == slash and content[index + 1] == star:
-                # comment
+                # multi line comment
                 index += 2
                 while index < len(content):
                     c = content[index]
@@ -1247,50 +1255,31 @@ class ChProjectIndexThread(threading.Thread):
                         index += 2
                         break
                     index += 1
-                start_capture = False
+            elif single_line_comments and c == slash and content[index + 1] == slash:
+                # single line comment
+                index += 2
+                while index < len(content):
+                    c = content[index]
+                    if c == newline:
+                        text.append(c)
+                        index += 1
+                        break
+                    index += 1
             elif c in (squote, dquote):
                 # strings
                 start = c
                 index += 1
                 while index < len(content):
                     c = content[index]
-                    if c == b'\\':
+                    if c == bslash:
                         index += 2
                     elif c == start:
                         index += 1
                         break
                     else:
                         index += 1
-                start_capture = False
-            elif c == ocurly:
-                # block start
-                block += 1
-                value.append(False)
-                index += 1
-                start_capture = False
-            elif c == ccurly:
-                # block end
-                block -= 1
-                value.pop()
-                index += 1
-                start_capture = False
-            elif block and not value[-1] and c == colon:
-                # value start
-                value[-1] = True
-                index += 1
-            elif block and value[-1] and c == semicolon:
-                # value end
-                value[block - 1] = False
-                index += 1
-                start_capture = False
-                start_capture = False
-            elif block and value[-1]:
-                if not start_capture:
-                    start_capture = True
-                    text.append(space)
-                text.append(c)
-                index += 1
             else:
+                text.append(c)
                 index += 1
 
         return bytes(text)
@@ -1339,7 +1328,7 @@ class ChProjectIndexThread(threading.Thread):
                 for root, dirs, files in os.walk(folder):
                     if self.abort:
                         break
-                    sub_crawl += [os.path.join(root, d) for d in dirs if d not in ('.', '..', '.git', '.svn')]
+                    sub_crawl += [os.path.join(root, d) for d in dirs if d not in self.ignore]
                     self.crawl_files(root, files, colors, old_cache, cache)
 
             if main_folder is not None and not self.abort:
@@ -1385,48 +1374,14 @@ class ChFileIndexThread(threading.Thread):
             self.index_colors()
 
     def index_colors(self):
+        """ Index colors in file """
         colors = set()
         for m in COLOR_RE.finditer(self.source):
             if self.abort:
                 break
-            if m.group('hex'):
-                content = m.group('hex_content')
-                if len(content) == 6:
-                    color = "%02x%02x%02x" % (
-                        int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-                    )
-                else:
-                    color = "%02x%02x%02x" % (
-                        int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-                    )
-            elif m.group('rgb'):
-                content = [x.strip() for x in m.group('rgb_content').split(',')]
-                color = "%02x%02x%02x" % (
-                    int(content[0]), int(content[1]), int(content[2])
-                )
-            elif m.group('rgba'):
-                content = [x.strip() for x in m.group('rgba_content').split(',')]
-                color = "%02x%02x%02x" % (
-                    int(content[0]), int(content[1]), int(content[2])
-                )
-            elif m.group('hsl'):
-                content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
-                rgba = RGBA()
-                h = float(content[0]) / 360.0
-                s = float(content[1]) / 100.0
-                l = float(content[2]) / 100.0
-                rgba.fromhls(h, l, s)
-                color = rgba.get_rgb()[1:]
-            elif m.group('hsla'):
-                content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
-                rgba = RGBA()
-                h = float(content[0]) / 360.0
-                s = float(content[1]) / 100.0
-                l = float(content[2]) / 100.0
-                rgba.fromhls(h, l, s)
-                color = rgba.get_rgb()[1:]
+            color, alpha = translate_color(m)
             if color is not None:
-                colors.add('#' + color)
+                colors.add(color)
         for m in self.webcolor_names.finditer(self.source):
             if self.abort:
                 break
@@ -1501,9 +1456,17 @@ class ChThread(threading.Thread):
                     word = view.substr(view.word(sels[0]))
                     if point != region.end():
                         try:
+                            match = True
                             webcolors.name_to_hex(word)
-                            execute = True
-                            info = True
+                            if region.begin() > 0:
+                                if view.substr(region.begin() - 1) in '@#$.-_':
+                                    match = False
+                            if region.end() < view.size():
+                                if view.substr(region.end() + 1) in '@#$.-_':
+                                    match = False
+                            if match:
+                                execute = True
+                                info = True
                         except:
                             pass
                 if execute:
@@ -1527,7 +1490,7 @@ class ChThread(threading.Thread):
 
 
 ###########################
-# Plugin Initialization
+# Tooltip Theme
 ###########################
 class ChTheme(object):
     def __init__(self):
@@ -1583,6 +1546,9 @@ class ChTheme(object):
             self.css = None
 
 
+###########################
+# Plugin Initialization
+###########################
 def init_plugin():
     """ Setup plugin variables and objects """
     global ch_settings
