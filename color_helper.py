@@ -961,7 +961,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             self.view.show_popup(
                 ''.join(html), location=-1, max_width=600,
-                on_navigate=self.on_navigate
+                on_navigate=self.on_navigate,
+                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -1029,7 +1030,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 self.view.show_popup(
                     ''.join(html), location=-1, max_width=600,
-                    on_navigate=self.on_navigate
+                    on_navigate=self.on_navigate,
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
                 )
 
     def show_color_info(self, update=False):
@@ -1074,7 +1076,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 self.view.show_popup(
                     ''.join(html), location=-1, max_width=600,
-                    on_navigate=self.on_navigate
+                    on_navigate=self.on_navigate,
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
                 )
         elif update:
             self.view.hide_popup()
@@ -1095,33 +1098,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
     def is_enabled(self, mode="palette", palette_name=None, color=None):
         s = sublime.load_settings('color_helper.sublime-settings')
-        show_global_palettes = s.get('enable_global_user_palettes', True)
-        show_project_palettes = s.get('enable_project_user_palettes', True)
-        show_favorite_palette = s.get('enable_favorite_palette', True)
-        show_current_palette = s.get('enable_current_file_palette', True)
-        show_current_project_palette = s.get('enable_project_palette', True)
         return (
             mode == "info" or
-            show_global_palettes or show_project_palettes or
-            show_favorite_palette or show_current_palette or
-            show_current_project_palette
+            s.get('enable_global_user_palettes', True) or
+            s.get('enable_project_user_palettes', True) or
+            s.get('enable_favorite_palette', True) or
+            s.get('enable_current_file_palette', True) or
+            s.get('enable_project_palette', True)
         )
 
 
 class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        busy = False
         if get_scope(self.view, skip_sel_check=True):
-            count = 0
-            while ch_file_thread.is_alive():
-                if count == 3:
-                    sublime.error_message("File indexer is busy!")
-                    busy = True
-                    break
-                sleep(1)
-                count += 1
-            if not busy:
+            if ch_file_thread is None or not ch_file_thread.is_alive():
                 start_file_index(self.view)
+            else:
+                sublime.error_message("File indexer is already running!")
         else:
             sublime.error_message('Cannot index colors in this file!')
 
