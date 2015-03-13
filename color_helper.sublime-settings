@@ -27,6 +27,27 @@
     // (none|color_picker|palette_picker)
     "click_color_box_to_pick": "none",
 
+    // Enable color picker option if ColorPicker plugin is installed
+    "enable_color_picker": true,
+
+    // Show global palettes in palette panel
+    "enable_global_user_palettes": true,
+
+    // Show project palettes in palette panel
+    "enable_project_user_palettes": true,
+
+    // Enable storing favorite colors to the favorite palette
+    "enable_favorite_palette": true,
+
+    // Enable showing current file color palette
+    "enable_current_file_palette": true,
+
+    // Enable showing colors palette of the entire project
+    "enable_project_palette": true,
+
+    // Enable color conversion options on color info panel
+    "enable_color_conversions": true,
+
     // File scoping that will be used when indexing colors in an opened or saved file.
     // These are the syntaxes in which the auto popup tooltip uses as well to recogize scannable regions.
     "supported_syntax": [
