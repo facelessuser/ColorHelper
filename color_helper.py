@@ -65,9 +65,9 @@ TAG_STYLE_ATTR_RE = re.compile(
     re.DOTALL
 )
 
-COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s)(?![@#$.\-_])' % COMPLETE)
+COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
 
-COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, INCOMPLETE))
+COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
 
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
@@ -248,7 +248,7 @@ def translate_color(m):
         alpha = content[3]
     elif m.group('webcolors'):
         try:
-            color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
+            color = webcolors.name_to_hex(m.group('webcolors')).lower()
         except:
             pass
     return color, alpha
@@ -303,7 +303,15 @@ class InsertionCalc(object):
     def replacement(self, m):
         """ See if match is a replacement of an existing color """
         found = True
-        if m.group('hex'):
+        if m.group('webcolors'):
+            self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
+            if self.preferred_format in ('rgb', 'hsl'):
+                self.format_override = True
+                if self.preferred_format == 'rgb':
+                    self.convert_rgb = True
+                else:
+                    self.convert_hsl = True
+        elif m.group('hex'):
             self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
             if self.preferred_format in ('rgb', 'hsl'):
                 self.format_override = True
@@ -364,7 +372,9 @@ class InsertionCalc(object):
     def converting(self, m):
         """ See if match is a convert replacement of an existing color """
         found = True
-        if m.group('hex'):
+        if m.group('webcolors'):
+            self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
+        elif m.group('hex'):
             self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
         elif m.group('rgb'):
             self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
@@ -463,16 +473,6 @@ class InsertionCalc(object):
                 break
             if found:
                 break
-
-        if not found:
-            word_region = self.view.word(sublime.Region(self.point))
-            word = self.view.substr(word_region)
-            try:
-                webcolors.name_to_hex(word)
-                self.region = word_region
-                found = True
-            except:
-                pass
 
         if self.convert:
             self.convert_alpha()
@@ -1050,27 +1050,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
             for m in COLOR_RE.finditer(bfr):
+                print(m.group(0))
                 if ref >= m.start(0) and ref < m.end(0):
                     color, alpha = translate_color(m)
+                    print(color)
                     break
-            if color is None:
-                wregion = self.view.word(sels[0])
-                word = self.view.substr(wregion)
-                try:
-                    match = True
-                    if wregion.begin() > 0:
-                        if self.view.substr(wregion.begin() - 1) in '@#$.-_':
-                            match = False
-                    if wregion.end() < self.view.size():
-                        if self.view.substr(wregion.end() + 1) in '@#$.-_':
-                            match = False
-                    if match:
-                        color = webcolors.name_to_hex(word).lower()
-                except:
-                    pass
-            elif alpha is not None:
-                color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
         if color is not None:
+            if alpha is not None:
+                color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
+
             html = [
                 '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
                 '<div class="content">'
@@ -1499,7 +1487,7 @@ class ChThread(threading.Thread):
                     if ref >= m.start(0) and ref < m.end(0):
                         if (
                             m.group('hex') or m.group('rgb') or m.group('rgba') or
-                            m.group('hsl') or m.group('hsla')
+                            m.group('hsl') or m.group('hsla') or m.group('webcolors')
                         ):
                             info = True
                             execute = True
@@ -1511,24 +1499,6 @@ class ChThread(threading.Thread):
                         ):
                             execute = True
                         break
-                if not execute:
-                    region = view.word(sels[0])
-                    word = view.substr(view.word(sels[0]))
-                    if point != region.end():
-                        try:
-                            match = True
-                            webcolors.name_to_hex(word)
-                            if region.begin() > 0:
-                                if view.substr(region.begin() - 1) in '@#$.-_':
-                                    match = False
-                            if region.end() < view.size():
-                                if view.substr(region.end() + 1) in '@#$.-_':
-                                    match = False
-                            if match:
-                                execute = True
-                                info = True
-                        except:
-                            pass
                 if execute:
                     view.run_command('color_helper', {"mode": "palette" if not info else "info"})
         self.ignore_all = False
