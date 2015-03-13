@@ -245,8 +245,8 @@ def translate_color(m, decode=False):
             content = [x.strip() for x in m.group('hsl_content').split(',')]
         rgba = RGBA()
         h = float(content[0]) / 360.0
-        s = float(content[1]) / 100.0
-        l = float(content[2]) / 100.0
+        s = float(content[1].strip('%')) / 100.0
+        l = float(content[2].strip('%')) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
     elif m.group('hsla'):
@@ -256,8 +256,8 @@ def translate_color(m, decode=False):
             content = [x.strip() for x in m.group('hsla_content').split(',')]
         rgba = RGBA()
         h = float(content[0]) / 360.0
-        s = float(content[1]) / 100.0
-        l = float(content[2]) / 100.0
+        s = float(content[1].strip('%')) / 100.0
+        l = float(content[2].strip('%')) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
         alpha = content[3]
@@ -419,7 +419,7 @@ class InsertionCalc(object):
 
     def completion(self, m):
         """ See if match is completing an color """
-        found = False
+        found = True
         if m.group('hash'):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
             if self.preferred_format in ('rgb', 'hsl'):
@@ -433,10 +433,10 @@ class InsertionCalc(object):
             if self.web_color:
                 self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
             elif self.preferred_format in ('hex', 'hsl'):
-                    self.format_override = True
-                    self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
-                    if self.preferred_format == 'hsl':
-                        self.convert_hsl = True
+                self.format_override = True
+                self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
+                if self.preferred_format == 'hsl':
+                    self.convert_hsl = True
             else:
                 self.convert_rgb = True
         elif m.group('rgba_open'):
@@ -477,6 +477,7 @@ class InsertionCalc(object):
         bfr = self.view.substr(sublime.Region(self.start, self.end))
         ref = self.point - self.start
         found = False
+
         for m in COLOR_ALL_RE.finditer(bfr):
             if self.convert:
                 if ref >= m.start(0) and ref < m.end(0):
@@ -487,7 +488,7 @@ class InsertionCalc(object):
                 found = self.replacement(m)
             elif ref == m.end(0):
                 found = self.completion(m)
-            elif ref > m.end(0):
+            elif ref < m.start(0):
                 break
             if found:
                 break

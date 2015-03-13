@@ -43,7 +43,7 @@
     "enable_current_file_palette": true,
 
     // Enable showing colors palette of the entire project
-    "enable_project_palette": true,
+    "enable_project_palette": false,
 
     // Enable color conversion options on color info panel
     "enable_color_conversions": true,
