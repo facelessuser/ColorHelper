@@ -204,12 +204,15 @@ def start_file_index(view):
                 sublime.status_message('File color indexer started...')
 
 
-def translate_color(m):
+def translate_color(m, decode=False):
     # Translate the match object to a color w/ alpha
     color = None
     alpha = None
     if m.group('hex'):
-        content = m.group('hex_content')
+        if decode:
+            content = m.group('hex_content')
+        else:
+            content = m.group('hex_content')
         if len(content) == 6:
             color = "#%02x%02x%02x" % (
                 int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
@@ -219,18 +222,27 @@ def translate_color(m):
                 int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
             )
     elif m.group('rgb'):
-        content = [x.strip() for x in m.group('rgb_content').split(',')]
+        if decode:
+            content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('rgb_content').split(',')]
         color = "#%02x%02x%02x" % (
             int(content[0]), int(content[1]), int(content[2])
         )
     elif m.group('rgba'):
-        content = [x.strip() for x in m.group('rgba_content').split(',')]
+        if decode:
+            content = [x.strip() for x in m.group('rgba_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('rgba_content').split(',')]
         color = "#%02x%02x%02x" % (
             int(content[0]), int(content[1]), int(content[2])
         )
         alpha = content[3]
     elif m.group('hsl'):
-        content = [x.strip().rstrip('%') for x in m.group('hsl_content').split(',')]
+        if decode:
+            content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('hsl_content').split(',')]
         rgba = RGBA()
         h = float(content[0]) / 360.0
         s = float(content[1]) / 100.0
@@ -238,7 +250,10 @@ def translate_color(m):
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
     elif m.group('hsla'):
-        content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
+        if decode:
+            content = [x.strip() for x in m.group('hsla_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('hsla_content').split(',')]
         rgba = RGBA()
         h = float(content[0]) / 360.0
         s = float(content[1]) / 100.0
@@ -248,7 +263,10 @@ def translate_color(m):
         alpha = content[3]
     elif m.group('webcolors'):
         try:
-            color = webcolors.name_to_hex(m.group('webcolors')).lower()
+            if decode:
+                color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
+            else:
+                color = webcolors.name_to_hex(m.group('webcolors')).lower()
         except:
             pass
     return color, alpha
@@ -1052,10 +1070,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
             for m in COLOR_RE.finditer(bfr):
-                print(m.group(0))
                 if ref >= m.start(0) and ref < m.end(0):
                     color, alpha = translate_color(m)
-                    print(color)
                     break
         if color is not None:
             if alpha is not None:
@@ -1126,7 +1142,13 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
 class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
     def run(self, clear_cache=False):
         global ch_project_thread
-        if ch_project_thread is None or not ch_project_thread.is_alive():
+        if ch_project_thread is None or not ch_project_thread.is_alive() or clear_cache:
+            if clear_cache:
+                if ch_project_thread.is_alive():
+                    ch_project_thread.kill()
+                cache = os.path.join(get_cache_dir(), "%d.cache" % self.window.id())
+                if os.path.exists(cache):
+                    os.remove(cache)
             ch_project_thread = ChProjectIndexThread(self.window, get_project_folders(self.window), clear_cache=clear_cache)
             ch_project_thread.start()
             sublime.status_message('Project color index started...')
@@ -1153,6 +1175,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
     on_modified = on_selection_modified
 
     def on_activated(self, view):
+        """ Run current file scan and/or project scan if not run before """
         global ch_project_thread
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
@@ -1170,6 +1193,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     sublime.status_message("Project color index started...")
 
     def on_post_save(self, view):
+        """ Run current file scan and/or project scan on save """
         global ch_project_thread
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
@@ -1184,6 +1208,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 sublime.status_message("Project color index started...")
 
     def on_clone(self, view):
+        """ Run current file scan on clone """
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
@@ -1208,6 +1233,8 @@ class ChProjectIndexThread(threading.Thread):
         self.win_id = window.id()
         self.cache = os.path.join(get_cache_dir(), "%d.cache" % self.window.id())
         self.clear_cache = clear_cache
+        self.debug = []
+
         threading.Thread.__init__(self)
 
     def kill(self):
@@ -1267,13 +1294,13 @@ class ChProjectIndexThread(threading.Thread):
                                         local_colors.add(c)
                             if search_text:
                                 for m in INDEX_ALL_RE.finditer(content):
-                                    c, a = translate_color(m)
+                                    c, a = translate_color(m, decode=True)
                                     colors.add(c)
                                     local_colors.add(c)
                             cache[file_path] = {'time': mtime, 'colors': list(local_colors)}
                     except:
-                        # cache[file_path] = {'time': 0, 'colors': []}
-                        cache[file_path] = {'time': 0, 'colors': [], 'error': str(traceback.format_exc())}
+                        cache[file_path] = {'time': 0, 'colors': []}
+                        # cache[file_path] = {'time': 0, 'colors': [], 'error': str(traceback.format_exc())}
                 else:
                     colors |= set(old_cache[file_path].get('colors', []))
                     cache[file_path] = old_cache[file_path]
