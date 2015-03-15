@@ -824,7 +824,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
             info.append(
-                '<a href="__color_picker__:%s"><img style="width: 16px; height: 16px;" src="%s"></a>' % (color, ch_theme.dropper)
+                '<a href="__color_picker__:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (color, ch_theme.dropper)
             )
 
         if show_global_palettes or show_project_palettes:
