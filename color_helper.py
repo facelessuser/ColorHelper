@@ -616,7 +616,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if palette_type == "__special__":
             if palette_name == 'Favorites':
                 save_palettes([], favs=True)
-                self.show_palettes(delete=True, update=True)
+                self.show_palettes(delete=True, update=False)
         elif palette_type in ('__global__', '__project__'):
             if palette_type == '__global__':
                 color_palettes = get_palettes()
@@ -635,7 +635,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     save_palettes(color_palettes)
                 else:
                     save_project_palettes(self.view.window(), color_palettes)
-                self.show_palettes(delete=True, update=True)
+                self.show_palettes(delete=True, update=False)
 
     def delete_color(self, color, palette_type, palette_name):
         """ Delete color """
@@ -645,7 +645,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 if color in favs:
                     favs.remove(color)
                     save_palettes(favs, favs=True)
-                    self.show_colors(palette_type, palette_name, delete=True, update=True)
+                    self.show_colors(palette_type, palette_name, delete=True, update=False)
         elif palette_type in ('__global__', '__project__'):
             if palette_type == '__global__':
                 color_palettes = get_palettes()
@@ -659,7 +659,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                             save_palettes(color_palettes)
                         else:
                             save_project_palettes(self.view.window(), color_palettes)
-                        self.show_colors(palette_type, palette_name, delete=True, update=True)
+                        self.show_colors(palette_type, palette_name, delete=True, update=False)
                         break
 
     def add_fav(self, color):
