@@ -17,7 +17,7 @@ import re
 import os
 import codecs
 import json
-import traceback
+# import traceback
 
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
@@ -667,14 +667,18 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         favs = get_favs()['colors']
         favs.append(color)
         save_palettes(favs, favs=True)
-        self.show_color_info(update=True)
+        # For some reason if using update,
+        # the convert divider will be too wide.
+        self.show_color_info(update=False)
 
     def remove_fav(self, color):
         """ Remove favorite """
         favs = get_favs()['colors']
         favs.remove(color)
         save_palettes(favs, favs=True)
-        self.show_color_info(update=True)
+        # For some reason if using update,
+        # the convert divider will be too wide.
+        self.show_color_info(update=False)
 
     def color_picker(self, color):
         """ Get color with color picker """
@@ -807,11 +811,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             color_box_wrapper = '%s '
 
-        info = ['<h1 class="header">%s</h1>' % color]
-
-        info.append(
+        info = [
             color_box_wrapper % color_box(color, ch_theme.border_color, size=64)
-        )
+        ]
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             info.append(
@@ -847,26 +849,26 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if show_conversions:
-            info.append('<br><br><h1 class="header">Conversions</h1>')
+            info.append('<div class="divider"></div>')
             if web_color:
                 info.append(
-                    '<span class="key"><a href="__convert__:%s:name" class="convert-link">name</a>:</span> ' % color +
+                    '<a href="__convert__:%s:name" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                     '<span class="color-value">%s</span><br>' % web_color
                 )
 
             info.append(
-                '<span class="key"><a href="__convert__:%s:hex" class="convert-link">hex</a>:</span> ' % color +
+                '<a href="__convert__:%s:hex" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                 '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '<span class="key"><a href="__convert__:%s:rgb" class="convert-link">rgb</a>:</span> ' % color +
+                '<a href="__convert__:%s:rgb" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                 '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (rgba.r, rgba.g, rgba.b) +
                 '<br>'
             )
 
             info.append(
-                '<span class="key"><a href="__convert__:%s:rgba" class="convert-link">rgba</a>:</span> ' % color +
+                '<a href="__convert__:%s:rgba" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                 '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (rgba.r, rgba.g, rgba.b, alpha if alpha else '1') +
                 '<br>'
             )
@@ -874,7 +876,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h, l, s = rgba.tohls()
 
             info.append(
-                '<span class="key"><a href="__convert__:%s:hsl" class="convert-link">hsl</a>:</span> ' % color +
+                '<a href="__convert__:%s:hsl" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                 '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
                     fmt_float(h * 360.0),
                     fmt_float(s * 100.0),
@@ -884,7 +886,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<span class="key"><a href="__convert__:%s:hsla" class="convert-link">hsla</a>:</span> ' % color +
+                '<a href="__convert__:%s:hsla" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
                 '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
                     fmt_float(h * 360.0),
                     fmt_float(s * 100.0),
@@ -955,21 +957,22 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 show_div = True
                 html.append(self.format_palettes(project_colors, "Project Colors", '__special__', delete=delete, color=color))
 
-        if show_div:
-            html.append('<div class="divider"></div>')
-            show_div = False
-
         if show_global_palettes:
-            for palette in get_palettes():
+            palettes = get_palettes()
+            if len(palettes) and show_div:
+                show_div = False
+                html.append('<div class="divider"></div>')
+            for palette in palettes:
                 show_div = True
                 name = palette.get("name")
                 html.append(self.format_palettes(palette.get('colors', []), name, '__global__', palette.get('caption'), delete=delete, color=color))
 
         if show_project_palettes:
-            for palette in get_project_palettes(self.view.window()):
-                if show_div:
-                    show_div = False
-                    html.append('<div class="divider"></div>')
+            palettes = get_project_palettes(self.view.window())
+            if len(palettes) and show_div:
+                show_div = False
+                html.append('<div class="divider"></div>')
+            for palette in palettes:
                 name = palette.get("name")
                 html.append(self.format_palettes(palette.get('colors', []), name, '__project__', palette.get('caption'), delete=delete, color=color))
 
@@ -1577,8 +1580,9 @@ class ChTheme(object):
             self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_dark.png', link=True)
             self.dropper = self.get_theme_res('images', 'dropper_dark.png', link=True)
             self.color_palette = self.get_theme_res('images', 'palette_dark.png', link=True)
-            self.trash = self.get_theme_res('images', 'trash_dark.png', link=True)
+            self.trash = self.get_theme_res('images', 'cross_dark.png', link=True)
             self.add = self.get_theme_res('images', 'plus_dark.png', link=True)
+            self.convert = self.get_theme_res('images', 'convert_dark.png', link=True)
         else:
             self.border_color = '#333333'
             self.css_file = self.get_theme_res('css', 'light.css')
@@ -1588,8 +1592,9 @@ class ChTheme(object):
             self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_light.png', link=True)
             self.dropper = self.get_theme_res('images', 'dropper_light.png', link=True)
             self.color_palette = self.get_theme_res('images', 'palette_light.png', link=True)
-            self.trash = self.get_theme_res('images', 'trash_light.png', link=True)
+            self.trash = self.get_theme_res('images', 'cross_light.png', link=True)
             self.add = self.get_theme_res('images', 'plus_light.png', link=True)
+            self.convert = self.get_theme_res('images', 'convert_light.png', link=True)
 
         try:
             self.css = sublime.load_resource(self.css_file).replace('\r', '')
