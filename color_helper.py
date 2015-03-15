@@ -926,9 +926,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
         if delete:
-            html.append('<div class="delete">Click to delete palette.</div>')
+            html.append('<br><span class="delete">Click to delete palette.</span>')
         elif color:
-            html.append('<div class="add">Click to add %s to palette.</div>' % color)
+            html.append('<br><span class="add">Click to add %s to palette.</span>' % color)
 
         if color:
             html.append(
@@ -1040,7 +1040,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
             if delete:
-                html.append('<div class="delete">Click to delete color.</div>')
+                html.append('<br><span class="delete">Click to delete color.</span>')
 
             html.append(
                 self.format_colors(target['colors'], target['name'], palette_type, delete) +
