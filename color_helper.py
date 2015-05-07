@@ -11,6 +11,7 @@ from ColorHelper.lib.scheme_lum import scheme_lums
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib.ase import loads as ase_load
 import ColorHelper.lib.webcolors as webcolors
+from ColorHelper.lib.file_strip.json import sanitize_json
 import threading
 from time import time, sleep
 import re
@@ -1550,6 +1551,46 @@ class ChTheme(object):
     def __init__(self):
         self.setup()
 
+    def read_theme(self, theme, default_theme):
+        theme_content = None
+        self.border_color = '#000'
+        self.css_file = ""
+        self.back_arrow = ""
+        self.bookmark = ""
+        self.bookmark_selected = ""
+        self.dropper = ""
+        self.color_palette = ""
+        self.trash = ""
+        self.add = ""
+        self.convert = ""
+
+        for t in (theme, default_theme):
+            try:
+                theme_content = json.loads(
+                    sanitize_json(sublime.load_resource(t))
+                )
+                break
+            except:
+                pass
+
+        if theme_content is not None:
+            self.border_color = theme_content.get('border_color', None)
+            self.back_arrow = self.get_theme_res(theme_content.get('images', {}).get('back', ''), link=True)
+            self.bookmark = self.get_theme_res(theme_content.get('images', {}).get('bookmark', ''), link=True)
+            self.bookmark_selected = self.get_theme_res(theme_content.get('images', {}).get('bookmark_selected', ''), link=True)
+            self.dropper = self.get_theme_res(theme_content.get('images', {}).get('dropper', ''), link=True)
+            self.color_palette = self.get_theme_res(theme_content.get('images', {}).get('palette', ''), link=True)
+            self.trash = self.get_theme_res(theme_content.get('images', {}).get('delete', ''), link=True)
+            self.add = self.get_theme_res(theme_content.get('images', {}).get('add', ''), link=True)
+            self.convert = self.get_theme_res(theme_content.get('images', {}).get('convert', ''), link=True)
+            self.css_file = '/'.join(
+                [os.path.dirname(theme), theme_content.get('css', '')]
+            )
+            try:
+                self.css = sublime.load_resource(self.css_file).replace('\r', '')
+            except:
+                self.css = None
+
     def has_changed(self):
         # Reload events recently are always reloading,
         # So maybe we will use this to check if reload is needed.
@@ -1569,37 +1610,13 @@ class ChTheme(object):
         except:
             self.lums = 128
 
-        self.tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme')
+        self.tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme').rstrip('/')
+        theme_file = 'dark' if self.lums <= 127 else 'light'
 
-        if self.lums <= 127:
-            self.border_color = '#CCCCCC'
-            self.css_file = self.get_theme_res('css', 'dark.css')
-            self.cross = self.get_theme_res('images', 'cross_dark.png', link=True)
-            self.back_arrow = self.get_theme_res('images', 'back_dark.png', link=True)
-            self.bookmark = self.get_theme_res('images', 'bookmark_dark.png', link=True)
-            self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_dark.png', link=True)
-            self.dropper = self.get_theme_res('images', 'dropper_dark.png', link=True)
-            self.color_palette = self.get_theme_res('images', 'palette_dark.png', link=True)
-            self.trash = self.get_theme_res('images', 'cross_dark.png', link=True)
-            self.add = self.get_theme_res('images', 'plus_dark.png', link=True)
-            self.convert = self.get_theme_res('images', 'convert_dark.png', link=True)
-        else:
-            self.border_color = '#333333'
-            self.css_file = self.get_theme_res('css', 'light.css')
-            self.cross = self.get_theme_res('images', 'cross_light.png', link=True)
-            self.back_arrow = self.get_theme_res('images', 'back_light.png', link=True)
-            self.bookmark = self.get_theme_res('images', 'bookmark_light.png', link=True)
-            self.bookmark_selected = self.get_theme_res('images', 'bookmark_selected_light.png', link=True)
-            self.dropper = self.get_theme_res('images', 'dropper_light.png', link=True)
-            self.color_palette = self.get_theme_res('images', 'palette_light.png', link=True)
-            self.trash = self.get_theme_res('images', 'cross_light.png', link=True)
-            self.add = self.get_theme_res('images', 'plus_light.png', link=True)
-            self.convert = self.get_theme_res('images', 'convert_light.png', link=True)
-
-        try:
-            self.css = sublime.load_resource(self.css_file).replace('\r', '')
-        except:
-            self.css = None
+        self.read_theme(
+            'Packages/%s/%s.tt_theme' % (self.tt_theme, theme_file),
+            'Packages/ColorHelper/tt_theme/%s.tt_theme' % theme_file
+        )
 
 
 ###########################
