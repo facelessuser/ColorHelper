@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ASE
+ASE.
 
 Copyright (c) 2015 Isaac Muse <isaacmuse@gmail.com>
 License: MIT

@@ -1,3 +1,9 @@
+"""
+Color box.
+
+Copyright (c) 2015 Isaac Muse <isaacmuse@gmail.com>
+License: MIT
+"""
 from .png import Writer
 from .rgba import RGBA
 import base64
@@ -12,8 +18,9 @@ DARK = 1
 
 def split_channels(rgb):
     """
-    Take a color of the format #RRGGBBAA (alpha optional and will be stripped)
-    and convert to a list with format [r, g, b].
+    Take a color of the format #RRGGBBAA and convert to a list with format [r, g, b].
+
+    Alpha optional and will be stripped.
     """
     return [
         int(rgb[1:3], 16),
@@ -23,7 +30,8 @@ def split_channels(rgb):
 
 
 def checkered_color(color, background):
-    """ Mix color with the checkered color """
+    """Mix color with the checkered color."""
+
     checkered = RGBA(color)
     checkered.apply_alpha(background)
     return checkered.get_rgb()
@@ -31,11 +39,12 @@ def checkered_color(color, background):
 
 def color_box(color, border, size=16, border_size=1, check_size=4):
     """
-    Create an RGBA color box with the specified RGBA color
-    and RGB(A) border (alpha will be stripped out of border color).
+    Create an RGBA color box with the specified RGBA color and RGB(A) border.
 
-    Define size of swatch, border width,  and size of checkered board squares.
+    Alpha will be stripped out of border color.
+    Define size of swatch, border width, and size of checkered board squares.
     """
+
     assert size - (border_size * 2) >= 0, "Border size too big!"
 
     # Create bytes buffer for png
@@ -79,6 +88,8 @@ def color_box(color, border, size=16, border_size=1, check_size=4):
 
 
 def palette_preview(colors, border, height=32, width=32 * 8, border_size=1, check_size=4):
+    """Generate palette preview."""
+
     assert height - (border_size * 2) >= 0, "Border size too big!"
     assert width - (border_size * 2) >= 0, "Border size too big!"
 

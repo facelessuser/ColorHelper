@@ -33,17 +33,11 @@
     // Show global palettes in palette panel
     "enable_global_user_palettes": true,
 
-    // Show project palettes in palette panel
-    "enable_project_user_palettes": true,
-
     // Enable storing favorite colors to the favorite palette
     "enable_favorite_palette": true,
 
     // Enable showing current file color palette
     "enable_current_file_palette": true,
-
-    // Enable showing colors palette of the entire project
-    "enable_project_palette": false,
 
     // Enable color conversion options on color info panel
     "enable_color_conversions": true,
@@ -57,6 +51,20 @@
         "sass-script-maps -variable.other -comment -string", // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
         "meta.tag.inline.any.html string.quoted"             // HTML attributes (based on: Sublime Default)
     ],
+
+    // Show project palettes in palette panel
+    "enable_project_user_palettes": true,
+
+    ////////////////////////////////////////////
+    // PROJECT SCANNING:
+    // EXPERIMENTAL AND NOT RECOMMENDED FOR USE!
+    // Large projects will bog down Sublime.
+    // Project scanning, if kept, should be done,
+    // by a separate binary.
+    ////////////////////////////////////////////
+
+    // Enable showing colors palette of the entire project
+    "enable_project_palette": false,
 
     // Settings for project color indexing.
     "project_file_scan_extensions": {

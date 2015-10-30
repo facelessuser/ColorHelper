@@ -1,5 +1,5 @@
 """
-ColorHelper
+ColorHelper.
 
 Copyright (c) 2015 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
@@ -89,7 +89,8 @@ if 'ch_project_thread' not in globals():
 # Helper Classes/Functions
 ###########################
 def log(*args):
-    """ Log """
+    """Log."""
+
     text = ['\nColorHelper: ']
     for arg in args:
         text.append(str(arg))
@@ -98,18 +99,21 @@ def log(*args):
 
 
 def debug(*args):
-    """ Log if debug enabled """
+    """Log if debug enabled."""
+
     if sublime.load_settings("color_helper.sublime-settings").get('debug', False):
         log(*args)
 
 
 def get_cache_dir():
-    """ Get the cache dir """
+    """Get the cache dir."""
+
     return os.path.join(sublime.packages_path(), "User", 'ColorHelper.cache')
 
 
 def color_picker_available():
-    """ Check if color picker is available """
+    """Check if color picker is available."""
+
     s = sublime.load_settings('color_helper_share.sublime-settings')
     s.set('color_pick_return', None)
     sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
@@ -117,7 +121,8 @@ def color_picker_available():
 
 
 def fmt_float(f, p=0):
-    """ Set float pring precision and trim precision zeros """
+    """Set float pring precision and trim precision zeros."""
+
     string = ("%." + "%d" % p + "f") % f
     m = FLOAT_TRIM_RE.match(string)
     if m:
@@ -128,12 +133,13 @@ def fmt_float(f, p=0):
 
 
 def is_hex_color(color):
-    """ Is color a hex color """
+    """Check if color is a hex color."""
+
     return color is not None and HEX_RE.match(color) is not None
 
 
 def get_scope(view, skip_sel_check=False):
-    """ Get auto-popup scope rule """
+    """Get auto-popup scope rule."""
     scopes = ','.join(ch_settings.get('supported_syntax', []))
     sels = view.sel()
     if not skip_sel_check:
@@ -143,13 +149,15 @@ def get_scope(view, skip_sel_check=False):
 
 
 def get_favs():
-    """ Get favorites object """
+    """Get favorites object."""
+
     bookmark_colors = sublime.load_settings('color_helper.palettes').get("favorites", [])
     return {"name": "Favorites", "colors": bookmark_colors}
 
 
 def save_palettes(palettes, favs=False):
-    """ Save palettes """
+    """Save palettes."""
+
     s = sublime.load_settings('color_helper.palettes')
     if favs:
         s.set('favorites', palettes)
@@ -159,7 +167,8 @@ def save_palettes(palettes, favs=False):
 
 
 def save_project_palettes(window, palettes):
-    """ Save project palettes """
+    """Save project palettes."""
+
     data = window.project_data()
     if data is None:
         data = {'color_helper_palettes': palettes}
@@ -169,12 +178,13 @@ def save_project_palettes(window, palettes):
 
 
 def get_palettes():
-    """ Get palettes """
+    """Get palettes."""
+
     return sublime.load_settings('color_helper.palettes').get("palettes", [])
 
 
 def get_project_palettes(window):
-    """ Get project palettes """
+    """Get project palettes."""
     data = window.project_data()
     if data is None:
         data = {}
@@ -182,7 +192,7 @@ def get_project_palettes(window):
 
 
 def get_project_folders(window):
-    """ Get project folder """
+    """Get project folder."""
     data = window.project_data()
     if data is None:
         data = {'folders': [{'path': f} for f in window.folders()]}
@@ -190,7 +200,7 @@ def get_project_folders(window):
 
 
 def start_file_index(view):
-    """ Kick off current file color index """
+    """Kick off current file color index."""
     global ch_file_thread
     if view is not None and (ch_file_thread is None or not ch_file_thread.is_alive()):
         scope = get_scope(view, skip_sel_check=True)
@@ -206,7 +216,8 @@ def start_file_index(view):
 
 
 def translate_color(m, decode=False):
-    # Translate the match object to a color w/ alpha
+    """Translate the match object to a color w/ alpha."""
+
     color = None
     alpha = None
     if m.group('hex'):
@@ -274,8 +285,11 @@ def translate_color(m, decode=False):
 
 
 class InsertionCalc(object):
+    """Calculate and insert color."""
+
     def __init__(self, view, point, target_color, convert=None):
-        """ Init insertion object """
+        """Initialize insertion object."""
+
         self.convert = '' if convert is None else convert
         self.view = view
         self.convert_rgb = False
@@ -320,7 +334,8 @@ class InsertionCalc(object):
             self.web_color = None
 
     def replacement(self, m):
-        """ See if match is a replacement of an existing color """
+        """See if match is a replacement of an existing color."""
+
         found = True
         if m.group('webcolors'):
             self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
@@ -389,7 +404,7 @@ class InsertionCalc(object):
         return found
 
     def converting(self, m):
-        """ See if match is a convert replacement of an existing color """
+        """See if match is a convert replacement of an existing color."""
         found = True
         if m.group('webcolors'):
             self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
@@ -412,14 +427,16 @@ class InsertionCalc(object):
         return found
 
     def convert_alpha(self):
-        """ Setup conversion alpha """
+        """Setup conversion alpha."""
+
         if self.force_alpha and self.alpha is None:
             self.alpha = '1'
         elif not self.force_alpha:
             self.alpha = None
 
     def completion(self, m):
-        """ See if match is completing an color """
+        """See if match is completing an color."""
+
         found = True
         if m.group('hash'):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
@@ -464,7 +481,9 @@ class InsertionCalc(object):
             self.offset = 1 if self.view.substr(self.point) == ')' else 0
             if self.preferred_alpha_format == 'rgba':
                 self.format_override = True
-                self.region = sublime.Region(m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset)
+                self.region = sublime.Region(
+                    m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset
+                )
                 self.convert_rgb = True
             else:
                 self.convert_hsl = True
@@ -474,7 +493,8 @@ class InsertionCalc(object):
         return found
 
     def calc(self):
-        """ Calculate how we are to insert the target_color """
+        """Calculate how we are to insert the target color."""
+
         bfr = self.view.substr(sublime.Region(self.start, self.end))
         ref = self.point - self.start
         found = False
@@ -504,8 +524,11 @@ class InsertionCalc(object):
 # Main Code
 ###########################
 class ColorHelperCommand(sublime_plugin.TextCommand):
+    """Color Helper command object."""
+
     def on_navigate(self, href):
-        """ Handle link clicks """
+        """Handle link clicks."""
+
         if href.startswith('#'):
             self.insert_color(href)
         elif href.startswith('__colors__'):
@@ -547,7 +570,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.insert_color(parts[1], parts[2])
 
     def repop(self):
-        """ Setup thread to repopup tooltip """
+        """Setup thread to repopup tooltip."""
+
         return
         if ch_thread.ignore_all:
             return
@@ -556,7 +580,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         ch_thread.time = now
 
     def prompt_palette_name(self, palette_type, color):
-        """ Prompt user for new palette name """
+        """Prompt user for new palette name."""
+
         win = self.view.window()
         if win is not None:
             self.view.hide_popup()
@@ -568,7 +593,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
     def create_palette(self, palette_name, palette_type, color):
-        """ Add color to new color palette """
+        """Add color to new color palette."""
+
         if palette_type == '__global__':
             color_palettes = get_palettes()
             for palette in color_palettes:
@@ -588,7 +614,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.repop()
 
     def add_palette(self, color, palette_type, palette_name):
-        """ Add pallete """
+        """Add pallete."""
+
         if palette_type == "__special__":
             if palette_name == 'Favorites':
                 favs = get_favs()['colors']
@@ -613,7 +640,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         break
 
     def delete_palette(self, palette_type, palette_name):
-        """ Delete palette """
+        """Delete palette."""
+
         if palette_type == "__special__":
             if palette_name == 'Favorites':
                 save_palettes([], favs=True)
@@ -639,7 +667,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_palettes(delete=True, update=False)
 
     def delete_color(self, color, palette_type, palette_name):
-        """ Delete color """
+        """Delete color."""
+
         if palette_type == '__special__':
             if palette_name == "Favorites":
                 favs = get_favs()['colors']
@@ -664,7 +693,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         break
 
     def add_fav(self, color):
-        """ Add favorite """
+        """Add favorite."""
+
         favs = get_favs()['colors']
         favs.append(color)
         save_palettes(favs, favs=True)
@@ -673,7 +703,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.show_color_info(update=False)
 
     def remove_fav(self, color):
-        """ Remove favorite """
+        """Remove favorite."""
+
         favs = get_favs()['colors']
         favs.remove(color)
         save_palettes(favs, favs=True)
@@ -682,7 +713,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.show_color_info(update=False)
 
     def color_picker(self, color):
-        """ Get color with color picker """
+        """Get color with color picker."""
+
         s = sublime.load_settings('color_helper_share.sublime-settings')
         s.set('color_pick_return', None)
         self.view.window().run_command(
@@ -696,7 +728,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             sublime.set_timeout(self.show_color_info, 0)
 
     def insert_color(self, target_color, convert=None):
-        """ Insert colors """
+        """Insert colors."""
+
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
@@ -735,7 +768,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.view.hide_popup()
 
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
-        """ Format color palette previews """
+        """Format color palette previews."""
+
         colors = ['<h1 class="header">%s</h1>' % label]
         if caption:
             colors.append('<span class="caption">%s</span><br>' % caption)
@@ -754,7 +788,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         return ''.join(colors)
 
     def format_colors(self, color_list, label, palette_type, delete=None):
-        """ Format colors under palette """
+        """Format colors under palette."""
+
         colors = ['<h1 class="header">%s</h1>' % label]
         count = 0
         for f in color_list:
@@ -781,7 +816,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         return ''.join(colors)
 
     def format_info(self, color, alpha=None):
-        """ Format the selected color info """
+        """Format the selected color info."""
         rgba = RGBA(color)
 
         try:
@@ -825,7 +860,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
             info.append(
-                '<a href="__color_picker__:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (color, ch_theme.dropper)
+                '<a href="__color_picker__:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
+                    color, ch_theme.dropper
+                )
             )
 
         if show_global_palettes or show_project_palettes:
@@ -853,31 +890,40 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('<div class="divider"></div>')
             if web_color:
                 info.append(
-                    '<a href="__convert__:%s:name" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
+                    '<a href="__convert__:%s:name" class="convert-link">' % color +
+                    '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                     '<span class="color-value">%s</span><br>' % web_color
                 )
 
             info.append(
-                '<a href="__convert__:%s:hex" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
+                '<a href="__convert__:%s:hex" class="convert-link">' % color +
+                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '<a href="__convert__:%s:rgb" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
-                '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (rgba.r, rgba.g, rgba.b) +
+                '<a href="__convert__:%s:rgb" class="convert-link">' % color +
+                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
+                '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (
+                    rgba.r, rgba.g, rgba.b
+                ) +
                 '<br>'
             )
 
             info.append(
-                '<a href="__convert__:%s:rgba" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
-                '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (rgba.r, rgba.g, rgba.b, alpha if alpha else '1') +
+                '<a href="__convert__:%s:rgba" class="convert-link">' % color +
+                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
+                '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (
+                    rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
+                ) +
                 '<br>'
             )
 
             h, l, s = rgba.tohls()
 
             info.append(
-                '<a href="__convert__:%s:hsl" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
+                '<a href="__convert__:%s:hsl" class="convert-link">' % color +
+                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
                     fmt_float(h * 360.0),
                     fmt_float(s * 100.0),
@@ -887,7 +933,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<a href="__convert__:%s:hsla" class="convert-link"><img style="width: 12px; height: 12px;" src="%s"/></a> ' % (color, ch_theme.convert) +
+                '<a href="__convert__:%s:hsla" class="convert-link">' % color +
+                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
                     fmt_float(h * 360.0),
                     fmt_float(s * 100.0),
@@ -900,7 +947,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         return ''.join(info)
 
     def show_palettes(self, delete=False, color=None, update=False):
-        """ Show preview of all palettes """
+        """Show preview of all palettes."""
+
         show_div = False
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
@@ -919,7 +967,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 '<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
             )
         elif delete:
-            html.append('<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow)
+            html.append(
+                '<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
+            )
 
         if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
             html.append(
@@ -934,8 +984,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if color:
             html.append(
                 '<h1 class="header">New Palette</h1>' +
-                '<a href="__create_palette__:__global__:%s" class="control-link">Create New Palette</a><br><br>' % color +
-                '<a href="__create_palette__:__project__:%s" class="control-link">Create New Project Palette</a>' % color +
+                '<a href="__create_palette__:__global__:%s" class="control-link">' % color +
+                'Create New Palette</a><br><br>' +
+                '<a href="__create_palette__:__project__:%s" class="control-link">' % color +
+                'Create New Project Palette</a>' +
                 '<div class="divider"></div>'
             )
 
@@ -943,20 +995,26 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             favs = get_favs()
             if len(favs['colors']) or color:
                 show_div = True
-                html.append(self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color))
+                html.append(
+                    self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
+                )
 
         if show_current_palette:
             current_colors = self.view.settings().get('color_helper_file_palette', [])
             if not delete and not color and len(current_colors):
                 show_div = True
-                html.append(self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color))
+                html.append(
+                    self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color)
+                )
 
         if show_current_project_palette:
             data = self.view.window().project_data()
             project_colors = [] if data is None else data.get('color_helper_project_palette', [])
             if not delete and not color and len(project_colors):
                 show_div = True
-                html.append(self.format_palettes(project_colors, "Project Colors", '__special__', delete=delete, color=color))
+                html.append(
+                    self.format_palettes(project_colors, "Project Colors", '__special__', delete=delete, color=color)
+                )
 
         if show_global_palettes:
             palettes = get_palettes()
@@ -966,7 +1024,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             for palette in palettes:
                 show_div = True
                 name = palette.get("name")
-                html.append(self.format_palettes(palette.get('colors', []), name, '__global__', palette.get('caption'), delete=delete, color=color))
+                html.append(
+                    self.format_palettes(
+                        palette.get('colors', []), name, '__global__', palette.get('caption'),
+                        delete=delete,
+                        color=color
+                    )
+                )
 
         if show_project_palettes:
             palettes = get_project_palettes(self.view.window())
@@ -975,7 +1039,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 html.append('<div class="divider"></div>')
             for palette in palettes:
                 name = palette.get("name")
-                html.append(self.format_palettes(palette.get('colors', []), name, '__project__', palette.get('caption'), delete=delete, color=color))
+                html.append(
+                    self.format_palettes(
+                        palette.get('colors', []), name, '__project__', palette.get('caption'),
+                        delete=delete,
+                        color=color
+                    )
+                )
 
         html.append('</div>')
 
@@ -989,7 +1059,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
-        """ Show colors under the given palette """
+        """Show colors under the given palette."""
+
         target = None
         current = False
         if palette_type == "__special__":
@@ -1058,7 +1129,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
     def show_color_info(self, update=False):
-        """ Show the color under the cursor """
+        """Show the color under the cursor."""
 
         color = None
         sels = self.view.sel()
@@ -1104,7 +1175,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.view.hide_popup()
 
     def run(self, edit, mode="palette", palette_name=None, color=None):
-        """ Run the specified tooltip """
+        """Run the specified tooltip."""
+
         self.no_info = True
         if mode == "palette":
             if palette_name is not None:
@@ -1118,6 +1190,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.show_color_info()
 
     def is_enabled(self, mode="palette", palette_name=None, color=None):
+        """Check if command is enabled."""
+
         s = sublime.load_settings('color_helper.sublime-settings')
         return (
             mode == "info" or
@@ -1130,7 +1204,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
 
 class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
+    """Color Helper file index command."""
+
     def run(self, edit):
+        """Run the command."""
         if get_scope(self.view, skip_sel_check=True):
             if ch_file_thread is None or not ch_file_thread.is_alive():
                 start_file_index(self.view)
@@ -1140,12 +1217,18 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
             sublime.error_message('Cannot index colors in this file!')
 
     def is_enabled(self):
+        """Check if command is enabled."""
+
         s = sublime.load_settings('color_helper.sublime-settings')
         return s.get('enable_current_file_palette', True)
 
 
 class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
+    """Color Helper project index command."""
+
     def run(self, clear_cache=False):
+        """Run the command."""
+
         global ch_project_thread
         if ch_project_thread is None or not ch_project_thread.is_alive() or clear_cache:
             if clear_cache:
@@ -1154,13 +1237,17 @@ class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
                 cache = os.path.join(get_cache_dir(), "%d.cache" % self.window.id())
                 if os.path.exists(cache):
                     os.remove(cache)
-            ch_project_thread = ChProjectIndexThread(self.window, get_project_folders(self.window), clear_cache=clear_cache)
+            ch_project_thread = ChProjectIndexThread(
+                self.window, get_project_folders(self.window), clear_cache=clear_cache
+            )
             ch_project_thread.start()
             sublime.status_message('Project color index started...')
         else:
             sublime.error_message('Project indexer is already running!')
 
     def is_enabled(self, **kwargs):
+        """Check if command is enabled."""
+
         s = sublime.load_settings('color_helper.sublime-settings')
         return s.get('enable_project_palette', True)
 
@@ -1169,8 +1256,11 @@ class ColorHelperProjectIndexCommand(sublime_plugin.WindowCommand):
 # Threading
 ###########################
 class ColorHelperListener(sublime_plugin.EventListener):
+    """Color Helper listener."""
+
     def on_selection_modified(self, view):
-        """ Flag that we need to show a tooltip """
+        """Flag that we need to show a tooltip."""
+
         if ch_thread.ignore_all:
             return
         now = time()
@@ -1180,7 +1270,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
     on_modified = on_selection_modified
 
     def on_activated(self, view):
-        """ Run current file scan and/or project scan if not run before """
+        """Run current file scan and/or project scan if not run before."""
+
         global ch_project_thread
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
@@ -1198,7 +1289,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     sublime.status_message("Project color index started...")
 
     def on_post_save(self, view):
-        """ Run current file scan and/or project scan on save """
+        """Run current file scan and/or project scan on save."""
+
         global ch_project_thread
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
@@ -1213,7 +1305,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 sublime.status_message("Project color index started...")
 
     def on_clone(self, view):
-        """ Run current file scan on clone """
+        """Run current file scan on clone."""
+
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
@@ -1221,7 +1314,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
 
 class ChProjectIndexThread(threading.Thread):
+    """Color Helper project indexer thread."""
+
     def __init__(self, window, project_folders, clear_cache=False):
+        """Initialize."""
+
         s = sublime.load_settings('color_helper.sublime-settings')
         scan_settings = s.get('project_file_scan_extensions', {})
         self.ignore = ['.', '..'] + scan_settings.get("ignore_folders", [".svn", ".git"])
@@ -1243,13 +1340,15 @@ class ChProjectIndexThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def kill(self):
-        """ Kill thread """
+        """Kill thread."""
+
         self.abort = True
         while self.is_alive():
             pass
 
     def save_project_data(self, colors):
-        """ Store project colors in project data """
+        """Store project colors in project data."""
+
         colors.sort()
         data = self.window.project_data()
         if data is None:
@@ -1260,7 +1359,7 @@ class ChProjectIndexThread(threading.Thread):
         sublime.status_message('Project color index complete...')
 
     def save_results(self, cache_file, cache):
-        """ Save cache results """
+        """Save cache results."""
         try:
             with codecs.open(cache_file, 'w', encoding='utf-8') as f:
                 f.write(json.dumps(cache))
@@ -1268,7 +1367,8 @@ class ChProjectIndexThread(threading.Thread):
             pass
 
     def crawl_files(self, root, files, colors, old_cache, cache):
-        """ Crawl project files and index colors from various sources """
+        """Crawl project files and index colors from various sources."""
+
         for file_name in files:
             if self.abort:
                 break
@@ -1311,8 +1411,8 @@ class ChProjectIndexThread(threading.Thread):
                     cache[file_path] = old_cache[file_path]
 
     def parse_css(self, content, single_line_comments=False):
-        # Strip out comment and strings so that we can scan for colors
-        # without worrying about irrelevant text being processed.
+        """Strip out comment and strings so that we can scan for colors without false positives."""
+
         index = 0
         slash, star, bslash, squote, dquote, space, newline = b'/*\\\'" \n'
         text = [space]
@@ -1358,7 +1458,8 @@ class ChProjectIndexThread(threading.Thread):
         return bytes(text)
 
     def parse_html(self, content):
-        """ Strip comments and parse css from tag style attributes and style tags """
+        """Strip comments and parse css from tag style attributes and style tags."""
+
         bstrs = []
 
         for m in TAG_HTML_RE.finditer(content):
@@ -1373,7 +1474,7 @@ class ChProjectIndexThread(threading.Thread):
         return b''.join(bstrs)
 
     def run(self):
-        """ Walk the project structure and index colors in CSS, HTML, and ASE files """
+        """Walk the project structure and index colors in CSS, HTML, and ASE files."""
         colors = set()
         if len(self.project_folders):
             to_crawl = [pf['path'] for pf in self.project_folders]
@@ -1410,10 +1511,11 @@ class ChProjectIndexThread(threading.Thread):
 
 
 class ChFileIndexThread(threading.Thread):
-    """ Load up defaults """
+    """Load up defaults."""
 
     def __init__(self, view, source):
-        """ Setup the thread """
+        """Setup the thread."""
+
         self.abort = False
         self.view = view
         self.webcolor_names = re.compile(
@@ -1425,7 +1527,8 @@ class ChFileIndexThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def update_index(self, view, colors):
-        """ Code to run """
+        """Code to run."""
+
         try:
             colors.sort()
             sublime.status_message('File color index complete...')
@@ -1436,18 +1539,21 @@ class ChFileIndexThread(threading.Thread):
             pass
 
     def kill(self):
-        """ Kill thread """
+        """Kill thread."""
+
         self.abort = True
         while self.is_alive():
             pass
 
     def run(self):
-        """ Thread loop """
+        """Thread loop."""
+
         if self.source:
             self.index_colors()
 
     def index_colors(self):
-        """ Index colors in file """
+        """Index colors in file."""
+
         colors = set()
         for m in COLOR_RE.finditer(self.source):
             if self.abort:
@@ -1466,15 +1572,17 @@ class ChFileIndexThread(threading.Thread):
 
 
 class ChThread(threading.Thread):
-    """ Load up defaults """
+    """Load up defaults."""
 
     def __init__(self):
-        """ Setup the thread """
+        """Setup the thread."""
+
         self.reset()
         threading.Thread.__init__(self)
 
     def reset(self):
-        """ Reset the thread variables """
+        """Reset the thread variables."""
+
         self.wait_time = 0.12
         self.time = time()
         self.modified = False
@@ -1483,7 +1591,8 @@ class ChThread(threading.Thread):
         self.save_palettes = False
 
     def payload(self):
-        """ Code to run """
+        """Code to run."""
+
         self.modified = False
         self.ignore_all = True
         window = sublime.active_window()
@@ -1530,14 +1639,16 @@ class ChThread(threading.Thread):
         self.time = time()
 
     def kill(self):
-        """ Kill thread """
+        """Kill thread."""
+
         self.abort = True
         while self.is_alive():
             pass
         self.reset()
 
     def run(self):
-        """ Thread loop """
+        """Thread loop."""
+
         while not self.abort:
             if self.modified is True and time() - self.time > self.wait_time:
                 sublime.set_timeout(lambda: self.payload(), 0)
@@ -1548,10 +1659,16 @@ class ChThread(threading.Thread):
 # Tooltip Theme
 ###########################
 class ChTheme(object):
+    """Color Helper theme."""
+
     def __init__(self):
+        """Initialize."""
+
         self.setup()
 
     def read_theme(self, theme, default_theme):
+        """Read theme."""
+
         theme_content = None
         self.border_color = '#000'
         self.css_file = ""
@@ -1577,7 +1694,10 @@ class ChTheme(object):
             self.border_color = theme_content.get('border_color', None)
             self.back_arrow = self.get_theme_res(theme_content.get('images', {}).get('back', ''), link=True)
             self.bookmark = self.get_theme_res(theme_content.get('images', {}).get('bookmark', ''), link=True)
-            self.bookmark_selected = self.get_theme_res(theme_content.get('images', {}).get('bookmark_selected', ''), link=True)
+            self.bookmark_selected = self.get_theme_res(
+                theme_content.get('images', {}).get('bookmark_selected', ''),
+                link=True
+            )
             self.dropper = self.get_theme_res(theme_content.get('images', {}).get('dropper', ''), link=True)
             self.color_palette = self.get_theme_res(theme_content.get('images', {}).get('palette', ''), link=True)
             self.trash = self.get_theme_res(theme_content.get('images', {}).get('delete', ''), link=True)
@@ -1592,16 +1712,24 @@ class ChTheme(object):
                 self.css = None
 
     def has_changed(self):
-        # Reload events recently are always reloading,
-        # So maybe we will use this to check if reload is needed.
+        """Check if theme has changed.
+
+        Reload events recently are always reloading,
+        so maybe we will use this to check if reload is needed.
+        """
+
         pref_settings = sublime.load_settings('Preferences.sublime-settings')
         return self.scheme_file != pref_settings.get('color_scheme')
 
     def get_theme_res(self, *args, link=False):
+        """Get theme resource."""
+
         res = '/'.join(('Packages', self.tt_theme) + args)
         return 'res://' + res if link else res
 
     def setup(self):
+        """Setup theme."""
+
         pref_settings = sublime.load_settings('Preferences.sublime-settings')
 
         self.scheme_file = pref_settings.get('color_scheme')
@@ -1623,7 +1751,8 @@ class ChTheme(object):
 # Plugin Initialization
 ###########################
 def init_plugin():
-    """ Setup plugin variables and objects """
+    """Setup plugin variables and objects."""
+
     global ch_settings
     global ch_thread
     global ch_theme
@@ -1666,11 +1795,14 @@ def init_plugin():
 
 
 def plugin_loaded():
-    """ Setup plugin """
+    """Setup plugin."""
+
     init_plugin()
 
 
 def plugin_unloaded():
+    """Kill threads."""
+
     ch_thread.kill()
     if ch_file_thread is not None:
         ch_file_thread.kill()
