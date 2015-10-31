@@ -11,7 +11,7 @@ from ColorHelper.lib.scheme_lum import scheme_lums
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib.ase import loads as ase_load
 import ColorHelper.lib.webcolors as webcolors
-from ColorHelper.lib.file_strip.json import sanitize_json
+from ColorHelper.lib import file_strip
 import threading
 from time import time, sleep
 import re
@@ -770,7 +770,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
         """Format color palette previews."""
 
-        colors = ['<h1 class="header">%s</h1>' % label]
+        colors = ['<h1>%s</h1>' % label]
         if caption:
             colors.append('<span class="caption">%s</span><br>' % caption)
         if delete:
@@ -790,7 +790,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def format_colors(self, color_list, label, palette_type, delete=None):
         """Format colors under palette."""
 
-        colors = ['<h1 class="header">%s</h1>' % label]
+        colors = ['<h1>%s</h1>' % label]
         count = 0
         for f in color_list:
             if count != 0 and (count % 8 == 0):
@@ -890,19 +890,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('<div class="divider"></div>')
             if web_color:
                 info.append(
-                    '<a href="__convert__:%s:name" class="convert-link">' % color +
+                    '<a href="__convert__:%s:name" class="link">' % color +
                     '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                     '<span class="color-value">%s</span><br>' % web_color
                 )
 
             info.append(
-                '<a href="__convert__:%s:hex" class="convert-link">' % color +
+                '<a href="__convert__:%s:hex" class="link">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '<a href="__convert__:%s:rgb" class="convert-link">' % color +
+                '<a href="__convert__:%s:rgb" class="link">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (
                     rgba.r, rgba.g, rgba.b
@@ -911,7 +911,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<a href="__convert__:%s:rgba" class="convert-link">' % color +
+                '<a href="__convert__:%s:rgba" class="link">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (
                     rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
@@ -922,7 +922,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h, l, s = rgba.tohls()
 
             info.append(
-                '<a href="__convert__:%s:hsl" class="convert-link">' % color +
+                '<a href="__convert__:%s:hsl" class="link">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
                     fmt_float(h * 360.0),
@@ -933,7 +933,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<a href="__convert__:%s:hsla" class="convert-link">' % color +
+                '<a href="__convert__:%s:hsla" class="link">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
                     fmt_float(h * 360.0),
@@ -983,10 +983,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if color:
             html.append(
-                '<h1 class="header">New Palette</h1>' +
-                '<a href="__create_palette__:__global__:%s" class="control-link">' % color +
+                '<h1>New Palette</h1>' +
+                '<a href="__create_palette__:__global__:%s" class="link">' % color +
                 'Create New Palette</a><br><br>' +
-                '<a href="__create_palette__:__project__:%s" class="control-link">' % color +
+                '<a href="__create_palette__:__project__:%s" class="link">' % color +
                 'Create New Project Palette</a>' +
                 '<div class="divider"></div>'
             )
@@ -1534,8 +1534,7 @@ class ChFileIndexThread(threading.Thread):
             sublime.status_message('File color index complete...')
             view.settings().set('color_helper_file_palette', colors)
             debug('Colors:\n', colors)
-        except Exception as e:
-            debug(e)
+        except Exception:
             pass
 
     def kill(self):
@@ -1684,10 +1683,10 @@ class ChTheme(object):
         for t in (theme, default_theme):
             try:
                 theme_content = json.loads(
-                    sanitize_json(sublime.load_resource(t))
+                    file_strip.json.sanitize_json(sublime.load_resource(t))
                 )
                 break
-            except:
+            except Exception:
                 pass
 
         if theme_content is not None:
@@ -1707,19 +1706,11 @@ class ChTheme(object):
                 [os.path.dirname(theme), theme_content.get('css', '')]
             )
             try:
-                self.css = sublime.load_resource(self.css_file).replace('\r', '')
-            except:
+                self.css = file_strip.comments.Comments(
+                    'css'
+                ).strip(sublime.load_resource(self.css_file).replace('\r', ''))
+            except Exception:
                 self.css = None
-
-    def has_changed(self):
-        """Check if theme has changed.
-
-        Reload events recently are always reloading,
-        so maybe we will use this to check if reload is needed.
-        """
-
-        pref_settings = sublime.load_settings('Preferences.sublime-settings')
-        return self.scheme_file != pref_settings.get('color_scheme')
 
     def get_theme_res(self, *args, link=False):
         """Get theme resource."""

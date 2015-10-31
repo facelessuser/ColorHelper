@@ -7,6 +7,19 @@ Copyright (c) 2012 Isaac Muse <isaacmuse@gmail.com>
 import re
 
 LINE_PRESERVE = re.compile(r"\r?\n", re.MULTILINE)
+CSS_PATTERN = re.compile(
+    r'''(?x)
+        (?P<comments>
+            /\*[^*]*\*+(?:[^/*][^*]*\*+)*/  # multi-line comments
+        )
+      | (?P<code>
+            "(?:\\.|[^"\\])*"               # double quotes
+          | '(?:\\.|[^'\\])*'               # single quotes
+          | .[^/"']*                        # everything else
+        )
+    ''',
+    re.DOTALL
+)
 CPP_PATTERN = re.compile(
     r'''(?x)
         (?P<comments>
@@ -77,6 +90,17 @@ def _python(text, preserve_lines=False):
     )
 
 
+@staticmethod
+def _css(text, preserve_lines=False):
+    """CSS style comment stripper."""
+
+    return _strip_regex(
+        CSS_PATTERN,
+        text,
+        preserve_lines
+    )
+
+
 class CommentException(Exception):
     """Comment exception."""
 
@@ -127,3 +151,4 @@ Comments.add_style("c", _cpp)
 Comments.add_style("json", _cpp)
 Comments.add_style("cpp", _cpp)
 Comments.add_style("python", _python)
+Comments.add_style("css", _css)

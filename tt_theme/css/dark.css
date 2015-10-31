@@ -10,6 +10,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
+    color: #99cc99;
     font-size: 1.2em;
 }
 
@@ -17,6 +18,30 @@ p {
     padding-left: 1em;
 }
 
+.content {
+    margin: 1em;
+}
+
+.divider {
+    padding: 1px;
+    margin: 1em 3em;
+    background-color: #393b3d;
+}
+
+.key {
+    color: #cc99cc;
+    font-weight: bold;
+}
+
+.link {
+    color: #6699cc;
+}
+
+.small {
+    font-size: 0.8em;
+}
+
+/* Color Specific style */
 .delete {
     background-color: #c82829;
     color: #333333;
@@ -25,34 +50,6 @@ p {
 .add {
     background-color: #718c00;
     color: #333333;
-}
-
-.content {
-    margin: 1em;
-}
-
-.control-link, .file-link, .convert-link {
-    color: #6699cc;
-}
-
-.copy-link {
-    color: #6699cc;
-    font-size: 0.8em;
-}
-
-.key {
-    color: #cc99cc;
-    font-weight: bold;
-}
-
-.header {
-    color: #99cc99;
-}
-
-.divider {
-    padding: 1px;
-    margin: 1em 3em;
-    background-color: #393b3d;
 }
 
 .color-value {
