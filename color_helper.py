@@ -890,19 +890,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('<div class="divider"></div>')
             if web_color:
                 info.append(
-                    '<a href="__convert__:%s:name" class="link">' % color +
+                    '<a href="__convert__:%s:name">' % color +
                     '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                     '<span class="color-value">%s</span><br>' % web_color
                 )
 
             info.append(
-                '<a href="__convert__:%s:hex" class="link">' % color +
+                '<a href="__convert__:%s:hex">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '<a href="__convert__:%s:rgb" class="link">' % color +
+                '<a href="__convert__:%s:rgb">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (
                     rgba.r, rgba.g, rgba.b
@@ -911,7 +911,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<a href="__convert__:%s:rgba" class="link">' % color +
+                '<a href="__convert__:%s:rgba">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (
                     rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
@@ -922,7 +922,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h, l, s = rgba.tohls()
 
             info.append(
-                '<a href="__convert__:%s:hsl" class="link">' % color +
+                '<a href="__convert__:%s:hsl">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
                     fmt_float(h * 360.0),
@@ -933,7 +933,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             info.append(
-                '<a href="__convert__:%s:hsla" class="link">' % color +
+                '<a href="__convert__:%s:hsla">' % color +
                 '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
                 '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
                     fmt_float(h * 360.0),
@@ -984,9 +984,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if color:
             html.append(
                 '<h1>New Palette</h1>' +
-                '<a href="__create_palette__:__global__:%s" class="link">' % color +
+                '<a href="__create_palette__:__global__:%s">' % color +
                 'Create New Palette</a><br><br>' +
-                '<a href="__create_palette__:__project__:%s" class="link">' % color +
+                '<a href="__create_palette__:__project__:%s">' % color +
                 'Create New Project Palette</a>' +
                 '<div class="divider"></div>'
             )

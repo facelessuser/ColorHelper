@@ -18,6 +18,10 @@ p {
     padding-left: 1em;
 }
 
+a {
+    color: #6699cc;
+}
+
 .content {
     margin: 1em;
 }
@@ -31,10 +35,6 @@ p {
 .key {
     color: #cc99cc;
     font-weight: bold;
-}
-
-.link {
-    color: #6699cc;
 }
 
 .small {
