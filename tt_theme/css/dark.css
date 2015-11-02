@@ -32,26 +32,39 @@ a {
     background-color: #393b3d;
 }
 
-.key {
-    color: #cc99cc;
-    font-weight: bold;
-}
-
 .small {
     font-size: 0.8em;
 }
 
+.comment {
+    color: #888888;
+}
+
+.keyword {
+    color: #cc99cc;
+}
+
+.attention, .important {
+    color: #66CCCC;
+}
+
+.caution, .warning {
+    color: #F99157;
+}
+
+.danger, .error {
+    color: #F2777A;
+}
+
+.hint, .tip {
+    color: #99cc99;
+}
+
+.note {
+    color: #FFCC66;
+}
+
 /* Color Specific style */
-.delete {
-    background-color: #c82829;
-    color: #333333;
-}
-
-.add {
-    background-color: #718c00;
-    color: #333333;
-}
-
 .color-value {
     color: #F99157;
 }

@@ -32,26 +32,39 @@ a {
     background-color: #e6f5ff;
 }
 
-.key {
-    color: #8959a8;
-    font-weight: bold;
-}
-
 .small {
     font-size: 0.8em;
 }
 
+.comment {
+    color: #8e908c;
+}
+
+.keyword {
+    color: #8959a8;
+}
+
+.attention, .important {
+    color: #3e999f;
+}
+
+.caution, .warning {
+    color: #f5871f;
+}
+
+.danger, .error {
+    color: #c82829;
+}
+
+.hint, .tip {
+    color: #718c00;
+}
+
+.note {
+    color: #eab700;
+}
+
 /* Color Specific style */
-.delete {
-    background-color: #c82829;
-    color: #cccccc;
-}
-
-.add {
-    background-color: #718c00;
-    color: #cccccc;
-}
-
 .color-value {
     color: #f5871f;
 }
