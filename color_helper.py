@@ -71,6 +71,12 @@ COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, 
 
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
+ADD_CSS = '''
+.small {
+    font-size: 0.7em;
+}
+'''
+
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -1021,13 +1027,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if update:
-            mdpopups.update_popup(self.view, ''.join(html))
+            mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
         else:
             mdpopups.show_popup(
                 self.view,
                 ''.join(html), location=-1, max_width=600,
                 on_navigate=self.on_navigate,
-                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                append_css=ADD_CSS
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -1084,13 +1091,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html))
+                mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                    append_css=ADD_CSS
                 )
 
     def show_color_info(self, update=False):
@@ -1125,13 +1133,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html))
+                mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                    append_css=ADD_CSS
                 )
         elif update:
             self.view.hide_popup()
