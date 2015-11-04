@@ -1,0 +1,9 @@
+{
+    "*": {
+        ">=3000": [
+            "pygments",
+            "markdown",
+            "mdpopups"
+        ]
+    }
+}

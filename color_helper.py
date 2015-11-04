@@ -7,17 +7,16 @@ License: MIT
 import sublime
 import sublime_plugin
 from ColorHelper.lib.color_box import color_box, palette_preview
-from ColorHelper.lib.scheme_lum import scheme_lums
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib.ase import loads as ase_load
 import ColorHelper.lib.webcolors as webcolors
-from ColorHelper.lib import file_strip
 import threading
 from time import time, sleep
 import re
 import os
 import codecs
 import json
+import mdpopups
 # import traceback
 
 
@@ -72,7 +71,6 @@ COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, 
 
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
-ch_theme = None
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -770,9 +768,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
         """Format color palette previews."""
 
-        colors = ['<h1>%s</h1>' % label]
+        colors = ['\n## %s\n' % label]
         if caption:
-            colors.append('<span class="caption">%s</span><br>' % caption)
+            colors.append('%s\n' % caption)
         if delete:
             label = '__delete__palette__:%s:%s' % (palette_type, label)
         elif color:
@@ -780,9 +778,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
         colors.append(
-            '<a href="%s">%s</a>' % (
-                label,
-                palette_preview(color_list, ch_theme.border_color)
+            '[%s](%s)' % (
+                palette_preview(color_list, '#cccccc', '#333333', border_size=2),
+                label
             )
         )
         return ''.join(colors)
@@ -790,11 +788,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def format_colors(self, color_list, label, palette_type, delete=None):
         """Format colors under palette."""
 
-        colors = ['<h1>%s</h1>' % label]
+        colors = ['\n## %s\n' % label]
         count = 0
         for f in color_list:
             if count != 0 and (count % 8 == 0):
-                colors.append('<br><br>')
+                colors.append('\n\n')
             elif count != 0:
                 if sublime.platform() == 'windows':
                     colors.append('&nbsp; ')
@@ -802,14 +800,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     colors.append('&nbsp;')
             if delete:
                 colors.append(
-                    '<a href="__delete_color__:%s:%s:%s">%s</a>' % (
-                        f, palette_type, label, color_box(f, ch_theme.border_color, size=32)
+                    '[%s](__delete_color__:%s:%s:%s)' % (
+                        color_box(f, '#cccccc', '#333333', size=32, border_size=2),
+                        f, palette_type, label,
                     )
                 )
             else:
                 colors.append(
-                    '<a href="%s">%s</a>' % (
-                        f, color_box(f, ch_theme.border_color, size=32)
+                    '[%s](%s)' % (
+                        color_box(f, '#cccccc', '#333333', size=32, border_size=2), f
                     )
                 )
             count += 1
@@ -820,7 +819,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         rgba = RGBA(color)
 
         try:
-            web_color = webcolors.hex_to_name(color)
+            web_color = webcolors.hex_to_name(rgba.get_rgb())
         except:
             web_color = None
 
@@ -841,107 +840,86 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
         if click_color_box_to_pick == 'color_picker' and color_picker and show_picker:
-            color_box_wrapper = ('<a href="__color_picker__:%s">' % color) + '%s</a> '
+            color_box_wrapper = '\n\n[%s]' + ('(__color_picker__:%s)' % color)
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
-            color_box_wrapper = '<a href="__palettes__">%s</a> '
+            color_box_wrapper = '\n\n[%s](__palettes__)'
         else:
-            color_box_wrapper = '%s '
+            color_box_wrapper = '\n\n%s'
 
-        info = [
-            color_box_wrapper % color_box(color, ch_theme.border_color, size=64)
-        ]
+        info = []
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             info.append(
-                '<a href="__palettes__">' +
-                '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.color_palette +
-                '</a>'
+                '[palettes](__palettes__){: .small} '
             )
 
         if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
             info.append(
-                '<a href="__color_picker__:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
-                    color, ch_theme.dropper
-                )
+                '[picker](__color_picker__:%s){: .small} ' % color
             )
 
         if show_global_palettes or show_project_palettes:
             info.append(
-                '<a href="__add_color__:%s">' % color.lower() +
-                '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.add +
-                '</a>'
+                '[add](__add_color__:%s){: .small} ' % color.lower()
             )
 
         if show_favorite_palette:
             if color in get_favs()['colors']:
                 info.append(
-                    '<a href="__remove_fav__:%s">' % color.lower() +
-                    '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.bookmark_selected +
-                    '</a>'
+                    '[unmark](__remove_fav__:%s){: .small}' % color.lower()
                 )
             else:
                 info.append(
-                    '<a href="__add_fav__:%s">' % color.lower() +
-                    '<img style="width: 20px; height: 20px;" src="%s">' % ch_theme.bookmark +
-                    '</a>'
+                    '[mark](__add_fav__:%s){: .small}' % color.lower()
                 )
+
+        info.append(
+            color_box_wrapper % palette_preview([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
+        )
+
+        # info.append(color_box_wrapper % color_box(color, '#cccccc', '#333333', size=64, border_size=2))
 
         if show_conversions:
-            info.append('<div class="divider"></div>')
+            info.append('\n\n---\n\n')
             if web_color:
                 info.append(
-                    '<a href="__convert__:%s:name">' % color +
-                    '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                    '<span class="color-value">%s</span><br>' % web_color
+                    '[&lt;=&gt;](__convert__:%s:name) ' % color +
+                    '<span class="st-constant">%s</span>\n' % web_color
                 )
 
             info.append(
-                '<a href="__convert__:%s:hex">' % color +
-                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                '<span class="color-value">%s</span><br>' % (color.lower() if not alpha else color[:-2].lower())
+                '[&lt;=&gt;](__convert__:%s:hex) ' % color +
+                '<span class="st-variable">%s</span>\n' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '<a href="__convert__:%s:rgb">' % color +
-                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                '<span class="color-key">rgb</span>(<span class="color-value">%d, %d, %d</span>)' % (
+                '[&lt;=&gt;](__convert__:%s:rgb) ' % color +
+                '<span class="st-keyword">rgb</span>(<span class="st-constant">%d, %d, %d</span>)\n' % (
                     rgba.r, rgba.g, rgba.b
-                ) +
-                '<br>'
+                )
             )
 
             info.append(
-                '<a href="__convert__:%s:rgba">' % color +
-                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                '<span class="color-key">rgba</span>(<span class="color-value">%d, %d, %d, %s</span>)' % (
+                '[&lt;=&gt;](__convert__:%s:rgba) ' % color +
+                '<span class="st-keyword">rgba</span>(<span class="st-constant">%d, %d, %d, %s</span>)\n' % (
                     rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
-                ) +
-                '<br>'
+                )
             )
 
             h, l, s = rgba.tohls()
 
             info.append(
-                '<a href="__convert__:%s:hsl">' % color +
-                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                '<span class="color-key">hsl</span>(<span class="color-value">%s, %s%%, %s%%</span>)' % (
-                    fmt_float(h * 360.0),
-                    fmt_float(s * 100.0),
-                    fmt_float(l * 100.0)
-                ) +
-                '<br>'
+                '[&lt;=&gt;](__convert__:%s:hsl) ' % color +
+                '<span class="st-keyword">hsl</span>(<span class="st-constant">%s, %s%%, %s%%</span>)\n' % (
+                    fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0)
+                )
             )
 
             info.append(
-                '<a href="__convert__:%s:hsla">' % color +
-                '<img style="width: 12px; height: 12px;" src="%s"/></a> ' % ch_theme.convert +
-                '<span class="color-key">hsla</span>(<span class="color-value">%s, %s%%, %s%%, %s</span>)' % (
-                    fmt_float(h * 360.0),
-                    fmt_float(s * 100.0),
-                    fmt_float(l * 100.0),
-                    alpha if alpha else '1'
-                ) +
-                '<br>'
+                '[&lt;=&gt;](__convert__:%s:hsla) ' % color +
+                '<span class="st-keyword">hsla</span>(<span class="st-constant">%s, %s%%, %s%%, %s</span>)\n' % (
+                        fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0), alpha if alpha else '1'
+                )
             )
 
         return ''.join(info)
@@ -957,38 +935,33 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         show_current_palette = s.get('enable_current_file_palette', True)
         show_current_project_palette = s.get('enable_project_palette', True)
 
-        html = [
-            '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
-            '<div class="content">'
-        ]
+        html = []
 
         if (not self.no_info and not delete) or color:
             html.append(
-                '<a href="__info__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
+                '[back](__info__){: .small} '
             )
         elif delete:
             html.append(
-                '<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
+                '[back](__palettes__){: .small} '
             )
 
         if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
             html.append(
-                '<a href="__delete__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.trash
+                '[delete](__delete__palettes__){: .small} '
             )
 
         if delete:
-            html.append('<br><span class="delete">Click to delete palette.</span>')
-        elif color:
-            html.append('<br><span class="add">Click to add %s to palette.</span>' % color)
+            html.append('\n## Delete Palette\n')
+            html.append('Click the palette to delete.')
 
         if color:
             html.append(
-                '<h1>New Palette</h1>' +
-                '<a href="__create_palette__:__global__:%s">' % color +
-                'Create New Palette</a><br><br>' +
-                '<a href="__create_palette__:__project__:%s">' % color +
-                'Create New Project Palette</a>' +
-                '<div class="divider"></div>'
+                '\n## New Palette\n' +
+                '\nClick the link or palette to add %s.\n\n' % color +
+                '[Create New Palette](__create_palette__:__global__:%s)\n\n' % color +
+                '[Create New Project Palette](__create_palette__:__project__:%s)\n\n' % color +
+                '---\n\n'
             )
 
         if show_favorite_palette:
@@ -1020,7 +993,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             palettes = get_palettes()
             if len(palettes) and show_div:
                 show_div = False
-                html.append('<div class="divider"></div>')
+                html.append('\n\n---\n\n')
             for palette in palettes:
                 show_div = True
                 name = palette.get("name")
@@ -1036,7 +1009,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             palettes = get_project_palettes(self.view.window())
             if len(palettes) and show_div:
                 show_div = False
-                html.append('<div class="divider"></div>')
+                html.append('\n\n---\n\n')
             for palette in palettes:
                 name = palette.get("name")
                 html.append(
@@ -1047,12 +1020,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     )
                 )
 
-        html.append('</div>')
-
         if update:
-            self.view.update_popup(''.join(html))
+            mdpopups.update_popup(self.view, ''.join(html))
         else:
-            self.view.show_popup(
+            mdpopups.show_popup(
+                self.view,
                 ''.join(html), location=-1, max_width=600,
                 on_navigate=self.on_navigate,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -1089,40 +1061,33 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     target = palette
 
         if target is not None:
-            html = [
-                '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
-                '<div class="content">'
-            ]
+            html = []
 
             if not delete:
                 html.append(
-                    '<a href="__palettes__"><img style="width: 20px; height: 20px;" src="%s"></a>' % ch_theme.back_arrow
+                    '[back](__palettes__){: .small} '
                 )
                 if not current:
                     html.append(
-                        '<a href="__delete_colors__:%s:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
-                            palette_type, target['name'], ch_theme.trash
-                        )
+                        '[delete](__delete_colors__:%s:%s){: .small} ' % (palette_type, target['name'])
                     )
             else:
                 html.append(
-                    '<a href="__colors__:%s:%s"><img style="width: 20px; height: 20px;" src="%s"></a>' % (
-                        palette_type, target['name'], ch_theme.back_arrow
-                    )
+                    '[back](__colors__:%s:%s){: .small} ' % (palette_type, target['name'])
                 )
 
             if delete:
-                html.append('<br><span class="delete">Click to delete color.</span>')
+                html.append('\n## Delete Color\nClick the color to delete.')
 
             html.append(
-                self.format_colors(target['colors'], target['name'], palette_type, delete) +
-                '</div>'
+                self.format_colors(target['colors'], target['name'], palette_type, delete)
             )
 
             if update:
-                self.view.update_popup(''.join(html))
+                mdpopups.update_popup(self.view, ''.join(html))
             else:
-                self.view.show_popup(
+                mdpopups.show_popup(
+                    self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -1153,20 +1118,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if alpha is not None:
                 color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
 
-            html = [
-                '<style>%s</style>' % (ch_theme.css if ch_theme.css is not None else '') +
-                '<div class="content">'
-            ]
+            html = []
 
             html.append(
-                self.format_info(color.lower(), alpha) +
-                '</div>'
+                self.format_info(color.lower(), alpha)
             )
 
             if update:
-                self.view.update_popup(''.join(html))
+                mdpopups.update_popup(self.view, ''.join(html))
             else:
-                self.view.show_popup(
+                mdpopups.show_popup(
+                    self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -1655,90 +1617,6 @@ class ChThread(threading.Thread):
 
 
 ###########################
-# Tooltip Theme
-###########################
-class ChTheme(object):
-    """Color Helper theme."""
-
-    def __init__(self):
-        """Initialize."""
-
-        self.setup()
-
-    def read_theme(self, theme, default_theme):
-        """Read theme."""
-
-        theme_content = None
-        self.border_color = '#000'
-        self.css_file = ""
-        self.back_arrow = ""
-        self.bookmark = ""
-        self.bookmark_selected = ""
-        self.dropper = ""
-        self.color_palette = ""
-        self.trash = ""
-        self.add = ""
-        self.convert = ""
-
-        for t in (theme, default_theme):
-            try:
-                theme_content = json.loads(
-                    file_strip.json.sanitize_json(sublime.load_resource(t))
-                )
-                break
-            except Exception:
-                pass
-
-        if theme_content is not None:
-            self.border_color = theme_content.get('border_color', None)
-            self.back_arrow = self.get_theme_res(theme_content.get('images', {}).get('back', ''), link=True)
-            self.bookmark = self.get_theme_res(theme_content.get('images', {}).get('bookmark', ''), link=True)
-            self.bookmark_selected = self.get_theme_res(
-                theme_content.get('images', {}).get('bookmark_selected', ''),
-                link=True
-            )
-            self.dropper = self.get_theme_res(theme_content.get('images', {}).get('dropper', ''), link=True)
-            self.color_palette = self.get_theme_res(theme_content.get('images', {}).get('palette', ''), link=True)
-            self.trash = self.get_theme_res(theme_content.get('images', {}).get('delete', ''), link=True)
-            self.add = self.get_theme_res(theme_content.get('images', {}).get('add', ''), link=True)
-            self.convert = self.get_theme_res(theme_content.get('images', {}).get('convert', ''), link=True)
-            self.css_file = '/'.join(
-                [os.path.dirname(theme), theme_content.get('css', '')]
-            )
-            try:
-                self.css = file_strip.comments.Comments(
-                    'css'
-                ).strip(sublime.load_resource(self.css_file).replace('\r', ''))
-            except Exception:
-                self.css = None
-
-    def get_theme_res(self, *args, link=False):
-        """Get theme resource."""
-
-        res = '/'.join(('Packages', self.tt_theme) + args)
-        return 'res://' + res if link else res
-
-    def setup(self):
-        """Setup theme."""
-
-        pref_settings = sublime.load_settings('Preferences.sublime-settings')
-
-        self.scheme_file = pref_settings.get('color_scheme')
-        try:
-            self.lums = scheme_lums(self.scheme_file)
-        except:
-            self.lums = 128
-
-        self.tt_theme = ch_settings.get('tooltip_theme', 'ColorHelper/tt_theme').rstrip('/')
-        theme_file = 'dark' if self.lums <= 127 else 'light'
-
-        self.read_theme(
-            'Packages/%s/%s.tt_theme' % (self.tt_theme, theme_file),
-            'Packages/ColorHelper/tt_theme/%s.tt_theme' % theme_file
-        )
-
-
-###########################
 # Plugin Initialization
 ###########################
 def init_plugin():
@@ -1746,7 +1624,6 @@ def init_plugin():
 
     global ch_settings
     global ch_thread
-    global ch_theme
     global ch_file_thread
 
     # Make sure cache folder exists
@@ -1768,15 +1645,10 @@ def init_plugin():
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
 
-    # Theme setup
-    ch_theme = ChTheme()
-
     # Setup reload events
     pref_settings = sublime.load_settings('Preferences.sublime-settings')
     pref_settings.clear_on_change('colorhelper_reload')
-    pref_settings.add_on_change('colorhelper_reload', ch_theme.setup)
     ch_settings.clear_on_change('reload')
-    ch_settings.add_on_change('reload', ch_theme.setup)
 
     # Start event thread
     if ch_thread is not None:
