@@ -37,112 +37,30 @@ def checkered_color(color, background):
     return checkered.get_rgb()
 
 
-def color_box(color, border, border2=None, size=16, border_size=1, check_size=4):
+def color_box(colors, border, border2=None, height=32, width=32, border_size=1, check_size=4, max_colors=5):
     """
-    Create an RGBA color box.
+    Generate palette preview.
 
-    Create a color box with the specified RGBA color
+    Create a color box with the specified RGBA color(s)
     and RGB(A) border (alpha will be stripped out of border color).
+    Colors is a list of colors, but only up to 5
     Border can be up to 2 colors (double border).
 
-    Define size of swatch, border width,  and size of checkered board squares.
+    Hight, width and border thickness can all be defined.
+
+    If using a transparent color, you can define the checkerboard pattern size that shows through.
+    If using multiple colors, you can control the max colors to display.  Colors currently are done
+    horizontally only.
+
+    Define size of swatch, border width,  and size of checkerboard squares.
     """
-    assert size - (border_size * 2) >= 0, "Border size too big!"
-
-    # Create bytes buffer for png
-    f = io.BytesIO()
-    p = []
-
-    # Mix transparent color with checkered colors
-    # And covert colors to to lists containing r, g, b channels
-    light = to_list(checkered_color(color, CHECK_LIGHT))
-    dark = to_list(checkered_color(color, CHECK_DARK))
-    border = to_list(border)
-    if border2 is not None:
-        border2 = to_list(border2)
-
-    border1_size = border2_size = int(border_size / 2)
-    border1_size += border_size % 2
-    if border2 is None:
-        border1_size += border2_size
-        border2_size = 0
-
-    # Size of color swatch between borders
-    color_size = size - (border_size * 2)
-
-    # Draw borders and create the checkered
-    # pattern with the mixed light and dark colors
-
-    # Top Border
-    for x in range(0, border1_size):
-        row = list(border * size)
-        p.append(row)
-    for x in range(0, border2_size):
-        row = list(border * border1_size)
-        row += list(border2 * border2_size)
-        row += list(border2 * color_size)
-        row += list(border2 * border2_size)
-        row += list(border * border1_size)
-        p.append(row)
-
-    check_color_y = DARK
-    for y in range(0, color_size):
-        # Get checkerboard color 'y' Changes on every row
-        if y % check_size == 0:
-            check_color_y = DARK if check_color_y == LIGHT else LIGHT
-
-        # Left border
-        row = list(border * border1_size)
-        if border2:
-            row += list(border2 * border2_size)
-
-        # Start checkboard color 'x' with the current 'y' value
-        check_color_x = check_color_y
-
-        # Alternate between checkboard color (or single color)
-        for x in range(0, color_size):
-            if x % check_size == 0:
-                check_color_x = DARK if check_color_x == LIGHT else LIGHT
-            row += (dark if check_color_x == DARK else light)
-
-        # Right border
-        if border2:
-            row += list(border2 * border2_size)
-        row += list(border * border1_size)
-        p.append(row)
-
-    # Bottom border
-    for x in range(0, border2_size):
-        row = list(border * border1_size)
-        row += list(border2 * border2_size)
-        row += list(border2 * color_size)
-        row += list(border2 * border2_size)
-        row += list(border * border1_size)
-        p.append(row)
-    for x in range(0, border1_size):
-        row = list(border * size)
-        p.append(row)
-
-    # Write out png
-    img = Writer(size, size)
-    img.write(f, p)
-
-    # Read out png bytes and base64 encode
-    f.seek(0)
-    return "<img src=\"data:image/png;base64,%s\">" % (
-        base64.b64encode(f.read()).decode('ascii')
-    )
-
-
-def palette_preview(colors, border, border2=None, height=32, width=32 * 8, border_size=1, check_size=4):
-    """Generate palette preview."""
 
     assert height - (border_size * 2) >= 0, "Border size too big!"
     assert width - (border_size * 2) >= 0, "Border size too big!"
 
     # Gather preview colors
     preview_colors = []
-    count = 5 if len(colors) >= 5 else len(colors)
+    count = max_colors if len(colors) >= max_colors else len(colors)
 
     border = to_list(border)
     if border2 is not None:

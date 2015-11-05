@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from ColorHelper.lib.color_box import color_box, palette_preview
+from ColorHelper.lib.color_box import color_box
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib.ase import loads as ase_load
 import ColorHelper.lib.webcolors as webcolors
@@ -785,7 +785,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__colors__:%s:%s' % (palette_type, label)
         colors.append(
             '[%s](%s)' % (
-                palette_preview(color_list, '#cccccc', '#333333', border_size=2),
+                color_box(color_list, '#cccccc', '#333333', height=32, width=32 * 8, border_size=2),
                 label
             )
         )
@@ -807,14 +807,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if delete:
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
-                        color_box(f, '#cccccc', '#333333', size=32, border_size=2),
+                        color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2),
                         f, palette_type, label,
                     )
                 )
             else:
                 colors.append(
                     '[%s](%s)' % (
-                        color_box(f, '#cccccc', '#333333', size=32, border_size=2), f
+                        color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2), f
                     )
                 )
             count += 1
@@ -880,7 +880,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         info.append(
-            color_box_wrapper % palette_preview([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
+            color_box_wrapper % color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
         )
 
         # info.append(color_box_wrapper % color_box(color, '#cccccc', '#333333', size=64, border_size=2))
@@ -889,24 +889,24 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             info.append('\n\n---\n\n')
             if web_color:
                 info.append(
-                    '[&lt;=&gt;](__convert__:%s:name) ' % color +
+                    '[&gt;&gt;&gt;](__convert__:%s:name){: .small} ' % color +
                     '<span class="st-constant">%s</span>\n' % web_color
                 )
 
             info.append(
-                '[&lt;=&gt;](__convert__:%s:hex) ' % color +
+                '[&gt;&gt;&gt;](__convert__:%s:hex){: .small} ' % color +
                 '<span class="st-variable">%s</span>\n' % (color.lower() if not alpha else color[:-2].lower())
             )
 
             info.append(
-                '[&lt;=&gt;](__convert__:%s:rgb) ' % color +
+                '[&gt;&gt;&gt;](__convert__:%s:rgb){: .small} ' % color +
                 '<span class="st-keyword">rgb</span>(<span class="st-constant">%d, %d, %d</span>)\n' % (
                     rgba.r, rgba.g, rgba.b
                 )
             )
 
             info.append(
-                '[&lt;=&gt;](__convert__:%s:rgba) ' % color +
+                '[&gt;&gt;&gt;](__convert__:%s:rgba){: .small} ' % color +
                 '<span class="st-keyword">rgba</span>(<span class="st-constant">%d, %d, %d, %s</span>)\n' % (
                     rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
                 )
@@ -915,16 +915,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h, l, s = rgba.tohls()
 
             info.append(
-                '[&lt;=&gt;](__convert__:%s:hsl) ' % color +
+                '[&gt;&gt;&gt;](__convert__:%s:hsl){: .small} ' % color +
                 '<span class="st-keyword">hsl</span>(<span class="st-constant">%s, %s%%, %s%%</span>)\n' % (
                     fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0)
                 )
             )
 
             info.append(
-                '[&lt;=&gt;](__convert__:%s:hsla) ' % color +
+                '[&gt;&gt;&gt;](__convert__:%s:hsla){: .small} ' % color +
                 '<span class="st-keyword">hsla</span>(<span class="st-constant">%s, %s%%, %s%%, %s</span>)\n' % (
-                        fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0), alpha if alpha else '1'
+                    fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0), alpha if alpha else '1'
                 )
             )
 
@@ -964,7 +964,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if color:
             html.append(
                 '\n## New Palette\n' +
-                '\nClick the link or palette to add %s.\n\n' % color +
+                '\nClick the link or palette to add **%s**{: .st-keyword}.\n\n' % color +
                 '[Create New Palette](__create_palette__:__global__:%s)\n\n' % color +
                 '[Create New Project Palette](__create_palette__:__project__:%s)\n\n' % color +
                 '---\n\n'
