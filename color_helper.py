@@ -66,13 +66,28 @@ TAG_STYLE_ATTR_RE = re.compile(
 )
 
 COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
-
 COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
-
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
+WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
+'''
+HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
+'''
+RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
+<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
+'''
+RGBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgba){: .color-helper .small} \
+<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
+'''
+HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
+<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
+'''
+HSLA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsla){: .color-helper .small} \
+<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
+'''
+
 ADD_CSS = '''
-.small {
+.color-helper.small {
     font-size: 0.7em;
 }
 '''
@@ -856,78 +871,47 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             info.append(
-                '[palettes](__palettes__){: .small} '
+                '[palettes](__palettes__){: .color-helper .small} '
             )
 
         if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
             info.append(
-                '[picker](__color_picker__:%s){: .small} ' % color
+                '[picker](__color_picker__:%s){: .color-helper .small} ' % color
             )
 
         if show_global_palettes or show_project_palettes:
             info.append(
-                '[add](__add_color__:%s){: .small} ' % color.lower()
+                '[add](__add_color__:%s){: .color-helper .small} ' % color.lower()
             )
 
         if show_favorite_palette:
             if color in get_favs()['colors']:
                 info.append(
-                    '[unmark](__remove_fav__:%s){: .small}' % color.lower()
+                    '[unmark](__remove_fav__:%s){: .color-helper .small}' % color.lower()
                 )
             else:
                 info.append(
-                    '[mark](__add_fav__:%s){: .small}' % color.lower()
+                    '[mark](__add_fav__:%s){: .color-helper .small}' % color.lower()
                 )
 
         info.append(
             color_box_wrapper % color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
         )
 
-        # info.append(color_box_wrapper % color_box(color, '#cccccc', '#333333', size=64, border_size=2))
-
         if show_conversions:
             info.append('\n\n---\n\n')
             if web_color:
-                info.append(
-                    '[&gt;&gt;&gt;](__convert__:%s:name){: .small} ' % color +
-                    '<span class="st-constant">%s</span>\n' % web_color
-                )
-
-            info.append(
-                '[&gt;&gt;&gt;](__convert__:%s:hex){: .small} ' % color +
-                '<span class="st-variable">%s</span>\n' % (color.lower() if not alpha else color[:-2].lower())
-            )
-
-            info.append(
-                '[&gt;&gt;&gt;](__convert__:%s:rgb){: .small} ' % color +
-                '<span class="st-keyword">rgb</span>(<span class="st-constant">%d, %d, %d</span>)\n' % (
-                    rgba.r, rgba.g, rgba.b
-                )
-            )
-
-            info.append(
-                '[&gt;&gt;&gt;](__convert__:%s:rgba){: .small} ' % color +
-                '<span class="st-keyword">rgba</span>(<span class="st-constant">%d, %d, %d, %s</span>)\n' % (
-                    rgba.r, rgba.g, rgba.b, alpha if alpha else '1'
-                )
-            )
-
+                info.append(WEB_COLOR % (color, web_color))
+            info.append(HEX_COLOR % (color, (color.lower() if not alpha else color[:-2].lower())))
+            info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
+            info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
-
+            info.append(HSL_COLOR % (color, fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0)))
             info.append(
-                '[&gt;&gt;&gt;](__convert__:%s:hsl){: .small} ' % color +
-                '<span class="st-keyword">hsl</span>(<span class="st-constant">%s, %s%%, %s%%</span>)\n' % (
-                    fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0)
+                HSLA_COLOR % (
+                    color, fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0), alpha if alpha else '1'
                 )
             )
-
-            info.append(
-                '[&gt;&gt;&gt;](__convert__:%s:hsla){: .small} ' % color +
-                '<span class="st-keyword">hsla</span>(<span class="st-constant">%s, %s%%, %s%%, %s</span>)\n' % (
-                    fmt_float(h * 360.0), fmt_float(s * 100.0), fmt_float(l * 100.0), alpha if alpha else '1'
-                )
-            )
-
         return ''.join(info)
 
     def show_palettes(self, delete=False, color=None, update=False):
@@ -945,16 +929,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if (not self.no_info and not delete) or color:
             html.append(
-                '[back](__info__){: .small} '
+                '[back](__info__){: .color-helper .small} '
             )
         elif delete:
             html.append(
-                '[back](__palettes__){: .small} '
+                '[back](__palettes__){: .color-helper .small} '
             )
 
         if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
             html.append(
-                '[delete](__delete__palettes__){: .small} '
+                '[delete](__delete__palettes__){: .color-helper .small} '
             )
 
         if delete:
@@ -1027,14 +1011,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if update:
-            mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
+            mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
         else:
             mdpopups.show_popup(
                 self.view,
                 ''.join(html), location=-1, max_width=600,
                 on_navigate=self.on_navigate,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                append_css=ADD_CSS
+                css=ADD_CSS
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -1072,15 +1056,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
             if not delete:
                 html.append(
-                    '[back](__palettes__){: .small} '
+                    '[back](__palettes__){: .color-helper .small} '
                 )
                 if not current:
                     html.append(
-                        '[delete](__delete_colors__:%s:%s){: .small} ' % (palette_type, target['name'])
+                        '[delete](__delete_colors__:%s:%s){: .color-helper .small} ' % (palette_type, target['name'])
                     )
             else:
                 html.append(
-                    '[back](__colors__:%s:%s){: .small} ' % (palette_type, target['name'])
+                    '[back](__colors__:%s:%s){: .color-helper .small} ' % (palette_type, target['name'])
                 )
 
             if delete:
@@ -1091,14 +1075,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
+                mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    append_css=ADD_CSS
+                    css=ADD_CSS
                 )
 
     def show_color_info(self, update=False):
@@ -1133,14 +1117,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), append_css=ADD_CSS)
+                mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    append_css=ADD_CSS
+                    css=ADD_CSS
                 )
         elif update:
             self.view.hide_popup()
