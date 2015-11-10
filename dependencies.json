@@ -3,7 +3,9 @@
         ">=3000": [
             "pygments",
             "markdown",
-            "mdpopups"
+            "mdpopups",
+            "jinja2",
+            "markupsafe"
         ]
     }
 }
