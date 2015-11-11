@@ -62,9 +62,12 @@ RE_UNIT = re.compile(r'\s*(\d*)([cbB?hHiIlLqQfd])\s*')
 
 def split_channels(rgb):
     """
+    Split an RGB color into channels.
+
     Take a color of the format #RRGGBBAA (alpha optional and will be stripped)
     and convert to a tuple with format (r, g, b).
     """
+
     return (
         float(int(rgb[1:3], 16)) / 255.0,
         float(int(rgb[3:5], 16)) / 255.0,
@@ -73,7 +76,8 @@ def split_channels(rgb):
 
 
 def format_byte_size(fmt):
-    """ Determine the number of bytes form the fmt string """
+    """Determine the number of bytes form the fmt string."""
+
     b = 0
     for m in RE_UNIT.finditer(fmt):
         count = int(m.group(1)) if m.group(1) else 1
@@ -81,35 +85,41 @@ def format_byte_size(fmt):
     return b
 
 
-class _writer(object):
-    """ ASE writer """
+class _Writer(object):
+    """ASE writer."""
+
     def __init__(self, ase):
-        """ Open an ASE file for writing """
+        """Open an ASE file for writing."""
+
         if ase is None:
             self.bin = BytesIO()
         else:
             self.bin = open(ase, 'wb')
 
     def write_header(self, total_blocks):
-        """ Write the ASE file header """
+        """Write the ASE file header."""
+
         self.write_string('ASEF')
         self.write('2H', (1, 0))
         self.write('i', total_blocks)
 
     def write_group_start(self, title):
-        """ Write group starting block """
+        """Write group starting block."""
+
         self.write('H', GROUP_START)
         self.write('i', ((len(title) + 1) * 2) + DB_STRING_SIZE_SZ)
         self.write('H', len(title) + 1)
         self.write_string(title, double_byte=True)
 
     def write_group_end(self):
-        """ Write group closing block """
+        """Write group closing block."""
+
         self.write('H', GROUP_END)
         self.write('i', 0)
 
     def write_color(self, color, name=None):
-        """ Write the RGB color entry """
+        """Write the RGB color entry."""
+
         self.write('H', COLOR_ENTRY)
         if name is None:
             name = ''
@@ -126,9 +136,11 @@ class _writer(object):
 
     def write(self, fmt, data):
         """
-        Write data. If single point of data is given,
-        convert it to a tuple.
+        Write data.
+
+        If single point of data is given, convert it to a tuple.
         """
+
         if not isinstance(data, (tuple, list, bytes, ustr)):
             data = (data,)
 
@@ -141,7 +153,8 @@ class _writer(object):
         self.bin.write(struct.pack(fmt, *data))
 
     def write_string(self, string, double_byte=False):
-        """ Write either a normal string or double byte string """
+        """Write either a normal string or double byte string."""
+
         string
         fmt = ('%dB' if not double_byte else '%dH') % len(string)
         self.write(fmt, string)
@@ -149,14 +162,17 @@ class _writer(object):
             self.write('H', 0)
 
     def close(self):
-        """ Close binary file """
+        """Close binary file."""
+
         self.bin.close()
 
 
-class _reader(object):
-    """ ASE reader """
+class _Reader(object):
+    """ASE reader."""
+
     def __init__(self, ase, byte_string=False):
-        """ Open file for reading """
+        """Open file for reading."""
+
         self._string = byte_string
         if byte_string:
             self.bin = BytesIO(ase)
@@ -164,20 +180,23 @@ class _reader(object):
             self.bin = open(ase, 'rb')
 
     def read_header(self):
-        """" Parse the header """
+        """"Parse the header."""
+
         self.signature = self.read_string(4)
         self.version = self.read('2H')
         self.total_blocks = int(self.read('i')[0])
 
     def read(self, fmt):
-        """ Read the and unpack binary data """
+        """Read the and unpack binary data."""
+
         fmt = '>' + fmt
         if not PY3:
             fmt = fmt.encode('utf-8')
         return struct.unpack(fmt, self.bin.read(format_byte_size(fmt)))
 
     def read_string(self, block_size, double_byte=False):
-        """ Retrieve either a normal string or double byte string """
+        """Retrieve either a normal string or double byte string."""
+
         fmt = ('B' if not double_byte else 'H') * block_size
         string = ''
         if double_byte:
@@ -191,19 +210,23 @@ class _reader(object):
         return string
 
     def get_block(self):
-        """ Get block id """
+        """Get block id."""
+
         return int(self.read('H')[0])
 
     def get_block_length(self):
-        """ Get block length """
+        """Get block length."""
+
         return int(self.read('i')[0])
 
     def get_string_length(self):
-        """ Get length of double byte string """
+        """Get length of double byte string."""
+
         return int(self.read('H')[0])
 
     def get_color(self):
-        """ Get RGB color """
+        """Get RGB color."""
+
         color_type = self.read_string(4)
         if 'RGB ' != color_type:
             raise Exception('Only RGB is supported at this time, not %s!' % color_type)
@@ -214,11 +237,13 @@ class _reader(object):
         return "#%02x%02x%02x" % (r, g, b)
 
     def close(self):
-        """ Close the binary """
+        """Close the binary."""
+
         self.bin.close()
 
     def read_palettes(self):
-        """ Parse therough the ASE file returning palettes """
+        """Parse therough the ASE file returning palettes."""
+
         palette = {}
         while self.total_blocks > 0:
             block = self.get_block()
@@ -250,8 +275,9 @@ class _reader(object):
 
 
 def loads(ase):
-    """ Read the ASE file from a byte string and return the palettes """
-    binary = _reader(ase, byte_string=True)
+    """Read the ASE file from a byte string and return the palettes."""
+
+    binary = _Reader(ase, byte_string=True)
     try:
         binary.read_header()
         palattes = []
@@ -266,13 +292,14 @@ def loads(ase):
 
 
 def dumps(ase, palettes):
-    """ Write an ASE file to a byte string with the given palettes """
+    """Write an ASE file to a byte string with the given palettes."""
+
     text = b''
     total_blocks = len(palettes) * 2
     for p in palettes:
         total_blocks += len(p.get("colors", []))
 
-    binary = _writer(None)
+    binary = _Writer(None)
     try:
         binary.write_header(total_blocks)
 
@@ -291,12 +318,13 @@ def dumps(ase, palettes):
 
 
 def dump(ase, palettes):
-    """ Write an ASE file with the given palettes """
+    """Write an ASE file with the given palettes."""
+
     total_blocks = len(palettes) * 2
     for p in palettes:
         total_blocks += len(p.get("colors", []))
 
-    binary = _writer(ase)
+    binary = _Writer(ase)
     try:
         binary.write_header(total_blocks)
 
@@ -312,8 +340,9 @@ def dump(ase, palettes):
 
 
 def load(ase):
-    """ Read the ASE file and return the palettes """
-    binary = _reader(ase)
+    """Read the ASE file and return the palettes."""
+
+    binary = _Reader(ase)
     try:
         binary.read_header()
         palattes = []
