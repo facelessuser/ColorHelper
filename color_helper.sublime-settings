@@ -53,33 +53,5 @@
     ],
 
     // Show project palettes in palette panel
-    "enable_project_user_palettes": true,
-
-    ////////////////////////////////////////////
-    // PROJECT SCANNING:
-    // EXPERIMENTAL AND NOT RECOMMENDED FOR USE!
-    // Large projects will bog down Sublime.
-    // Project scanning, if kept, should be done,
-    // by a separate binary.
-    ////////////////////////////////////////////
-
-    // Enable showing colors palette of the entire project
-    "enable_project_palette": false,
-
-    // Settings for project color indexing.
-    "project_file_scan_extensions": {
-        // Folders to ignore.
-        "ignore_folders": [".svn", ".git"],
-        // Scans for html style tags and style attributes
-        // and searches CSS content for colors
-        "html": [".html", ".html"],
-        // These are CSS extensions
-        // If you have some obscure format, it may not be supported.
-        "css": [".css"],
-        // These are Sass and SCSS extensions
-        // If you have some obscure format, it may not be supported.
-        "sass": [".sass", ".scss"],
-        // Adobe swatch exchange file extensions to import.
-        "ase": [".ase"]
-    }
+    "enable_project_user_palettes": true
 }
