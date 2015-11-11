@@ -69,6 +69,11 @@ COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_
 COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
+PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
+PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
+ADD_COLOR_MENU = '[add](__add_color__:%s){: .color-helper .small} '
+UNMARK_MENU = '[unmark](__remove_fav__:%s){: .color-helper .small}'
+MARK_MENU = '[mark](__add_fav__:%s){: .color-helper .small}'
 WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
 '''
 HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
@@ -84,6 +89,37 @@ HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
 '''
 HSLA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsla){: .color-helper .small} \
 <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
+'''
+
+BACK_INFO_MENU = '[back](__info__){: .color-helper .small} '
+BACK_PALETTE_MENU = '[back](__palettes__){: .color-helper .small} '
+BACK_COLORS_MENU = '[back](__colors__:%s:%s){: .color-helper .small} '
+DELETE_PALETTE_MENU = '[delete](__delete__palettes__){: .color-helper .small} '
+DELETE_COLOR_MENU = '[delete](__delete_colors__:%s:%s){: .color-helper .small} '
+DELETE_COLOR = '''
+## Delete Color
+Click the color to delete.
+'''
+DELETE_PALETTE = '''
+## Delete Palette
+Click the palette to delete.
+'''
+NEW_PALETTE = '''
+## New Palette
+Click the link or palette to add **%(color)s**{: .keyword}.
+
+[Create New Palette](__create_palette__:__global__:%(color)s)
+
+[Create New Project Palette](__create_palette__:__project__:%(color)s)
+
+---
+
+'''
+
+DIVIDER = '''
+
+---
+
 '''
 
 ADD_CSS = '''
@@ -870,29 +906,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         info = []
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
-            info.append(
-                '[palettes](__palettes__){: .color-helper .small} '
-            )
-
+            info.append(PALETTE_MENU)
         if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
-            info.append(
-                '[picker](__color_picker__:%s){: .color-helper .small} ' % color
-            )
-
+            info.append(PICK_MENU % color)
         if show_global_palettes or show_project_palettes:
-            info.append(
-                '[add](__add_color__:%s){: .color-helper .small} ' % color.lower()
-            )
-
+            info.append(ADD_COLOR_MENU % color.lower())
         if show_favorite_palette:
             if color in get_favs()['colors']:
-                info.append(
-                    '[unmark](__remove_fav__:%s){: .color-helper .small}' % color.lower()
-                )
+                info.append(UNMARK_MENU % color.lower())
             else:
-                info.append(
-                    '[mark](__add_fav__:%s){: .color-helper .small}' % color.lower()
-                )
+                info.append(MARK_MENU % color.lower())
 
         info.append(
             color_box_wrapper % color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
@@ -928,31 +951,18 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         html = []
 
         if (not self.no_info and not delete) or color:
-            html.append(
-                '[back](__info__){: .color-helper .small} '
-            )
+            html.append(BACK_INFO_MENU)
         elif delete:
-            html.append(
-                '[back](__palettes__){: .color-helper .small} '
-            )
+            html.append(BACK_PALETTE_MENU)
 
         if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
-            html.append(
-                '[delete](__delete__palettes__){: .color-helper .small} '
-            )
+            html.append(DELETE_PALETTE_MENU)
 
         if delete:
-            html.append('\n## Delete Palette\n')
-            html.append('Click the palette to delete.')
+            html.append(DELETE_PALETTE)
 
         if color:
-            html.append(
-                '\n## New Palette\n' +
-                '\nClick the link or palette to add **%s**{: .st-keyword}.\n\n' % color +
-                '[Create New Palette](__create_palette__:__global__:%s)\n\n' % color +
-                '[Create New Project Palette](__create_palette__:__project__:%s)\n\n' % color +
-                '---\n\n'
-            )
+            html.append(NEW_PALETTE % {'color': color})
 
         if show_favorite_palette:
             favs = get_favs()
@@ -999,7 +1009,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             palettes = get_project_palettes(self.view.window())
             if len(palettes) and show_div:
                 show_div = False
-                html.append('\n\n---\n\n')
+                html.append(DIVIDER)
             for palette in palettes:
                 name = palette.get("name")
                 html.append(
@@ -1055,20 +1065,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             html = []
 
             if not delete:
-                html.append(
-                    '[back](__palettes__){: .color-helper .small} '
-                )
+                html.append(BACK_PALETTE_MENU)
                 if not current:
-                    html.append(
-                        '[delete](__delete_colors__:%s:%s){: .color-helper .small} ' % (palette_type, target['name'])
-                    )
+                    html.append(DELETE_COLOR_MENU % (palette_type, target['name']))
             else:
-                html.append(
-                    '[back](__colors__:%s:%s){: .color-helper .small} ' % (palette_type, target['name'])
-                )
+                html.append(BACK_COLORS_MENU % (palette_type, target['name']))
 
             if delete:
-                html.append('\n## Delete Color\nClick the color to delete.')
+                html.append(DELETE_COLOR)
 
             html.append(
                 self.format_colors(target['colors'], target['name'], palette_type, delete)
