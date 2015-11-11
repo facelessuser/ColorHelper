@@ -6,7 +6,6 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from ColorHelper.lib.color_box import color_box
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib import csscolors
 import threading
@@ -366,7 +365,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__colors__:%s:%s' % (palette_type, label)
         colors.append(
             '[%s](%s)' % (
-                color_box(color_list, '#cccccc', '#333333', height=32, width=32 * 8, border_size=2),
+                mdpopups.color_box(color_list, '#cccccc', '#333333', height=32, width=32 * 8, border_size=2),
                 label
             )
         )
@@ -388,14 +387,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if delete:
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
-                        color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2),
+                        mdpopups.color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2),
                         f, palette_type, label,
                     )
                 )
             else:
                 colors.append(
                     '[%s](%s)' % (
-                        color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2), f
+                        mdpopups.color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2), f
                     )
                 )
             count += 1
@@ -446,7 +445,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(MARK_MENU % color.lower())
 
         info.append(
-            color_box_wrapper % color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
+            color_box_wrapper % mdpopups.color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
         )
 
         if show_conversions:
