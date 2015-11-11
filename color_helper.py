@@ -9,7 +9,7 @@ import sublime_plugin
 from ColorHelper.lib.color_box import color_box
 from ColorHelper.lib.rgba import RGBA
 from ColorHelper.lib.ase import loads as ase_load
-import ColorHelper.lib.webcolors as webcolors
+from ColorHelper.lib import csscolors
 import threading
 from time import time, sleep
 import re
@@ -38,7 +38,7 @@ INCOMPLETE = r''' |
     \b(?P<hsl_open>hsl\() |
     \b(?P<hsla_open>hsla\()'''
 
-COLOR_NAMES = r'| (?i)\b(?P<webcolors>%s)\b' % '|'.join([name for name in webcolors.css3_names_to_hex.keys()])
+COLOR_NAMES = r'| (?i)\b(?P<webcolors>%s)\b' % '|'.join([name for name in csscolors.name2hex_map.keys()])
 
 TAG_HTML_RE = re.compile(
     br'''(?x)(?i)
@@ -331,9 +331,9 @@ def translate_color(m, decode=False):
     elif m.group('webcolors'):
         try:
             if decode:
-                color = webcolors.name_to_hex(m.group('webcolors').decode('utf-8')).lower()
+                color = csscolors.name2hex(m.group('webcolors').decode('utf-8')).lower()
             else:
-                color = webcolors.name_to_hex(m.group('webcolors')).lower()
+                color = csscolors.name2hex(m.group('webcolors')).lower()
         except:
             pass
     return color, alpha
@@ -384,7 +384,7 @@ class InsertionCalc(object):
 
         self.target_color = target_color
         try:
-            self.web_color = webcolors.hex_to_name(target_color) if self.use_web_colors else None
+            self.web_color = csscolors.hex2name(target_color) if self.use_web_colors else None
         except:
             self.web_color = None
 
@@ -876,8 +876,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         rgba = RGBA(color)
 
         try:
-            web_color = webcolors.hex_to_name(rgba.get_rgb())
-        except:
+            web_color = csscolors.hex2name(rgba.get_rgb())
+        except Exception:
             web_color = None
 
         color_picker = color_picker_available()
@@ -1479,7 +1479,7 @@ class ChFileIndexThread(threading.Thread):
         self.view = view
         self.webcolor_names = re.compile(
             r'\b(%s)\b' % '|'.join(
-                [name for name in webcolors.css3_names_to_hex.keys()]
+                [name for name in csscolors.name2hex_map.keys()]
             )
         )
         self.source = source
@@ -1522,7 +1522,7 @@ class ChFileIndexThread(threading.Thread):
         for m in self.webcolor_names.finditer(self.source):
             if self.abort:
                 break
-            colors.add(webcolors.name_to_hex(m.group(0)))
+            colors.add(csscolors.name2hex(m.group(0)))
         if not self.abort:
             sublime.set_timeout(
                 lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
