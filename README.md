@@ -1,13 +1,17 @@
+[![Unix Build Status][travis-image]][travis-link]
+![License][license-image]
 # ColorHelper
-Experimental Sublime plugin that offers color tooltip info, and access to user defined color palettes.
+ColorHelper offers tooltips with color previews of stylesheet colors, provides color translation, and allows the storing and accessing of favorite colors in color palettes.  Most features are optionally configurable. For the most part, these tooltips should show any time the cursor is in a CSS, SCSS, or SASS color.  It should also appear when in HTML style attributes.
 
-This is currently in an **ALPHA** state which means I am likely to break things with a commit at any time.  Though you might find it usable, I may change how things work in the next commit.
+![Screenshots](docs/images/composite.png)
 
-![Color Info](https://dl.dropboxusercontent.com/u/342698/General/color_info.png)
-
-![Color Palette Previews](https://dl.dropboxusercontent.com/u/342698/General/color_palettes.png)
-
-![Color Selector](https://dl.dropboxusercontent.com/u/342698/General/colors.png)
+# Features
+- Useful tooltip popups that show the previews of selected colors.
+- Support colors in CSS, SCSS, SASS, and HTML attributes.
+- Show all the colors in a file in a special color palette in the tooltip.
+- Allow saving, accessing, and managing colors in named color palettes all from the tooltip.
+- Select and insert colors from the color palettes via the tooltip.
+- Translate an existing color form to a new form the tooltip.  Supports rgb, rgba, hex, hsl, hsla, and colors names.
 
 # License
 ColorHelper is released under the MIT license.
@@ -19,3 +23,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
+
+[travis-image]: https://img.shields.io/travis/facelessuser/ColorHelper.svg
+[travis-link]: https://travis-ci.org/facelessuser/ColorHelper
+[license-image]: https://img.shields.io/badge/license-MIT-blue.svg
