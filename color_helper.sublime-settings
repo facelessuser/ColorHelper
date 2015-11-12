@@ -39,7 +39,7 @@
     "enable_color_conversions": true,
 
     // File scoping that will be used when indexing colors in an opened or saved file.
-    // These are the syntaxes in which the auto popup tooltip uses as well to recogize scannable regions.
+    // These are the syntaxes which the auto popup tooltip uses to recogize scannable regions.
     "supported_syntax": [
         "meta.property-value.css -comment -string",          // CSS, CSS in HTML etc. (based on: Sublime Default)
         "meta.value.css -comment -string",                   // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
