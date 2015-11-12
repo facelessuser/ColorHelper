@@ -13,6 +13,9 @@ ColorHelper offers tooltips with color previews of stylesheet colors, provides c
 - Select and insert colors from the color palettes via the tooltip.
 - Translate an existing color form to a new form the tooltip.  Supports rgb, rgba, hex, hsl, hsla, and colors names.
 
+# Documentation
+http://facelessuser.github.io/ColorHelper/
+
 # License
 ColorHelper is released under the MIT license.
 
