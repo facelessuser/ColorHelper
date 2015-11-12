@@ -1,6 +1,6 @@
 {
     "*": {
-        ">=3000": [
+        ">=3080": [
             "pygments",
             "markdown",
             "mdpopups",
