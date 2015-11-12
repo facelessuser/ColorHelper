@@ -2,14 +2,10 @@
     // Show debug logging
     "debug": false,
 
-    // Location of theme.  Use forward slashes
-    "tooltip_theme": "ColorHelper/tt_theme",
-
     // Upper case hex when inserting
     "upper_case_hex": false,
 
-    // Use webcolor names when value of non-alpha
-    // color matches a webcolor name.
+    // Use webcolor names when value color matches a webcolor name.
     "use_webcolor_names": true,
 
     // Preferred format to output color as:
@@ -52,6 +48,6 @@
         "meta.tag.inline.any.html string.quoted"             // HTML attributes (based on: Sublime Default)
     ],
 
-    // Show project palettes in palette panel
+    // Enable project palettes in palette panel (Palettes stored in project file).
     "enable_project_user_palettes": true
 }
