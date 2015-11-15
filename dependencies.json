@@ -2,7 +2,7 @@
     "*": {
         ">=3080": [
             "pygments",
-            "markdown",
+            "python-markdown",
             "mdpopups",
             "jinja2",
             "markupsafe"
