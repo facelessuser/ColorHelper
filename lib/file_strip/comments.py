@@ -115,7 +115,7 @@ class CommentException(Exception):
         return repr(self.value)
 
 
-class Comments(object):
+class Comments:
     """Comment strip class."""
 
     styles = []
