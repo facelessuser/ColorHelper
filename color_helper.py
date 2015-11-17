@@ -577,7 +577,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 if palette_name == palette['name']:
                     target = palette
         elif palette_type == "__project__":
-            for palette in util.get_project_palettes(self.view_window()):
+            for palette in util.get_project_palettes(self.view.window()):
                 if palette_name == palette['name']:
                     target = palette
 
