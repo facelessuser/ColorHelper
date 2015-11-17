@@ -70,7 +70,7 @@ VIOLATION_MSG = {
 }
 
 
-class CheckJsonFormat(object):
+class CheckJsonFormat:
     """
     Test JSON for format irregularities.
 

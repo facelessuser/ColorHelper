@@ -85,7 +85,7 @@ def format_byte_size(fmt):
     return b
 
 
-class _Writer(object):
+class _Writer:
     """ASE writer."""
 
     def __init__(self, ase):
@@ -167,7 +167,7 @@ class _Writer(object):
         self.bin.close()
 
 
-class _Reader(object):
+class _Reader:
     """ASE reader."""
 
     def __init__(self, ase, byte_string=False):

@@ -17,7 +17,7 @@ def clamp(value, mn, mx):
     return max(min(value, mx), mn)
 
 
-class RGBA(object):
+class RGBA:
     """RGBA object for converting between color formats or applying filters to the color."""
 
     r = None

@@ -4,7 +4,7 @@ from ColorHelper.lib import csscolors
 import ColorHelper.color_helper_util as util
 
 
-class InsertionCalc(object):
+class InsertionCalc:
     """Calculate and insert color."""
 
     def __init__(self, view, point, target_color, convert=None):
