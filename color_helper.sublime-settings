@@ -44,6 +44,7 @@
         "meta.property-value.css -comment -string",          // CSS, CSS in HTML etc. (based on: Sublime Default)
         "meta.value.css -comment -string",                   // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
         "meta.property-list.css.sass -comment -string",      // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "constant.other.rgb-value.sass",                     // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
         "sass-script-maps -variable.other -comment -string", // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
         "meta.tag.inline.any.html string.quoted"             // HTML attributes (based on: Sublime Default)
     ],
