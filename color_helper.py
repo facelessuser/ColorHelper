@@ -104,6 +104,11 @@ def start_file_index(view):
 class ColorHelperCommand(sublime_plugin.TextCommand):
     """Color Helper command object."""
 
+    def on_hide(self):
+        """Hide popup event."""
+
+        self.view.settings().set('color_helper_popup_active', False)
+
     def on_navigate(self, href):
         """Handle link clicks."""
 
@@ -543,10 +548,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if update:
             mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
         else:
+            self.view.settings().set('color_helper_popup_active', True)
             mdpopups.show_popup(
                 self.view,
                 ''.join(html), location=-1, max_width=600,
                 on_navigate=self.on_navigate,
+                on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                 css=util.ADD_CSS
             )
@@ -601,10 +608,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
+                self.view.settings().set('color_helper_popup_active', True)
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
+                    on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     css=util.ADD_CSS
                 )
@@ -643,10 +652,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
+                self.view.settings().set('color_helper_popup_active', True)
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
+                    on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     css=util.ADD_CSS
                 )
@@ -871,6 +882,8 @@ class ChThread(threading.Thread):
                         break
                 if execute:
                     view.run_command('color_helper', {"mode": "palette" if not info else "info"})
+            if not execute and view.settings().get('color_helper_popup_active', False):
+                mdpopups.hide_popup(view)
         self.ignore_all = False
         self.time = time()
 
