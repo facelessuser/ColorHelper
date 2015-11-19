@@ -54,6 +54,12 @@ COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_
 COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
 INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
+ADD_CSS = '''
+.color-helper.small {
+    font-size: 0.8em;
+}
+'''
+
 
 def log(*args):
     """Log."""

@@ -23,8 +23,17 @@
     // (none|color_picker|palette_picker)
     "click_color_box_to_pick": "none",
 
-    // Enable color picker option if ColorPicker plugin is installed
+    // Enable color picker option.  Will use native color picker
+    // unless "use_color_picker_package" is enabled and external
+    // package is installed.
     "enable_color_picker": true,
+
+    // If the color picker is too big, try this.
+    // Hidpi probably want this bigger, but maybe not.
+    "use_small_native_color_picker": false,
+
+    // Use https://github.com/weslly/ColorPicker for the color picker if installed.
+    "use_color_picker_package": false,
 
     // Show global palettes in palette panel
     "enable_global_user_palettes": true,

@@ -7,7 +7,7 @@ import ColorHelper.color_helper_util as util
 class InsertionCalc(object):
     """Calculate and insert color."""
 
-    def __init__(self, view, point, target_color, convert=None):
+    def __init__(self, view, point, target_color, convert=None, ch_picker=False):
         """Initialize insertion object."""
 
         ch_settings = sublime.load_settings('color_helper.sublime-settings')
@@ -16,6 +16,7 @@ class InsertionCalc(object):
         self.convert_rgb = False
         self.convert_hsl = False
         self.alpha = None
+        self.picker_alpha = None
         self.region = sublime.Region(point)
         self.format_override = False
         self.start = point - 50
@@ -30,6 +31,9 @@ class InsertionCalc(object):
         self.preferred_format = ch_settings.get('preferred_format', 'hex')
         self.preferred_alpha_format = ch_settings.get('preferred_alpha_format', 'rgba')
         self.force_alpha = False
+        if ch_picker:
+            self.picker_alpha = int(target_color[-2:], 16)
+            target_color = target_color[:-2]
         if self.convert:
             self.format_override = True
             if self.convert == "name":
@@ -213,6 +217,17 @@ class InsertionCalc(object):
             found = False
         return found
 
+    def ch_picker_replace(self):
+        """See if match is a replacement of an existing color."""
+
+        if self.alpha is not None:
+            if not self.convert_rgb and not self.convert_hsl:
+                if self.preferred_alpha_format == 'hsla':
+                    self.convert_hsl = True
+                else:
+                    self.convert_rgb = True
+                self.format_override = True
+
     def calc(self):
         """Calculate how we are to insert the target color."""
 
@@ -237,5 +252,12 @@ class InsertionCalc(object):
 
         if self.convert:
             self.convert_alpha()
+
+        if self.picker_alpha:
+            if self.picker_alpha < 255:
+                self.alpha = util.fmt_float(float(self.picker_alpha / 255), 3)
+            else:
+                self.alpha = None
+            self.ch_picker_replace()
 
         return found

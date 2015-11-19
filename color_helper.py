@@ -70,12 +70,6 @@ DIVIDER = '''
 
 '''
 
-ADD_CSS = '''
-.color-helper.small {
-    font-size: 0.7em;
-}
-'''
-
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -299,26 +293,31 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def color_picker(self, color):
         """Get color with color picker."""
 
-        s = sublime.load_settings('color_helper_share.sublime-settings')
-        s.set('color_pick_return', None)
-        self.view.window().run_command(
-            'color_pick_api_get_color',
-            {'settings': 'color_helper_share.sublime-settings', "default_color": color[1:]}
-        )
-        new_color = s.get('color_pick_return', None)
-        if new_color is not None and new_color != color:
-            self.insert_color(new_color)
+        if self.color_picker_package:
+            s = sublime.load_settings('color_helper_share.sublime-settings')
+            s.set('color_pick_return', None)
+            self.view.window().run_command(
+                'color_pick_api_get_color',
+                {'settings': 'color_helper_share.sublime-settings', "default_color": color[1:]}
+            )
+            new_color = s.get('color_pick_return', None)
+            if new_color is not None and new_color != color:
+                self.insert_color(new_color)
+            else:
+                sublime.set_timeout(self.show_color_info, 0)
         else:
-            sublime.set_timeout(self.show_color_info, 0)
+            self.view.run_command('color_helper_picker', {'color': color})
 
-    def insert_color(self, target_color, convert=None):
+    def insert_color(self, target_color, convert=None, ch_picker=False):
         """Insert colors."""
 
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
-            insert_calc = InsertionCalc(self.view, point, target_color, convert)
+            insert_calc = InsertionCalc(self.view, point, target_color, convert, ch_picker)
             insert_calc.calc()
+            if ch_picker:
+                target_color = target_color[:-2]
             if insert_calc.web_color:
                 value = insert_calc.web_color
             elif insert_calc.convert_rgb:
@@ -409,8 +408,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         except Exception:
             web_color = None
 
-        color_picker = util.color_picker_available()
         s = sublime.load_settings('color_helper.sublime-settings')
+        use_color_picker_package = s.get('use_color_picker_package', False)
+        self.color_picker_package = use_color_picker_package and util.color_picker_available()
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
@@ -423,7 +423,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         )
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
-        if click_color_box_to_pick == 'color_picker' and color_picker and show_picker:
+        if click_color_box_to_pick == 'color_picker' and show_picker:
             color_box_wrapper = '\n\n[%s]' + ('(__color_picker__:%s)' % color)
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
             color_box_wrapper = '\n\n[%s](__palettes__)'
@@ -434,7 +434,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             info.append(PALETTE_MENU)
-        if click_color_box_to_pick != 'color_picker' and color_picker and show_picker:
+        if click_color_box_to_pick != 'color_picker' and show_picker:
             info.append(PICK_MENU % color)
         if show_global_palettes or show_project_palettes:
             info.append(ADD_COLOR_MENU % color.lower())
@@ -541,14 +541,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if update:
-            mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
+            mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
         else:
             mdpopups.show_popup(
                 self.view,
                 ''.join(html), location=-1, max_width=600,
                 on_navigate=self.on_navigate,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                css=ADD_CSS
+                css=util.ADD_CSS
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -599,14 +599,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
+                mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    css=ADD_CSS
+                    css=util.ADD_CSS
                 )
 
     def show_color_info(self, update=False):
@@ -641,14 +641,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), css=ADD_CSS)
+                mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    css=ADD_CSS
+                    css=util.ADD_CSS
                 )
         elif update:
             self.view.hide_popup()
@@ -664,6 +664,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_palettes()
         elif mode == "color" and util.is_hex_color(color):
             self.insert_color(color)
+        elif mode == "ch_picker":
+            self.insert_color(color, ch_picker=True)
         elif mode == "info":
             self.no_info = False
             self.show_color_info()
