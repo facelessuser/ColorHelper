@@ -96,16 +96,14 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             )
         )
 
-    def get_red_channel(self, text):
-        """Get red channel."""
-
+    def get_channel(self, text, label, minimum, maximum, color_filter):
         rgba1 = mdpopups.rgba.RGBA(self.color)
         rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">R:</span>')
+        text.append('<span class="color-wheel"><span class="keyword">%s:</span>' % label)
         temp = []
         count = 12
         while count:
-            rgba1.red(0.95)
+            getattr(rgba1, color_filter)(minimum)
             temp.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
@@ -125,259 +123,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
         count = 12
         while count:
-            rgba2.red(1.05)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_green_channel(self, text):
-        """Get green channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">G:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.green(0.95)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.green(1.05)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_blue_channel(self, text):
-        """Get blue channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">B:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.blue(0.95)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.blue(1.05)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_hue_channel(self, text):
-        """Get hue channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">H:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.hue(-15)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.hue(15)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_saturation_channel(self, text):
-        """Get saturation channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">S:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.saturation(0.975)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.saturation(1.025)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_luminance_channel(self, text):
-        """Get luminance channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">L:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.luminance(0.975)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.luminance(1.025)
-            text.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba2.get_rgba()
-                )
-            )
-            count -= 1
-        text.append('</span>\n\n')
-
-    def get_alpha_channel(self, text):
-        """Get alpha channel."""
-
-        rgba1 = mdpopups.rgba.RGBA(self.color)
-        rgba2 = mdpopups.rgba.RGBA(self.color)
-        text.append('<span class="color-wheel"><span class="keyword">A:</span>')
-        temp = []
-        count = 12
-        while count:
-            rgba1.alpha(1.05)
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], OUTER_BORDER, INNER_BORDER,
-                        border_size=2, height=self.height, width=self.width, check_size=2
-                    ),
-                    rgba1.get_rgba()
-                )
-            )
-            count -= 1
-        text += reversed(temp)
-        text.append(
-            mdpopups.color_box(
-                [self.color], OUTER_BORDER, INNER_BORDER,
-                border_size=2, height=self.height_big, width=self.width, check_size=2
-            )
-        )
-        count = 12
-        while count:
-            rgba2.alpha(0.95)
+            getattr(rgba2, color_filter)(maximum)
             text.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
@@ -442,14 +188,14 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.get_color_wheel(text)
         self.get_current_color(text)
         if hsl:
-            self.get_hue_channel(text)
-            self.get_saturation_channel(text)
-            self.get_luminance_channel(text)
+            self.get_channel(text, 'H', -15, 15, 'hue')
+            self.get_channel(text, 'S', 0.975, 1.025, 'saturation')
+            self.get_channel(text, 'L', 0.975, 1.025, 'luminance')
         else:
-            self.get_red_channel(text)
-            self.get_green_channel(text)
-            self.get_blue_channel(text)
-        self.get_alpha_channel(text)
+            self.get_channel(text, 'R', 0.95, 1.05, 'red')
+            self.get_channel(text, 'G', 0.95, 1.05, 'green')
+            self.get_channel(text, 'B', 0.95, 1.05, 'blue')
+        self.get_channel(text, 'A', 0.95, 1.05, 'alpha')
         self.get_color_info(text)
 
         mdpopups.show_popup(
