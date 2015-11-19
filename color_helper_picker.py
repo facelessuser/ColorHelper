@@ -21,18 +21,12 @@ color_wheel = [
     ['630', '960', 'c30', '930', '900', '800000', '933']
 ]
 
-WEB_COLOR = '''- <span class="constant numeric">%s</span>
-'''
-HEX_COLOR = '''- <span class="support type">%s</span>
-'''
-RGB_COLOR = '''- <span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
-'''
-RGBA_COLOR = '''- <span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
-'''
-HSL_COLOR = '''- <span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
-'''
-HSLA_COLOR = '''- <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
-'''
+WEB_COLOR = '''<span class="constant numeric">%s</span><br>'''
+HEX_COLOR = '''<span class="support type">%s</span><br>'''
+RGB_COLOR = '''<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)<br>'''
+RGBA_COLOR = '''<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
+HSL_COLOR = '''<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
+HSLA_COLOR = '''<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
 
 css = '''
 '''
@@ -147,10 +141,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             )
         )
         text.append('\n\n---\n\n')
-        text.append('## Color Info\n')
 
         rgba = mdpopups.rgba.RGBA(self.color)
 
+        text.append('<div class="highlight"><pre>')
         if self.web_color:
             text.append(WEB_COLOR % self.web_color)
         text.append(HEX_COLOR % self.color[:-2].lower())
@@ -166,6 +160,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 self.alpha
             )
         )
+        text.append('</pre></div>')
 
     def run(self, edit, color='#ffffff', hsl=False):
         """Run command."""
