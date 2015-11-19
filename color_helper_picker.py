@@ -97,6 +97,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
 
     def get_channel(self, text, label, minimum, maximum, color_filter):
+        """Get color channel."""
+
         rgba1 = mdpopups.rgba.RGBA(self.color)
         rgba2 = mdpopups.rgba.RGBA(self.color)
         text.append('<span class="color-wheel"><span class="keyword">%s:</span>' % label)
