@@ -50,12 +50,22 @@
     // File scoping that will be used when indexing colors in an opened or saved file.
     // These are the syntaxes which the auto popup tooltip uses to recogize scannable regions.
     "supported_syntax": [
-        "meta.property-value.css -comment -string",          // CSS, CSS in HTML etc. (based on: Sublime Default)
-        "meta.value.css -comment -string",                   // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
-        "meta.property-list.css.sass -comment -string",      // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "constant.other.rgb-value.sass",                     // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-        "sass-script-maps -variable.other -comment -string", // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "meta.tag.inline.any.html string.quoted"             // HTML attributes (based on: Sublime Default)
+        // CSS, CSS in HTML etc. (based on: Sublime Default)
+        "meta.property-value.css -comment -string",
+        // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
+        "meta.value.css -comment -string",
+        // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "meta.property-list.css.sass -comment -string",
+        // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+        "constant.other.rgb-value.sass",
+        // SCSS (based on https://packagecontrol.io/packages/SCSS)
+        "constant.other.color.rgb-value.scss",
+        "support.constant.color.w3c-standard-color-name.scss",
+        "meta.property-value.scss",
+        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "sass-script-maps -variable.other -comment -string",
+        // HTML attributes (based on: Sublime Default)
+        "meta.tag.inline.any.html string.quoted"
     ],
 
     // Enable project palettes in palette panel (Palettes stored in project file).
