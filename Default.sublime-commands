@@ -22,5 +22,9 @@
         "args": {
             "mode": "info"
         }
+    },
+    {
+        "caption": "Color Helper: Show Color Picker",
+        "command": "color_helper_picker"
     }
 ]
