@@ -71,6 +71,18 @@
         "meta.tag.inline.any.html string.quoted"
     ],
 
+    // File scoping that will be used when indexing colors in an opened or saved file.
+    // These are the syntaxes which the auto popup tooltip uses to recogize scannable regions,
+    // but only for situations where it is detecting incomplete colors such as `#` or `rgb(` or `rgba(` etc.
+    "supported_syntax_incomplete_only": [
+        // SCSS (based on https://packagecontrol.io/packages/SCSS)
+        // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "source.scss -comment -string",
+        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+        "source.sass -comment -string"
+    ],
+
     // Enable project palettes in palette panel (Palettes stored in project file).
     "enable_project_user_palettes": true
 }

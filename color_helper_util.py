@@ -9,21 +9,21 @@ FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0
 
 HEX_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))$')
 
-COMPLETE = r'''(?x)
+COMPLETE = r'''
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))\b |
     \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
     \b(?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
     \b(?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
 
-INCOMPLETE = r''' |
+INCOMPLETE = r'''
     (?P<hash>\#) |
     \b(?P<rgb_open>rgb\() |
     \b(?P<rgba_open>rgba\() |
     \b(?P<hsl_open>hsl\() |
     \b(?P<hsla_open>hsla\()'''
 
-COLOR_NAMES = r'| (?i)\b(?P<webcolors>%s)\b' % '|'.join([name for name in csscolors.name2hex_map.keys()])
+COLOR_NAMES = r'\b(?P<webcolors>%s)\b' % '|'.join([name for name in csscolors.name2hex_map.keys()])
 
 TAG_HTML_RE = re.compile(
     br'''(?x)(?i)
@@ -50,9 +50,9 @@ TAG_STYLE_ATTR_RE = re.compile(
     re.DOTALL
 )
 
-COLOR_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
-COLOR_ALL_RE = re.compile(r'(?!<[@#$.\-_])(?:%s%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
-INDEX_ALL_RE = re.compile((r'(?!<[@#$.\-_])(?:%s%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
+COLOR_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
+COLOR_ALL_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
+INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
 ADD_CSS = '''
 .color-helper.small {
@@ -113,8 +113,21 @@ def is_hex_color(color):
 
 def get_scope(view, skip_sel_check=False):
     """Get auto-popup scope rule."""
+
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
     scopes = ','.join(ch_settings.get('supported_syntax', []))
+    sels = view.sel()
+    if not skip_sel_check:
+        if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
+            scopes = None
+    return scopes
+
+
+def get_scope_incomplete(view, skip_sel_check=False):
+    """Get additional auto-popup scope rules for incomplete colors only."""
+
+    ch_settings = sublime.load_settings('color_helper.sublime-settings')
+    scopes = ','.join(ch_settings.get('supported_syntax_incomplete_only', []))
     sels = view.sel()
     if not skip_sel_check:
         if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:

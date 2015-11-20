@@ -311,11 +311,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 sublime.set_timeout(self.show_color_info, 0)
         else:
+            if not self.no_info:
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
+            elif not self.no_palette:
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
+            else:
+                on_cancel = None
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
-                    'on_cancel': {'command': 'color_helper', 'args': {'mode': "info"}}
+                    'on_cancel': on_cancel
                 }
             )
 
@@ -497,6 +503,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
         show_current_palette = s.get('enable_current_file_palette', True)
+        s = sublime.load_settings('color_helper.sublime-settings')
+        show_picker = s.get('enable_color_picker', True) and self.no_info
 
         html = []
 
@@ -504,6 +512,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             html.append(BACK_INFO_MENU)
         elif delete:
             html.append(BACK_PALETTE_MENU)
+
+        if show_picker:
+            html.append(PICK_MENU % (color if color else '#ffffffff'))
 
         if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
             html.append(DELETE_PALETTE_MENU)
@@ -710,7 +721,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         use_color_picker_package = s.get('use_color_picker_package', False)
         self.color_picker_package = use_color_picker_package and util.color_picker_available()
         self.no_info = True
+        self.no_palette = True
         if mode == "palette":
+            self.no_palette = False
             if palette_name is not None:
                 self.show_colors(palette_name)
             else:
@@ -718,6 +731,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif mode == "color" and util.is_hex_color(color):
             self.insert_color(color)
         elif mode == "color_picker":
+            self.no_info = True
             color, alpha = self.get_cursor_color()
             if color is not None:
                 if alpha is not None:
@@ -729,6 +743,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.insert_color(color, ch_picker=True)
         elif mode == "info":
             self.no_info = False
+            self.no_palette = False
             self.show_color_info()
 
     def is_enabled(self, mode="palette", palette_name=None, color=None):
@@ -899,11 +914,20 @@ class ChThread(threading.Thread):
             execute = False
             sels = view.sel()
             scope = util.get_scope(view)
-            if (
+            insert_scope = util.get_scope_incomplete(view)
+            scope_okay = (
                 scope and
                 len(sels) == 1 and sels[0].size() == 0
                 and view.score_selector(sels[0].begin(), scope)
-            ):
+            )
+            insert_scope_okay = (
+                scope_okay or (
+                    insert_scope and
+                    len(sels) == 1 and sels[0].size() == 0
+                    and view.score_selector(sels[0].begin(), insert_scope)
+                )
+            )
+            if scope_okay or insert_scope_okay:
                 point = sels[0].begin()
                 visible = view.visible_region()
                 start = point - 50
