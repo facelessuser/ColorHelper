@@ -311,7 +311,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 sublime.set_timeout(self.show_color_info, 0)
         else:
-            self.view.run_command('color_helper_picker', {'color': color})
+            self.view.run_command(
+                'color_helper_picker', {
+                    'color': color,
+                    'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
+                    'on_cancel': {'command': 'color_helper', 'args': {'mode': "info"}}
+                }
+            )
 
     def insert_color(self, target_color, convert=None, ch_picker=False):
         """Insert colors."""
@@ -369,7 +375,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__colors__:%s:%s' % (palette_type, label)
         colors.append(
             '[%s](%s)' % (
-                mdpopups.color_box(color_list, '#cccccc', '#333333', height=32, width=32 * 8, border_size=2),
+                mdpopups.color_box(
+                    color_list, '#cccccc', '#333333',
+                    height=self.color_h, width=self.color_w * 8, border_size=2
+                ),
                 label
             )
         )
@@ -391,14 +400,20 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if delete:
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
-                        mdpopups.color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2),
+                        mdpopups.color_box(
+                            [f], '#cccccc', '#333333',
+                            height=self.color_h, width=self.color_w, border_size=2
+                        ),
                         f, palette_type, label,
                     )
                 )
             else:
                 colors.append(
                     '[%s](%s)' % (
-                        mdpopups.color_box([f], '#cccccc', '#333333', height=32, width=32, border_size=2), f
+                        mdpopups.color_box(
+                            [f], '#cccccc', '#333333',
+                            height=self.color_h, width=self.color_w, border_size=2
+                        ), f
                     )
                 )
             count += 1
@@ -414,8 +429,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             web_color = None
 
         s = sublime.load_settings('color_helper.sublime-settings')
-        use_color_picker_package = s.get('use_color_picker_package', False)
-        self.color_picker_package = use_color_picker_package and util.color_picker_available()
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
@@ -450,7 +463,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(MARK_MENU % color.lower())
 
         info.append(
-            color_box_wrapper % mdpopups.color_box([color], '#cccccc', '#333333', height=64, width=192, border_size=2)
+            color_box_wrapper % mdpopups.color_box(
+                [color], '#cccccc', '#333333',
+                height=self.preview_h, width=self.preview_w, border_size=2
+            )
         )
 
         if show_conversions:
@@ -618,17 +634,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     css=util.ADD_CSS
                 )
 
-    def show_color_info(self, update=False):
-        """Show the color under the cursor."""
+    def get_cursor_color(self):
+        """Get cursor color."""
 
         color = None
+        alpha = None
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
             visible = self.view.visible_region()
             start = point - 50
             end = point + 50
-            alpha = None
             if start < visible.begin():
                 start = visible.begin()
             if end > visible.end():
@@ -639,6 +655,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 if ref >= m.start(0) and ref < m.end(0):
                     color, alpha = util.translate_color(m)
                     break
+        return color, alpha
+
+    def show_color_info(self, update=False):
+        """Show the color under the cursor."""
+
+        color, alpha = self.get_cursor_color()
+
         if color is not None:
             if alpha is not None:
                 color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
@@ -664,9 +687,28 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif update:
             self.view.hide_popup()
 
+    def set_sizes(self):
+        """Get sizes."""
+
+        settings = sublime.load_settings('color_helper.sublime-settings')
+        self.graphic_size = settings.get('graphic_size', "medium")
+        sizes = {
+            "small": (22, 24, 24 * 2, 24 * 6),
+            "medium": (26, 28, 28 * 2, 28 * 6),
+            "large": (30, 32, 32 * 2, 32 * 6)
+        }
+        self.color_h, self.color_w, self.preview_h, self.preview_w = sizes.get(
+            self.graphic_size,
+            sizes["medium"]
+        )
+
     def run(self, edit, mode="palette", palette_name=None, color=None):
         """Run the specified tooltip."""
 
+        self.set_sizes()
+        s = sublime.load_settings('color_helper.sublime-settings')
+        use_color_picker_package = s.get('use_color_picker_package', False)
+        self.color_picker_package = use_color_picker_package and util.color_picker_available()
         self.no_info = True
         if mode == "palette":
             if palette_name is not None:
@@ -675,7 +717,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_palettes()
         elif mode == "color" and util.is_hex_color(color):
             self.insert_color(color)
-        elif mode == "ch_picker":
+        elif mode == "color_picker":
+            color, alpha = self.get_cursor_color()
+            if color is not None:
+                if alpha is not None:
+                    color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
+            else:
+                color = '#ffffffff'
+            self.color_picker(color)
+        elif mode == "color_picker_result":
             self.insert_color(color, ch_picker=True)
         elif mode == "info":
             self.no_info = False

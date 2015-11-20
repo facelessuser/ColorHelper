@@ -25,6 +25,9 @@
     },
     {
         "caption": "Color Helper: Show Color Picker",
-        "command": "color_helper_picker"
+        "command": "color_helper",
+        "args": {
+            "mode": "color_picker"
+        }
     }
 ]

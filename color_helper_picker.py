@@ -23,7 +23,7 @@ color_map_data = [
 ]
 
 color_map = None
-color_map_size_big = False
+color_map_size = False
 
 WEB_COLOR = '''<span class="constant numeric">%s</span><br>'''
 HEX_COLOR = '''<span class="support type">%s</span><br>'''
@@ -40,13 +40,15 @@ INNER_BORDER = '#333333ff'
 class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     """Experimental color picker."""
 
-    def get_color_map(self, text, use_big):
+    def get_color_map(self, text):
         """Get color wheel."""
 
         global color_map
+        global color_map_size
 
-        if color_map is None or use_big != color_map_size_big:
-            padding = (self.width * 10)
+        if color_map is None or self.graphic_size != color_map_size:
+            color_map_size = self.graphic_size
+            padding = (self.width * 9)
             decrement = True
             html_colors = []
             for row in color_map_data:
@@ -71,7 +73,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         )
                     )
                 html_colors.append('</span><br>')
-                if padding == 7 * self.width:
+                if padding == 6 * self.width:
                     decrement = False
                 if decrement:
                     padding -= int(self.width / 2)
@@ -88,7 +90,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             '<span class="color-wheel current-color">%s</span>\n\n' % (
                 mdpopups.color_box(
                     [SPACER], border_size=0,
-                    height=self.height, width=(self.width * 7), check_size=2, alpha=True
+                    height=self.height, width=(self.width * 6), check_size=2, alpha=True
                 ) +
                 mdpopups.color_box(
                     [self.color], OUTER_BORDER, INNER_BORDER,
@@ -198,8 +200,6 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_color_info(self, text):
         """Get color info."""
 
-        text.append('\n\n---\n\n')
-
         rgba = util.RGBA(self.color)
 
         text.append('<div class="highlight"><pre>')
@@ -220,16 +220,28 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
         text.append('</pre></div>')
 
-    def run(self, edit, color='#ffffff', hsl=False, hirespick=None, callback=None):
+    def set_sizes(self):
+        """Get sizes."""
+
+        settings = sublime.load_settings('color_helper.sublime-settings')
+        self.graphic_size = settings.get('graphic_size', "medium")
+        sizes = {
+            "small": (10, 14, 16),
+            "medium": (14, 18, 20),
+            "large": (18, 22, 24)
+        }
+        self.height, self.width, self.height_big = sizes.get(
+            self.graphic_size,
+            sizes["medium"]
+        )
+
+    def run(self, edit, color='#ffffff', hsl=False, hirespick=None, on_done=None, on_cancel=None):
         """Run command."""
 
-        self.callback = callback
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        use_big = not settings.get('use_small_native_color_picker', False)
-        self.height = 18 if use_big else 14
-        self.height_big = 22 if use_big else 18
-        self.width = 20 if use_big else 16
+        self.on_done = on_done
+        self.on_cancel = on_cancel
         rgba = util.RGBA(color)
+        self.set_sizes()
         self.hsl = hsl
         self.color = rgba.get_rgba()
         self.alpha = util.fmt_float(float(int(self.color[-2:], 16)) / 255.0, 3)
@@ -247,8 +259,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             text.append('[cancel](cancel){: .color-helper .small} ')
             text.append('[select](insert){: .color-helper .small} ')
             text.append('[enter new color](edit){: .color-helper .small}\n\n')
-            self.get_color_map(text, use_big)
+            self.get_color_map(text)
             self.get_current_color(text)
+            text.append('\n\n---\n\n')
             if hsl:
                 self.get_channel(text, 'H', -15, 15, 'hue')
                 self.get_channel(text, 'S', 0.975, 1.025, 'saturation')
@@ -263,11 +276,13 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     'rgb' if self.hsl else 'hsl', 'rgb' if self.hsl else 'hsl'
                 )
             )
+            text.append('\n\n---\n\n')
             self.get_color_info(text)
 
         mdpopups.show_popup(
             self.view, ''.join(text), css=util.ADD_CSS,
-            max_width=600, max_height=750, on_navigate=self.handle_href
+            max_width=600, max_height= 500 if hirespick else 725,
+            on_navigate=self.handle_href
         )
 
     def handle_href(self, href):
@@ -292,35 +307,45 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             color = href
         if href == 'cancel':
             mdpopups.hide_popup(self.view)
+            if self.on_cancel is not None:
+                call = self.on_cancel.get('command', 'color_helper')
+                args = self.on_cancel.get('args', {})
+                self.view.run_command(call, args)
         elif href == 'edit':
             mdpopups.hide_popup(self.view)
-            self.view.window().run_command('color_helper_picker_panel', {"color": color, "callback": self.callback})
+            self.view.window().run_command(
+                'color_helper_picker_panel',
+                {"color": color, "on_done": self.on_done, "on_cancel": self.on_cancel}
+            )
         elif href == 'insert':
             mdpopups.hide_popup(self.view)
-            if self.callback is None:
-                self.callback = {'command': 'color_helper', 'args': {'mode': "ch_picker"}}
-            call = self.callback.get('command', 'color_helper')
-            args = copy.deepcopy(self.callback.get('args', {}))
-            args['color'] = color
-            self.view.run_command(call, args)
+            if self.on_done is not None:
+                call = self.on_done.get('command', 'color_helper')
+                args = copy.deepcopy(self.on_done.get('args', {}))
+                args['color'] = color
+                self.view.run_command(call, args)
         else:
             self.view.run_command(
-                'color_helper_picker', {"color": color, "hsl": hsl, "hirespick": hires, "callback": self.callback}
+                'color_helper_picker',
+                {"color": color, "hsl": hsl, "hirespick": hires, "on_done": self.on_done, "on_cancel": self.on_cancel}
             )
 
 
 class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
     """Open color picker with color from panel."""
 
-    def run(self, color="#ffffffff", callback=None):
+    def run(self, color="#ffffffff", on_done=None, on_cancel=None):
         """Run command."""
 
-        self.callback = callback
-        view = self.window.show_input_panel('(hex) #RRGGBBAA', color, self.on_done, None, None)
+        self.on_done = on_done
+        self.on_cancel = on_cancel
+        view = self.window.show_input_panel(
+            '(hex) #RRGGBBAA', color, self.handle_value, None, None
+        )
         view.sel().clear()
         view.sel().add(sublime.Region(0, view.size()))
 
-    def on_done(self, value):
+    def handle_value(self, value):
         """Open color picker."""
 
         value = value.strip()
@@ -330,4 +355,7 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
             value = "#ffffffff"
         view = self.window.active_view()
         if view is not None:
-            view.run_command('color_helper_picker', {"color": value, "callback": self.callback})
+            view.run_command(
+                'color_helper_picker',
+                {"color": value, "on_done": self.on_done, "on_cancel": self.on_cancel}
+            )

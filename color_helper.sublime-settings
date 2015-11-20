@@ -28,9 +28,12 @@
     // package is installed.
     "enable_color_picker": true,
 
-    // If the color picker is too big, try this.
-    // Hidpi probably want this bigger, but maybe not.
-    "use_small_native_color_picker": false,
+    // If the color picker is too big, try playing with this.
+    // Graphics in tooltips usually look better bigger (especially in Hidpi),
+    // but that can make the tooltips really big. If they are too big,
+    // you can play with this setting.  We compromise with medium.
+    // (small | medium | large)
+    "graphic_size": "medium",
 
     // Use https://github.com/weslly/ColorPicker for the color picker if installed.
     "use_color_picker_package": false,
