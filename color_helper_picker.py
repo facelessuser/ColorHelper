@@ -281,7 +281,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         mdpopups.show_popup(
             self.view, ''.join(text), css=util.ADD_CSS,
-            max_width=600, max_height= 500 if hirespick else 725,
+            max_width=600, max_height=(500 if hirespick else 725),
             on_navigate=self.handle_href
         )
 
