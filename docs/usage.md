@@ -9,9 +9,20 @@ ColorHelper is a CSS/SCSS/Sass tooltip.  When the cursor is on a CSS color, the 
 ## Color Info
 The Color Info Panel will show a preview of the color, and other format variations of the color such as: color name, hex, rgb, rgba, hsl, and hsla format; if desired, you can convert the selected color to one of the shown formats by clicking the link to the left.
 
-![color_info](images/color_info.png)
+![color info](images/color_info.png)
 
-From the color info panel, you can launch the [ColorPicker](https://github.com/weslly/ColorPicker) plugin (if available), bookmark colors as a favorite, add/save the current color to a palette of your choice, or open the [Palette Panel](#palette-panel) to select a pre-saved color from an exiting palette.
+From the color info panel, you can launch a color picker, bookmark colors as a favorite, add/save the current color to a palette of your choice, or open the [Palette Panel](#palette-panel) to select a pre-saved color from an exiting palette.
+
+## Color Picker
+The internal color picker can be launched from the command palette or from the [Color Info Panel](#color_info).  When launched it will use the color under the cursor (if available) as its starting color. The internal color picker is contained inside a tooltip.  It has a color map section at the top where different colors can be selected. It shows various valid CSS formats of the colors at the bottom.  And it shows either rgba channels or hlsa channels; a toggle is available to switch between them.
+
+![color picker](images/color_picker.png)
+
+The color channels are coarse, but can generally allow you to get close to a color that you like.  As you select colors in the channel the selections will shift revealing more selections until the bounds of the color channel are reached.  If you need finer selections, you can click the label to the left and scrollable tooltip with much finer selections will appear so that you can select the best suited value.
+
+![fine channel picker](images/fine_channel_picker.png)
+
+If you would like to directly enter a different color, you can select the `enter new color` option.  An input panel will be open that can receive a color in the hex form of `#RRGGBBAA` where `RR` is the red channel, `GG` is the green channel, `BB` is the blue channel, and `AA` is the alpha channel.
 
 ## Add Color Panel
 The Add Color Panel presents the user with the option of either adding a color to an existing palette or creating a new global or project palette and adding the color to it.
@@ -97,12 +108,34 @@ This will make the color preview box in the [Color Info Panel](#color-info-panel
     "click_color_box_to_pick": "none",
 ```
 
-### enable_color_picker
-Enables the ability to launch the color picker from the tooltip.
+### graphic_size
+Controls the size of generated graphics.  Graphics in the tooltips look best large as Sublime slightly distorts images, but on small screens, some of the tooltips (especially the internal color picker) may be too large.  `graphic_size` can be used ot control the size of these generated images.  Valid settings are `small`, `medium`, and `large` where `medium` is the default.
 
 ```js
-    // Enable color picker option if ColorPicker plugin is installed
+    // If the color picker is too big, try playing with this.
+    // Graphics in tooltips usually look better bigger (especially in Hidpi),
+    // but that can make the tooltips really big. If they are too big,
+    // you can play with this setting.  We compromise with medium.
+    // (small | medium | large)
+    "graphic_size": "medium",
+```
+
+### enable_color_picker
+Enables the ability to launch the color picker from the tooltip.  By default, the internal color picker will be used.  If you have [@weslly](https://github.com/weslly)'s [ColorPicker](https://packagecontrol.io/packages/ColorPicker) package installed, you can use [use_color_picker_package](#use_color_picker_package) to use it instead of the internal color picker.
+
+```js
+    // Enable color picker option.  Will use native color picker
+    // unless "use_color_picker_package" is enabled and external
+    // package is installed.
     "enable_color_picker": true,
+```
+
+### use_color_picker_package
+If you have [@weslly](https://github.com/weslly)'s [ColorPicker](https://packagecontrol.io/packages/ColorPicker) package installed, `user_color_picker_package` will cause it to override the default color picker, but only the default color picker supports transparency.
+
+```js
+    // Use https://github.com/weslly/ColorPicker for the color picker if installed.
+    "use_color_picker_package": false,
 ```
 
 ### enable_global_user_palettes
