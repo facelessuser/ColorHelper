@@ -38,6 +38,10 @@
     // Use https://github.com/weslly/ColorPicker for the color picker if installed.
     "use_color_picker_package": false,
 
+    // This can be turned off to get a rectangular color picker
+    // That displays possible options by hue and brightness/luminance.
+    "use_hex_color_picker": false,
+
     // Show global palettes in palette panel
     "enable_global_user_palettes": true,
 

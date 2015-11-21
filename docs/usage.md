@@ -24,6 +24,8 @@ The color channels are coarse, but can generally allow you to get close to a col
 
 If you would like to directly enter a different color, you can select the `enter new color` option.  An input panel will be open that can receive a color in the hex form of `#RRGGBBAA` where `RR` is the red channel, `GG` is the green channel, `BB` is the blue channel, and `AA` is the alpha channel.
 
+To select a color, just click the `>>>` link to the right of the CSS format yu want.
+
 ## Add Color Panel
 The Add Color Panel presents the user with the option of either adding a color to an existing palette or creating a new global or project palette and adding the color to it.
 
@@ -128,6 +130,15 @@ Enables the ability to launch the color picker from the tooltip.  By default, th
     // unless "use_color_picker_package" is enabled and external
     // package is installed.
     "enable_color_picker": true,
+```
+
+### use_hex_color_picker
+Enables or disables the use of the hex color picker.  When enabled, the color picker has a hex shape as the colors fan out from the white center.  If disabled, the color picker will be a rectangular one that shows the colors by hue and by brightness.
+
+```js
+    // This can be turned off to get a rectangular color picker
+    // That displays possible options by hue and brightness/luminance.
+    "use_hex_color_picker": true,
 ```
 
 ### use_color_picker_package
