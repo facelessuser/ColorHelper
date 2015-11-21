@@ -143,7 +143,7 @@ class InsertCalc(object):
         self.color = target_color[:-2] if len(target_color) > 7 else target_color
 
         try:
-            self.web_color = csscolors.hex2name(target_color) if self.use_web_colors else None
+            self.web_color = csscolors.hex2name(target_color) if use_web_colors else None
         except:
             self.web_color = None
 

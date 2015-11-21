@@ -229,7 +229,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
         text.append(
             HSLA_COLOR % (
-                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
+                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                self.alpha
             )
         )
 
