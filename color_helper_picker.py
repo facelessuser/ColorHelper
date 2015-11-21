@@ -47,6 +47,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     """Experimental color picker."""
 
     def get_color_map_square(self, text):
+        """Get a square variant of the color map."""
 
         global color_map
         global color_map_size
@@ -60,8 +61,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             h = 0
             s = 0.9
             l = 0.9
-            hfac = 15.0/360.0
-            lfac = 8.0/100.0
+            hfac = 15.0 / 360.0
+            lfac = 8.0 / 100.0
             for y in range(0, 11):
                 html_colors.append(
                     [
@@ -72,24 +73,24 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     ]
                 )
                 for x in range(0, 15):
-                    if y == 0 and x == 0:
-                        border_map = 0x9
-                    elif y == 0 and x == 14:
-                        border_map = 0x3
-                    elif y == 0:
-                        border_map = 0x1
-                    elif y == 10 and x == 0:
-                        border_map = 0xc
-                    elif y == 10 and x == 14:
-                        border_map = 0x6
-                    elif y == 10:
-                        border_map = 0x4
-                    elif x == 0:
-                        border_map = 0x8
-                    elif x == 14:
-                        border_map = 0x2
-                    else:
-                        border_map = 0
+                    # if y == 0 and x == 0:
+                    #     border_map = 0x9
+                    # elif y == 0 and x == 14:
+                    #     border_map = 0x3
+                    # elif y == 0:
+                    #     border_map = 0x1
+                    # elif y == 10 and x == 0:
+                    #     border_map = 0xc
+                    # elif y == 10 and x == 14:
+                    #     border_map = 0x6
+                    # elif y == 10:
+                    #     border_map = 0x4
+                    # elif x == 0:
+                    #     border_map = 0x8
+                    # elif x == 14:
+                    #     border_map = 0x2
+                    # else:
+                    #     border_map = 0
                     rgba.fromhls(h, l, s)
                     color = rgba.get_rgba()
                     html_colors[-1].append(
@@ -105,17 +106,17 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 l -= lfac
 
             l = 1.0
-            lfac = 10.0/100.0
+            lfac = 10.0 / 100.0
             rgba.r = 255.0
             rgba.g = 255.0
             rgba.b = 255.0
             for y in range(0, 11):
-                if y == 0:
-                    border_map = 0xb
-                elif y == 10:
-                    border_map = 0xe
-                else:
-                    border_map = 0xa
+                # if y == 0:
+                #     border_map = 0xb
+                # elif y == 10:
+                #     border_map = 0xe
+                # else:
+                #     border_map = 0xa
                 h, lum, s = rgba.tohls()
                 rgba.fromhls(h, l, s)
                 color = rgba.get_rgba()
@@ -129,9 +130,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 )
                 l -= lfac
 
-            color_map = ''.join(['<span>%s</span><br>' % ''.join([y1 for y1 in x1 ]) for x1 in html_colors]) + '\n\n'
+            color_map = ''.join(['<span>%s</span><br>' % ''.join([y1 for y1 in x1]) for x1 in html_colors]) + '\n\n'
         text.append(color_map)
-
 
     def get_color_map_hex(self, text):
         """Get color wheel."""
@@ -144,8 +144,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             padding = (self.width * 9)
             decrement = True
             html_colors = []
-            countr = 0
-            lastr = len(color_map_data) - 1
+            # countr = 0
+            # lastr = len(color_map_data) - 1
             for row in color_map_data:
                 html_colors.append('<span class="color-helper color-map-row">')
                 if padding:
@@ -154,8 +154,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         height=self.height, width=padding, check_size=2, alpha=True
                     )
                     html_colors.append(pad)
-                countc = 0
-                lastc = len(row) - 1
+                # countc = 0
+                # lastc = len(row) - 1
                 for color in row:
                     if len(self.color) == 3:
                         color = '#' + ''.join([c * 2 for c in color]) + 'ff'
@@ -169,9 +169,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                             )
                         )
                     )
-                    countc += 1
+                    # countc += 1
                 html_colors.append('</span><br>')
-                countr += 1
+                # countr += 1
                 if padding == 6 * self.width:
                     decrement = False
                 if decrement:
@@ -261,12 +261,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         count = 12
         while count:
             getattr(rgba1, color_filter)(minimum)
-            if count == 12:
-                border_map = 0x7
-            elif count == 1:
-                border_map = 0xd
-            else:
-                border_map = 0x5
+            # if count == 12:
+            #     border_map = 0x7
+            # elif count == 1:
+            #     border_map = 0xd
+            # else:
+            #     border_map = 0x5
             temp.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
@@ -290,12 +290,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         count = 12
         while count:
             getattr(rgba2, color_filter)(maximum)
-            if count == 12:
-                border_map = 0xd
-            elif count == 1:
-                border_map = 0x7
-            else:
-                border_map = 0x5
+            # if count == 12:
+            #     border_map = 0xd
+            # elif count == 1:
+            #     border_map = 0x7
+            # else:
+            #     border_map = 0x5
             text.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
