@@ -108,6 +108,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Hide popup event."""
 
         self.view.settings().set('color_helper_popup_active', False)
+        self.view.settings().set('color_helper_popup_auto', self.auto)
 
     def on_navigate(self, href):
         """Handle link clicks."""
@@ -312,9 +313,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 sublime.set_timeout(self.show_color_info, 0)
         else:
             if not self.no_info:
-                on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
             elif not self.no_palette:
-                on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
             else:
                 on_cancel = None
             self.view.run_command(
@@ -576,6 +577,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
         else:
             self.view.settings().set('color_helper_popup_active', True)
+            self.view.settings().set('color_helper_popup_auto', self.auto)
             mdpopups.show_popup(
                 self.view,
                 ''.join(html), location=-1, max_width=600,
@@ -636,6 +638,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
                 self.view.settings().set('color_helper_popup_active', True)
+                self.view.settings().set('color_helper_popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
@@ -687,6 +690,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
             else:
                 self.view.settings().set('color_helper_popup_active', True)
+                self.view.settings().set('color_helper_popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
                     ''.join(html), location=-1, max_width=600,
@@ -713,7 +717,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             sizes["medium"]
         )
 
-    def run(self, edit, mode="palette", palette_name=None, color=None):
+    def run(self, edit, mode="palette", palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
 
         self.set_sizes()
@@ -722,6 +726,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.color_picker_package = use_color_picker_package and util.color_picker_available()
         self.no_info = True
         self.no_palette = True
+        self.auto = auto
         if mode == "palette":
             self.no_palette = False
             if palette_name is not None:
@@ -955,8 +960,12 @@ class ChThread(threading.Thread):
                             execute = True
                         break
                 if execute:
-                    view.run_command('color_helper', {"mode": "palette" if not info else "info"})
-            if not execute and view.settings().get('color_helper_popup_active', False):
+                    view.run_command('color_helper', {"mode": "palette" if not info else "info", "auto": True})
+            if (
+                not execute and
+                view.settings().get('color_helper_popup_active', False) and
+                view.settings().get('color_helper_popup_auto', False)
+            ):
                 mdpopups.hide_popup(view)
         self.ignore_all = False
         self.time = time()
