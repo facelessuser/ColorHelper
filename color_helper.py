@@ -14,7 +14,7 @@ import re
 import os
 import mdpopups
 import ColorHelper.color_helper_util as util
-from ColorHelper.color_helper_insert import InsertionCalc
+from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc, ConvertInsertCalc
 # import traceback
 
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
@@ -25,6 +25,8 @@ MARK_MENU = '[mark](__add_fav__:%s){: .color-helper .small}'
 WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
 '''
 HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
+'''
+HEXA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hexa){: .color-helper .small} <span class="support type">%s</span>
 '''
 RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
 <span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
@@ -321,50 +323,60 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
+                    'use_hexa': self.use_hexa,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                     'on_cancel': on_cancel
                 }
             )
 
-    def insert_color(self, target_color, convert=None, ch_picker=False):
+    def insert_color(self, target_color, convert=None, picker=False):
         """Insert colors."""
 
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
-            insert_calc = InsertionCalc(self.view, point, target_color, convert, ch_picker)
-            insert_calc.calc()
-            if ch_picker:
-                target_color = target_color[:-2]
-            if insert_calc.web_color:
-                value = insert_calc.web_color
-            elif insert_calc.convert_rgb:
-                value = "%d, %d, %d" % (
-                    int(target_color[1:3], 16),
-                    int(target_color[3:5], 16),
-                    int(target_color[5:7], 16)
-                )
-                if insert_calc.alpha:
-                    value += ', %s' % insert_calc.alpha
-                if insert_calc.format_override:
-                    value = ("rgba(%s)" if insert_calc.alpha else "rgb(%s)") % value
-            elif insert_calc.convert_hsl:
-                hsl = RGBA(target_color)
-                h, l, s = hsl.tohls()
-                value = "%s, %s%%, %s%%" % (
-                    util.fmt_float(h * 360.0),
-                    util.fmt_float(s * 100.0),
-                    util.fmt_float(l * 100.0)
-                )
-                if insert_calc.alpha:
-                    value += ', %s' % insert_calc.alpha
-                if insert_calc.format_override:
-                    value = ("hsla(%s)" if insert_calc.alpha else "hsl(%s)") % value
+            if not picker:
+                if convert:
+                    calc = ConvertInsertCalc(self.view, point, target_color, convert, self.use_hexa)
+                else:
+                    calc = InsertCalc(self.view, point, target_color, self.use_hexa)
+                calc.calc()
+                if calc.web_color and (not self.use_hexa or not calc.alpha):
+                    value = calc.web_color
+                elif calc.convert_rgb:
+                    value = "%d, %d, %d" % (
+                        int(calc.color[1:3], 16),
+                        int(calc.color[3:5], 16),
+                        int(calc.color[5:7], 16)
+                    )
+                    if calc.alpha:
+                        value += ', %s' % calc.alpha
+                    if calc.format_override:
+                        value = ("rgba(%s)" if calc.alpha else "rgb(%s)") % value
+                elif calc.convert_hsl:
+                    hsl = RGBA(calc.color)
+                    h, l, s = hsl.tohls()
+                    value = "%s, %s%%, %s%%" % (
+                        util.fmt_float(h * 360.0),
+                        util.fmt_float(s * 100.0),
+                        util.fmt_float(l * 100.0)
+                    )
+                    if calc.alpha:
+                        value += ', %s' % calc.alpha
+                    if calc.format_override:
+                        value = ("hsla(%s)" if calc.alpha else "hsl(%s)") % value
+                else:
+                    use_upper = ch_settings.get("upper_case_hex", False)
+                    color = calc.color
+                    if calc.alpha_hex and self.use_hexa:
+                        color += calc.color + calc.alpha_hex
+                    value = color.upper() if use_upper else color.lower()
             else:
-                use_upper = ch_settings.get("upper_case_hex", False)
-                value = target_color.upper() if use_upper else target_color.lower()
+                calc = PickerInsertCalc(self.view, point, self.use_hexa)
+                calc.calc()
+                value = target_color
             self.view.sel().subtract(sels[0])
-            self.view.sel().add(insert_calc.region)
+            self.view.sel().add(calc.region)
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
@@ -481,6 +493,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if web_color:
                 info.append(WEB_COLOR % (color, web_color))
             info.append(HEX_COLOR % (color, (color.lower() if not alpha else color[:-2].lower())))
+            if self.use_hexa:
+                info.append(HEXA_COLOR % (color, (color.lower() if alpha else color.lower() + alpha)))
             info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
             info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
@@ -653,6 +667,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         color = None
         alpha = None
+        alpha_dec = None
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
@@ -667,23 +682,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             ref = point - start
             for m in util.COLOR_RE.finditer(bfr):
                 if ref >= m.start(0) and ref < m.end(0):
-                    color, alpha = util.translate_color(m)
+                    color, alpha, alpha_dec = util.translate_color(m, self.use_hexa)
                     break
-        return color, alpha
+        return color, alpha, alpha_dec
 
     def show_color_info(self, update=False):
         """Show the color under the cursor."""
 
-        color, alpha = self.get_cursor_color()
+        color, alpha, alpha_dec = self.get_cursor_color()
 
         if color is not None:
             if alpha is not None:
-                color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
+                color += alpha
 
             html = []
 
             html.append(
-                self.format_info(color.lower(), alpha)
+                self.format_info(color.lower(), alpha_dec)
             )
 
             if update:
@@ -724,6 +739,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         s = sublime.load_settings('color_helper.sublime-settings')
         use_color_picker_package = s.get('use_color_picker_package', False)
         self.color_picker_package = use_color_picker_package and util.color_picker_available()
+        self.use_hexa = util.use_hexa()
         self.no_info = True
         self.no_palette = True
         self.auto = auto
@@ -733,19 +749,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_colors(palette_name)
             else:
                 self.show_palettes()
-        elif mode == "color" and util.is_hex_color(color):
+        elif mode == "color" and util.is_hex_color(color, self.use_hexa):
             self.insert_color(color)
         elif mode == "color_picker":
             self.no_info = True
-            color, alpha = self.get_cursor_color()
+            color, alpha = self.get_cursor_color()[:-1]
             if color is not None:
                 if alpha is not None:
-                    color += "%02X" % int('%.0f' % (float(alpha) * 255.0))
+                    color += alpha
             else:
                 color = '#ffffffff'
             self.color_picker(color)
         elif mode == "color_picker_result":
-            self.insert_color(color, ch_picker=True)
+            self.insert_color(color, picker=True)
         elif mode == "info":
             self.no_info = False
             self.no_palette = False
@@ -841,6 +857,7 @@ class ChFileIndexThread(threading.Thread):
                 [name for name in csscolors.name2hex_map.keys()]
             )
         )
+        self.use_hexa = util.use_hexa()
         self.source = source
         threading.Thread.__init__(self)
 
@@ -875,7 +892,9 @@ class ChFileIndexThread(threading.Thread):
         for m in util.COLOR_RE.finditer(self.source):
             if self.abort:
                 break
-            color, alpha = util.translate_color(m)
+            if m.group('hexa') and not self.use_hexa:
+                continue
+            color = util.translate_color(m, self.use_hexa)[0]
             if color is not None:
                 colors.add(color)
         for m in self.webcolor_names.finditer(self.source):
@@ -914,6 +933,7 @@ class ChThread(threading.Thread):
         self.ignore_all = True
         window = sublime.active_window()
         view = window.active_view()
+        use_hexa = util.use_hexa()
         if view is not None:
             info = False
             execute = False
@@ -946,6 +966,7 @@ class ChThread(threading.Thread):
                 for m in util.COLOR_ALL_RE.finditer(bfr):
                     if ref >= m.start(0) and ref < m.end(0):
                         if (
+                            (m.group('hexa') and use_hexa) or
                             m.group('hex') or m.group('rgb') or m.group('rgba') or
                             m.group('hsl') or m.group('hsla') or m.group('webcolors')
                         ):

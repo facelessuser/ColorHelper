@@ -25,12 +25,18 @@ color_map_data = [
 color_map = None
 color_map_size = False
 
-WEB_COLOR = '''<span class="constant numeric">%s</span><br>'''
-HEX_COLOR = '''<span class="support type">%s</span><br>'''
-RGB_COLOR = '''<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)<br>'''
-RGBA_COLOR = '''<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
-HSL_COLOR = '''<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
-HSLA_COLOR = '''<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
+LINK = '<a href="insert:%s" class="color-helper small">&gt;&gt;&gt;</a> '
+WEB_COLOR = '''%s<span class="constant numeric">%s</span><br>'''
+HEX_COLOR = '''%s<span class="support type">%s</span><br>'''
+RGB_COLOR = '''%s<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)<br>'''
+RGBA_COLOR = '''%s<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
+HSL_COLOR = '''%s<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
+HSLA_COLOR = '''%s<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
+
+RGB_INSERT = 'rgb(%d, %d, %d)'
+RGBA_INSERT = 'rgba(%d, %d, %d, %s)'
+HSL_INSERT = 'hsl(%s, %s%%, %s%%)'
+HSLA_INSERT = 'hsla(%s, %s%%, %s%%, %s)'
 
 SPACER = '#00000000'
 OUTER_BORDER = '#fefefeff'
@@ -52,7 +58,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             decrement = True
             html_colors = []
             for row in color_map_data:
-                html_colors.append('<span class="color-wheel">')
+                html_colors.append('<span class="color-helper color-map-row">')
                 if padding:
                     pad = mdpopups.color_box(
                         [SPACER], border_size=0,
@@ -87,7 +93,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         """Get current color."""
 
         text.append(
-            '<span class="color-wheel current-color">%s</span>\n\n' % (
+            '<span class="color-helper current-color">%s</span>\n\n' % (
                 mdpopups.color_box(
                     [SPACER], border_size=0,
                     height=self.height, width=(self.width * 6), check_size=2, alpha=True
@@ -157,7 +163,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         rgba1 = util.RGBA(self.color)
         rgba2 = util.RGBA(self.color)
-        text.append('<span class="color-wheel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
+        text.append('<span class="color-helper channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
         temp = []
         count = 12
         while count:
@@ -202,23 +208,30 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         rgba = util.RGBA(self.color)
 
-        text.append('<div class="highlight"><pre>')
         if self.web_color:
-            text.append(WEB_COLOR % self.web_color)
-        text.append(HEX_COLOR % self.color[:-2].lower())
-        text.append(RGB_COLOR % (rgba.r, rgba.g, rgba.b))
-        text.append(RGBA_COLOR % (rgba.r, rgba.g, rgba.b, self.alpha))
+            text.append(WEB_COLOR % (LINK % self.web_color, self.web_color))
+        color = self.color[:-2].lower()
+        text.append(HEX_COLOR % (LINK % color, color))
+        if self.use_hexa:
+            color = self.color.lower()
+            text.append(HEX_COLOR % (LINK % color, color))
+        color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
+        text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
+        color = RGBA_INSERT % (rgba.r, rgba.g, rgba.b, self.alpha)
+        text.append(RGBA_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b, self.alpha))
         h, l, s = rgba.tohls()
+        color = HSL_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
         text.append(
-            HSL_COLOR % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
+            HSL_COLOR % (LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
+        )
+        color = HSLA_INSERT % (
+            util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
         )
         text.append(
             HSLA_COLOR % (
-                util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                self.alpha
+                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
             )
         )
-        text.append('</pre></div>')
 
     def set_sizes(self):
         """Get sizes."""
@@ -235,9 +248,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             sizes["medium"]
         )
 
-    def run(self, edit, color='#ffffff', hsl=False, hirespick=None, on_done=None, on_cancel=None):
+    def run(self, edit, color='#ffffff', hsl=False, hirespick=None, use_hexa=False, on_done=None, on_cancel=None):
         """Run command."""
 
+        self.use_hexa = use_hexa
         self.on_done = on_done
         self.on_cancel = on_cancel
         rgba = util.RGBA(color)
@@ -257,7 +271,6 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.get_hires_color_channel(text, hirespick)
         else:
             text.append('[cancel](cancel){: .color-helper .small} ')
-            text.append('[select](insert){: .color-helper .small} ')
             text.append('[enter new color](edit){: .color-helper .small}\n\n')
             self.get_color_map(text)
             self.get_current_color(text)
@@ -289,21 +302,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         """Handle href."""
 
         hires = None
+        hsl = self.hsl
         if href in ('hsl', 'rgb'):
             hsl = href == 'hsl'
             color = self.color
-        elif href == 'insert':
-            hsl = self.hsl
-            color = self.color
+        elif href.startswith('insert'):
+            color = href.split(':')[1]
         elif href.startswith('hirespick'):
             hires = href.split(':')[1]
             color = self.color
-            hsl = self.hsl
         elif href == 'edit':
             color = self.color
-            hsl = self.hsl
         else:
-            hsl = self.hsl
             color = href
         if href == 'cancel':
             mdpopups.hide_popup(self.view)
@@ -317,7 +327,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 'color_helper_picker_panel',
                 {"color": color, "on_done": self.on_done, "on_cancel": self.on_cancel}
             )
-        elif href == 'insert':
+        elif href.startswith('insert'):
             mdpopups.hide_popup(self.view)
             if self.on_done is not None:
                 call = self.on_done.get('command', 'color_helper')

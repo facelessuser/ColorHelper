@@ -8,9 +8,11 @@ from ColorHelper.lib.rgba import RGBA
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 HEX_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))$')
+HEXA_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}|(?:[\dA-Fa-f]{4}){1,2}))$')
 
 COMPLETE = r'''
     (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))\b |
+    (?P<hexa>\#(?P<hexa_content>(?:[\dA-Fa-f]{4}){1,2}))\b |
     \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
     \b(?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
@@ -71,6 +73,12 @@ def log(*args):
     print(''.join(text))
 
 
+def use_hexa():
+    """Check if using hex alpha is allowed."""
+
+    return sublime.load_settings("color_helper.sublime-settings").get('use_hexa', False)
+
+
 def debug(*args):
     """Log if debug enabled."""
 
@@ -105,10 +113,11 @@ def fmt_float(f, p=0):
     return string
 
 
-def is_hex_color(color):
+def is_hex_color(color, hexa):
     """Check if color is a hex color."""
 
-    return color is not None and HEX_RE.match(color) is not None
+    hex_re = HEXA_RE if hexa else HEX_RE
+    return color is not None and hex_re.match(color) is not None
 
 
 def get_scope(view, skip_sel_check=False):
@@ -186,11 +195,12 @@ def get_project_folders(window):
     return data.get('folders', [])
 
 
-def translate_color(m, decode=False):
+def translate_color(m, hexa=False, decode=False):
     """Translate the match object to a color w/ alpha."""
 
     color = None
     alpha = None
+    alpha_dec = None
     if m.group('hex'):
         if decode:
             content = m.group('hex_content')
@@ -204,6 +214,23 @@ def translate_color(m, decode=False):
             color = "#%02x%02x%02x" % (
                 int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
             )
+    elif m.group('hexa') and hexa:
+        if decode:
+            content = m.group('hexa_content')
+        else:
+            content = m.group('hexa_content')
+        if len(content) == 8:
+            color = "#%02x%02x%02x" % (
+                int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
+            )
+            alpha = content[6:]
+            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
+        else:
+            color = "#%02x%02x%02x" % (
+                int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
+            )
+            alpha = content[3:]
+            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
     elif m.group('rgb'):
         if decode:
             content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
@@ -220,7 +247,8 @@ def translate_color(m, decode=False):
         color = "#%02x%02x%02x" % (
             int(content[0]), int(content[1]), int(content[2])
         )
-        alpha = content[3]
+        alpha_dec = content[3]
+        alpha = "%02X" % int(float(alpha_dec) * 255.0)
     elif m.group('hsl'):
         if decode:
             content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
@@ -243,7 +271,8 @@ def translate_color(m, decode=False):
         l = float(content[2].strip('%')) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
-        alpha = content[3]
+        alpha_dec = content[3]
+        alpha = "%02X" % int(float(alpha_dec) * 255.0)
     elif m.group('webcolors'):
         try:
             if decode:
@@ -252,4 +281,4 @@ def translate_color(m, decode=False):
                 color = csscolors.name2hex(m.group('webcolors')).lower()
         except:
             pass
-    return color, alpha
+    return color, alpha, alpha_dec
