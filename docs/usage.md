@@ -22,6 +22,10 @@ The color channels are coarse, but can generally allow you to get close to a col
 
 ![fine channel picker](images/fine_channel_picker.png)
 
+If you would like to pick from a list of CSS color names, you can select the `CSS color names` link and a CSS Color Names panel will open:
+
+![CSS color names](images/css_color_name_panel.png)
+
 If you would like to directly enter a different color, you can select the `enter new color` option.  An input panel will be open that can receive a color in the hex form of `#RRGGBBAA` where `RR` is the red channel, `GG` is the green channel, `BB` is the blue channel, and `AA` is the alpha channel.
 
 To select a color, just click the `>>>` link to the right of the CSS format yu want.
@@ -140,6 +144,10 @@ Enables or disables the use of the hex color picker.  When enabled, the color pi
     // That displays possible options by hue and brightness/luminance.
     "use_hex_color_picker": true,
 ```
+
+Disabled look
+: 
+    ![alternate color picker](images/alternate_color_picker.png)
 
 ### use_color_picker_package
 If you have [@weslly](https://github.com/weslly)'s [ColorPicker](https://packagecontrol.io/packages/ColorPicker) package installed, `user_color_picker_package` will cause it to override the default color picker, but only the default color picker supports transparency.
