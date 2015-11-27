@@ -57,9 +57,8 @@ COLOR_ALL_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (
 INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
 ADD_CSS = '''
-.color-helper.small {
-    font-size: 0.8em;
-}
+.color-helper.content { margin: 0; padding: 0.5em; }
+.color-helper.small { font-size: 0.8em; }
 '''
 
 

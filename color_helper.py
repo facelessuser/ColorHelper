@@ -592,13 +592,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             self.view.settings().set('color_helper_popup_active', True)
             self.view.settings().set('color_helper_popup_auto', self.auto)
+            md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.show_popup(
-                self.view,
-                ''.join(html), location=-1, max_width=600,
+                self.view, '<div class="color-helper content">%s</div>' % md,
+                css=util.ADD_CSS, location=-1, max_width=600,
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
-                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                css=util.ADD_CSS
+                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -653,13 +653,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 self.view.settings().set('color_helper_popup_active', True)
                 self.view.settings().set('color_helper_popup_auto', self.auto)
+                md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
-                    self.view,
-                    ''.join(html), location=-1, max_width=600,
+                    self.view, '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS, location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    css=util.ADD_CSS
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
                 )
 
     def get_cursor_color(self):
@@ -706,13 +706,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 self.view.settings().set('color_helper_popup_active', True)
                 self.view.settings().set('color_helper_popup_auto', self.auto)
+                md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
-                    self.view,
-                    ''.join(html), location=-1, max_width=600,
+                    self.view, '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS, location=-1, max_width=600,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    css=util.ADD_CSS
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
                 )
         elif update:
             self.view.hide_popup()

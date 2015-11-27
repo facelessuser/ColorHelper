@@ -443,8 +443,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             text.append('\n\n---\n\n')
             self.get_color_info(text)
 
+        md = mdpopups.md2html(self.view, ''.join(text))
         mdpopups.show_popup(
-            self.view, ''.join(text), css=util.ADD_CSS,
+            self.view, '<div class="color-helper content">%s</div>' % md,
+            css=util.ADD_CSS,
             max_width=600, max_height=(500 if hirespick or colornames else 725),
             on_navigate=self.handle_href
         )
