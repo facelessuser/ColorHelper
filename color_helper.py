@@ -481,9 +481,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 info.append(MARK_MENU % color.lower())
 
+        no_alpha_color = color[:-2] if len(color) > 7 else color
         info.append(
             color_box_wrapper % mdpopups.color_box(
-                [color], '#cccccc', '#333333',
+                [no_alpha_color, color], '#cccccc', '#333333',
                 height=self.preview_h, width=self.preview_w, border_size=2
             )
         )
