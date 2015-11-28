@@ -6,6 +6,7 @@ Copyright (c) 2012 - 2015 Isaac Muse <isaacmuse@gmail.com>
 """
 import re
 from colorsys import rgb_to_hls, hls_to_rgb, rgb_to_hsv, hsv_to_rgb
+import decimal
 
 RGB_CHANNEL_SCALE = 1.0 / 255.0
 HUE_SCALE = 1.0 / 360.0
@@ -15,6 +16,12 @@ def clamp(value, mn, mx):
     """Clamp the value to the the given minimum and maximum."""
 
     return max(min(value, mx), mn)
+
+
+def round_int(dec):
+    """Round float to nearest int using expected rounding."""
+
+    return int(decimal.Decimal(dec).quantize(decimal.Decimal('0'), decimal.ROUND_HALF_UP))
 
 
 class RGBA(object):
@@ -68,7 +75,7 @@ class RGBA(object):
         def tx_alpha(cf, af, cb, ab):
             """Translate the color channel with the alpha channel and background channel color."""
 
-            return int(
+            return round_int(
                 abs(
                     cf * (af * RGB_CHANNEL_SCALE) + cb * (ab * RGB_CHANNEL_SCALE) * (1 - (af * RGB_CHANNEL_SCALE))
                 )
@@ -86,33 +93,33 @@ class RGBA(object):
     def get_luminance(self):
         """Get percieved luminance."""
 
-        return clamp(int(round(0.299 * self.r + 0.587 * self.g + 0.114 * self.b)), 0, 255)
+        return clamp(round_int(0.299 * self.r + 0.587 * self.g + 0.114 * self.b), 0, 255)
 
     def get_true_luminance(self):
         """"Get true liminance."""
 
         l = self.tohls()[1]
-        return clamp(int(l * 255.0), 0, 255)
+        return clamp(round_int(l * 255.0), 0, 255)
 
     def alpha(self, factor):
         """Adjust alpha."""
 
-        self.a = int(clamp(self.a + (255.0 * factor) - 255.0, 0.0, 255.0))
+        self.a = round_int(clamp(self.a + (255.0 * factor) - 255.0, 0.0, 255.0))
 
     def red(self, factor):
         """Adjust red."""
 
-        self.r = int(clamp(self.r + (255.0 * factor) - 255.0, 0.0, 255.0))
+        self.r = round_int(clamp(self.r + (255.0 * factor) - 255.0, 0.0, 255.0))
 
     def green(self, factor):
         """Adjust green."""
 
-        self.g = int(clamp(self.g + (255.0 * factor) - 255.0, 0.0, 255.0))
+        self.g = round_int(clamp(self.g + (255.0 * factor) - 255.0, 0.0, 255.0))
 
     def blue(self, factor):
         """Adjust blue."""
 
-        self.b = int(clamp(self.b + (255.0 * factor) - 255.0, 0.0, 255.0))
+        self.b = round_int(clamp(self.b + (255.0 * factor) - 255.0, 0.0, 255.0))
 
     def luminance(self, factor):
         """True luminance."""
@@ -130,9 +137,9 @@ class RGBA(object):
         """Convert to RGB from HSV."""
 
         r, g, b = hsv_to_rgb(h, s, v)
-        self.r = int(round(r * 255)) & 0xFF
-        self.g = int(round(g * 255)) & 0xFF
-        self.b = int(round(b * 255)) & 0xFF
+        self.r = round_int(r * 255) & 0xFF
+        self.g = round_int(g * 255) & 0xFF
+        self.b = round_int(b * 255) & 0xFF
 
     def tohls(self):
         """Convert to HLS color format."""
@@ -143,9 +150,9 @@ class RGBA(object):
         """Convert to RGB from HSL."""
 
         r, g, b = hls_to_rgb(h, l, s)
-        self.r = int(round(r * 255)) & 0xFF
-        self.g = int(round(g * 255)) & 0xFF
-        self.b = int(round(b * 255)) & 0xFF
+        self.r = round_int(r * 255) & 0xFF
+        self.g = round_int(g * 255) & 0xFF
+        self.b = round_int(b * 255) & 0xFF
 
     def colorize(self, deg):
         """Colorize the color with the given hue."""
@@ -191,9 +198,9 @@ class RGBA(object):
     def sepia(self):
         """Apply a sepia filter to the color."""
 
-        r = clamp(int((self.r * .393) + (self.g * .769) + (self.b * .189)), 0, 255) & 0xFF
-        g = clamp(int((self.r * .349) + (self.g * .686) + (self.b * .168)), 0, 255) & 0xFF
-        b = clamp(int((self.r * .272) + (self.g * .534) + (self.b * .131)), 0, 255) & 0xFF
+        r = clamp(round_int((self.r * .393) + (self.g * .769) + (self.b * .189)), 0, 255) & 0xFF
+        g = clamp(round_int((self.r * .349) + (self.g * .686) + (self.b * .168)), 0, 255) & 0xFF
+        b = clamp(round_int((self.r * .272) + (self.g * .534) + (self.b * .131)), 0, 255) & 0xFF
         self.r, self.g, self.b = r, g, b
 
     def _get_overage(self, c):
@@ -259,6 +266,6 @@ class RGBA(object):
                     components = list(self._distribute_overage(components, overage, slots))
                 count += 1
 
-            self.r = clamp(int(round(components[0])), 0, 255) & 0xFF
-            self.g = clamp(int(round(components[1])), 0, 255) & 0xFF
-            self.b = clamp(int(round(components[2])), 0, 255) & 0xFF
+            self.r = clamp(round_int(components[0]), 0, 255) & 0xFF
+            self.g = clamp(round_int(components[1]), 0, 255) & 0xFF
+            self.b = clamp(round_int(components[2]), 0, 255) & 0xFF

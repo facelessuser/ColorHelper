@@ -2,8 +2,9 @@
 import sublime
 import re
 import os
+import decimal
 from ColorHelper.lib import csscolors
-from ColorHelper.lib.rgba import RGBA
+from ColorHelper.lib.rgba import RGBA, round_int
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
@@ -103,7 +104,10 @@ def color_picker_available():
 def fmt_float(f, p=0):
     """Set float pring precision and trim precision zeros."""
 
-    string = ("%." + "%d" % p + "f") % f
+    string = str(
+        decimal.Decimal(f).quantize(decimal.Decimal('0.' + ('0' * p) if p > 0 else '0'), decimal.ROUND_HALF_UP)
+    )
+
     m = FLOAT_TRIM_RE.match(string)
     if m:
         string = m.group('keep')
@@ -247,7 +251,7 @@ def translate_color(m, hexa=False, decode=False):
             int(content[0]), int(content[1]), int(content[2])
         )
         alpha_dec = content[3]
-        alpha = "%02X" % int(float(alpha_dec) * 255.0)
+        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('hsl'):
         if decode:
             content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
@@ -271,7 +275,7 @@ def translate_color(m, hexa=False, decode=False):
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
         alpha_dec = content[3]
-        alpha = "%02X" % int(float(alpha_dec) * 255.0)
+        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('webcolors'):
         try:
             if decode:
