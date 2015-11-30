@@ -349,9 +349,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             text.append(WEB_COLOR % (LINK % self.web_color, self.web_color))
         color = self.color[:-2].lower()
         text.append(HEX_COLOR % (LINK % color, color))
-        if self.use_hexa:
-            color = self.color.lower()
-            text.append(HEX_COLOR % (LINK % color, color))
+        color = self.color.lower()
+        text.append(HEX_COLOR % (LINK % color, color))
+        color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
+        text.append(HEX_COLOR % (LINK % (color), color + ' <span class="comment">(#AARRGGBB)</span>'))
         color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
         text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
         color = RGBA_INSERT % (rgba.r, rgba.g, rgba.b, self.alpha)
@@ -388,12 +389,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
     def run(
         self, edit, color='#ffffff',
-        hsl=False, hirespick=None, use_hexa=False, colornames=False,
+        hsl=False, hirespick=None, colornames=False,
         on_done=None, on_cancel=None
     ):
         """Run command."""
 
-        self.use_hexa = use_hexa
         self.on_done = on_done
         self.on_cancel = on_cancel
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
@@ -498,8 +498,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker',
                 {
-                    "color": color, "hsl": hsl, "hirespick": hires,
-                    "use_hexa": self.use_hexa, "colornames": colornames,
+                    "color": color, "hsl": hsl, "hirespick": hires, "colornames": colornames,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )

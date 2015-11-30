@@ -8,7 +8,6 @@ from ColorHelper.lib.rgba import RGBA, round_int
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
-HEX_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))$')
 HEXA_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}|(?:[\dA-Fa-f]{4}){1,2}))$')
 
 COMPLETE = r'''
@@ -73,12 +72,6 @@ def log(*args):
     print(''.join(text))
 
 
-def use_hexa():
-    """Check if using hex alpha is allowed."""
-
-    return sublime.load_settings("color_helper.sublime-settings").get('use_hexa', False)
-
-
 def debug(*args):
     """Log if debug enabled."""
 
@@ -119,31 +112,40 @@ def fmt_float(f, p=0):
 def is_hex_color(color, hexa):
     """Check if color is a hex color."""
 
-    hex_re = HEXA_RE if hexa else HEX_RE
-    return color is not None and hex_re.match(color) is not None
+    return color is not None and HEXA_RE.match(color) is not None
 
 
-def get_scope(view, skip_sel_check=False):
+def get_rules(view):
     """Get auto-popup scope rule."""
 
-    ch_settings = sublime.load_settings('color_helper.sublime-settings')
-    scopes = ','.join(ch_settings.get('supported_syntax', []))
-    sels = view.sel()
-    if not skip_sel_check:
-        if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
-            scopes = None
+    rules = view.settings().get("color_helper.scan", {})
+
+    return rules if rules.get("enabled", False) else None
+
+
+def get_scope(view, rules, skip_sel_check=False):
+    """Get auto-popup scope rule."""
+
+    scopes = None
+    if rules is not None:
+        scopes = ','.join(rules.get('scan_scopes', []))
+        sels = view.sel()
+        if not skip_sel_check:
+            if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
+                scopes = None
     return scopes
 
 
-def get_scope_incomplete(view, skip_sel_check=False):
+def get_scope_completion(view, rules, skip_sel_check=False):
     """Get additional auto-popup scope rules for incomplete colors only."""
 
-    ch_settings = sublime.load_settings('color_helper.sublime-settings')
-    scopes = ','.join(ch_settings.get('supported_syntax_incomplete_only', []))
-    sels = view.sel()
-    if not skip_sel_check:
-        if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
-            scopes = None
+    scopes = None
+    if rules is not None:
+        scopes = ','.join(rules.get('scan_completion_scopes', []))
+        sels = view.sel()
+        if not skip_sel_check:
+            if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
+                scopes = None
     return scopes
 
 
@@ -198,7 +200,7 @@ def get_project_folders(window):
     return data.get('folders', [])
 
 
-def translate_color(m, hexa=False, decode=False):
+def translate_color(m, use_argb=False, decode=False):
     """Translate the match object to a color w/ alpha."""
 
     color = None
@@ -217,7 +219,24 @@ def translate_color(m, hexa=False, decode=False):
             color = "#%02x%02x%02x" % (
                 int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
             )
-    elif m.group('hexa') and hexa:
+    elif m.group('hexa') and use_argb:
+        if decode:
+            content = m.group('hexa_content')
+        else:
+            content = m.group('hexa_content')
+        if len(content) == 8:
+            color = "#%02x%02x%02x" % (
+                int(content[2:4], 16), int(content[4:6], 16), int(content[6:], 16)
+            )
+            alpha = content[0:2]
+            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
+        else:
+            color = "#%02x%02x%02x" % (
+                int(content[1:2] * 2, 16), int(content[2:3] * 2, 16), int(content[3:] * 2, 16)
+            )
+            alpha = content[0:1]
+            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
+    elif m.group('hexa'):
         if decode:
             content = m.group('hexa_content')
         else:

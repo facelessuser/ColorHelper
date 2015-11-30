@@ -14,19 +14,25 @@ import re
 import os
 import mdpopups
 import ColorHelper.color_helper_util as util
-from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc, ConvertInsertCalc
+from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 # import traceback
 
+# Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
 PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
 ADD_COLOR_MENU = '[add](__add_color__:%s){: .color-helper .small} '
 UNMARK_MENU = '[unmark](__remove_fav__:%s){: .color-helper .small}'
 MARK_MENU = '[mark](__add_fav__:%s){: .color-helper .small}'
+
+# Convert  commands
 WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
 '''
 HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
 '''
 HEXA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hexa){: .color-helper .small} <span class="support type">%s</span>
+'''
+AHEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:ahex){: .color-helper .small} <span class="support type">%s</span> \
+<span class="comment">(#AARRGGBB)</span>
 '''
 RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
 <span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
@@ -38,6 +44,22 @@ HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
 <span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
 '''
 HSLA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsla){: .color-helper .small} \
+<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
+'''
+
+# These convert commands will use their current alpha.
+HEXA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hexa){: .color-helper .small} \
+<span class="support type">%s</span>
+'''
+# These convert commands will use their current alpha.
+AHEX_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:ahex){: .color-helper .small} \
+<span class="support type">%s</span> \
+<span class="comment">(#AARRGGBB)</span>
+'''
+RGBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:rgba){: .color-helper .small} \
+<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
+'''
+HSLA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hsla){: .color-helper .small} \
 <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
 '''
 
@@ -88,16 +110,22 @@ def start_file_index(view):
     """Kick off current file color index."""
     global ch_file_thread
     if view is not None and (ch_file_thread is None or not ch_file_thread.is_alive()):
-        scope = util.get_scope(view, skip_sel_check=True)
-        if scope:
-            source = []
-            for r in view.find_by_selector(scope):
-                source.append(view.substr(r))
-            util.debug('Regions to search:\n', source)
-            if len(source):
-                ch_file_thread = ChFileIndexThread(view, ' '.join(source))
-                ch_file_thread.start()
-                sublime.status_message('File color indexer started...')
+        rules = util.get_rules(view)
+        if rules:
+            scope = util.get_scope(view, rules, skip_sel_check=True)
+            if scope:
+                source = []
+                for r in view.find_by_selector(scope):
+                    source.append(view.substr(r))
+                util.debug('Regions to search:\n', source)
+                if len(source):
+                    ch_file_thread = ChFileIndexThread(
+                        view, ' '.join(source),
+                        rules.get('allowed_colors', []),
+                        rules.get('use_argb', False)
+                    )
+                    ch_file_thread.start()
+                    sublime.status_message('File color indexer started...')
 
 
 ###########################
@@ -109,14 +137,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def on_hide(self):
         """Hide popup event."""
 
-        self.view.settings().set('color_helper_popup_active', False)
-        self.view.settings().set('color_helper_popup_auto', self.auto)
+        self.view.settings().set('color_helper.popup_active', False)
+        self.view.settings().set('color_helper.popup_auto', self.auto)
 
     def on_navigate(self, href):
         """Handle link clicks."""
 
-        if href.startswith('#'):
-            self.insert_color(href)
+        if href.startswith('__insert__'):
+            parts = href.split(':', 3)
+            self.show_insert(parts[1], parts[2], parts[3])
         elif href.startswith('__colors__'):
             parts = href.split(':', 2)
             self.show_colors(parts[1], parts[2], update=True)
@@ -151,6 +180,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif href.startswith('__create_palette__'):
             parts = href.split(':', 2)
             self.prompt_palette_name(parts[1], parts[2])
+        elif href.startswith('__convert_alpha__'):
+            parts = href.split(':', 2)
+            self.insert_color(parts[1], parts[2], alpha=True)
         elif href.startswith('__convert__'):
             parts = href.split(':', 2)
             self.insert_color(parts[1], parts[2])
@@ -323,25 +355,29 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
-                    'use_hexa': self.use_hexa,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                     'on_cancel': on_cancel
                 }
             )
 
-    def insert_color(self, target_color, convert=None, picker=False):
+    def insert_color(self, target_color, convert=None, picker=False, alpha=False):
         """Insert colors."""
 
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
+            parts = target_color.split('@')
+            target_color = parts[0]
+            dlevel = len(parts[1]) if len(parts) > 1 else 3
             if not picker:
-                if convert:
-                    calc = ConvertInsertCalc(self.view, point, target_color, convert, self.use_hexa)
-                else:
-                    calc = InsertCalc(self.view, point, target_color, self.use_hexa)
+                rules = util.get_rules(self.view)
+                use_argb = rules.get("use_argb", False) if rules else False
+                calc = InsertCalc(self.view, point, target_color, convert, use_argb)
                 calc.calc()
-                if calc.web_color and (not self.use_hexa or not calc.alpha):
+                if alpha:
+                    calc.alpha_hex = target_color[-2:]
+                    calc.alpha = util.fmt_float(float(int(calc.alpha_hex, 16)) / 255.0, dlevel)
+                if calc.web_color and not calc.alpha:
                     value = calc.web_color
                 elif calc.convert_rgb:
                     value = "%d, %d, %d" % (
@@ -351,28 +387,29 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     )
                     if calc.alpha:
                         value += ', %s' % calc.alpha
-                    if calc.format_override:
-                        value = ("rgba(%s)" if calc.alpha else "rgb(%s)") % value
+                    value = ("rgba(%s)" if calc.alpha else "rgb(%s)") % value
                 elif calc.convert_hsl:
                     hsl = RGBA(calc.color)
                     h, l, s = hsl.tohls()
                     value = "%s, %s%%, %s%%" % (
                         util.fmt_float(h * 360.0),
-                        util.fmt_float(s * 100.0),
-                        util.fmt_float(l * 100.0)
+                        util.fmt_float(s * 100.0, 1),
+                        util.fmt_float(l * 100.0, 1)
                     )
                     if calc.alpha:
                         value += ', %s' % calc.alpha
-                    if calc.format_override:
-                        value = ("hsla(%s)" if calc.alpha else "hsl(%s)") % value
+                    value = ("hsla(%s)" if calc.alpha else "hsl(%s)") % value
                 else:
                     use_upper = ch_settings.get("upper_case_hex", False)
                     color = calc.color
-                    if calc.alpha_hex and self.use_hexa:
-                        color += calc.color + calc.alpha_hex
+                    if calc.alpha_hex:
+                        if convert == 'ahex':
+                            color = '#' + calc.alpha_hex + calc.color[1:]
+                        else:
+                            color = calc.color + calc.alpha_hex
                     value = color.upper() if use_upper else color.lower()
             else:
-                calc = PickerInsertCalc(self.view, point, self.use_hexa)
+                calc = PickerInsertCalc(self.view, point)
                 calc.calc()
                 value = target_color
             self.view.sel().subtract(sels[0])
@@ -409,6 +446,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         colors = ['\n## %s\n' % label]
         count = 0
         for f in color_list:
+            parts = f.split('@')
+            if len(parts) > 1:
+                color = parts[0]
+            else:
+                color = f
+            no_alpha_color = color[:-2] if len(f) > 7 else color
             if count != 0 and (count % 8 == 0):
                 colors.append('\n\n')
             elif count != 0:
@@ -420,7 +463,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [f], '#cccccc', '#333333',
+                            [no_alpha_color, color], '#cccccc', '#333333',
                             height=self.color_h, width=self.color_w, border_size=2
                         ),
                         f, palette_type, label,
@@ -428,11 +471,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
             else:
                 colors.append(
-                    '[%s](%s)' % (
+                    '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [f], '#cccccc', '#333333',
+                            [no_alpha_color, color], '#cccccc', '#333333',
                             height=self.color_h, width=self.color_w, border_size=2
-                        ), f
+                        ), f, palette_type, label
                     )
                 )
             count += 1
@@ -441,6 +484,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def format_info(self, color, alpha=None):
         """Format the selected color info."""
         rgba = RGBA(color)
+
+        if alpha is not None:
+            parts = alpha.split('.')
+            dlevel = len(parts[1]) if len(parts) > 1 else None
+            alpha_hex = alpha_hex_display = "%02x" % (util.round_int(float(alpha) * 255.0) & 0xFF)
+            if dlevel is not None:
+                alpha_hex += '@%d' % dlevel
+        else:
+            alpha_hex = ''
 
         try:
             web_color = csscolors.hex2name(rgba.get_rgb())
@@ -476,10 +528,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if show_global_palettes or show_project_palettes:
             info.append(ADD_COLOR_MENU % color.lower())
         if show_favorite_palette:
-            if color in util.get_favs()['colors']:
-                info.append(UNMARK_MENU % color.lower())
+            if (color.lower() + alpha_hex) in util.get_favs()['colors']:
+                info.append(UNMARK_MENU % (color.lower() + alpha_hex))
             else:
-                info.append(MARK_MENU % color.lower())
+                info.append(MARK_MENU % (color.lower() + alpha_hex))
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
         info.append(
@@ -494,21 +546,113 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if web_color:
                 info.append(WEB_COLOR % (color, web_color))
             info.append(HEX_COLOR % (color, (color.lower() if not alpha else color[:-2].lower())))
-            if self.use_hexa:
-                info.append(HEXA_COLOR % (color, (color.lower() if alpha else color.lower() + alpha)))
+            info.append(HEXA_COLOR % (
+                color, (rgba.get_rgb().lower() + 'ff' if not alpha else rgba.get_rgb().lower() + alpha_hex_display))
+            )
+            info.append(AHEX_COLOR % (
+                color, ('#' + ('ff' if not alpha else alpha_hex_display) + rgba.get_rgb().lower()[1:]))
+            )
             info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
             info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
             info.append(
-                HSL_COLOR % (color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
+                HSL_COLOR % (
+                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1)
+                )
             )
             info.append(
                 HSLA_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
                     alpha if alpha else '1'
                 )
             )
         return ''.join(info)
+
+    def show_insert(self, color, palette_type, palette_name, update=False):
+        """Show insert panel."""
+
+        sels = self.view.sel()
+        if (len(sels) == 1 and sels[0].size() == 0):
+            parts = color.split('@')
+            dlevel = len(parts[1]) if len(parts) > 1 else 3
+            point = sels[0].begin()
+            rules = util.get_rules(self.view)
+            use_argb = rules.get("use_argb", False) if rules else False
+            calc = InsertCalc(self.view, point, parts[0], 'rgba', use_argb)
+            found = calc.calc()
+
+            secondry_alpha = found and calc.alpha is not None and calc.alpha != '1'
+
+            txt = [
+                BACK_COLORS_MENU % (palette_type, palette_name),
+                '\n## Insert Color\n'
+            ]
+            rgba = RGBA(parts[0])
+            alpha = util.fmt_float(float(rgba.a) / 255.0, dlevel)
+
+            try:
+                web_color = csscolors.hex2name(rgba.get_rgb())
+            except Exception:
+                web_color = None
+
+            if web_color:
+                txt.append(WEB_COLOR % (rgba.get_rgb(), web_color))
+            txt.append(HEX_COLOR % (rgba.get_rgb(), rgba.get_rgb()))
+            txt.append(HEXA_COLOR_ALPHA % (rgba.get_rgba(), rgba.get_rgba()))
+            txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#' + rgba.get_rgba()[1:-2] + rgba.get_rgb()[1:]))
+            txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
+            txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
+            h, l, s = rgba.tohls()
+            txt.append(
+                HSL_COLOR % (
+                    rgba.get_rgb(),
+                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1)
+                )
+            )
+            txt.append(
+                HSLA_COLOR_ALPHA % (
+                    rgba.get_rgba() + "@%d" % dlevel,
+                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
+                    alpha
+                )
+            )
+
+            if secondry_alpha:
+                txt.append('\n\n---\n\n## Use Selected Alpha\n')
+                txt.append(HEXA_COLOR % (rgba.get_rgb(), rgba.get_rgb() + calc.alpha_hex))
+                txt.append(AHEX_COLOR % (rgba.get_rgb(), '#' + calc.alpha_hex + rgba.get_rgb()[1:]))
+                txt.append(
+                    RGBA_COLOR % (
+                        rgba.get_rgb(),
+                        rgba.r, rgba.g, rgba.b, calc.alpha
+                    )
+                )
+                txt.append(
+                    HSLA_COLOR % (
+                        rgba.get_rgb(),
+                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
+                        calc.alpha
+                    )
+                )
+
+            if update:
+                md = mdpopups.md2html(self.view, ''.join(txt))
+                mdpopups.update_popup(
+                    self.view,
+                    '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS
+                )
+            else:
+                self.view.settings().set('color_helper.popup_active', True)
+                self.view.settings().set('color_helper.popup_auto', self.auto)
+                md = mdpopups.md2html(self.view, ''.join(txt))
+                mdpopups.show_popup(
+                    self.view, '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS, location=-1, max_width=600,
+                    on_navigate=self.on_navigate,
+                    on_hide=self.on_hide,
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                )
 
     def show_palettes(self, delete=False, color=None, update=False):
         """Show preview of all palettes."""
@@ -550,7 +694,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if show_current_palette:
-            current_colors = self.view.settings().get('color_helper_file_palette', [])
+            current_colors = self.view.settings().get('color_helper.file_palette', [])
             if not delete and not color and len(current_colors):
                 show_div = True
                 html.append(
@@ -589,10 +733,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 )
 
         if update:
-            mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
+            md = mdpopups.md2html(self.view, ''.join(html))
+            mdpopups.update_popup(
+                self.view,
+                '<div class="color-helper content">%s</div>' % md,
+                css=util.ADD_CSS
+            )
         else:
-            self.view.settings().set('color_helper_popup_active', True)
-            self.view.settings().set('color_helper_popup_auto', self.auto)
+            self.view.settings().set('color_helper.popup_active', True)
+            self.view.settings().set('color_helper.popup_auto', self.auto)
             md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.show_popup(
                 self.view, '<div class="color-helper content">%s</div>' % md,
@@ -612,7 +761,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 current = True
                 target = {
                     "name": palette_name,
-                    "colors": self.view.settings().get('color_helper_file_palette', [])
+                    "colors": self.view.settings().get('color_helper.file_palette', [])
                 }
             elif palette_name == "Project Colors":
                 data = self.view.window().project_data()
@@ -650,10 +799,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
+                md = mdpopups.md2html(self.view, ''.join(html))
+                mdpopups.update_popup(
+                    self.view,
+                    '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS
+                )
             else:
-                self.view.settings().set('color_helper_popup_active', True)
-                self.view.settings().set('color_helper_popup_auto', self.auto)
+                self.view.settings().set('color_helper.popup_active', True)
+                self.view.settings().set('color_helper.popup_auto', self.auto)
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
@@ -681,9 +835,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 end = visible.end()
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
+            rules = util.get_rules(self.view)
+            use_argb = rules.get("use_argb", False) if rules else False
             for m in util.COLOR_RE.finditer(bfr):
                 if ref >= m.start(0) and ref < m.end(0):
-                    color, alpha, alpha_dec = util.translate_color(m, self.use_hexa)
+                    color, alpha, alpha_dec = util.translate_color(m, use_argb)
                     break
         return color, alpha, alpha_dec
 
@@ -703,10 +859,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
 
             if update:
-                mdpopups.update_popup(self.view, ''.join(html), css=util.ADD_CSS)
+                md = mdpopups.md2html(self.view, ''.join(html))
+                mdpopups.update_popup(
+                    self.view,
+                    '<div class="color-helper content">%s</div>' % md,
+                    css=util.ADD_CSS
+                )
             else:
-                self.view.settings().set('color_helper_popup_active', True)
-                self.view.settings().set('color_helper_popup_auto', self.auto)
+                self.view.settings().set('color_helper.popup_active', True)
+                self.view.settings().set('color_helper.popup_auto', self.auto)
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
@@ -740,7 +901,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         s = sublime.load_settings('color_helper.sublime-settings')
         use_color_picker_package = s.get('use_color_picker_package', False)
         self.color_picker_package = use_color_picker_package and util.color_picker_available()
-        self.use_hexa = util.use_hexa()
         self.no_info = True
         self.no_palette = True
         self.auto = auto
@@ -750,8 +910,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.show_colors(palette_name)
             else:
                 self.show_palettes()
-        elif mode == "color" and util.is_hex_color(color, self.use_hexa):
-            self.insert_color(color)
         elif mode == "color_picker":
             self.no_info = True
             color, alpha = self.get_cursor_color()[:-1]
@@ -787,7 +945,8 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
 
     def run(self, edit):
         """Run the command."""
-        if util.get_scope(self.view, skip_sel_check=True):
+        rules = util.get_rules(self.view)
+        if rules and util.get_scope(self.view, rules, skip_sel_check=True):
             if ch_file_thread is None or not ch_file_thread.is_alive():
                 start_file_index(self.view)
             else:
@@ -819,18 +978,84 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
     on_modified = on_selection_modified
 
+    def set_file_scan_rules(self, view, on_save=False):
+        """Set the scan rules for the current view."""
+
+        file_name = view.file_name()
+        ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
+        if on_save:
+            old_ext = view.settings().get('color_helper.ext', None)
+            if ext is None or ext == old_ext:
+                return
+
+        s = sublime.load_settings('color_helper.sublime-settings')
+        rules = s.get("color_scanning", [])
+        syntax = view.settings().get('syntax').replace('Packages/', '', 1)
+        scan_scopes = []
+        incomplete_scopes = []
+        allowed_colors = set()
+        use_argb = False
+        for rule in rules:
+            results = []
+            base_scopes = rule.get("base_scope", [])
+
+            if not base_scopes:
+                results.append(True)
+            else:
+                results.append(False)
+                for base in rule.get("base_scope", []):
+                    if view.score_selector(0, base):
+                        results[-1] = True
+                        break
+
+            syntax_files = rule.get("syntax_files", [])
+            results.append(True if not syntax_files or syntax in syntax_files else False)
+
+            extensions = [e.lower() for e in rule.get("extensions", [])]
+            results.append(True if not extensions or (ext is not None and ext in extensions) else False)
+
+            if False not in results:
+                scan_scopes += rule.get("scan_scopes", [])
+                incomplete_scopes += rule.get("scan_completion_scopes", [])
+                if "all" not in allowed_colors:
+                    for color in rule.get("allowed_colors", []):
+                        if color == "all":
+                            allowed_colors = set(["all"])
+                            break
+                        else:
+                            allowed_colors.add(color)
+                if not use_argb and rule.get("use_argb", False):
+                    use_argb = True
+        view.settings().set('color_helper.ext', ext)
+        if scan_scopes or incomplete_scopes:
+            view.settings().set(
+                'color_helper.scan',
+                {
+                    "enabled": True,
+                    "scan_scopes": scan_scopes,
+                    "scan_completion_scopes": incomplete_scopes,
+                    "allowed_colors": list(allowed_colors),
+                    "use_argb": use_argb
+                }
+            )
+        else:
+            view.settings().set('color_helper.scan', {"enabled": False})
+            view.settings().set('color_helper.file_palette', [])
+
     def on_activated(self, view):
         """Run current file scan and/or project scan if not run before."""
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
-        if show_current_palette and view.settings().get('color_helper_file_palette', None) is None:
-            view.settings().set('color_helper_file_palette', [])
+        if show_current_palette and view.settings().get('color_helper.file_palette', None) is None:
+            self.set_file_scan_rules(view)
+            view.settings().set('color_helper.file_palette', [])
             start_file_index(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
 
+        self.set_file_scan_rules(view)
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
@@ -848,17 +1073,18 @@ class ColorHelperListener(sublime_plugin.EventListener):
 class ChFileIndexThread(threading.Thread):
     """Load up defaults."""
 
-    def __init__(self, view, source):
+    def __init__(self, view, source, allowed_colors, use_argb):
         """Setup the thread."""
 
         self.abort = False
         self.view = view
+        self.use_argb = use_argb
+        self.allowed_colors = set(allowed_colors) if not isinstance(allowed_colors, set) else allowed_colors
         self.webcolor_names = re.compile(
             r'\b(%s)\b' % '|'.join(
                 [name for name in csscolors.name2hex_map.keys()]
             )
         )
-        self.use_hexa = util.use_hexa()
         self.source = source
         threading.Thread.__init__(self)
 
@@ -868,7 +1094,7 @@ class ChFileIndexThread(threading.Thread):
         try:
             colors.sort()
             sublime.status_message('File color index complete...')
-            view.settings().set('color_helper_file_palette', colors)
+            view.settings().set('color_helper.file_palette', colors)
             util.debug('Colors:\n', colors)
         except Exception:
             pass
@@ -886,6 +1112,11 @@ class ChFileIndexThread(threading.Thread):
         if self.source:
             self.index_colors()
 
+    def color_okay(self, color_type):
+        """Check if color is allowed."""
+
+        return 'all' in self.allowed_colors or color_type in self.allowed_colors
+
     def index_colors(self):
         """Index colors in file."""
 
@@ -893,11 +1124,23 @@ class ChFileIndexThread(threading.Thread):
         for m in util.COLOR_RE.finditer(self.source):
             if self.abort:
                 break
-            if m.group('hexa') and not self.use_hexa:
+            if m.group('hex') and not self.color_okay('hex'):
                 continue
-            color = util.translate_color(m, self.use_hexa)[0]
-            if color is not None:
-                colors.add(color)
+            elif m.group('hexa') and not self.color_okay('hexa'):
+                continue
+            elif m.group('rgb') and not self.color_okay('rgb'):
+                continue
+            elif m.group('rgba') and not self.color_okay('rgba'):
+                continue
+            elif m.group('hsl') and not self.color_okay('hsl'):
+                continue
+            elif m.group('hsla') and not self.color_okay('hsla'):
+                continue
+            color, alpha, alpha_dec = util.translate_color(m, self.use_argb)
+            color += alpha if alpha is not None else 'ff'
+            if not color.lower().endswith('ff'):
+                color += '@%d' % len(alpha_dec.split('.')[1])
+            colors.add(color)
         for m in self.webcolor_names.finditer(self.source):
             if self.abort:
                 break
@@ -927,6 +1170,11 @@ class ChThread(threading.Thread):
         self.abort = False
         self.save_palettes = False
 
+    def color_okay(self, allowed_colors, color_type):
+        """Check if color is allowed."""
+
+        return 'all' in allowed_colors or color_type in allowed_colors
+
     def payload(self):
         """Code to run."""
 
@@ -934,13 +1182,13 @@ class ChThread(threading.Thread):
         self.ignore_all = True
         window = sublime.active_window()
         view = window.active_view()
-        use_hexa = util.use_hexa()
         if view is not None:
             info = False
             execute = False
             sels = view.sel()
-            scope = util.get_scope(view)
-            insert_scope = util.get_scope_incomplete(view)
+            rules = util.get_rules(view)
+            scope = util.get_scope(view, rules)
+            insert_scope = util.get_scope_completion(view, rules)
             scope_okay = (
                 scope and
                 len(sels) == 1 and sels[0].size() == 0
@@ -954,6 +1202,7 @@ class ChThread(threading.Thread):
                 )
             )
             if scope_okay or insert_scope_okay:
+                allowed_colors = rules.get('allowed_colors', [])
                 point = sels[0].begin()
                 visible = view.visible_region()
                 start = point - 50
@@ -967,17 +1216,29 @@ class ChThread(threading.Thread):
                 for m in util.COLOR_ALL_RE.finditer(bfr):
                     if ref >= m.start(0) and ref < m.end(0):
                         if (
-                            (m.group('hexa') and use_hexa) or
-                            m.group('hex') or m.group('rgb') or m.group('rgba') or
-                            m.group('hsl') or m.group('hsla') or m.group('webcolors')
+                            (m.group('hexa') and self.color_okay(allowed_colors, 'hexa')) or
+                            (m.group('hex') and self.color_okay(allowed_colors, 'hex')) or
+                            (m.group('rgb') and self.color_okay(allowed_colors, 'rgb')) or
+                            (m.group('rgba') and self.color_okay(allowed_colors, 'rgba')) or
+                            (m.group('hsl') and self.color_okay(allowed_colors, 'hsl')) or
+                            (m.group('hsla') and self.color_okay(allowed_colors, 'hsla')) or
+                            (m.group('webcolors') and self.color_okay(allowed_colors, 'webcolors'))
                         ):
                             info = True
                             execute = True
                         break
                     elif ref == m.end(0):
                         if (
-                            m.group('hash') or m.group('rgb_open') or m.group('rgba_open') or
-                            m.group('hsl_open') or m.group('hsla_open')
+                            (
+                                m.group('hash') and (
+                                    self.color_okay(allowed_colors, 'hex') or
+                                    self.color_okay(allowed_colors, 'hexa')
+                                )
+                            ) or
+                            (m.group('rgb_open') and self.color_okay(allowed_colors, 'rgb')) or
+                            (m.group('rgba_open') and self.color_okay(allowed_colors, 'rgba')) or
+                            (m.group('hsl_open') and self.color_okay(allowed_colors, 'hsl')) or
+                            (m.group('hsla_open') and self.color_okay(allowed_colors, 'hsla'))
                         ):
                             execute = True
                         break
@@ -985,8 +1246,8 @@ class ChThread(threading.Thread):
                     view.run_command('color_helper', {"mode": "palette" if not info else "info", "auto": True})
             if (
                 not execute and
-                view.settings().get('color_helper_popup_active', False) and
-                view.settings().get('color_helper_popup_auto', False)
+                view.settings().get('color_helper.popup_active', False) and
+                view.settings().get('color_helper.popup_auto', False)
             ):
                 mdpopups.hide_popup(view)
         self.ignore_all = False

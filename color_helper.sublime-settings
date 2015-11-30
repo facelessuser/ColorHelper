@@ -8,14 +8,6 @@
     // Use webcolor names when value color matches a webcolor name.
     "use_webcolor_names": true,
 
-    // Preferred format to output color as:
-    // (none|hex|rgb|hsl)
-    "preferred_format": "hex",
-
-    // Preferred alpha format to output color as:
-    // (none|rgba|hsla)
-    "preferred_alpha_format": "rgba",
-
     // Color picker and palette picker by default
     // are accessed by clicking an icon on the color info panel.
     // Click access for one of thesecan be moved to the color box
@@ -54,37 +46,75 @@
     // Enable color conversion options on color info panel
     "enable_color_conversions": true,
 
-    // File scoping that will be used when indexing colors in an opened or saved file.
-    // These are the syntaxes which the auto popup tooltip uses to recogize scannable regions.
-    "supported_syntax": [
-        // CSS, CSS in HTML etc. (based on: Sublime Default)
-        "meta.property-value.css -comment -string",
-        // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
-        "meta.value.css -comment -string",
-        // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "meta.property-list.css.sass -comment -string",
-        // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-        "constant.other.rgb-value.sass",
-        // SCSS (based on https://packagecontrol.io/packages/SCSS)
-        "constant.other.color.rgb-value.scss",
-        "support.constant.color.w3c-standard-color-name.scss",
-        "meta.property-value.scss",
-        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "sass-script-maps -variable.other -comment -string",
-        // HTML attributes (based on: Sublime Default)
-        "meta.tag.inline.any.html string.quoted"
-    ],
-
-    // File scoping that will be used when indexing colors in an opened or saved file.
-    // These are the syntaxes which the auto popup tooltip uses to recogize scannable regions,
-    // but only for situations where it is detecting incomplete colors such as `#` or `rgb(` or `rgba(` etc.
-    "supported_syntax_incomplete_only": [
-        // SCSS (based on https://packagecontrol.io/packages/SCSS)
-        // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "source.scss -comment -string",
-        // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-        "source.sass -comment -string"
+    "color_scanning": [
+        {
+            "syntax_files": [],
+            "base_scope": [
+                "source.css",
+                "text.html"
+            ],
+            "scan_scopes": [
+                // CSS, CSS in HTML etc. (based on: Sublime Default)
+                "meta.property-value.css -comment -string",
+                // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
+                "meta.value.css -comment -string",
+                // HTML attributes (based on: Sublime Default)
+                "meta.tag.inline.any.html string.quoted"
+            ],
+            "scan_completion_scopes": [],
+            "extensions": [],
+            "allowed_colors": ["all"],
+            "use_argb": false
+        },
+        {
+            "syntax_files": [],
+            "base_scope": [
+                "source.sass"
+            ],
+            "scan_scopes": [
+                // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+                "meta.property-list.css.sass -comment -string",
+                // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+                "constant.other.rgb-value.sass"
+            ],
+            "scan_completion_scopes": [],
+            "extensions": [],
+            "allowed_colors": ["all"],
+            "use_argb": false
+        },
+        {
+            "syntax_files": [],
+            "base_scope": [
+                "source.scss"
+            ],
+            "scan_scopes": [
+                // SCSS (based on https://packagecontrol.io/packages/SCSS)
+                "constant.other.color.rgb-value.scss",
+                "support.constant.color.w3c-standard-color-name.scss",
+                "meta.property-value.scss",
+                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+                "sass-script-maps -variable.other -comment -string"
+            ],
+            "scan_completion_scopes": [
+                // SCSS (based on https://packagecontrol.io/packages/SCSS)
+                // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+                "source.scss -comment -string",
+                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+                "source.sass -comment -string"
+            ],
+            "extensions": [],
+            "allowed_colors": ["all"],
+            "use_argb": false
+        },
+        {
+            "syntax_files": [],
+            "base_scope": ["text.xml"],
+            "scan_scopes": ["text.xml -meta.tag.xml -comment -string"],
+            "allowed_colors": ["hex", "hexa"],
+            "extensions": [".tmTheme"],
+            "use_argb": false
+        }
     ],
 
     // Enable project palettes in palette panel (Palettes stored in project file).
