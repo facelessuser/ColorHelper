@@ -1,0 +1,24 @@
+[
+    { "caption": "-" },
+    {
+        "caption": "Color Helper",
+        "children":
+        [
+            {
+                "caption": "Color Info",
+                "command": "color_helper",
+                "args": { "mode": "info" }
+            },
+            {
+                "caption": "Color Palettes",
+                "command": "color_helper"
+            },
+            {
+                "caption": "Color Picker",
+                "command": "color_helper",
+                "args": { "mode": "color_picker" }
+            }
+        ]
+    },
+    { "caption": "-"}
+]
