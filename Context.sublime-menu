@@ -11,7 +11,8 @@
             },
             {
                 "caption": "Color Palettes",
-                "command": "color_helper"
+                "command": "color_helper",
+                "args": {"mode": "palette"}
             },
             {
                 "caption": "Color Picker",

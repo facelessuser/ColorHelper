@@ -12,6 +12,7 @@ class InsertCalc(object):
 
         self.convert_rgb = False
         self.convert_hsl = False
+        self.convert_hwb = False
         self.alpha = None
         self.use_argb = use_argb
         self.alpha_hex = None
@@ -46,6 +47,9 @@ class InsertCalc(object):
         elif convert in ('hsl', 'hsla'):
             self.convert_hsl = True
             self.force_alpha = convert == 'hsla'
+        elif convert in ('hwb', 'hwba'):
+            self.convert_hwb = True
+            self.force_alpha = convert == 'hwba'
 
     def replacement(self, m):
         """See if match is a convert replacement of an existing color."""
@@ -79,6 +83,13 @@ class InsertCalc(object):
             content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
             self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
+        elif m.group('hwb'):
+            self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
+        elif m.group('hwba'):
+            self.region = sublime.Region(m.start('hwba') + self.start, m.end('hwba') + self.start)
+            content = [x.strip().rstrip('%') for x in m.group('hwba_content').split(',')]
+            self.alpha = content[3]
+            self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         else:
             found = False
         return found
@@ -105,6 +116,9 @@ class InsertCalc(object):
             self.region = sublime.Region(m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset)
             self.alpha = '1'
             self.alpha_hex = 'ff'
+        elif m.group('hwb_open'):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            self.region = sublime.Region(m.start('hwb_open') + self.start, m.end('hwb_open') + self.start + offset)
         else:
             found = False
         return found
@@ -177,6 +191,10 @@ class PickerInsertCalc(object):
             self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
         elif m.group('hsla'):
             self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
+        elif m.group('hwb'):
+            self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
+        elif m.group('hwba'):
+            self.region = sublime.Region(m.start('hwba') + self.start, m.end('hwba') + self.start)
         else:
             found = False
         return found
@@ -203,6 +221,9 @@ class PickerInsertCalc(object):
             self.region = sublime.Region(
                 m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset
             )
+        elif m.group('hwb_open'):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            self.region = sublime.Region(m.start('hwb_open') + self.start, m.end('hwb_open') + self.start + offset)
         else:
             found = False
         return found

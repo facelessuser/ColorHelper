@@ -41,11 +41,15 @@ RGB_COLOR = '''%s<span class="keyword">rgb</span>(<span class="constant numeric"
 RGBA_COLOR = '''%s<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
 HSL_COLOR = '''%s<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
 HSLA_COLOR = '''%s<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
+HWB_COLOR = '''%s<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
+HWBA_COLOR = '''%s<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
 
 RGB_INSERT = 'rgb(%d, %d, %d)'
 RGBA_INSERT = 'rgba(%d, %d, %d, %s)'
 HSL_INSERT = 'hsl(%s, %s%%, %s%%)'
 HSLA_INSERT = 'hsla(%s, %s%%, %s%%, %s)'
+HWB_INSERT = 'hwb(%s, %s%%, %s%%)'
+HWBA_INSERT = 'hwb(%s, %s%%, %s%%, %s)'
 
 SPACER = '#00000000'
 OUTER_BORDER = '#fefefeff'
@@ -360,7 +364,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         h, l, s = rgba.tohls()
         color = HSL_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
         text.append(
-            HSL_COLOR % (LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
+            HSL_COLOR % (
+                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+            )
         )
         color = HSLA_INSERT % (
             util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
@@ -368,6 +374,22 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         text.append(
             HSLA_COLOR % (
                 LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                self.alpha
+            )
+        )
+        h, w, b = rgba.tohwb()
+        color = HWB_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0))
+        text.append(
+            HWB_COLOR % (
+                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+            )
+        )
+        color = HWBA_INSERT % (
+            util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0), self.alpha
+        )
+        text.append(
+            HWBA_COLOR % (
+                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
                 self.alpha
             )
         )

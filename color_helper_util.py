@@ -16,14 +16,17 @@ COMPLETE = r'''
     \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
     \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
     \b(?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
-    \b(?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
+    \b(?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\)) |
+    \b(?P<hwb>hwb\(\s*(?P<hwb_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
 
 INCOMPLETE = r'''
     (?P<hash>\#) |
     \b(?P<rgb_open>rgb\() |
     \b(?P<rgba_open>rgba\() |
     \b(?P<hsl_open>hsl\() |
-    \b(?P<hsla_open>hsla\()'''
+    \b(?P<hsla_open>hsla\() |
+    \b(?P<hwb_open>hwb\()'''
 
 COLOR_NAMES = r'\b(?P<webcolors>%s)\b' % '|'.join([name for name in csscolors.name2hex_map.keys()])
 
@@ -292,6 +295,30 @@ def translate_color(m, use_argb=False, decode=False):
         s = float(content[1].strip('%')) / 100.0
         l = float(content[2].strip('%')) / 100.0
         rgba.fromhls(h, l, s)
+        color = rgba.get_rgb()
+        alpha_dec = content[3]
+        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+    elif m.group('hwb'):
+        if decode:
+            content = [x.strip() for x in m.group('hwb_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('hwb_content').split(',')]
+        rgba = RGBA()
+        h = float(content[0]) / 360.0
+        w = float(content[1].strip('%')) / 100.0
+        b = float(content[2].strip('%')) / 100.0
+        rgba.fromhwb(h, w, b)
+        color = rgba.get_rgb()
+    elif m.group('hwba'):
+        if decode:
+            content = [x.strip() for x in m.group('hwba_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('hwba_content').split(',')]
+        rgba = RGBA()
+        h = float(content[0]) / 360.0
+        w = float(content[1].strip('%')) / 100.0
+        b = float(content[2].strip('%')) / 100.0
+        rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)

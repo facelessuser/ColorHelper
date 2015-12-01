@@ -5,7 +5,10 @@
     },
     {
         "caption": "Color Helper: Show Palettes",
-        "command": "color_helper"
+        "command": "color_helper",
+        "args": {
+            "mode": "palette"
+        }
     },
     {
         "caption": "Color Helper: Show Color Info",

@@ -46,6 +46,12 @@ HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
 HSLA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsla){: .color-helper .small} \
 <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
 '''
+HWB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hwb){: .color-helper .small} \
+<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
+'''
+HWBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hwba){: .color-helper .small} \
+<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
+'''
 
 # These convert commands will use their current alpha.
 HEXA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hexa){: .color-helper .small} \
@@ -61,6 +67,9 @@ RGBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:rgba){: .color-helper 
 '''
 HSLA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hsla){: .color-helper .small} \
 <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
+'''
+HWBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hwba){: .color-helper .small} \
+<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
 '''
 
 BACK_INFO_MENU = '[back](__info__){: .color-helper .small} '
@@ -393,12 +402,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     h, l, s = hsl.tohls()
                     value = "%s, %s%%, %s%%" % (
                         util.fmt_float(h * 360.0),
-                        util.fmt_float(s * 100.0, 1),
-                        util.fmt_float(l * 100.0, 1)
+                        util.fmt_float(s * 100.0),
+                        util.fmt_float(l * 100.0)
                     )
                     if calc.alpha:
                         value += ', %s' % calc.alpha
                     value = ("hsla(%s)" if calc.alpha else "hsl(%s)") % value
+                elif calc.convert_hwb:
+                    hwb = RGBA(calc.color)
+                    h, w, b = hwb.tohwb()
+                    value = "%s, %s%%, %s%%" % (
+                        util.fmt_float(h * 360.0),
+                        util.fmt_float(w * 100.0),
+                        util.fmt_float(b * 100.0)
+                    )
+                    if calc.alpha:
+                        value += ', %s' % calc.alpha
+                    value = "hwb(%s)" % value
                 else:
                     use_upper = ch_settings.get("upper_case_hex", False)
                     color = calc.color
@@ -557,12 +577,24 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h, l, s = rgba.tohls()
             info.append(
                 HSL_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1)
+                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
                 )
             )
             info.append(
                 HSLA_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
+                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                    alpha if alpha else '1'
+                )
+            )
+            h, w, b = rgba.tohwb()
+            info.append(
+                HWB_COLOR % (
+                    color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+                )
+            )
+            info.append(
+                HWBA_COLOR % (
+                    color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
                     alpha if alpha else '1'
                 )
             )
@@ -606,13 +638,27 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             txt.append(
                 HSL_COLOR % (
                     rgba.get_rgb(),
-                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1)
+                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
                 )
             )
             txt.append(
                 HSLA_COLOR_ALPHA % (
                     rgba.get_rgba() + "@%d" % dlevel,
-                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
+                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                    alpha
+                )
+            )
+            h, w, b = rgba.tohwb()
+            txt.append(
+                HWB_COLOR % (
+                    rgba.get_rgb(),
+                    util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+                )
+            )
+            txt.append(
+                HWBA_COLOR_ALPHA % (
+                    rgba.get_rgba() + "@%d" % dlevel,
+                    util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
                     alpha
                 )
             )
@@ -630,7 +676,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 txt.append(
                     HSLA_COLOR % (
                         rgba.get_rgb(),
-                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0, 1), util.fmt_float(l * 100.0, 1),
+                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                        calc.alpha
+                    )
+                )
+                txt.append(
+                    HWBA_COLOR % (
+                        rgba.get_rgb(),
+                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
                         calc.alpha
                     )
                 )
@@ -894,7 +947,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             sizes["medium"]
         )
 
-    def run(self, edit, mode="palette", palette_name=None, color=None, auto=False):
+    def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
 
         self.set_sizes()
@@ -926,7 +979,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.no_palette = False
             self.show_color_info()
 
-    def is_enabled(self, mode="palette", palette_name=None, color=None, auto=False):
+    def is_enabled(self, mode, palette_name=None, color=None, auto=False):
         """Check if command is enabled."""
 
         s = sublime.load_settings('color_helper.sublime-settings')
@@ -1141,6 +1194,10 @@ class ChFileIndexThread(threading.Thread):
                 continue
             elif m.group('hsla') and not self.color_okay('hsla'):
                 continue
+            elif m.group('hwb') and not self.color_okay('hwb'):
+                continue
+            elif m.group('hwba') and not self.color_okay('hwba'):
+                continue
             color, alpha, alpha_dec = util.translate_color(m, self.use_argb)
             color += alpha if alpha is not None else 'ff'
             if not color.lower().endswith('ff'):
@@ -1227,6 +1284,8 @@ class ChThread(threading.Thread):
                             (m.group('rgba') and self.color_okay(allowed_colors, 'rgba')) or
                             (m.group('hsl') and self.color_okay(allowed_colors, 'hsl')) or
                             (m.group('hsla') and self.color_okay(allowed_colors, 'hsla')) or
+                            (m.group('hwb') and self.color_okay(allowed_colors, 'hwb')) or
+                            (m.group('hwba') and self.color_okay(allowed_colors, 'hwba')) or
                             (m.group('webcolors') and self.color_okay(allowed_colors, 'webcolors'))
                         ):
                             info = True
@@ -1243,7 +1302,11 @@ class ChThread(threading.Thread):
                             (m.group('rgb_open') and self.color_okay(allowed_colors, 'rgb')) or
                             (m.group('rgba_open') and self.color_okay(allowed_colors, 'rgba')) or
                             (m.group('hsl_open') and self.color_okay(allowed_colors, 'hsl')) or
-                            (m.group('hsla_open') and self.color_okay(allowed_colors, 'hsla'))
+                            (m.group('hsla_open') and self.color_okay(allowed_colors, 'hsla')) or
+                            (
+                                m.group('hwb_open') and
+                                (self.color_okay(allowed_colors, 'hwb') or self.color_okay(allowed_colors, 'hwba'))
+                            )
                         ):
                             execute = True
                         break

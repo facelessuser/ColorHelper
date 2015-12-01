@@ -137,9 +137,9 @@ class RGBA(object):
         """Convert to RGB from HSV."""
 
         r, g, b = hsv_to_rgb(h, s, v)
-        self.r = round_int(r * 255) & 0xFF
-        self.g = round_int(g * 255) & 0xFF
-        self.b = round_int(b * 255) & 0xFF
+        self.r = round_int(r * 255.0) & 0xFF
+        self.g = round_int(g * 255.0) & 0xFF
+        self.b = round_int(b * 255.0) & 0xFF
 
     def tohls(self):
         """Convert to HLS color format."""
@@ -150,9 +150,35 @@ class RGBA(object):
         """Convert to RGB from HSL."""
 
         r, g, b = hls_to_rgb(h, l, s)
-        self.r = round_int(r * 255) & 0xFF
-        self.g = round_int(g * 255) & 0xFF
-        self.b = round_int(b * 255) & 0xFF
+        self.r = round_int(r * 255.0) & 0xFF
+        self.g = round_int(g * 255.0) & 0xFF
+        self.b = round_int(b * 255.0) & 0xFF
+
+    def tohwb(self):
+        """Convert to HWB from RGB."""
+
+        h, s, v = self.tohsv()
+        w = (1.0 - s) * v
+        b = 1.0 - v
+        return h, w, b
+
+    def fromhwb(self, h, w, b):
+        """Convert to RGB from HWB."""
+
+        # Normalize white and black
+        # w + b <= 1.0
+        if w + b > 1.0:
+            norm_factor = 1.0 / (w + b)
+            w *= norm_factor
+            b *= norm_factor
+
+        # Convert to HSV and then to RGB
+        s = 1.0 - (w / (1.0 - b))
+        v = 1.0 - b
+        r, g, b = hsv_to_rgb(h, s, v)
+        self.r = round_int(r * 255.0) & 0xFF
+        self.g = round_int(g * 255.0) & 0xFF
+        self.b = round_int(b * 255.0) & 0xFF
 
     def colorize(self, deg):
         """Colorize the color with the given hue."""
