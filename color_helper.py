@@ -701,7 +701,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(txt))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600,
+                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -798,7 +798,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.show_popup(
                 self.view, '<div class="color-helper content">%s</div>' % md,
-                css=util.ADD_CSS, location=-1, max_width=600,
+                css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -864,7 +864,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600,
+                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -924,7 +924,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600,
+                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
