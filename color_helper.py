@@ -599,7 +599,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 txt.append(WEB_COLOR % (rgba.get_rgb(), web_color))
             txt.append(HEX_COLOR % (rgba.get_rgb(), rgba.get_rgb()))
             txt.append(HEXA_COLOR_ALPHA % (rgba.get_rgba(), rgba.get_rgba()))
-            txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#' + rgba.get_rgba()[1:-2] + rgba.get_rgb()[1:]))
+            txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#' + rgba.get_rgba()[-2:] + rgba.get_rgb()[1:]))
             txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
             txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
             h, l, s = rgba.tohls()
@@ -926,17 +926,22 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.no_palette = False
             self.show_color_info()
 
-    def is_enabled(self, mode="palette", palette_name=None, color=None):
+    def is_enabled(self, mode="palette", palette_name=None, color=None, auto=False):
         """Check if command is enabled."""
 
         s = sublime.load_settings('color_helper.sublime-settings')
-        return (
-            mode == "info" or
-            s.get('enable_global_user_palettes', True) or
-            s.get('enable_project_user_palettes', True) or
-            s.get('enable_favorite_palette', True) or
-            s.get('enable_current_file_palette', True) or
-            s.get('enable_project_palette', True)
+        return bool(
+            (mode == "info" and self.get_cursor_color()[0]) or
+            (
+                mode == "palette" and (
+                    s.get('enable_global_user_palettes', True) or
+                    s.get('enable_project_user_palettes', True) or
+                    s.get('enable_favorite_palette', True) or
+                    s.get('enable_current_file_palette', True) or
+                    s.get('enable_project_palette', True)
+                )
+            ) or
+            mode not in ("info", "palette")
         )
 
 
