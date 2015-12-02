@@ -29,10 +29,14 @@ WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span
 '''
 HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
 '''
-HEXA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hexa){: .color-helper .small} <span class="support type">%s</span>
+HEXA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hexa){: .color-helper .small} \
+<span class="support type">%s</span>\
+<span class="support type color-helper alpha">%s</span>
 '''
-AHEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:ahex){: .color-helper .small} <span class="support type">%s</span> \
-<span class="comment">(#AARRGGBB)</span>
+AHEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:ahex){: .color-helper .small} \
+<span class="support type">%s</span>\
+<span class="support type color-helper alpha">%s</span>\
+<span class="support type">%s</span>
 '''
 RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
 <span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
@@ -55,12 +59,14 @@ HWBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hwba){: .color-helper .small} \
 
 # These convert commands will use their current alpha.
 HEXA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hexa){: .color-helper .small} \
-<span class="support type">%s</span>
+<span class="support type">%s</span>\
+<span class="support type color-helper alpha">%s</span>
 '''
 # These convert commands will use their current alpha.
 AHEX_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:ahex){: .color-helper .small} \
-<span class="support type">%s</span> \
-<span class="comment">(#AARRGGBB)</span>
+<span class="support type">%s</span>\
+<span class="support type color-helper alpha">%s</span>\
+<span class="support type">%s</span>
 '''
 RGBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:rgba){: .color-helper .small} \
 <span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
@@ -103,6 +109,8 @@ DIVIDER = '''
 
 '''
 
+HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
+
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -131,7 +139,7 @@ def start_file_index(view):
                     ch_file_thread = ChFileIndexThread(
                         view, ' '.join(source),
                         rules.get('allowed_colors', []),
-                        rules.get('use_argb', False)
+                        rules.get('use_hex_argb', False)
                     )
                     ch_file_thread.start()
                     sublime.status_message('File color indexer started...')
@@ -361,13 +369,28 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
             else:
                 on_cancel = None
+            rules = util.get_rules(self.view)
+            allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+            use_hex_argb = rules.get("use_hex_argb", False) if rules else False
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
+                    'allowed_colors': allowed_colors,
+                    'use_hex_argb': use_hex_argb,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                     'on_cancel': on_cancel
                 }
             )
+
+    def compress_hex(self, color):
+        """Compress hex."""
+
+        m = HEX_COMPRESS_RE.match(color)
+        if m:
+            color = '#' + m.group(1) + m.group(2) + m.group(3)
+            if m.group(4):
+                color += m.group(4)
+        return color
 
     def insert_color(self, target_color, convert=None, picker=False, alpha=False):
         """Insert colors."""
@@ -380,8 +403,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             dlevel = len(parts[1]) if len(parts) > 1 else 3
             if not picker:
                 rules = util.get_rules(self.view)
-                use_argb = rules.get("use_argb", False) if rules else False
-                calc = InsertCalc(self.view, point, target_color, convert, use_argb)
+                use_hex_argb = rules.get("use_hex_argb", False) if rules else False
+                allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+                compress_hex = rules.get('compress_hex_output', False)
+                calc = InsertCalc(self.view, point, target_color, convert, allowed_colors, use_hex_argb)
                 calc.calc()
                 if alpha:
                     calc.alpha_hex = target_color[-2:]
@@ -427,9 +452,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                             color = '#' + calc.alpha_hex + calc.color[1:]
                         else:
                             color = calc.color + calc.alpha_hex
+                    if compress_hex:
+                        color = self.compress_hex(color)
                     value = color.upper() if use_upper else color.lower()
             else:
-                calc = PickerInsertCalc(self.view, point)
+                rules = util.get_rules(self.view)
+                allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+                calc = PickerInsertCalc(self.view, point, allowed_colors)
                 calc.calc()
                 value = target_color
             self.view.sel().subtract(sels[0])
@@ -505,6 +534,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Format the selected color info."""
         rgba = RGBA(color)
 
+        rules = util.get_rules(self.view)
+        allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+        use_hex_argb = rules.get("use_hex_argb", False) if rules else None
         if alpha is not None:
             parts = alpha.split('.')
             dlevel = len(parts[1]) if len(parts) > 1 else None
@@ -563,41 +595,51 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if show_conversions:
             info.append('\n\n---\n\n')
-            if web_color:
+            if web_color and 'webcolors' in allowed_colors:
                 info.append(WEB_COLOR % (color, web_color))
-            info.append(HEX_COLOR % (color, (color.lower() if not alpha else color[:-2].lower())))
-            info.append(HEXA_COLOR % (
-                color, (rgba.get_rgb().lower() + 'ff' if not alpha else rgba.get_rgb().lower() + alpha_hex_display))
-            )
-            info.append(AHEX_COLOR % (
-                color, ('#' + ('ff' if not alpha else alpha_hex_display) + rgba.get_rgb().lower()[1:]))
-            )
-            info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
-            info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
+            if "hex" in allowed_colors:
+                info.append(HEX_COLOR % (color, (color.lower() if not alpha else color[:-2].lower())))
+            if "hexa" in allowed_colors:
+                if use_hex_argb is None or use_hex_argb is False:
+                    info.append(HEXA_COLOR % (
+                        color, rgba.get_rgb().lower(), ('ff' if not alpha else alpha_hex_display))
+                    )
+                elif use_hex_argb is None or use_hex_argb is True:
+                    info.append(AHEX_COLOR % (
+                        color, '#', ('ff' if not alpha else alpha_hex_display), rgba.get_rgb().lower()[1:])
+                    )
+            if "rgb" in allowed_colors:
+                info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
+            if "rgba" in allowed_colors:
+                info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
-            info.append(
-                HSL_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+            if "hsl" in allowed_colors:
+                info.append(
+                    HSL_COLOR % (
+                        color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+                    )
                 )
-            )
-            info.append(
-                HSLA_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                    alpha if alpha else '1'
+            if "hsla" in allowed_colors:
+                info.append(
+                    HSLA_COLOR % (
+                        color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                        alpha if alpha else '1'
+                    )
                 )
-            )
             h, w, b = rgba.tohwb()
-            info.append(
-                HWB_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+            if "hwb" in allowed_colors:
+                info.append(
+                    HWB_COLOR % (
+                        color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+                    )
                 )
-            )
-            info.append(
-                HWBA_COLOR % (
-                    color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                    alpha if alpha else '1'
+            if "hwba" in allowed_colors:
+                info.append(
+                    HWBA_COLOR % (
+                        color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
+                        alpha if alpha else '1'
+                    )
                 )
-            )
         return ''.join(info)
 
     def show_insert(self, color, palette_type, palette_name, update=False):
@@ -609,9 +651,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             dlevel = len(parts[1]) if len(parts) > 1 else 3
             point = sels[0].begin()
             rules = util.get_rules(self.view)
-            use_argb = rules.get("use_argb", False) if rules else False
-            calc = InsertCalc(self.view, point, parts[0], 'rgba', use_argb)
+            use_hex_argb = rules.get("use_hex_argb", False) if rules else None
+            allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+            calc = InsertCalc(self.view, point, parts[0], 'rgba', allowed_colors, bool(use_hex_argb))
             found = calc.calc()
+
+            rules = util.get_rules(self.view)
+            allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
 
             secondry_alpha = found and calc.alpha is not None and calc.alpha != '1'
 
@@ -627,66 +673,82 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             except Exception:
                 web_color = None
 
-            if web_color:
+            if web_color and "webcolors" in allowed_colors:
                 txt.append(WEB_COLOR % (rgba.get_rgb(), web_color))
-            txt.append(HEX_COLOR % (rgba.get_rgb(), rgba.get_rgb()))
-            txt.append(HEXA_COLOR_ALPHA % (rgba.get_rgba(), rgba.get_rgba()))
-            txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#' + rgba.get_rgba()[-2:] + rgba.get_rgb()[1:]))
-            txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
-            txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
+            if "hex" in allowed_colors:
+                txt.append(HEX_COLOR % (rgba.get_rgb(), rgba.get_rgb()))
+            if "hexa" in allowed_colors:
+                if use_hex_argb is None or use_hex_argb is False:
+                    txt.append(HEXA_COLOR_ALPHA % (rgba.get_rgba(), rgba.get_rgb(), rgba.get_rgba()[-2:]))
+                if use_hex_argb is None or use_hex_argb is True:
+                    txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#', rgba.get_rgba()[-2:], rgba.get_rgb()[1:]))
+            if "rgb" in allowed_colors:
+                txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
+            if "rgba" in allowed_colors:
+                txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
             h, l, s = rgba.tohls()
-            txt.append(
-                HSL_COLOR % (
-                    rgba.get_rgb(),
-                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+            if "hsl" in allowed_colors:
+                txt.append(
+                    HSL_COLOR % (
+                        rgba.get_rgb(),
+                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+                    )
                 )
-            )
-            txt.append(
-                HSLA_COLOR_ALPHA % (
-                    rgba.get_rgba() + "@%d" % dlevel,
-                    util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                    alpha
+            if "hsla" in allowed_colors:
+                txt.append(
+                    HSLA_COLOR_ALPHA % (
+                        rgba.get_rgba() + "@%d" % dlevel,
+                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                        alpha
+                    )
                 )
-            )
             h, w, b = rgba.tohwb()
-            txt.append(
-                HWB_COLOR % (
-                    rgba.get_rgb(),
-                    util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+            if "hwb" in allowed_colors:
+                txt.append(
+                    HWB_COLOR % (
+                        rgba.get_rgb(),
+                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+                    )
                 )
-            )
-            txt.append(
-                HWBA_COLOR_ALPHA % (
-                    rgba.get_rgba() + "@%d" % dlevel,
-                    util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                    alpha
+            if "hwba" in allowed_colors:
+                txt.append(
+                    HWBA_COLOR_ALPHA % (
+                        rgba.get_rgba() + "@%d" % dlevel,
+                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
+                        alpha
+                    )
                 )
-            )
 
             if secondry_alpha:
                 txt.append('\n\n---\n\n## Use Selected Alpha\n')
-                txt.append(HEXA_COLOR % (rgba.get_rgb(), rgba.get_rgb() + calc.alpha_hex))
-                txt.append(AHEX_COLOR % (rgba.get_rgb(), '#' + calc.alpha_hex + rgba.get_rgb()[1:]))
-                txt.append(
-                    RGBA_COLOR % (
-                        rgba.get_rgb(),
-                        rgba.r, rgba.g, rgba.b, calc.alpha
+                if "hexa" in allowed_colors:
+                    if use_hex_argb is None or use_hex_argb is False:
+                        txt.append(HEXA_COLOR % (rgba.get_rgb(), rgba.get_rgb(), calc.alpha_hex))
+                    if use_hex_argb is None or use_hex_argb is True:
+                        txt.append(AHEX_COLOR % (rgba.get_rgb(), '#', calc.alpha_hex, rgba.get_rgb()[1:]))
+                if "rgba" in allowed_colors:
+                    txt.append(
+                        RGBA_COLOR % (
+                            rgba.get_rgb(),
+                            rgba.r, rgba.g, rgba.b, calc.alpha
+                        )
                     )
-                )
-                txt.append(
-                    HSLA_COLOR % (
-                        rgba.get_rgb(),
-                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                        calc.alpha
+                if "hsl" in allowed_colors:
+                    txt.append(
+                        HSLA_COLOR % (
+                            rgba.get_rgb(),
+                            util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                            calc.alpha
+                        )
                     )
-                )
-                txt.append(
-                    HWBA_COLOR % (
-                        rgba.get_rgb(),
-                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                        calc.alpha
+                if "hwb" in allowed_colors:
+                    txt.append(
+                        HWBA_COLOR % (
+                            rgba.get_rgb(),
+                            util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
+                            calc.alpha
+                        )
                     )
-                )
 
             if update:
                 md = mdpopups.md2html(self.view, ''.join(txt))
@@ -889,10 +951,31 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
             rules = util.get_rules(self.view)
-            use_argb = rules.get("use_argb", False) if rules else False
+            use_hex_argb = rules.get("use_hex_argb", False) if rules else False
+            allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
             for m in util.COLOR_RE.finditer(bfr):
                 if ref >= m.start(0) and ref < m.end(0):
-                    color, alpha, alpha_dec = util.translate_color(m, use_argb)
+                    if m.group('hex_compressed') and 'hex_compressed' not in allowed_colors:
+                        continue
+                    elif m.group('hexa_compressed') and 'hexa_compressed' not in allowed_colors:
+                        continue
+                    elif m.group('hex') and 'hex' not in allowed_colors:
+                        continue
+                    elif m.group('hexa') and 'hexa' not in allowed_colors:
+                        continue
+                    elif m.group('rgb') and 'rgb' not in allowed_colors:
+                        continue
+                    elif m.group('rgba') and 'rgba' not in allowed_colors:
+                        continue
+                    elif m.group('hsl') and 'hsl' not in allowed_colors:
+                        continue
+                    elif m.group('hsla') and 'hsla' not in allowed_colors:
+                        continue
+                    elif m.group('hwb') and 'hwb' not in allowed_colors:
+                        continue
+                    elif m.group('hwba') and 'hwba' not in allowed_colors:
+                        continue
+                    color, alpha, alpha_dec = util.translate_color(m, bool(use_hex_argb))
                     break
         return color, alpha, alpha_dec
 
@@ -1052,7 +1135,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
         scan_scopes = []
         incomplete_scopes = []
         allowed_colors = set()
-        use_argb = False
+        use_hex_argb = False
+        compress_hex = False
         for rule in rules:
             results = []
             base_scopes = rule.get("base_scope", [])
@@ -1075,15 +1159,22 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if False not in results:
                 scan_scopes += rule.get("scan_scopes", [])
                 incomplete_scopes += rule.get("scan_completion_scopes", [])
-                if "all" not in allowed_colors:
-                    for color in rule.get("allowed_colors", []):
-                        if color == "all":
-                            allowed_colors = set(["all"])
-                            break
-                        else:
-                            allowed_colors.add(color)
-                if not use_argb and rule.get("use_argb", False):
-                    use_argb = True
+                for color in rule.get("allowed_colors", []):
+                    if color == "css3":
+                        for c in util.CSS3:
+                            allowed_colors.add(c)
+                    elif color == "css4":
+                        for c in util.CSS4:
+                            allowed_colors.add(c)
+                    elif color == "all":
+                        for c in util.ALL:
+                            allowed_colors.add(c)
+                    else:
+                        allowed_colors.add(color)
+                if not use_hex_argb and rule.get("use_hex_argb", False):
+                    use_hex_argb = True
+                if not compress_hex and rule.get("compress_hex_output", False):
+                    compress_hex = True
         view.settings().set('color_helper.ext', ext)
         if scan_scopes or incomplete_scopes:
             view.settings().set(
@@ -1093,7 +1184,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "scan_scopes": scan_scopes,
                     "scan_completion_scopes": incomplete_scopes,
                     "allowed_colors": list(allowed_colors),
-                    "use_argb": use_argb
+                    "use_hex_argb": use_hex_argb,
+                    "compress_hex_output": compress_hex
                 }
             )
         else:
@@ -1131,12 +1223,12 @@ class ColorHelperListener(sublime_plugin.EventListener):
 class ChFileIndexThread(threading.Thread):
     """Load up defaults."""
 
-    def __init__(self, view, source, allowed_colors, use_argb):
+    def __init__(self, view, source, allowed_colors, use_hex_argb):
         """Setup the thread."""
 
         self.abort = False
         self.view = view
-        self.use_argb = use_argb
+        self.use_hex_argb = use_hex_argb
         self.allowed_colors = set(allowed_colors) if not isinstance(allowed_colors, set) else allowed_colors
         self.webcolor_names = re.compile(
             r'\b(%s)\b' % '|'.join(
@@ -1173,7 +1265,7 @@ class ChFileIndexThread(threading.Thread):
     def color_okay(self, color_type):
         """Check if color is allowed."""
 
-        return 'all' in self.allowed_colors or color_type in self.allowed_colors
+        return color_type in self.allowed_colors
 
     def index_colors(self):
         """Index colors in file."""
@@ -1182,6 +1274,10 @@ class ChFileIndexThread(threading.Thread):
         for m in util.COLOR_RE.finditer(self.source):
             if self.abort:
                 break
+            if m.group('hex_compressed') and not self.color_okay('hex_compressed'):
+                continue
+            elif m.group('hexa_compressed') and not self.color_okay('hexa_compressed'):
+                continue
             if m.group('hex') and not self.color_okay('hex'):
                 continue
             elif m.group('hexa') and not self.color_okay('hexa'):
@@ -1198,15 +1294,16 @@ class ChFileIndexThread(threading.Thread):
                 continue
             elif m.group('hwba') and not self.color_okay('hwba'):
                 continue
-            color, alpha, alpha_dec = util.translate_color(m, self.use_argb)
+            color, alpha, alpha_dec = util.translate_color(m, self.use_hex_argb)
             color += alpha if alpha is not None else 'ff'
             if not color.lower().endswith('ff'):
                 color += '@%d' % len(alpha_dec.split('.')[1])
             colors.add(color)
-        for m in self.webcolor_names.finditer(self.source):
-            if self.abort:
-                break
-            colors.add(csscolors.name2hex(m.group(0)))
+        if self.color_okay('webcolors'):
+            for m in self.webcolor_names.finditer(self.source):
+                if self.abort:
+                    break
+                colors.add(csscolors.name2hex(m.group(0)))
         if not self.abort:
             sublime.set_timeout(
                 lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
@@ -1235,7 +1332,7 @@ class ChThread(threading.Thread):
     def color_okay(self, allowed_colors, color_type):
         """Check if color is allowed."""
 
-        return 'all' in allowed_colors or color_type in allowed_colors
+        return color_type in allowed_colors
 
     def payload(self):
         """Code to run."""
@@ -1278,6 +1375,8 @@ class ChThread(threading.Thread):
                 for m in util.COLOR_ALL_RE.finditer(bfr):
                     if ref >= m.start(0) and ref < m.end(0):
                         if (
+                            (m.group('hexa_compressed') and self.color_okay(allowed_colors, 'hexa_compressed')) or
+                            (m.group('hex_compressed') and self.color_okay(allowed_colors, 'hex_compressed')) or
                             (m.group('hexa') and self.color_okay(allowed_colors, 'hexa')) or
                             (m.group('hex') and self.color_okay(allowed_colors, 'hex')) or
                             (m.group('rgb') and self.color_okay(allowed_colors, 'rgb')) or
@@ -1296,7 +1395,9 @@ class ChThread(threading.Thread):
                             (
                                 m.group('hash') and (
                                     self.color_okay(allowed_colors, 'hex') or
-                                    self.color_okay(allowed_colors, 'hexa')
+                                    self.color_okay(allowed_colors, 'hexa') or
+                                    self.color_okay(allowed_colors, 'hex_compressed') or
+                                    self.color_okay(allowed_colors, 'hexa_compressed')
                                 )
                             ) or
                             (m.group('rgb_open') and self.color_okay(allowed_colors, 'rgb')) or
@@ -1305,7 +1406,10 @@ class ChThread(threading.Thread):
                             (m.group('hsla_open') and self.color_okay(allowed_colors, 'hsla')) or
                             (
                                 m.group('hwb_open') and
-                                (self.color_okay(allowed_colors, 'hwb') or self.color_okay(allowed_colors, 'hwba'))
+                                (
+                                    self.color_okay(allowed_colors, 'hwb') or
+                                    self.color_okay(allowed_colors, 'hwba')
+                                )
                             )
                         ):
                             execute = True

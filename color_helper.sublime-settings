@@ -63,8 +63,9 @@
             ],
             "scan_completion_scopes": [],
             "extensions": [],
-            "allowed_colors": ["all"],
-            "use_argb": false
+            "allowed_colors": ["css3"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         },
         {
             "syntax_files": [],
@@ -79,8 +80,9 @@
             ],
             "scan_completion_scopes": [],
             "extensions": [],
-            "allowed_colors": ["all"],
-            "use_argb": false
+            "allowed_colors": ["css3"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         },
         {
             "syntax_files": [],
@@ -104,8 +106,9 @@
                 "source.sass -comment -string"
             ],
             "extensions": [],
-            "allowed_colors": ["all"],
-            "use_argb": false
+            "allowed_colors": ["css3"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         },
         {
             "syntax_files": [],
@@ -113,7 +116,8 @@
             "scan_scopes": ["text.xml -meta.tag.xml -comment -string"],
             "allowed_colors": ["hex", "hexa"],
             "extensions": [".tmTheme"],
-            "use_argb": false
+            "use_hex_argb": false,
+            "compress_hex_output": false
         }
     ],
 

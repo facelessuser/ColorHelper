@@ -7,14 +7,15 @@ import ColorHelper.color_helper_util as util
 class InsertCalc(object):
     """Convert."""
 
-    def __init__(self, view, point, target_color, convert, use_argb):
+    def __init__(self, view, point, target_color, convert, allowed_colors, use_hex_argb):
         """Initialize."""
 
         self.convert_rgb = False
         self.convert_hsl = False
         self.convert_hwb = False
+        self.allowed_colors = allowed_colors
         self.alpha = None
-        self.use_argb = use_argb
+        self.use_hex_argb = use_hex_argb
         self.alpha_hex = None
         self.view = view
         self.start = point - 50
@@ -55,37 +56,49 @@ class InsertCalc(object):
         """See if match is a convert replacement of an existing color."""
 
         found = True
-        if m.group('webcolors'):
+        if m.group('webcolors') and 'webcolors' in self.allowed_colors:
             self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
-        elif m.group('hexa') and self.use_argb:
+        elif m.group('hexa') and self.use_hex_argb and 'hexa' in self.allowed_colors:
             self.region = sublime.Region(m.start('hexa') + self.start, m.end('hexa') + self.start)
             content = m.group('hexa_content')
-            self.alpha_hex = content[0:2] if len(content) > 4 else content[0:1] * 2
+            self.alpha_hex = content[0:2]
             self.alpha = util.fmt_float(float(int(self.alpha_hex, 16)) / 255.0, 3)
-        elif m.group('hexa'):
+        elif m.group('hexa') and 'hexa' in self.allowed_colors:
             self.region = sublime.Region(m.start('hexa') + self.start, m.end('hexa') + self.start)
             content = m.group('hexa_content')
-            self.alpha_hex = content[-2:] if len(content) > 4 else content[-1:] * 2
+            self.alpha_hex = content[-2:]
             self.alpha = util.fmt_float(float(int(self.alpha_hex, 16)) / 255.0, 3)
-        elif m.group('hex'):
+        elif m.group('hex') and 'hex' in self.allowed_colors:
             self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
-        elif m.group('rgb'):
+        elif m.group('hexa_compressed') and self.use_hex_argb and 'hexa_compressed' in self.allowed_colors:
+            self.region = sublime.Region(m.start('hexa_compressed') + self.start, m.end('hexa_compressed') + self.start)
+            content = m.group('hexa_compressed_content')
+            self.alpha_hex = content[0:1] * 2
+            self.alpha = util.fmt_float(float(int(self.alpha_hex, 16)) / 255.0, 3)
+        elif m.group('hexa_compressed') and 'hexa_compressed' in self.allowed_colors:
+            self.region = sublime.Region(m.start('hexa_compressed') + self.start, m.end('hexa_compressed') + self.start)
+            content = m.group('hexa_compressed_content')
+            self.alpha_hex = content[-1:] * 2
+            self.alpha = util.fmt_float(float(int(self.alpha_hex, 16)) / 255.0, 3)
+        elif m.group('hex_compressed') and 'hex_compressed' in self.allowed_colors:
+            self.region = sublime.Region(m.start('hex_compressed') + self.start, m.end('hex_compressed') + self.start)
+        elif m.group('rgb') and 'rgb' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
-        elif m.group('rgba'):
+        elif m.group('rgba') and 'rgba' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
             content = [x.strip() for x in m.group('rgba_content').split(',')]
             self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
-        elif m.group('hsl'):
+        elif m.group('hsl') and 'hsl' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
-        elif m.group('hsla'):
+        elif m.group('hsla') and 'hsla' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
             content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
             self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
-        elif m.group('hwb'):
+        elif m.group('hwb') and 'hwb' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
-        elif m.group('hwba'):
+        elif m.group('hwba') and 'hwba' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwba') + self.start, m.end('hwba') + self.start)
             content = [x.strip().rstrip('%') for x in m.group('hwba_content').split(',')]
             self.alpha = content[3]
@@ -98,25 +111,25 @@ class InsertCalc(object):
         """See if match is completing an color."""
 
         found = True
-        if m.group('hash'):
+        if m.group('hash') and ('hex' in self.allowed_colors or 'hexa' in self.allowed_colors):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
-        elif m.group('rgb_open'):
+        elif m.group('rgb_open') and 'rgb' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
-        elif m.group('rgba_open'):
+        elif m.group('rgba_open') and 'rgba' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('rgba_open') + self.start, m.end('rgba_open') + self.start + offset)
             self.alpha = '1'
             self.alpha_hex = 'ff'
-        elif m.group('hsl_open'):
+        elif m.group('hsl_open') and 'hsl' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hsl_open') + self.start, m.end('hsl_open') + self.start + offset)
-        elif m.group('hsla_open'):
+        elif m.group('hsla_open') and 'hsla' in self.allowed_colors:
             self.offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset)
             self.alpha = '1'
             self.alpha_hex = 'ff'
-        elif m.group('hwb_open'):
+        elif m.group('hwb_open') and ('hwb' in self.allowed_colors or 'hwba' in self.allowed_colors):
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hwb_open') + self.start, m.end('hwb_open') + self.start + offset)
         else:
@@ -159,11 +172,12 @@ class InsertCalc(object):
 class PickerInsertCalc(object):
     """Calculate and insert color."""
 
-    def __init__(self, view, point):
+    def __init__(self, view, point, allowed_colors):
         """Initialize insertion object."""
 
         self.view = view
         self.region = sublime.Region(point)
+        self.allowed_colors = allowed_colors
         self.start = point - 50
         self.end = point + 50
         self.point = point
@@ -177,23 +191,23 @@ class PickerInsertCalc(object):
         """See if match is a replacement of an existing color."""
 
         found = True
-        if m.group('webcolors'):
+        if m.group('webcolors') and 'webcolors' in self.allowed_colors:
             self.region = sublime.Region(m.start('webcolors') + self.start, m.end('webcolors') + self.start)
-        elif m.group('hexa'):
+        elif m.group('hexa') and 'hexa' in self.allowed_colors:
             self.region = sublime.Region(m.start('hexa') + self.start, m.end('hexa') + self.start)
-        elif m.group('hex'):
+        elif m.group('hex') and 'hex' in self.allowed_colors:
             self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
-        elif m.group('rgb'):
+        elif m.group('rgb') and 'rgb' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
-        elif m.group('rgba'):
+        elif m.group('rgba') and 'rgba' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
-        elif m.group('hsl'):
+        elif m.group('hsl') and 'hsl' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
-        elif m.group('hsla'):
+        elif m.group('hsla') and 'hsla' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
-        elif m.group('hwb'):
+        elif m.group('hwb') and 'hwb' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
-        elif m.group('hwba'):
+        elif m.group('hwba') and 'hwba' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwba') + self.start, m.end('hwba') + self.start)
         else:
             found = False
@@ -203,25 +217,25 @@ class PickerInsertCalc(object):
         """See if match is completing an color."""
 
         found = True
-        if m.group('hash'):
+        if m.group('hash') and ('hex' in self.allowed_colors or 'hexa' in self.allowed_colors):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
-        elif m.group('rgb_open'):
+        elif m.group('rgb_open') and 'rgb' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
-        elif m.group('rgba_open'):
+        elif m.group('rgba_open') and 'rgba' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(
                 m.start('rgba_open') + self.start, m.end('rgba_open') + self.start + offset
             )
-        elif m.group('hsl_open'):
+        elif m.group('hsl_open') and 'hsl' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hsl_open') + self.start, m.end('hsl_open') + self.start + offset)
-        elif m.group('hsla_open'):
+        elif m.group('hsla_open') and 'hsla' in self.allowed_colors:
             self.offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(
                 m.start('hsla_open') + self.start, m.end('hsla_open') + self.start + offset
             )
-        elif m.group('hwb_open'):
+        elif m.group('hwb_open') and ('hwb' in self.allowed_colors or 'hwba' in self.allowed_colors):
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hwb_open') + self.start, m.end('hwb_open') + self.start + offset)
         else:

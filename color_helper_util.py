@@ -8,17 +8,25 @@ from ColorHelper.lib.rgba import RGBA, round_int
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
-HEXA_RE = re.compile(r'^(?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}|(?:[\dA-Fa-f]{4}){1,2}))$')
+COLOR_PARTS = {
+    "rgb": r"(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])",
+    "hue": r"(?:360|3[0-5][0-9]|[1-2][0-9][0-9]|[1-9][0-9]|[0-9])",
+    "percent": r"(?:(?:\d{,2}\.\d+)|100|100\.0+|\d{1,2})%",
+    "alpha": r"(?:(?:0?\.\d+)|[0-1]|1\.0+)"
+}
 
 COMPLETE = r'''
-    (?P<hex>\#(?P<hex_content>(?:[\dA-Fa-f]{3}){1,2}))\b |
-    (?P<hexa>\#(?P<hexa_content>(?:[\dA-Fa-f]{4}){1,2}))\b |
-    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:\d+\s*,\s*){2}\d+)\s*\)) |
-    \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:\d+\s*,\s*){3}(?:(?:\d*\.\d+)|\d))\s*\)) |
-    \b(?P<hsl>hsl\(\s*(?P<hsl_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
-    \b(?P<hsla>hsla\(\s*(?P<hsla_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\)) |
-    \b(?P<hwb>hwb\(\s*(?P<hwb_content>\d+\s*,\s*(?:(?:\d*\.\d+)|\d+)%\s*,\s*(?:(?:\d*\.\d+)|\d+)%)\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>\d+\s*,\s*(?:(?:(?:\d*\.\d+)|\d+)%\s*,\s*){2}(?:(?:\d*\.\d+)|\d))\s*\))'''
+    (?P<hex>\#(?P<hex_content>[\dA-Fa-f]{6}))\b |
+    (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
+    (?P<hexa>\#(?P<hexa_content>[\dA-Fa-f]{8}))\b |
+    (?P<hexa_compressed>\#(?P<hexa_compressed_content>[\dA-Fa-f]{4}))\b |
+    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:%(rgb)s\s*,\s*){2}%(rgb)s | (?:%(percent)s\s*,\s*){2}%(percent)s)\s*\)) |
+    \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:%(rgb)s\s*,\s*){3}%(alpha)s | (?:%(percent)s\s*,\s*){3}%(alpha)s)\s*\)) |
+    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hsla>hsla\(\s*(?P<hsla_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}%(alpha)s)\s*\)) |
+    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}%(alpha)s)\s*\))
+''' % COLOR_PARTS
 
 INCOMPLETE = r'''
     (?P<hash>\#) |
@@ -62,7 +70,12 @@ INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (CO
 ADD_CSS = '''
 .color-helper.content { margin: 0; padding: 0.5em; }
 .color-helper.small { font-size: 0.8em; }
+.color-helper.alpha { text-decoration: underline; }
 '''
+
+CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
+CSS4 = CSS3 + ("hwb", "hwba", "hexa", "hexa_compressed")
+ALL = CSS4
 
 
 def log(*args):
@@ -110,12 +123,6 @@ def fmt_float(f, p=0):
         if m.group('keep2'):
             string += m.group('keep2')
     return string
-
-
-def is_hex_color(color, hexa):
-    """Check if color is a hex color."""
-
-    return color is not None and HEXA_RE.match(color) is not None
 
 
 def get_rules(view):
@@ -203,15 +210,43 @@ def get_project_folders(window):
     return data.get('folders', [])
 
 
-def translate_color(m, use_argb=False, decode=False):
+def translate_color(m, use_hex_argb=False, decode=False):
     """Translate the match object to a color w/ alpha."""
 
     color = None
     alpha = None
     alpha_dec = None
-    if m.group('hex'):
+    if m.group('hex_compressed'):
         if decode:
-            content = m.group('hex_content')
+            content = m.group('hex_compressed_content').decode('utf-8')
+        else:
+            content = m.group('hex_compressed_content')
+        color = "#%02x%02x%02x" % (
+            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
+        )
+    elif m.group('hexa_compressed') and use_hex_argb:
+        if decode:
+            content = m.group('hexa_compressed_content').decode('utf-8')
+        else:
+            content = m.group('hexa_compressed_content')
+        color = "#%02x%02x%02x" % (
+            int(content[1:2] * 2, 16), int(content[2:3] * 2, 16), int(content[3:] * 2, 16)
+        )
+        alpha = content[0:1]
+        alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
+    elif m.group('hexa_compressed'):
+        if decode:
+            content = m.group('hexa_compressed_content').decode('utf-8')
+        else:
+            content = m.group('hexa_compressed_content')
+        color = "#%02x%02x%02x" % (
+            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
+        )
+        alpha = content[3:]
+        alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
+    elif m.group('hex'):
+        if decode:
+            content = m.group('hex_content').decode('utf-8')
         else:
             content = m.group('hex_content')
         if len(content) == 6:
@@ -222,9 +257,9 @@ def translate_color(m, use_argb=False, decode=False):
             color = "#%02x%02x%02x" % (
                 int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
             )
-    elif m.group('hexa') and use_argb:
+    elif m.group('hexa') and use_hex_argb:
         if decode:
-            content = m.group('hexa_content')
+            content = m.group('hexa_content').decode('utf-8')
         else:
             content = m.group('hexa_content')
         if len(content) == 8:
@@ -241,7 +276,7 @@ def translate_color(m, use_argb=False, decode=False):
             alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
     elif m.group('hexa'):
         if decode:
-            content = m.group('hexa_content')
+            content = m.group('hexa_content').decode('utf-8')
         else:
             content = m.group('hexa_content')
         if len(content) == 8:
@@ -261,17 +296,29 @@ def translate_color(m, use_argb=False, decode=False):
             content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
         else:
             content = [x.strip() for x in m.group('rgb_content').split(',')]
-        color = "#%02x%02x%02x" % (
-            int(content[0]), int(content[1]), int(content[2])
-        )
+        if content[0].endswith('%'):
+            r = round_int(float(content[0].strip('%')) * (255.0 / 100.0))
+            g = round_int(float(content[1].strip('%')) * (255.0 / 100.0))
+            b = round_int(float(content[2].strip('%')) * (255.0 / 100.0))
+            color = "#%02x%02x%02x" % (r, g, b)
+        else:
+            color = "#%02x%02x%02x" % (
+                int(content[0]), int(content[1]), int(content[2])
+            )
     elif m.group('rgba'):
         if decode:
             content = [x.strip() for x in m.group('rgba_content').decode('utf-8').split(',')]
         else:
             content = [x.strip() for x in m.group('rgba_content').split(',')]
-        color = "#%02x%02x%02x" % (
-            int(content[0]), int(content[1]), int(content[2])
-        )
+        if content[0].endswith('%'):
+            r = round_int(float(content[0].strip('%')) * (255.0 / 100.0))
+            g = round_int(float(content[1].strip('%')) * (255.0 / 100.0))
+            b = round_int(float(content[2].strip('%')) * (255.0 / 100.0))
+            color = "#%02x%02x%02x" % (r, g, b)
+        else:
+            color = "#%02x%02x%02x" % (
+                int(content[0]), int(content[1]), int(content[2])
+            )
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('hsl'):

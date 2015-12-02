@@ -37,6 +37,12 @@ color_map_style = None
 LINK = '<a href="insert:%s" class="color-helper small">&gt;&gt;&gt;</a> '
 WEB_COLOR = '''%s<span class="constant numeric">%s</span><br>'''
 HEX_COLOR = '''%s<span class="support type">%s</span><br>'''
+HEXA_COLOR = '''%s<span class="support type">%s</span><span class="support type color-helper alpha">%s</span><br>'''
+AHEX_COLOR = '''%s\
+<span class="support type">%s</span>\
+<span class="support type color-helper alpha">%s</span>\
+<span class="support type">%s</span>
+'''
 RGB_COLOR = '''%s<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)<br>'''
 RGBA_COLOR = '''%s<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
 HSL_COLOR = '''%s<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
@@ -349,50 +355,65 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         rgba = util.RGBA(self.color)
 
-        if self.web_color:
+        if self.web_color and 'webcolors' in self.allowed_colors:
             text.append(WEB_COLOR % (LINK % self.web_color, self.web_color))
-        color = self.color[:-2].lower()
-        text.append(HEX_COLOR % (LINK % color, color))
-        color = self.color.lower()
-        text.append(HEX_COLOR % (LINK % color, color))
-        color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
-        text.append(HEX_COLOR % (LINK % (color), color + ' <span class="comment">(#AARRGGBB)</span>'))
-        color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
-        text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
-        color = RGBA_INSERT % (rgba.r, rgba.g, rgba.b, self.alpha)
-        text.append(RGBA_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b, self.alpha))
+        if 'hex' in self.allowed_colors or 'hex_compressed' in self.allowed_colors:
+            color = self.color[:-2].lower()
+            text.append(HEX_COLOR % (LINK % color, color))
+        if (
+            ('hexa' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors) and
+            (self.use_hex_argb is None or self.use_hex_argb is False)
+        ):
+            color = self.color.lower()
+            text.append(HEXA_COLOR % (LINK % color, color[:-2], color[-2:]))
+        if (
+            ('hexa' in self.allowed_colors or 'hexa_compressed') and
+            (self.use_hex_argb is None or self.use_hex_argb is True)
+        ):
+            color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
+            text.append(AHEX_COLOR % (LINK % (color), color[0], color[-2:], color[1:-2]))
+        if 'rgb' in self.allowed_colors:
+            color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
+            text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
+        if 'rgba' in self.allowed_colors:
+            color = RGBA_INSERT % (rgba.r, rgba.g, rgba.b, self.alpha)
+            text.append(RGBA_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b, self.alpha))
         h, l, s = rgba.tohls()
-        color = HSL_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
-        text.append(
-            HSL_COLOR % (
-                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+        if 'hsl' in self.allowed_colors:
+            color = HSL_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
+            text.append(
+                HSL_COLOR % (
+                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
+                )
             )
-        )
-        color = HSLA_INSERT % (
-            util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
-        )
-        text.append(
-            HSLA_COLOR % (
-                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                self.alpha
+        if 'hsla' in self.allowed_colors:
+            color = HSLA_INSERT % (
+                util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
             )
-        )
+            text.append(
+                HSLA_COLOR % (
+                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
+                    self.alpha
+                )
+            )
         h, w, b = rgba.tohwb()
-        color = HWB_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0))
-        text.append(
-            HWB_COLOR % (
-                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+        if 'hwb' in self.allowed_colors:
+            color = HWB_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0))
+            text.append(
+                HWB_COLOR % (
+                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
+                )
             )
-        )
-        color = HWBA_INSERT % (
-            util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0), self.alpha
-        )
-        text.append(
-            HWBA_COLOR % (
-                LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                self.alpha
+        if 'hwba' in self.allowed_colors:
+            color = HWBA_INSERT % (
+                util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0), self.alpha
             )
-        )
+            text.append(
+                HWBA_COLOR % (
+                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
+                    self.alpha
+                )
+            )
 
     def set_sizes(self):
         """Get sizes."""
@@ -410,7 +431,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
 
     def run(
-        self, edit, color='#ffffff',
+        self, edit, color='#ffffff', allowed_colors=util.ALL, use_hex_argb=None,
         hsl=False, hirespick=None, colornames=False,
         on_done=None, on_cancel=None
     ):
@@ -418,6 +439,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         self.on_done = on_done
         self.on_cancel = on_cancel
+        self.use_hex_argb = use_hex_argb
+        self.allowed_colors = allowed_colors
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
         rgba = util.RGBA(color)
         self.set_sizes()
@@ -506,6 +529,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 'color_helper_picker_panel',
                 {
                     "color": color,
+                    "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
@@ -520,7 +544,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker',
                 {
-                    "color": color, "hsl": hsl, "hirespick": hires, "colornames": colornames,
+                    "color": color, "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
+                    "hsl": hsl, "hirespick": hires, "colornames": colornames,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
@@ -529,11 +554,16 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
     """Open color picker with color from panel."""
 
-    def run(self, color="#ffffffff", on_done=None, on_cancel=None):
+    def run(
+        self, color="#ffffffff", allowed_colors=util.ALL, use_hex_argb=None,
+        on_done=None, on_cancel=None
+    ):
         """Run command."""
 
         self.on_done = on_done
         self.on_cancel = on_cancel
+        self.use_hex_argb = use_hex_argb
+        self.allowed_colors = allowed_colors
         view = self.window.show_input_panel(
             '(hex) #RRGGBBAA', color, self.handle_value, None, None
         )
@@ -552,5 +582,8 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
         if view is not None:
             view.run_command(
                 'color_helper_picker',
-                {"color": value, "on_done": self.on_done, "on_cancel": self.on_cancel}
+                {
+                    "color": value, "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
+                    "on_done": self.on_done, "on_cancel": self.on_cancel
+                }
             )
