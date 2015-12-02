@@ -1,7 +1,6 @@
 """ColorHelper utilities."""
 import sublime
 import re
-import os
 import decimal
 from ColorHelper.lib import csscolors
 from ColorHelper.lib.rgba import RGBA, round_int, clamp
@@ -9,10 +8,8 @@ from ColorHelper.lib.rgba import RGBA, round_int, clamp
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
-    "rgb": r"[+\-]?\d+",
-    "hue": r"[+\-]?\d+",
     "percent": r"[+\-]?(?:(?:\d*\.\d+)|\d+)%",
-    "alpha": r"[+\-]?(?:(?:\d*\.\d+)|\d)"
+    "float": r"[+\-]?(?:(?:\d*\.\d+)|\d+)"
 }
 
 COMPLETE = r'''
@@ -20,14 +17,16 @@ COMPLETE = r'''
     (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
     (?P<hexa>\#(?P<hexa_content>[\dA-Fa-f]{8}))\b |
     (?P<hexa_compressed>\#(?P<hexa_compressed_content>[\dA-Fa-f]{4}))\b |
-    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:%(rgb)s\s*,\s*){2}%(rgb)s | (?:%(percent)s\s*,\s*){2}%(percent)s)\s*\)) |
-    \b(?P<rgba>rgba\(\s*(?P<rgba_content>(?:%(rgb)s\s*,\s*){3}%(alpha)s | (?:%(percent)s\s*,\s*){3}%(alpha)s)\s*\)) |
-    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hsla>hsla\(\s*(?P<hsla_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}%(alpha)s)\s*\)) |
-    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(alpha)s))\s*\)) |
-    \b(?P<gray>gray\(\s*(?P<gray_content>%(rgb)s|%(percent)s)\s*\)) |
-    \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(rgb)s|%(percent)s)\s*,\s*(?:%(percent)s|%(alpha)s))\s*\))
+    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s)\s*\)) |
+    \b(?P<rgba>rgba\(\s*(?P<rgba_content>
+        (?:%(float)s\s*,\s*){3}(?:%(percent)s|%(float)s) | (?:%(percent)s\s*,\s*){3}(?:%(percent)s|%(float)s)
+    )\s*\)) |
+    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(float)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hsla>hsla\(\s*(?P<hsla_content>%(float)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
+    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(float)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(float)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
+    \b(?P<gray>gray\(\s*(?P<gray_content>%(float)s|%(percent)s)\s*\)) |
+    \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(float)s|%(percent)s)\s*,\s*(?:%(percent)s|%(float)s))\s*\))
 ''' % COLOR_PARTS
 
 INCOMPLETE = r'''
@@ -340,9 +339,9 @@ def translate_color(m, use_hex_argb=False, decode=False):
             color = "#%02x%02x%02x" % (r, g, b)
         else:
             color = "#%02x%02x%02x" % (
-                clamp(int(content[0]), 0, 255),
-                clamp(int(content[1]), 0, 255),
-                clamp(int(content[2]), 0, 255)
+                clamp(round_int(float(content[0])), 0, 255),
+                clamp(round_int(float(content[1])), 0, 255),
+                clamp(round_int(float(content[2])), 0, 255)
             )
     elif m.group('rgba'):
         if decode:
@@ -356,11 +355,14 @@ def translate_color(m, use_hex_argb=False, decode=False):
             color = "#%02x%02x%02x" % (r, g, b)
         else:
             color = "#%02x%02x%02x" % (
-                clamp(int(content[0]), 0, 255),
-                clamp(int(content[1]), 0, 255),
-                clamp(int(content[2]), 0, 255)
+                clamp(round_int(float(content[0])), 0, 255),
+                clamp(round_int(float(content[1])), 0, 255),
+                clamp(round_int(float(content[2])), 0, 255)
             )
-        alpha, alpha_dec = alpha_dec_normalize(content[3])
+        if content[3].endswith('%'):
+            alpha, alpha_dec = alpha_percent_normalize(content[3])
+        else:
+            alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('gray'):
         if decode:
             content = m.group('gray_content').decode('utf-8')
@@ -369,7 +371,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if content.endswith('%'):
             g = round_int(clamp(float(content.strip('%')), 0.0, 255.0) * (255.0 / 100.0))
         else:
-            g = clamp(int(content), 0, 255)
+            g = clamp(round_int(float(content)), 0, 255)
         color = "#%02x%02x%02x" % (g, g, g)
     elif m.group('graya'):
         if decode:
@@ -379,7 +381,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if content[0].endswith('%'):
             g = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
         else:
-            g = clamp(int(content[0]), 0, 255)
+            g = clamp(round_int(float(content[0])), 0, 255)
         color = "#%02x%02x%02x" % (g, g, g)
         if content[1].endswith('%'):
             alpha, alpha_dec = alpha_percent_normalize(content[1])
@@ -413,7 +415,10 @@ def translate_color(m, use_hex_argb=False, decode=False):
         l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
-        alpha, alpha_dec = alpha_dec_normalize(content[3])
+        if content[3].endswith('%'):
+            alpha, alpha_dec = alpha_percent_normalize(content[3])
+        else:
+            alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('hwb'):
         if decode:
             content = [x.strip() for x in m.group('hwb_content').decode('utf-8').split(',')]
