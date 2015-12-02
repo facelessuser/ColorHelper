@@ -87,6 +87,9 @@ class InsertCalc(object):
         elif m.group('rgba') and 'rgba' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
             content = [x.strip() for x in m.group('rgba_content').split(',')]
+            temp = float(content[3])
+            if temp < 0.0 or temp > 1.0:
+                content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
             self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         elif m.group('hsl') and 'hsl' in self.allowed_colors:
@@ -94,14 +97,18 @@ class InsertCalc(object):
         elif m.group('hsla') and 'hsla' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsla') + self.start, m.end('hsla') + self.start)
             content = [x.strip().rstrip('%') for x in m.group('hsla_content').split(',')]
-            self.alpha = content[3]
+            temp = float(content[3])
+            if temp < 0.0 or temp > 1.0:
+                content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         elif m.group('hwb') and 'hwb' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
         elif m.group('hwba') and 'hwba' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwba') + self.start, m.end('hwba') + self.start)
             content = [x.strip().rstrip('%') for x in m.group('hwba_content').split(',')]
-            self.alpha = content[3]
+            temp = float(content[3])
+            if temp < 0.0 or temp > 1.0:
+                content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         else:
             found = False

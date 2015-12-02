@@ -4,15 +4,15 @@ import re
 import os
 import decimal
 from ColorHelper.lib import csscolors
-from ColorHelper.lib.rgba import RGBA, round_int
+from ColorHelper.lib.rgba import RGBA, round_int, clamp
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
-    "rgb": r"(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])",
-    "hue": r"(?:360|3[0-5][0-9]|[1-2][0-9][0-9]|[1-9][0-9]|[0-9])",
-    "percent": r"(?:(?:\d{,2}\.\d+)|100|100\.0+|\d{1,2})%",
-    "alpha": r"(?:(?:0?\.\d+)|[0-1]|1\.0+)"
+    "rgb": r"[+\-]?\d+",
+    "hue": r"[+\-]?\d+",
+    "percent": r"[+\-]?(?:(?:\d*\.\d+)|\d+)%",
+    "alpha": r"[+\-]?(?:(?:\d*\.\d+)|\d)"
 }
 
 COMPLETE = r'''
@@ -297,13 +297,15 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('rgb_content').split(',')]
         if content[0].endswith('%'):
-            r = round_int(float(content[0].strip('%')) * (255.0 / 100.0))
-            g = round_int(float(content[1].strip('%')) * (255.0 / 100.0))
-            b = round_int(float(content[2].strip('%')) * (255.0 / 100.0))
+            r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            b = round_int(clamp(float(content[2].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
             color = "#%02x%02x%02x" % (r, g, b)
         else:
             color = "#%02x%02x%02x" % (
-                int(content[0]), int(content[1]), int(content[2])
+                clamp(int(content[0]), 0, 255),
+                clamp(int(content[1]), 0, 255),
+                clamp(int(content[2]), 0, 255)
             )
     elif m.group('rgba'):
         if decode:
@@ -311,14 +313,19 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('rgba_content').split(',')]
         if content[0].endswith('%'):
-            r = round_int(float(content[0].strip('%')) * (255.0 / 100.0))
-            g = round_int(float(content[1].strip('%')) * (255.0 / 100.0))
-            b = round_int(float(content[2].strip('%')) * (255.0 / 100.0))
+            r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            b = round_int(clamp(float(content[2].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
             color = "#%02x%02x%02x" % (r, g, b)
         else:
             color = "#%02x%02x%02x" % (
-                int(content[0]), int(content[1]), int(content[2])
+                clamp(int(content[0]), 0, 255),
+                clamp(int(content[1]), 0, 255),
+                clamp(int(content[2]), 0, 255)
             )
+        temp = float(content[3])
+        if temp < 0.0 or temp > 1.0:
+            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('hsl'):
@@ -327,9 +334,12 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('hsl_content').split(',')]
         rgba = RGBA()
-        h = float(content[0]) / 360.0
-        s = float(content[1].strip('%')) / 100.0
-        l = float(content[2].strip('%')) / 100.0
+        hue = float(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        s = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
+        l = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
     elif m.group('hsla'):
@@ -338,11 +348,17 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('hsla_content').split(',')]
         rgba = RGBA()
-        h = float(content[0]) / 360.0
-        s = float(content[1].strip('%')) / 100.0
-        l = float(content[2].strip('%')) / 100.0
+        hue = float(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        s = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
+        l = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
+        temp = float(content[3])
+        if temp < 0.0 or temp > 1.0:
+            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('hwb'):
@@ -351,9 +367,12 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('hwb_content').split(',')]
         rgba = RGBA()
-        h = float(content[0]) / 360.0
-        w = float(content[1].strip('%')) / 100.0
-        b = float(content[2].strip('%')) / 100.0
+        hue = float(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        w = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
+        b = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
     elif m.group('hwba'):
@@ -362,11 +381,17 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('hwba_content').split(',')]
         rgba = RGBA()
-        h = float(content[0]) / 360.0
-        w = float(content[1].strip('%')) / 100.0
-        b = float(content[2].strip('%')) / 100.0
+        hue = float(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        w = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
+        b = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
+        temp = float(content[3])
+        if temp < 0.0 or temp > 1.0:
+            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('webcolors'):
