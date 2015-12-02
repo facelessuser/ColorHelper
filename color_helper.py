@@ -44,6 +44,12 @@ RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
 RGBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgba){: .color-helper .small} \
 <span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
 '''
+GRAY_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:gray){: .color-helper .small} \
+<span class="keyword">gray</span>(<span class="constant numeric">%d</span>)
+'''
+GRAYA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:graya){: .color-helper .small} \
+<span class="keyword">gray</span>(<span class="constant numeric">%d, %s</span>)
+'''
 HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
 <span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
 '''
@@ -70,6 +76,9 @@ AHEX_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:ahex){: .color-helper 
 '''
 RGBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:rgba){: .color-helper .small} \
 <span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
+'''
+GRAYA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:graya){: .color-helper .small} \
+<span class="keyword">gray</span>(<span class="constant numeric">%d, %s</span>)
 '''
 HSLA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hsla){: .color-helper .small} \
 <span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
@@ -602,6 +611,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(RGB_COLOR % (color, rgba.r, rgba.g, rgba.b))
             if "rgba" in allowed_colors:
                 info.append(RGBA_COLOR % (color, rgba.r, rgba.g, rgba.b, alpha if alpha else '1'))
+            if "gray" in allowed_colors and util.is_gray(rgba.get_rgb()):
+                info.append(GRAY_COLOR % (color, rgba.r))
+            if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
+                info.append(GRAYA_COLOR_ALPHA % (color, rgba.r, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
             if "hsl" in allowed_colors:
                 info.append(
@@ -676,6 +689,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
             if "rgba" in allowed_colors:
                 txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
+            if "gray" in allowed_colors and util.is_gray(rgba.get_rgb()):
+                txt.append(GRAY_COLOR % (rgba.get_rgb(), rgba.r))
+            if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
+                txt.append(GRAYA_COLOR_ALPHA % (rgba.get_rgba() + "@%d", rgba.r, alpha))
             h, l, s = rgba.tohls()
             if "hsl" in allowed_colors:
                 txt.append(
@@ -723,6 +740,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                             rgba.r, rgba.g, rgba.b, calc.alpha
                         )
                     )
+                if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
+                    txt.append(GRAYA_COLOR % (rgba.get_rgb(), rgba.r, calc.alpha))
                 if "hsl" in allowed_colors:
                     txt.append(
                         HSLA_COLOR % (
@@ -956,6 +975,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     elif m.group('rgb') and 'rgb' not in allowed_colors:
                         continue
                     elif m.group('rgba') and 'rgba' not in allowed_colors:
+                        continue
+                    elif m.group('gray') and 'gray' not in allowed_colors:
+                        continue
+                    elif m.group('graya') and 'graya' not in allowed_colors:
                         continue
                     elif m.group('hsl') and 'hsl' not in allowed_colors:
                         continue
@@ -1268,13 +1291,17 @@ class ChFileIndexThread(threading.Thread):
                 continue
             elif m.group('hexa_compressed') and not self.color_okay('hexa_compressed'):
                 continue
-            if m.group('hex') and not self.color_okay('hex'):
+            elif m.group('hex') and not self.color_okay('hex'):
                 continue
             elif m.group('hexa') and not self.color_okay('hexa'):
                 continue
             elif m.group('rgb') and not self.color_okay('rgb'):
                 continue
             elif m.group('rgba') and not self.color_okay('rgba'):
+                continue
+            elif m.group('gray') and not self.color_okay('gray'):
+                continue
+            elif m.group('graya') and not self.color_okay('graya'):
                 continue
             elif m.group('hsl') and not self.color_okay('hsl'):
                 continue
@@ -1371,6 +1398,8 @@ class ChThread(threading.Thread):
                             (m.group('hex') and self.color_okay(allowed_colors, 'hex')) or
                             (m.group('rgb') and self.color_okay(allowed_colors, 'rgb')) or
                             (m.group('rgba') and self.color_okay(allowed_colors, 'rgba')) or
+                            (m.group('gray') and self.color_okay(allowed_colors, 'gray')) or
+                            (m.group('graya') and self.color_okay(allowed_colors, 'graya')) or
                             (m.group('hsl') and self.color_okay(allowed_colors, 'hsl')) or
                             (m.group('hsla') and self.color_okay(allowed_colors, 'hsla')) or
                             (m.group('hwb') and self.color_okay(allowed_colors, 'hwb')) or
@@ -1399,6 +1428,12 @@ class ChThread(threading.Thread):
                                 (
                                     self.color_okay(allowed_colors, 'hwb') or
                                     self.color_okay(allowed_colors, 'hwba')
+                                )
+                            ) or
+                            (
+                                m.group('gray_open') and (
+                                    self.color_okay(allowed_colors, 'gray') or
+                                    self.color_okay(allowed_colors, 'graya')
                                 )
                             )
                         ):

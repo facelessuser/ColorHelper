@@ -92,6 +92,19 @@ class InsertCalc(object):
                 content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
             self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
+        elif m.group('gray') and 'gray' in self.allowed_colors:
+            self.region = sublime.Region(m.start('gray') + self.start, m.end('gray') + self.start)
+        elif m.group('graya') and 'graya' in self.allowed_colors:
+            self.region = sublime.Region(m.start('graya') + self.start, m.end('graya') + self.start)
+            content = [x.strip() for x in m.group('graya_content').split(',')]
+            if content[1].endswith('%'):
+                content[1] = util.fmt_float(util.clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0, 3)
+            else:
+                temp = float(content[1])
+                if temp < 0.0 or temp > 1.0:
+                    content[1] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
+            self.alpha = content[1]
+            self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         elif m.group('hsl') and 'hsl' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
         elif m.group('hsla') and 'hsla' in self.allowed_colors:
@@ -130,6 +143,9 @@ class InsertCalc(object):
             self.region = sublime.Region(m.start('rgba_open') + self.start, m.end('rgba_open') + self.start + offset)
             self.alpha = '1'
             self.alpha_hex = 'ff'
+        elif m.group('gray_open') and ('gray' in self.allowed_colors or 'graya' in self.allowed_colors):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            self.region = sublime.Region(m.start('gray_open') + self.start, m.end('gray_open') + self.start + offset)
         elif m.group('hsl_open') and 'hsl' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('hsl_open') + self.start, m.end('hsl_open') + self.start + offset)
@@ -214,6 +230,10 @@ class PickerInsertCalc(object):
             self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
         elif m.group('rgba') and 'rgba' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgba') + self.start, m.end('rgba') + self.start)
+        elif m.group('gray') and 'gray' in self.allowed_colors:
+            self.region = sublime.Region(m.start('gray') + self.start, m.end('gray') + self.start)
+        elif m.group('graya') and 'graya' in self.allowed_colors:
+            self.region = sublime.Region(m.start('graya') + self.start, m.end('graya') + self.start)
         elif m.group('hsl') and 'hsl' in self.allowed_colors:
             self.region = sublime.Region(m.start('hsl') + self.start, m.end('hsl') + self.start)
         elif m.group('hsla') and 'hsla' in self.allowed_colors:
@@ -241,6 +261,11 @@ class PickerInsertCalc(object):
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(
                 m.start('rgba_open') + self.start, m.end('rgba_open') + self.start + offset
+            )
+        elif m.group('gray_open') and ('gray' in self.allowed_colors or 'graya' in self.allowed_colors):
+            offset = 1 if self.view.substr(self.point) == ')' else 0
+            self.region = sublime.Region(
+                m.start('gray_open') + self.start, m.end('gray_open') + self.start + offset
             )
         elif m.group('hsl_open') and 'hsl' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0

@@ -25,7 +25,9 @@ COMPLETE = r'''
     \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
     \b(?P<hsla>hsla\(\s*(?P<hsla_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}%(alpha)s)\s*\)) |
     \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(hue)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}%(alpha)s)\s*\))
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(hue)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(alpha)s))\s*\)) |
+    \b(?P<gray>gray\(\s*(?P<gray_content>%(rgb)s|%(percent)s)\s*\)) |
+    \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(rgb)s|%(percent)s)\s*,\s*(?:%(percent)s|%(alpha)s))\s*\))
 ''' % COLOR_PARTS
 
 INCOMPLETE = r'''
@@ -36,7 +38,7 @@ INCOMPLETE = r'''
     \b(?P<hsla_open>hsla\() |
     \b(?P<hwb_open>hwb\()'''
 
-COLOR_NAMES = r'\b(?P<webcolors>%s)\b' % '|'.join([name for name in csscolors.name2hex_map.keys()])
+COLOR_NAMES = r'\b(?P<webcolors>%s)\b(?!\()' % '|'.join([name for name in csscolors.name2hex_map.keys()])
 
 TAG_HTML_RE = re.compile(
     br'''(?x)(?i)
@@ -63,6 +65,7 @@ TAG_STYLE_ATTR_RE = re.compile(
     re.DOTALL
 )
 
+HEX_IS_GRAY_RE = re.compile(r'(?i)^#([0-9a-f]{2})\1\1')
 HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
 
 COLOR_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
@@ -76,7 +79,7 @@ ADD_CSS = '''
 '''
 
 CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
-CSS4 = CSS3 + ("hwb", "hwba", "hexa", "hexa_compressed")
+CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")
 ALL = CSS4
 
 
@@ -212,6 +215,13 @@ def get_project_folders(window):
     return data.get('folders', [])
 
 
+def is_gray(color):
+    """Check if color is gray (all channels the same)."""
+
+    m = HEX_IS_GRAY_RE.match(color)
+    return m is not None
+
+
 def compress_hex(color):
     """Compress hex."""
 
@@ -341,6 +351,36 @@ def translate_color(m, use_hex_argb=False, decode=False):
             content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
         alpha_dec = content[3]
         alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+    elif m.group('gray'):
+        if decode:
+            content = m.group('gray_content').decode('utf-8')
+        else:
+            content = m.group('gray_content')
+        if content.endswith('%'):
+            g = round_int(clamp(float(content.strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+        else:
+            g = clamp(int(content), 0, 255)
+        color = "#%02x%02x%02x" % (g, g, g)
+    elif m.group('graya'):
+        if decode:
+            content = [x.strip() for x in m.group('graya_content').decode('utf-8').split(',')]
+        else:
+            content = [x.strip() for x in m.group('graya_content').split(',')]
+        if content[0].endswith('%'):
+            g = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+        else:
+            g = clamp(int(content[0]), 0, 255)
+        color = "#%02x%02x%02x" % (g, g, g)
+        if content[1].endswith('%'):
+            alpha_float = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+            alpha_dec = fmt_float(alpha_float, 3)
+            alpha = "%02X" % round_int(alpha_float * 255.0)
+        else:
+            temp = float(content[1])
+            if temp < 0.0 or temp > 1.0:
+                content[1] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
+            alpha_dec = content[1]
+            alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('hsl'):
         if decode:
             content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
@@ -351,8 +391,8 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
+        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
     elif m.group('hsla'):
@@ -365,8 +405,8 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
+        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
         temp = float(content[3])
@@ -384,8 +424,8 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
+        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
     elif m.group('hwba'):
@@ -398,15 +438,20 @@ def translate_color(m, use_hex_argb=False, decode=False):
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 1.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 1.0) / 100.0
+        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
-        temp = float(content[3])
-        if temp < 0.0 or temp > 1.0:
-            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-        alpha_dec = content[3]
-        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+        if content[3].endswith('%'):
+            alpha_float = clamp(float(content[3].strip('%')), 0.0, 100.0) / 100.0
+            alpha_dec = fmt_float(alpha_float, 3)
+            alpha = "%02X" % round_int(alpha_float * 255.0)
+        else:
+            temp = float(content[3])
+            if temp < 0.0 or temp > 1.0:
+                content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
+            alpha_dec = content[3]
+            alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
     elif m.group('webcolors'):
         try:
             if decode:
