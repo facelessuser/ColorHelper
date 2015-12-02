@@ -350,6 +350,13 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             count -= 1
         text.append('</span>\n\n')
 
+    def compress_hex_color(self, color):
+        """Compress hex color if possible."""
+
+        if self.compress_hex:
+            color = util.compress_hex(color)
+        return color
+
     def get_color_info(self, text):
         """Get color info."""
 
@@ -359,19 +366,19 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             text.append(WEB_COLOR % (LINK % self.web_color, self.web_color))
         if 'hex' in self.allowed_colors or 'hex_compressed' in self.allowed_colors:
             color = self.color[:-2].lower()
-            text.append(HEX_COLOR % (LINK % color, color))
+            text.append(HEX_COLOR % (LINK % self.compress_hex_color(color), color))
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors) and
             (self.use_hex_argb is None or self.use_hex_argb is False)
         ):
             color = self.color.lower()
-            text.append(HEXA_COLOR % (LINK % color, color[:-2], color[-2:]))
+            text.append(HEXA_COLOR % (LINK % self.compress_hex_color(color), color[:-2], color[-2:]))
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed') and
             (self.use_hex_argb is None or self.use_hex_argb is True)
         ):
             color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
-            text.append(AHEX_COLOR % (LINK % (color), color[0], color[-2:], color[1:-2]))
+            text.append(AHEX_COLOR % (LINK % self.compress_hex_color(color), color[0], color[-2:], color[1:-2]))
         if 'rgb' in self.allowed_colors:
             color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
             text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
@@ -432,7 +439,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
     def run(
         self, edit, color='#ffffff', allowed_colors=util.ALL, use_hex_argb=None,
-        hsl=False, hirespick=None, colornames=False,
+        compress_hex=False, hsl=False, hirespick=None, colornames=False,
         on_done=None, on_cancel=None
     ):
         """Run command."""
@@ -440,6 +447,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.on_done = on_done
         self.on_cancel = on_cancel
         self.use_hex_argb = use_hex_argb
+        self.compress_hex = compress_hex
         self.allowed_colors = allowed_colors
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
         rgba = util.RGBA(color)
@@ -528,8 +536,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.window().run_command(
                 'color_helper_picker_panel',
                 {
-                    "color": color,
-                    "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
+                    "color": color, "allowed_colors": self.allowed_colors,
+                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
@@ -544,7 +552,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker',
                 {
-                    "color": color, "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
+                    "color": color, "allowed_colors": self.allowed_colors,
+                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
                     "hsl": hsl, "hirespick": hires, "colornames": colornames,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
@@ -555,13 +564,15 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
     """Open color picker with color from panel."""
 
     def run(
-        self, color="#ffffffff", allowed_colors=util.ALL, use_hex_argb=None,
+        self, color="#ffffffff", allowed_colors=util.ALL,
+        use_hex_argb=None, compress_hex=False,
         on_done=None, on_cancel=None
     ):
         """Run command."""
 
         self.on_done = on_done
         self.on_cancel = on_cancel
+        self.compress_hex = compress_hex
         self.use_hex_argb = use_hex_argb
         self.allowed_colors = allowed_colors
         view = self.window.show_input_panel(
@@ -583,7 +594,8 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
             view.run_command(
                 'color_helper_picker',
                 {
-                    "color": value, "allowed_colors": self.allowed_colors, "use_hex_argb": self.use_hex_argb,
+                    "color": value, "allowed_colors": self.allowed_colors,
+                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )

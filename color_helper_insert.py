@@ -120,6 +120,8 @@ class InsertCalc(object):
         found = True
         if m.group('hash') and ('hex' in self.allowed_colors or 'hexa' in self.allowed_colors):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
+        elif m.group('hash') and ('hex_compressed' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors):
+            self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
         elif m.group('rgb_open') and 'rgb' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0
             self.region = sublime.Region(m.start('rgb_open') + self.start, m.end('rgb_open') + self.start + offset)
@@ -204,6 +206,10 @@ class PickerInsertCalc(object):
             self.region = sublime.Region(m.start('hexa') + self.start, m.end('hexa') + self.start)
         elif m.group('hex') and 'hex' in self.allowed_colors:
             self.region = sublime.Region(m.start('hex') + self.start, m.end('hex') + self.start)
+        elif m.group('hexa_compressed') and 'hexa_compressed' in self.allowed_colors:
+            self.region = sublime.Region(m.start('hexa_compressed') + self.start, m.end('hexa_compressed') + self.start)
+        elif m.group('hex_compressed') and 'hex_compressed' in self.allowed_colors:
+            self.region = sublime.Region(m.start('hex_compressed') + self.start, m.end('hex_compressed') + self.start)
         elif m.group('rgb') and 'rgb' in self.allowed_colors:
             self.region = sublime.Region(m.start('rgb') + self.start, m.end('rgb') + self.start)
         elif m.group('rgba') and 'rgba' in self.allowed_colors:
@@ -225,6 +231,8 @@ class PickerInsertCalc(object):
 
         found = True
         if m.group('hash') and ('hex' in self.allowed_colors or 'hexa' in self.allowed_colors):
+            self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
+        elif m.group('hash') and ('hex_copressed' in self.allowed_colors or 'hexa_copressed' in self.allowed_colors):
             self.region = sublime.Region(m.start('hash') + self.start, m.end('hash') + self.start)
         elif m.group('rgb_open') and 'rgb' in self.allowed_colors:
             offset = 1 if self.view.substr(self.point) == ')' else 0

@@ -109,8 +109,6 @@ DIVIDER = '''
 
 '''
 
-HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
-
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -372,25 +370,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             rules = util.get_rules(self.view)
             allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
             use_hex_argb = rules.get("use_hex_argb", False) if rules else False
+            compress_hex = rules.get("compress_hex_output", False) if rules else False
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
                     'allowed_colors': allowed_colors,
                     'use_hex_argb': use_hex_argb,
+                    'compress_hex': compress_hex,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                     'on_cancel': on_cancel
                 }
             )
-
-    def compress_hex(self, color):
-        """Compress hex."""
-
-        m = HEX_COMPRESS_RE.match(color)
-        if m:
-            color = '#' + m.group(1) + m.group(2) + m.group(3)
-            if m.group(4):
-                color += m.group(4)
-        return color
 
     def insert_color(self, target_color, convert=None, picker=False, alpha=False):
         """Insert colors."""
@@ -405,7 +395,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 rules = util.get_rules(self.view)
                 use_hex_argb = rules.get("use_hex_argb", False) if rules else False
                 allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
-                compress_hex = rules.get('compress_hex_output', False)
+                compress_hex = rules.get('compress_hex_output', False) if rules else False
                 calc = InsertCalc(self.view, point, target_color, convert, allowed_colors, use_hex_argb)
                 calc.calc()
                 if alpha:
@@ -453,7 +443,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         else:
                             color = calc.color + calc.alpha_hex
                     if compress_hex:
-                        color = self.compress_hex(color)
+                        color = util.compress_hex(color)
                     value = color.upper() if use_upper else color.lower()
             else:
                 rules = util.get_rules(self.view)

@@ -63,6 +63,8 @@ TAG_STYLE_ATTR_RE = re.compile(
     re.DOTALL
 )
 
+HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
+
 COLOR_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
 COLOR_ALL_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
 INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
@@ -208,6 +210,17 @@ def get_project_folders(window):
     if data is None:
         data = {'folders': [{'path': f} for f in window.folders()]}
     return data.get('folders', [])
+
+
+def compress_hex(color):
+    """Compress hex."""
+
+    m = HEX_COMPRESS_RE.match(color)
+    if m:
+        color = '#' + m.group(1) + m.group(2) + m.group(3)
+        if m.group(4):
+            color += m.group(4)
+    return color
 
 
 def translate_color(m, use_hex_argb=False, decode=False):
