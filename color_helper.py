@@ -118,6 +118,7 @@ DIVIDER = '''
 
 '''
 
+ch_last_updated = None
 ch_settings = None
 
 if 'ch_thread' not in globals():
@@ -1210,7 +1211,14 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
-        if show_current_palette and view.settings().get('color_helper.file_palette', None) is None:
+        color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
+        rules = view.settings().get('color_helper.scan', {})
+        if rules.get("enabled", False):
+            last_updated = rules.get('last_updated', None)
+            force_update = last_updated is None or last_updated < ch_last_updated
+        else:
+            force_update = False
+        if show_current_palette and (not color_palette_initialized or force_update):
             self.set_file_scan_rules(view)
             view.settings().set('color_helper.file_palette', [])
             start_file_index(view)
@@ -1470,36 +1478,27 @@ class ChThread(threading.Thread):
 ###########################
 # Plugin Initialization
 ###########################
+def settings_reload():
+    """Handle settings reload event."""
+    global ch_last_updated
+    ch_last_updated = time()
+
+
 def init_plugin():
     """Setup plugin variables and objects."""
 
     global ch_settings
     global ch_thread
     global ch_file_thread
-
-    # Make sure cache folder exists
-    cache_folder = util.get_cache_dir()
-    if not os.path.exists(cache_folder):
-        os.makedirs(cache_folder)
-
-    # Clean up cache
-    win_ids = [win.id() for win in sublime.windows()]
-    for f in os.listdir(cache_folder):
-        if f.lower().endswith('.cache'):
-            try:
-                win_id = int(os.path.splitext(f)[0])
-                if win_id not in win_ids:
-                    os.remove(os.path.join(cache_folder, f))
-            except:
-                pass
+    global ch_last_updated
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
 
     # Setup reload events
-    pref_settings = sublime.load_settings('Preferences.sublime-settings')
-    pref_settings.clear_on_change('colorhelper_reload')
     ch_settings.clear_on_change('reload')
+    ch_settings.add_on_change('reload', settings_reload)
+    settings_reload()
 
     # Start event thread
     if ch_thread is not None:

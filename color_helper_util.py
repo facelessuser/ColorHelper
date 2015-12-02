@@ -100,12 +100,6 @@ def debug(*args):
         log(*args)
 
 
-def get_cache_dir():
-    """Get the cache dir."""
-
-    return os.path.join(sublime.packages_path(), "User", 'ColorHelper.cache')
-
-
 def color_picker_available():
     """Check if color picker is available."""
 
@@ -233,6 +227,26 @@ def compress_hex(color):
     return color
 
 
+def alpha_dec_normalize(dec):
+    """Normailze a deciaml alpha value."""
+
+    temp = float(dec)
+    if temp < 0.0 or temp > 1.0:
+        dec = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
+    alpha_dec = dec
+    alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+    return alpha, alpha_dec
+
+
+def alpha_percent_normalize(perc):
+    """Normailze a percent alpha value."""
+
+    alpha_float = clamp(float(perc.strip('%')), 0.0, 100.0) / 100.0
+    alpha_dec = fmt_float(alpha_float, 3)
+    alpha = "%02X" % round_int(alpha_float * 255.0)
+    return alpha, alpha_dec
+
+
 def translate_color(m, use_hex_argb=False, decode=False):
     """Translate the match object to a color w/ alpha."""
 
@@ -346,11 +360,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
                 clamp(int(content[1]), 0, 255),
                 clamp(int(content[2]), 0, 255)
             )
-        temp = float(content[3])
-        if temp < 0.0 or temp > 1.0:
-            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-        alpha_dec = content[3]
-        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+        alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('gray'):
         if decode:
             content = m.group('gray_content').decode('utf-8')
@@ -372,15 +382,9 @@ def translate_color(m, use_hex_argb=False, decode=False):
             g = clamp(int(content[0]), 0, 255)
         color = "#%02x%02x%02x" % (g, g, g)
         if content[1].endswith('%'):
-            alpha_float = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-            alpha_dec = fmt_float(alpha_float, 3)
-            alpha = "%02X" % round_int(alpha_float * 255.0)
+            alpha, alpha_dec = alpha_percent_normalize(content[1])
         else:
-            temp = float(content[1])
-            if temp < 0.0 or temp > 1.0:
-                content[1] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-            alpha_dec = content[1]
-            alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+            alpha, alpha_dec = alpha_dec_normalize(content[1])
     elif m.group('hsl'):
         if decode:
             content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
@@ -409,11 +413,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
         l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
-        temp = float(content[3])
-        if temp < 0.0 or temp > 1.0:
-            content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-        alpha_dec = content[3]
-        alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+        alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('hwb'):
         if decode:
             content = [x.strip() for x in m.group('hwb_content').decode('utf-8').split(',')]
@@ -443,15 +443,9 @@ def translate_color(m, use_hex_argb=False, decode=False):
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
         if content[3].endswith('%'):
-            alpha_float = clamp(float(content[3].strip('%')), 0.0, 100.0) / 100.0
-            alpha_dec = fmt_float(alpha_float, 3)
-            alpha = "%02X" % round_int(alpha_float * 255.0)
+            alpha, alpha_dec = alpha_percent_normalize(content[3])
         else:
-            temp = float(content[3])
-            if temp < 0.0 or temp > 1.0:
-                content[3] = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-            alpha_dec = content[3]
-            alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
+            alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('webcolors'):
         try:
             if decode:
