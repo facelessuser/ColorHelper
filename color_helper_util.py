@@ -35,7 +35,9 @@ INCOMPLETE = r'''
     \b(?P<rgba_open>rgba\() |
     \b(?P<hsl_open>hsl\() |
     \b(?P<hsla_open>hsla\() |
-    \b(?P<hwb_open>hwb\()'''
+    \b(?P<hwb_open>hwb\() |
+    \b(?P<gray_open>hwb\()
+    '''
 
 COLOR_NAMES = r'\b(?P<webcolors>%s)\b(?!\()' % '|'.join([name for name in csscolors.name2hex_map.keys()])
 
