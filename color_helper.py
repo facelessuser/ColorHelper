@@ -1161,7 +1161,14 @@ class ColorHelperListener(sublime_plugin.EventListener):
                         break
 
             syntax_files = rule.get("syntax_files", [])
-            results.append(True if not syntax_files or syntax in syntax_files else False)
+            syntax_filter = rule.get("syntax_filter", "whitelist")
+            syntax_okay = bool(
+                not syntax_files or (
+                    (syntax_filter == "whitelist" and syntax in syntax_files) or
+                    (syntax_filter == "blacklist" and syntax not in syntax_files)
+                )
+            )
+            results.append(syntax_okay)
 
             extensions = [e.lower() for e in rule.get("extensions", [])]
             results.append(True if not extensions or (ext is not None and ext in extensions) else False)

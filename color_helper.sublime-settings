@@ -49,6 +49,7 @@
     "color_scanning": [
         {
             "syntax_files": [],
+            "syntax_filter": "whitelist",
             "base_scope": [
                 "source.css",
                 "text.html"
@@ -71,6 +72,7 @@
             // A number of sass and scss syntaxes are bundled together
             // So we will just bundle all the scss and sass rules together
             "syntax_files": [],
+            "syntax_filter": "whitelist",
             "base_scope": [
                 "source.scss",
                 "source.sass"
@@ -103,6 +105,7 @@
         },
         {
             "syntax_files": [],
+            "syntax_filter": "whitelist",
             "base_scope": ["text.xml"],
             "scan_scopes": ["text.xml -meta.tag.xml -comment -string"],
             "allowed_colors": ["hex", "hexa"],
