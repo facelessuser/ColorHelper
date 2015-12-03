@@ -1133,16 +1133,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
     on_modified = on_selection_modified
 
-    def set_file_scan_rules(self, view, on_save=False):
+    def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
 
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
-        if on_save:
-            old_ext = view.settings().get('color_helper.ext', None)
-            if ext is None or ext == old_ext:
-                return
-
         s = sublime.load_settings('color_helper.sublime-settings')
         rules = s.get("color_scanning", [])
         syntax = view.settings().get('syntax').replace('Packages/', '', 1)
@@ -1151,6 +1146,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         allowed_colors = set()
         use_hex_argb = False
         compress_hex = False
+
         for rule in rules:
             results = []
             base_scopes = rule.get("base_scope", [])
@@ -1189,7 +1185,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     use_hex_argb = True
                 if not compress_hex and rule.get("compress_hex_output", False):
                     compress_hex = True
-        view.settings().set('color_helper.ext', ext)
         if scan_scopes or incomplete_scopes:
             view.settings().set(
                 'color_helper.scan',
@@ -1199,26 +1194,56 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "scan_completion_scopes": incomplete_scopes,
                     "allowed_colors": list(allowed_colors),
                     "use_hex_argb": use_hex_argb,
-                    "compress_hex_output": compress_hex
+                    "compress_hex_output": compress_hex,
+                    "current_ext": ext,
+                    "current_syntax": syntax,
+                    "last_updated": ch_last_updated
                 }
             )
         else:
-            view.settings().set('color_helper.scan', {"enabled": False})
+            view.settings().set(
+                'color_helper.scan',
+                {
+                    "enabled": False,
+                    "current_ext": ext,
+                    "current_syntax": syntax,
+                    "last_updated": ch_last_updated
+                }
+            )
             view.settings().set('color_helper.file_palette', [])
+
+    def should_update(self, view):
+        """Check if an update should be performed."""
+
+        force_update = False
+        s = sublime.load_settings('color_helper.sublime-settings')
+        show_current_palette = s.get('enable_current_file_palette', True)
+        if show_current_palette:
+            color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
+            rules = view.settings().get('color_helper.scan', None)
+            if not color_palette_initialized:
+                force_update = True
+            elif rules:
+                last_updated = rules.get('last_updated', None)
+                if last_updated is None or last_updated < ch_last_updated:
+                    force_update = True
+                file_name = view.file_name()
+                ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
+                old_ext = rules.get('current_ext')
+                if ext is None or ext == old_ext:
+                    force_update = True
+                syntax = view.settings().get('syntax').replace('Packages/', '', 1)
+                old_syntax = rules.get("current_syntax")
+                if old_syntax is None or old_syntax != syntax:
+                    force_update = True
+            else:
+                force_update = True
+        return force_update
 
     def on_activated(self, view):
         """Run current file scan and/or project scan if not run before."""
 
-        s = sublime.load_settings('color_helper.sublime-settings')
-        show_current_palette = s.get('enable_current_file_palette', True)
-        color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
-        rules = view.settings().get('color_helper.scan', {})
-        if rules.get("enabled", False):
-            last_updated = rules.get('last_updated', None)
-            force_update = last_updated is None or last_updated < ch_last_updated
-        else:
-            force_update = False
-        if show_current_palette and (not color_palette_initialized or force_update):
+        if self.should_update(view):
             self.set_file_scan_rules(view)
             view.settings().set('color_helper.file_palette', [])
             start_file_index(view)
@@ -1226,9 +1251,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
 
-        self.set_file_scan_rules(view)
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
+        if self.should_update(view):
+            self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
 
@@ -1385,6 +1411,7 @@ class ChThread(threading.Thread):
                     and view.score_selector(sels[0].begin(), insert_scope)
                 )
             )
+
             if scope_okay or insert_scope_okay:
                 allowed_colors = rules.get('allowed_colors', [])
                 point = sels[0].begin()
