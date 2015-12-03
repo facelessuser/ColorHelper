@@ -68,28 +68,20 @@
             "compress_hex_output": true
         },
         {
+            // A number of sass and scss syntaxes are bundled together
+            // So we will just bundle all the scss and sass rules together
             "syntax_files": [],
             "base_scope": [
+                "source.scss",
                 "source.sass"
             ],
             "scan_scopes": [
                 // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
                 "meta.property-list.css.sass -comment -string",
                 // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-                "constant.other.rgb-value.sass"
-            ],
-            "scan_completion_scopes": [],
-            "extensions": [],
-            "allowed_colors": ["css3"],
-            "use_hex_argb": false,
-            "compress_hex_output": true
-        },
-        {
-            "syntax_files": [],
-            "base_scope": [
-                "source.scss"
-            ],
-            "scan_scopes": [
+                "constant.other.rgb-value.sass -comment -string",
+                // SCSS (based on https://packagecontrol.io/packages/SCSS)
+                "constant.other.color.rgb-value.scss -comment -string",
                 // SCSS (based on https://packagecontrol.io/packages/SCSS)
                 "constant.other.color.rgb-value.scss",
                 "support.constant.color.w3c-standard-color-name.scss",
@@ -102,7 +94,6 @@
                 // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
                 // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
                 "source.scss -comment -string",
-                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
                 "source.sass -comment -string"
             ],
             "extensions": [],
