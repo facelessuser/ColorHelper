@@ -1399,7 +1399,9 @@ class ChThread(threading.Thread):
         self.ignore_all = True
         window = sublime.active_window()
         view = window.active_view()
-        if view is not None:
+        s = sublime.load_settings('color_helper.sublime-settings')
+        auto_popup = s.get('auto_popup', True)
+        if view is not None and auto_popup:
             info = False
             execute = False
             sels = view.sel()

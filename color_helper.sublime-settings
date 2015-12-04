@@ -2,6 +2,9 @@
     // Show debug logging
     "debug": false,
 
+    // Show popups automatically in configured files.
+    "auto_popup": true,
+
     // Upper case hex when inserting
     "upper_case_hex": false,
 
