@@ -16,4 +16,5 @@ ColorHelper offers tooltips with color previews of stylesheet colors, provides c
 - Show all the colors in a file in a special color palette in the tooltip.
 - Allow saving, accessing, and managing colors in named color palettes all from the tooltip.
 - Select and insert colors from the color palettes via the tooltip.
-- Translate an existing color form to a new form the tooltip.  Supports rgb, rgba, hex, hsl, hsla, and colors names.
+- Translate an existing color form to a new form the tooltip.  Supports rgb, rgba, hex, hexa, hsl, hsla, gray, hwb, and colors names.
+- Can optionally treat hexa format (#RRGGBBAA) as #AARRGGBB.
