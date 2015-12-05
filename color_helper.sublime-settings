@@ -54,7 +54,7 @@
         {
             "syntax_files": [],
             "syntax_filter": "whitelist",
-            "base_scope": [
+            "base_scopes": [
                 "source.css",
                 "text.html"
             ],
@@ -78,7 +78,7 @@
             // So we will just bundle all the scss and sass rules together
             "syntax_files": [],
             "syntax_filter": "whitelist",
-            "base_scope": [
+            "base_scopes": [
                 "source.scss",
                 "source.sass"
             ],
@@ -111,7 +111,7 @@
         {
             "syntax_files": [],
             "syntax_filter": "whitelist",
-            "base_scope": ["text.xml"],
+            "base_scopes": ["text.xml"],
             "scan_scopes": ["text.xml -meta.tag.xml -comment -string"],
             "allowed_colors": ["hex", "hexa"],
             "extensions": [".tmTheme"],

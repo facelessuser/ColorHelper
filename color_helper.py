@@ -1149,13 +1149,13 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
         for rule in rules:
             results = []
-            base_scopes = rule.get("base_scope", [])
+            base_scopes = rule.get("base_scopes", [])
 
             if not base_scopes:
                 results.append(True)
             else:
                 results.append(False)
-                for base in rule.get("base_scope", []):
+                for base in rule.get("base_scopes", []):
                     if view.score_selector(0, base):
                         results[-1] = True
                         break
