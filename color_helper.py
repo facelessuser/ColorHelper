@@ -1140,7 +1140,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
         s = sublime.load_settings('color_helper.sublime-settings')
         rules = s.get("color_scanning", [])
-        syntax = view.settings().get('syntax').replace('Packages/', '', 1)
+        syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
         scan_scopes = []
         incomplete_scopes = []
         allowed_colors = set()
@@ -1239,7 +1239,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 old_ext = rules.get('current_ext')
                 if ext is None or ext == old_ext:
                     force_update = True
-                syntax = view.settings().get('syntax').replace('Packages/', '', 1)
+                syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
                 old_syntax = rules.get("current_syntax")
                 if old_syntax is None or old_syntax != syntax:
                     force_update = True
