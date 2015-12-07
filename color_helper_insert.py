@@ -13,8 +13,10 @@ class InsertCalc(object):
         self.convert_rgb = False
         self.convert_hsl = False
         self.convert_hwb = False
+        self.convert_gray = False
         self.allowed_colors = allowed_colors
         self.alpha = None
+        self.force_alpha = False
         self.use_hex_argb = use_hex_argb
         self.alpha_hex = None
         self.view = view
@@ -40,6 +42,9 @@ class InsertCalc(object):
             except:
                 pass
             self.force_alpha = True
+        elif convert in ('gray', 'graya'):
+            self.convert_gray = True
+            self.force_alpha = convert == 'graya'
         elif convert in ('hex', 'hexa', 'ahex'):
             self.force_alpha = convert in ('hexa', 'ahex')
         elif convert in ('rgb', 'rgba'):
@@ -113,6 +118,7 @@ class InsertCalc(object):
             temp = float(content[3])
             if temp < 0.0 or temp > 1.0:
                 content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
+            self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         elif m.group('hwb') and 'hwb' in self.allowed_colors:
             self.region = sublime.Region(m.start('hwb') + self.start, m.end('hwb') + self.start)
@@ -122,6 +128,7 @@ class InsertCalc(object):
             temp = float(content[3])
             if temp < 0.0 or temp > 1.0:
                 content[3] = util.fmt_float(util.clamp(float(temp), 0.0, 1.0), 3)
+            self.alpha = content[3]
             self.alpha_hex = "%02x" % util.round_int(float(self.alpha) * 255.0)
         else:
             found = False

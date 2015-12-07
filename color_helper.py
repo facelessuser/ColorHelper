@@ -422,6 +422,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     if calc.alpha:
                         value += ', %s' % calc.alpha
                     value = ("rgba(%s)" if calc.alpha else "rgb(%s)") % value
+                elif calc.convert_gray:
+                    value = "%d" % int(calc.color[1:3], 16)
+                    if calc.alpha:
+                        value += ', %s' % calc.alpha
+                    value = "gray(%s)" % value
                 elif calc.convert_hsl:
                     hsl = RGBA(calc.color)
                     h, l, s = hsl.tohls()
@@ -615,7 +620,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if "gray" in allowed_colors and util.is_gray(rgba.get_rgb()):
                 info.append(GRAY_COLOR % (color, rgba.r))
             if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
-                info.append(GRAYA_COLOR_ALPHA % (color, rgba.r, alpha if alpha else '1'))
+                info.append(GRAYA_COLOR % (color, rgba.r, alpha if alpha else '1'))
             h, l, s = rgba.tohls()
             if "hsl" in allowed_colors:
                 info.append(
@@ -689,11 +694,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if "rgb" in allowed_colors:
                 txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
             if "rgba" in allowed_colors:
-                txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + "@%d" % dlevel, rgba.r, rgba.g, rgba.b, alpha))
+                txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + ("@%d" % dlevel), rgba.r, rgba.g, rgba.b, alpha))
             if "gray" in allowed_colors and util.is_gray(rgba.get_rgb()):
                 txt.append(GRAY_COLOR % (rgba.get_rgb(), rgba.r))
             if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
-                txt.append(GRAYA_COLOR_ALPHA % (rgba.get_rgba() + "@%d", rgba.r, alpha))
+                txt.append(GRAYA_COLOR_ALPHA % (rgba.get_rgba() + ("@%d" % dlevel), rgba.r, alpha))
             h, l, s = rgba.tohls()
             if "hsl" in allowed_colors:
                 txt.append(
@@ -705,7 +710,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if "hsla" in allowed_colors:
                 txt.append(
                     HSLA_COLOR_ALPHA % (
-                        rgba.get_rgba() + "@%d" % dlevel,
+                        rgba.get_rgba() + ("@%d" % dlevel),
                         util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
                         alpha
                     )
@@ -721,7 +726,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if "hwba" in allowed_colors:
                 txt.append(
                     HWBA_COLOR_ALPHA % (
-                        rgba.get_rgba() + "@%d" % dlevel,
+                        rgba.get_rgba() + ("@%d" % dlevel),
                         util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
                         alpha
                     )
