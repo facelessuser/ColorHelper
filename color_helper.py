@@ -1228,28 +1228,25 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Check if an update should be performed."""
 
         force_update = False
-        s = sublime.load_settings('color_helper.sublime-settings')
-        show_current_palette = s.get('enable_current_file_palette', True)
-        if show_current_palette:
-            color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
-            rules = view.settings().get('color_helper.scan', None)
-            if not color_palette_initialized:
+        color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
+        rules = view.settings().get('color_helper.scan', None)
+        if not color_palette_initialized:
+            force_update = True
+        elif rules:
+            last_updated = rules.get('last_updated', None)
+            if last_updated is None or last_updated < ch_last_updated:
                 force_update = True
-            elif rules:
-                last_updated = rules.get('last_updated', None)
-                if last_updated is None or last_updated < ch_last_updated:
-                    force_update = True
-                file_name = view.file_name()
-                ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
-                old_ext = rules.get('current_ext')
-                if ext is None or ext == old_ext:
-                    force_update = True
-                syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
-                old_syntax = rules.get("current_syntax")
-                if old_syntax is None or old_syntax != syntax:
-                    force_update = True
-            else:
+            file_name = view.file_name()
+            ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
+            old_ext = rules.get('current_ext')
+            if ext is None or ext == old_ext:
                 force_update = True
+            syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+            old_syntax = rules.get("current_syntax")
+            if old_syntax is None or old_syntax != syntax:
+                force_update = True
+        else:
+            force_update = True
         return force_update
 
     def on_activated(self, view):
@@ -1257,8 +1254,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
         if self.should_update(view):
             self.set_file_scan_rules(view)
+            s = sublime.load_settings('color_helper.sublime-settings')
+            show_current_palette = s.get('enable_current_file_palette', True)
             view.settings().set('color_helper.file_palette', [])
-            start_file_index(view)
+            if show_current_palette:
+                start_file_index(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
