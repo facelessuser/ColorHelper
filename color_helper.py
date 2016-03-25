@@ -1360,7 +1360,10 @@ class ChFileIndexThread(threading.Thread):
             color, alpha, alpha_dec = util.translate_color(m, self.use_hex_argb)
             color += alpha if alpha is not None else 'ff'
             if not color.lower().endswith('ff'):
-                color += '@%d' % len(alpha_dec.split('.')[1])
+                parts = alpha_dec.split('.')
+                dlevel = len(parts.split('.')[1]) if len(parts) > 1 else None
+                if dlevel is not None:
+                    color += '@%d' % dlevel
             colors.add(color)
         if self.color_okay('webcolors'):
             for m in self.webcolor_names.finditer(self.source):
