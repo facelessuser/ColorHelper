@@ -1418,14 +1418,14 @@ class ChThread(threading.Thread):
             insert_scope = util.get_scope_completion(view, rules)
             scope_okay = (
                 scope and
-                len(sels) == 1 and sels[0].size() == 0
-                and view.score_selector(sels[0].begin(), scope)
+                len(sels) == 1 and sels[0].size() == 0 and
+                view.score_selector(sels[0].begin(), scope)
             )
             insert_scope_okay = (
                 scope_okay or (
                     insert_scope and
-                    len(sels) == 1 and sels[0].size() == 0
-                    and view.score_selector(sels[0].begin(), insert_scope)
+                    len(sels) == 1 and sels[0].size() == 0 and
+                    view.score_selector(sels[0].begin(), insert_scope)
                 )
             )
 
