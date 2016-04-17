@@ -2,7 +2,7 @@
 RGBA.
 
 Licensed under MIT
-Copyright (c) 2012 - 2015 Isaac Muse <isaacmuse@gmail.com>
+Copyright (c) 2012 - 2016 Isaac Muse <isaacmuse@gmail.com>
 """
 import re
 from colorsys import rgb_to_hls, hls_to_rgb, rgb_to_hsv, hsv_to_rgb
