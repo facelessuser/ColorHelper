@@ -150,7 +150,9 @@ def start_file_index(view):
                         rules.get('use_hex_argb', False)
                     )
                     ch_file_thread.start()
-                    sublime.status_message('File color indexer started...')
+                    s = sublime.load_settings('color_helper.sublime-settings')
+                    if s.get('show_index_status', True):
+                        sublime.status_message('File color indexer started...')
 
 
 ###########################
@@ -1302,9 +1304,11 @@ class ChFileIndexThread(threading.Thread):
 
         try:
             colors.sort()
-            sublime.status_message('File color index complete...')
             view.settings().set('color_helper.file_palette', colors)
             util.debug('Colors:\n', colors)
+            s = sublime.load_settings('color_helper.sublime-settings')
+            if s.get('show_index_status', True):
+                sublime.status_message('File color index complete...')
         except Exception:
             pass
 

@@ -2,6 +2,9 @@
     // Show debug logging
     "debug": false,
 
+    // Show index status in the status bar.
+    "show_index_status": true,
+
     // Show popups automatically in configured files.
     "auto_popup": true,
 

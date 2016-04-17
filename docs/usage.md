@@ -223,6 +223,14 @@ Setting to control color scanning which is responsible for both auto-popups and 
     ]
 ```
 
+### show_index_status
+Set whether indexing status is shown in the status bar.
+
+```js
+    // Show index status in the status bar.
+    "show_index_status": true,
+```
+
 #### color_scanning.syntax_files
 `syntax_files` is an array of syntax file (`tmLanguage` or `sublime-syntax`)names and are relative to `Packages` (extensions should be excluded).  They are used to filter views that will be targeted for scanning. Depending on how [`syntax_filter`](#color_scanningsyntax_filter) is set, `syntax_files` will either require the files to be in the list or not in the list.  If `syntax_files` is set as an empty array, all views will be targeted unless filtered further by other settings.
 
