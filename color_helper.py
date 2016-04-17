@@ -1365,7 +1365,7 @@ class ChFileIndexThread(threading.Thread):
             color += alpha if alpha is not None else 'ff'
             if not color.lower().endswith('ff'):
                 parts = alpha_dec.split('.')
-                dlevel = len(parts.split('.')[1]) if len(parts) > 1 else None
+                dlevel = len(parts[1]) if len(parts) > 1 else None
                 if dlevel is not None:
                     color += '@%d' % dlevel
             colors.add(color)
