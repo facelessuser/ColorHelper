@@ -7,6 +7,8 @@ from ColorHelper.lib import csscolors
 import ColorHelper.color_helper_util as util
 import copy
 
+DISTORTION_FIX = int(sublime.version()) < 3118
+
 try:
     popupver = mdpopups.version()
 except Exception:
@@ -427,11 +429,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = settings.get('graphic_size', "medium")
-        sizes = {
-            "small": (10, 14, 16),
-            "medium": (14, 18, 20),
-            "large": (18, 22, 24)
-        }
+        if DISTORTION_FIX:
+            sizes = {
+                "small": (10, 14, 16),
+                "medium": (14, 18, 20),
+                "large": (18, 22, 24)
+            }
+        else:
+            sizes = {
+                "small": (14, 14, 16),
+                "medium": (18, 18, 20),
+                "large": (22, 22, 24)
+            }
         self.height, self.width, self.height_big = sizes.get(
             self.graphic_size,
             sizes["medium"]

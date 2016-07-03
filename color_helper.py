@@ -17,6 +17,8 @@ import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 # import traceback
 
+DISTORTION_FIX = int(sublime.version()) < 3118
+
 # Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
 PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
@@ -1041,11 +1043,18 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = settings.get('graphic_size', "medium")
-        sizes = {
-            "small": (22, 24, 24 * 2, 24 * 6),
-            "medium": (26, 28, 28 * 2, 28 * 6),
-            "large": (30, 32, 32 * 2, 32 * 6)
-        }
+        if DISTORTION_FIX:
+            sizes = {
+                "small": (22, 24, 24 * 2, 24 * 6),
+                "medium": (26, 28, 28 * 2, 28 * 6),
+                "large": (30, 32, 32 * 2, 32 * 6)
+            }
+        else:
+            sizes = {
+                "small": (24, 24, 24 * 2, 24 * 6),
+                "medium": (28, 28, 28 * 2, 28 * 6),
+                "large": (32, 32, 32 * 2, 32 * 6)
+            }
         self.color_h, self.color_w, self.preview_h, self.preview_w = sizes.get(
             self.graphic_size,
             sizes["medium"]
