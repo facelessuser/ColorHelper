@@ -6,7 +6,7 @@ from ColorHelper.lib import csscolors
 from ColorHelper.lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import mdpopups
-RELATIVE_FONT_SUPPORT = mdpopups.version() >= (1, 7, 0)
+RELATIVE_FONT_SUPPORT = mdpopups.version() >= (1, 7, 2)
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
@@ -80,7 +80,7 @@ if RELATIVE_FONT_SUPPORT:
     ADD_CSS = dedent(
         '''
         .color-helper.content { margin: 0; padding: 0.5em; }
-        .color-helper.small { font-size: {{'*.7'|relativesize('em')}}; }
+        .color-helper.small { font-size: {{'*.7em'|relativesize}}; }
         .color-helper.alpha { text-decoration: underline; }
         '''
     )
