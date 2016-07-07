@@ -1,4 +1,9 @@
-"""Calculate Insertion of color."""
+"""
+ColorHelper.
+
+Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
+License: MIT
+"""
 import sublime
 from ColorHelper.lib import csscolors
 import ColorHelper.color_helper_util as util

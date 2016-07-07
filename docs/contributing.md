@@ -68,11 +68,11 @@ There are a couple of dependencies that must be present before running the tests
     nosetests .
     ```
 
-3. Linting is performed on the entire project with `flake8`, `flake8_docstrings`, and `pep8-naming`.  These can be installed via:
+3. Linting is performed on the entire project with `flake8`, `flake8-docstrings`, and `pep8-naming`.  These can be installed via:
 
     ```
     pip install flake8
-    pip install flake8_docstrings
+    pip install flake8-docstrings
     pip install pep8-naming
     ```
 

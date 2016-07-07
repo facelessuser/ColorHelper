@@ -1,4 +1,9 @@
-"""Popup color picker."""
+"""
+ColorHelper.
+
+Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
+License: MIT
+"""
 import mdpopups
 from mdpopups import colorbox
 import sublime

@@ -1,7 +1,7 @@
 """
 ColorHelper.
 
-Copyright (c) 2015 Isaac Muse <isaacmuse@gmail.com>
+Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
 """
 import sublime

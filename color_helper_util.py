@@ -1,4 +1,9 @@
-"""ColorHelper utilities."""
+"""
+ColorHelper.
+
+Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
+License: MIT
+"""
 import sublime
 import re
 import decimal

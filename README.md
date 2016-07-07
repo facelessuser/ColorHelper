@@ -1,4 +1,5 @@
 [![Unix Build Status][travis-image]][travis-link]
+[![Package Control Downloads][pc-image]][pc-link]
 ![License][license-image]
 # ColorHelper
 ColorHelper offers tooltips with color previews of stylesheet colors, provides color translation, and allows the storing and accessing of favorite colors in color palettes.  Most features are optionally configurable. For the most part, these tooltips should show any time the cursor is in a CSS, SCSS, or SASS color.  It should also appear when in HTML style attributes.
@@ -22,7 +23,7 @@ http://facelessuser.github.io/ColorHelper/
 # License
 ColorHelper is released under the MIT license.
 
-Copyright (c) 2015 Isaac Muse <isaacmuse@gmail.com>
+Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -32,4 +33,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 [travis-image]: https://img.shields.io/travis/facelessuser/ColorHelper.svg
 [travis-link]: https://travis-ci.org/facelessuser/ColorHelper
+[pc-image]: https://img.shields.io/packagecontrol/dt/ColorHelper.svg
+[pc-link]: https://packagecontrol.io/packages/ColorHelper
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg
