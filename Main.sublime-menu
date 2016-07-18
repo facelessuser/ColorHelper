@@ -1,7 +1,5 @@
 [
     {
-        "caption": "Preferences",
-        "mnemonic": "n",
         "id": "preferences",
         "children":
         [
@@ -28,6 +26,11 @@
                                     "file": "${packages}/User/color_helper.sublime-settings"
                                 },
                                 "caption": "Settings – User"
+                            },
+                            { "caption": "-" },
+                            {
+                                "caption": "Support Info",
+                                "command": "color_helper_support_info"
                             },
                             { "caption": "-" }
                         ]
