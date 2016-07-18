@@ -85,7 +85,7 @@ if RELATIVE_FONT_SUPPORT:
     ADD_CSS = dedent(
         '''
         .color-helper.content { margin: 0; padding: 0.5em; }
-        .color-helper.small { font-size: {{'*.7em'|relativesize}}; }
+        .color-helper.small { font-size: {{'*.8px'|relativesize}}; }
         .color-helper.alpha { text-decoration: underline; }
         '''
     )
