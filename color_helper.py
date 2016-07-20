@@ -1152,11 +1152,6 @@ class ChPreview(object):
         )
         self.previous_region = sublime.Region(0, 0)
 
-    def add_phantoms(self, colors):
-
-        for color, pt in colors:
-            mdpopups.add_phantom(self.view, 'color_helper', sublime.Region(pt), color, 0, md=False)
-
     def do_search(self, view, clear=True):
         """Perform the search for the highlighted word."""
 
@@ -1184,7 +1179,6 @@ class ChPreview(object):
             return
 
         preview = set(self.view.settings().get('color_helper.preview', []))
-        current_regions = []
         self.previous_region = visible_region
 
         rules = util.get_rules(view)
@@ -1195,8 +1189,6 @@ class ChPreview(object):
                 for r in view.find_by_selector(scope):
                     source.append(view.substr(r))
 
-        window = view.window()
-        s = sublime.load_settings('color_helper.sublime-settings')
         if view is not None:
             rules = util.get_rules(view)
             scope = util.get_scope(view, rules, skip_sel_check=True)
@@ -1268,7 +1260,9 @@ class ChPreview(object):
                             colors.append((color, src.begin() + m.end(0)))
                             preview.add(pt)
 
-                    self.add_phantoms(colors)
+                    for color, pt in colors:
+                        mdpopups.add_phantom(self.view, 'color_helper', sublime.Region(pt), color, 0, md=False)
+
                     self.view.settings().set('color_helper.preview', list(preview))
                     self.previous_region = view.visible_region()
                     ch_preview_thread.ignore_all = False
