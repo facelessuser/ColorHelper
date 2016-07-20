@@ -1474,6 +1474,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 }
             )
             view.settings().set('color_helper.file_palette', [])
+            view.settings().add_on_change('color_helper.reload', lambda view=view: self.on_view_settings_change(view))
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -1515,6 +1516,16 @@ class ColorHelperListener(sublime_plugin.EventListener):
             view.settings().set('color_helper.file_palette', [])
             if show_current_palette:
                 start_file_index(view)
+
+    def on_view_settings_change(self, view):
+        """Post text command event to catch syntax setting."""
+
+        rules = view.settings().get('color_helper.scan', None)
+        if rules:
+            syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+            old_syntax = rules.get("current_syntax")
+            if old_syntax is None or old_syntax != syntax:
+                self.on_activated(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
