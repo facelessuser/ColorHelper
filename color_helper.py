@@ -120,6 +120,7 @@ DIVIDER = '''
 
 '''
 
+reload_flag = False
 ch_last_updated = None
 ch_settings = None
 
@@ -128,6 +129,9 @@ if 'ch_thread' not in globals():
 
 if 'ch_file_thread' not in globals():
     ch_file_thread = None
+
+if 'ch_preview_thread' not in globals():
+    ch_preview_thread = None
 
 
 ###########################
@@ -1135,19 +1139,233 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
 ###########################
 # Threading
 ###########################
+class ChPreview(object):
+    """HighlightWord."""
+
+    def __init__(self):
+        """Setup."""
+
+        self.webcolor_names = re.compile(
+            r'\b(%s)\b' % '|'.join(
+                [name for name in csscolors.name2hex_map.keys()]
+            )
+        )
+        self.previous_region = sublime.Region(0, 0)
+
+    def add_phantoms(self, colors):
+
+        for color, pt in colors:
+            mdpopups.add_phantom(self.view, 'color_helper', sublime.Region(pt), color, 0, md=False)
+
+    def do_search(self, view, clear=True):
+        """Perform the search for the highlighted word."""
+
+        global reload_flag
+        if view is None:
+            ch_preview_thread.ignore_all = False
+            return
+        self.view = view
+
+        if clear:
+            mdpopups.erase_phantoms(self.view, 'color_helper')
+            self.view.settings().set('color_helper.preview', [])
+            ch_preview_thread.ignore_all = False
+            return
+
+        if reload_flag:
+            reload_flag = False
+            force = True
+        else:
+            force = False
+
+        visible_region = view.visible_region()
+        if not force and self.previous_region == visible_region:
+            ch_preview_thread.ignore_all = False
+            return
+
+        preview = set(self.view.settings().get('color_helper.preview', []))
+        current_regions = []
+        self.previous_region = visible_region
+
+        rules = util.get_rules(view)
+        if rules:
+            scope = util.get_scope(view, rules, skip_sel_check=True)
+            if scope:
+                source = []
+                for r in view.find_by_selector(scope):
+                    source.append(view.substr(r))
+
+        window = view.window()
+        s = sublime.load_settings('color_helper.sublime-settings')
+        if view is not None:
+            rules = util.get_rules(view)
+            scope = util.get_scope(view, rules, skip_sel_check=True)
+            if scope:
+                source = []
+                for r in view.find_by_selector(scope):
+                    if r.end() < visible_region.begin():
+                        continue
+                    if r.begin() > visible_region.end():
+                        continue
+                    if r.begin() < visible_region.begin():
+                        start = max(visible_region.begin() - 20, 0)
+                        if r.end() > visible_region.end():
+                            end = min(visible_region.end() + 20, view.size())
+                        else:
+                            end = r.end()
+                        r = sublime.Region(start, end)
+                    elif r.end() > visible_region.end():
+                        r = sublime.Region(r.begin(), min(visible_region.end() + 20, view.size()))
+
+                    source.append(r)
+
+                if source:
+
+                    allowed_colors = rules.get('allowed_colors', [])
+                    use_hex_argb = rules.get('use_hex_argb', False)
+                    self.allowed_colors = set(allowed_colors) if not isinstance(allowed_colors, set) else allowed_colors
+
+                    colors = []
+                    for src in source:
+                        text = view.substr(src)
+                        for m in util.COLOR_RE.finditer(text):
+                            if (src.begin() + m.end(0)) in preview:
+                                continue
+                            elif m.group('hex_compressed') and not self.color_okay('hex_compressed'):
+                                continue
+                            elif m.group('hexa_compressed') and not self.color_okay('hexa_compressed'):
+                                continue
+                            elif m.group('hex') and not self.color_okay('hex'):
+                                continue
+                            elif m.group('hexa') and not self.color_okay('hexa'):
+                                continue
+                            elif m.group('rgb') and not self.color_okay('rgb'):
+                                continue
+                            elif m.group('rgba') and not self.color_okay('rgba'):
+                                continue
+                            elif m.group('gray') and not self.color_okay('gray'):
+                                continue
+                            elif m.group('graya') and not self.color_okay('graya'):
+                                continue
+                            elif m.group('hsl') and not self.color_okay('hsl'):
+                                continue
+                            elif m.group('hsla') and not self.color_okay('hsla'):
+                                continue
+                            elif m.group('hwb') and not self.color_okay('hwb'):
+                                continue
+                            elif m.group('hwba') and not self.color_okay('hwba'):
+                                continue
+                            elif m.group('webcolors') and not self.color_okay('webcolors'):
+                                continue
+                            color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
+                            color += alpha if alpha is not None else 'ff'
+                            no_alpha_color = color[:-2] if len(color) > 7 else color
+                            color = mdpopups.color_box(
+                                [no_alpha_color, color], '#cccccc', '#333333',
+                                height=16, width=16, border_size=2
+                            )
+                            pt = src.begin() + m.end(0)
+                            colors.append((color, src.begin() + m.end(0)))
+                            preview.add(pt)
+
+                    self.add_phantoms(colors)
+                    self.view.settings().set('color_helper.preview', list(preview))
+                    self.previous_region = view.visible_region()
+                    ch_preview_thread.ignore_all = False
+                else:
+                    mdpopups.erase_phantoms(self.view, 'color_helper')
+                    self.view.settings().set('color_helper.preview', [])
+                    ch_preview_thread.ignore_all = False
+        else:
+            ch_preview_thread.ignore_all = False
+
+    def color_okay(self, color_type):
+        """Check if color is allowed."""
+
+        return color_type in self.allowed_colors
+
+
+class ChPreviewThread(threading.Thread):
+    """Load up defaults."""
+
+    def __init__(self):
+        """Setup the thread."""
+        self.reset()
+        threading.Thread.__init__(self)
+
+    def reset(self):
+        """Reset the thread variables."""
+        self.wait_time = 0.12
+        self.time = time()
+        self.modified = False
+        self.ignore_all = False
+        self.clear = False
+        self.abort = False
+
+    def payload(self, clear=False):
+        """Code to run."""
+
+        self.modified = False
+        # Ignore selection and edit events inside the routine
+        self.ignore_all = True
+        if ch_preview is not None:
+            ch_preview.do_search(sublime.active_window().active_view(), clear)
+            if clear:
+                self.clear = False
+        else:
+            self.ignore_all = False
+        self.time = time()
+
+    def kill(self):
+        """Kill thread."""
+
+        self.abort = True
+        while self.is_alive():
+            pass
+        self.reset()
+
+    def run(self):
+        """Thread loop."""
+
+        while not self.abort:
+            if not self.ignore_all and self.clear:
+                sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+            elif self.modified is True and time() - self.time > self.wait_time:
+                self.clear = True
+                sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+            elif not self.modified:
+                sublime.set_timeout_async(self.payload, 0)
+            sleep(0.5)
+
+
 class ColorHelperListener(sublime_plugin.EventListener):
     """Color Helper listener."""
+
+    def on_modified(self, view):
+        """Flag that we need to show a tooltip or that we need to add phantoms."""
+
+        if self.ignore_event(view):
+            return
+
+        if not ch_preview_thread.ignore_all:
+            now = time()
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = now
+        elif not ch_preview_thread.clear:
+            ch_preview_thread.clear = True
+
+        self.on_selection_modified(view)
 
     def on_selection_modified(self, view):
         """Flag that we need to show a tooltip."""
 
-        if ch_thread.ignore_all:
+        if self.ignore_event(view):
             return
-        now = time()
-        ch_thread.modified = True
-        ch_thread.time = now
 
-    on_modified = on_selection_modified
+        if not ch_thread.ignore_all:
+            now = time()
+            ch_thread.modified = True
+            ch_thread.time = now
 
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
@@ -1263,6 +1481,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_activated(self, view):
         """Run current file scan and/or project scan if not run before."""
 
+        if self.ignore_event(view):
+            if view.settings().get('color_helper.preview', []):
+                view.settings().erase('color_helper.preview')
+            return
+
         if self.should_update(view):
             self.set_file_scan_rules(view)
             s = sublime.load_settings('color_helper.sublime-settings')
@@ -1274,9 +1497,16 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
 
+        if self.ignore_event(view):
+            if view.settings().get('color_helper.preview', []):
+                view.settings().erase('color_helper.preview')
+            return
+
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
+            view.settings().erase('color_helper.preview')
+            mdpopups.erase_phantoms(view, 'color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
@@ -1288,6 +1518,16 @@ class ColorHelperListener(sublime_plugin.EventListener):
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
             start_file_index(view)
+
+    def ignore_event(self, view):
+        """Check if event should be ignored."""
+
+        window = sublime.active_window()
+        if window:
+            active_view = window.active_view()
+        else:
+            active_view = None
+        return view.settings().get('is_widget', False) or (active_view and active_view.id() != view.id())
 
 
 class ChFileIndexThread(threading.Thread):
@@ -1538,6 +1778,8 @@ class ChThread(threading.Thread):
 def settings_reload():
     """Handle settings reload event."""
     global ch_last_updated
+    global reload_flag
+    reload_flag = True
     ch_last_updated = time()
 
 
@@ -1546,8 +1788,10 @@ def init_plugin():
 
     global ch_settings
     global ch_thread
+    global ch_preview_thread
     global ch_file_thread
     global ch_last_updated
+    global ch_preview
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
@@ -1560,6 +1804,11 @@ def init_plugin():
     # Start event thread
     if ch_thread is not None:
         ch_thread.kill()
+    if ch_preview_thread is not None:
+        ch_preview_thread.kill()
+    ch_preview = ChPreview()
+    ch_preview_thread = ChPreviewThread()
+    ch_preview_thread.start()
     ch_thread = ChThread()
     ch_thread.start()
 
@@ -1568,6 +1817,10 @@ def plugin_loaded():
     """Setup plugin."""
 
     init_plugin()
+    for w in sublime.windows():
+        for v in w.views():
+            v.settings().erase('color_helper.preview')
+            mdpopups.erase_phantoms(v, 'color_helper')
 
 
 def plugin_unloaded():
@@ -1576,3 +1829,5 @@ def plugin_unloaded():
     ch_thread.kill()
     if ch_file_thread is not None:
         ch_file_thread.kill()
+    if ch_preview_thread is not None:
+        ch_preview_thread.kill()
