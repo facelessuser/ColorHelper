@@ -1152,6 +1152,13 @@ class ChPreview(object):
         )
         self.previous_region = sublime.Region(0, 0)
 
+    def on_navigate(self, href):
+        """Handle color box click."""
+
+        self.view.sel().clear()
+        self.view.sel().add(sublime.Region(int(href)))
+        self.view.run_command('color_helper', {"mode": "info"})
+
     def do_search(self, view, clear=True):
         """Perform the search for the highlighted word."""
 
@@ -1262,16 +1269,27 @@ class ChPreview(object):
                             color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
                             color += alpha if alpha is not None else 'ff'
                             no_alpha_color = color[:-2] if len(color) > 7 else color
-                            color = mdpopups.color_box(
-                                [no_alpha_color, color], '#cccccc', '#333333',
-                                height=box_height, width=box_height, border_size=2
+                            color = '<a href="%d">%s</a>' % (
+                                src.begin() + m.start(0),
+                                mdpopups.color_box(
+                                    [no_alpha_color, color], '#cccccc', '#333333',
+                                    height=box_height, width=box_height, border_size=2
+                                )
                             )
                             pt = src.begin() + m.end(0)
                             colors.append((color, src.begin() + m.end(0)))
                             preview.add(pt)
 
                     for color, pt in colors:
-                        mdpopups.add_phantom(self.view, 'color_helper', sublime.Region(pt), color, 0, md=False)
+                        mdpopups.add_phantom(
+                            self.view,
+                            'color_helper',
+                            sublime.Region(pt),
+                            color,
+                            0,
+                            md=False,
+                            on_navigate=self.on_navigate
+                        )
 
                     self.view.settings().set('color_helper.preview', list(preview))
                     self.previous_region = view.visible_region()
