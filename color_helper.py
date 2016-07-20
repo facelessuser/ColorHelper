@@ -1516,12 +1516,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def ignore_event(self, view):
         """Check if event should be ignored."""
 
-        window = sublime.active_window()
-        if window:
-            active_view = window.active_view()
-        else:
-            active_view = None
-        return view.settings().get('is_widget', False) or (active_view and active_view.id() != view.id())
+        return view.settings().get('is_widget', False)
 
 
 class ChFileIndexThread(threading.Thread):
