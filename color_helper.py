@@ -1173,6 +1173,17 @@ class ChPreview(object):
         else:
             force = False
 
+        padding = int(view.settings().get('line_padding_top', 0))
+        padding += int(view.settings().get('line_padding_bottom', 0))
+        old_box_height = int(view.settings().get('color_helper.box_height', 0))
+        box_height = int(view.line_height()) - padding - 6
+
+        if old_box_height != box_height:
+            mdpopups.erase_phantoms(self.view, 'color_helper')
+            self.view.settings().set('color_helper.preview', [])
+            self.view.settings().set('color_helper.box_height', box_height)
+            force = True
+
         visible_region = view.visible_region()
         if not force and self.previous_region == visible_region:
             ch_preview_thread.ignore_all = False
@@ -1216,7 +1227,6 @@ class ChPreview(object):
                     allowed_colors = rules.get('allowed_colors', [])
                     use_hex_argb = rules.get('use_hex_argb', False)
                     self.allowed_colors = set(allowed_colors) if not isinstance(allowed_colors, set) else allowed_colors
-
                     colors = []
                     for src in source:
                         text = view.substr(src)
@@ -1254,7 +1264,7 @@ class ChPreview(object):
                             no_alpha_color = color[:-2] if len(color) > 7 else color
                             color = mdpopups.color_box(
                                 [no_alpha_color, color], '#cccccc', '#333333',
-                                height=16, width=16, border_size=2
+                                height=box_height, width=box_height, border_size=2
                             )
                             pt = src.begin() + m.end(0)
                             colors.append((color, src.begin() + m.end(0)))
