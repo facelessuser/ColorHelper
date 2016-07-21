@@ -90,7 +90,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             color_map_size = self.graphic_size
             color_map_style = "square"
             line_height = self.line_height
-            check_size = int((self.height - 4)/8)
+            check_size = int((self.height - 4) / 8)
             if check_size < 2:
                 check_size = 2
 
@@ -204,7 +204,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             decrement = True
             html_colors = []
             count = 0
-            check_size = int((self.height - 4)/8)
+            check_size = int((self.height - 4) / 8)
             if check_size < 2:
                 check_size = 2
             for row in color_map_data:
@@ -244,7 +244,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_current_color(self, text):
         """Get current color."""
 
-        check_size = int((self.height - 4)/8)
+        check_size = int((self.height - 4) / 8)
         if check_size < 2:
             check_size = 2
 
@@ -266,7 +266,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_css_color_names(self, text):
         """Get CSS color names."""
 
-        check_size = int((self.height - 4)/8)
+        check_size = int((self.height - 4) / 8)
         if check_size < 2:
             check_size = 2
 
@@ -297,7 +297,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             "luminance": (0, 100)
         }
 
-        check_size = int((self.height - 4)/8)
+        check_size = int((self.height - 4) / 8)
         if check_size < 2:
             check_size = 2
 
@@ -346,7 +346,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         rgba1 = util.RGBA(self.color)
         rgba2 = util.RGBA(self.color)
-        check_size = int((self.height - 4)/8)
+        check_size = int((self.height - 4) / 8)
         if check_size < 2:
             check_size = 2
         text.append('<span class="color-helper channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))

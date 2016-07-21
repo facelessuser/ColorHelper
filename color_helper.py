@@ -492,7 +492,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__add_palette_color__:%s:%s:%s' % (color, palette_type, label)
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
-        check_size = int((self.color_h - 4)/8)
+        check_size = int((self.color_h - 4) / 8)
         if check_size < 2:
             check_size = 2
         colors.append(
@@ -512,7 +512,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         colors = ['\n## %s\n' % label]
         count = 0
 
-        check_size = int((self.color_h - 4)/8)
+        check_size = int((self.color_h - 4) / 8)
         if check_size < 2:
             check_size = 2
 
@@ -610,7 +610,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(MARK_MENU % (color.lower() + alpha_hex))
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
-        check_size = int((self.preview_h - 4)/8)
+        check_size = int((self.preview_h - 4) / 8)
         if check_size < 2:
             check_size = 2
         info.append(
@@ -1192,7 +1192,7 @@ class ChPreview(object):
         padding += int(view.settings().get('line_padding_bottom', 0))
         old_box_height = int(view.settings().get('color_helper.box_height', 0))
         box_height = int(view.line_height()) - padding - 6
-        check_size = int((box_height - 4)/8)
+        check_size = int((box_height - 4) / 8)
         if check_size < 2:
             check_size = 2
 
