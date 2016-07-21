@@ -18,6 +18,7 @@ from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 # import traceback
 
 DISTORTION_FIX = int(sublime.version()) < 3118
+PHANTOM_SUPPORT = mdpopups.version() >= (1, 7, 3)
 
 # Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
@@ -1145,7 +1146,7 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
 # Threading
 ###########################
 class ChPreview(object):
-    """HighlightWord."""
+    """Color Helper preview with phantoms."""
 
     def __init__(self):
         """Setup."""
@@ -1164,7 +1165,7 @@ class ChPreview(object):
         view.sel().add(sublime.Region(int(href)))
         view.run_command('color_helper', {"mode": "info"})
 
-    def do_search(self, view):
+    def do_search(self, view, force=False):
         """Perform the search for the highlighted word."""
 
         # Since the plugin has been reloaded, force update.
@@ -1172,8 +1173,6 @@ class ChPreview(object):
         if reload_flag:
             reload_flag = False
             force = True
-        else:
-            force = False
 
         # Calculate size of preview boxes
         padding = int(view.settings().get('line_padding_top', 0))
@@ -1296,6 +1295,10 @@ class ChPreview(object):
                 on_navigate=lambda href, view=view: self.on_navigate(href, view)
             )
 
+    def reset_previous(self):
+        """Reset previous region."""
+        self.previous_region = sublime.Region(0)
+
     def erase_phantoms(self, view):
         """Erase phantoms."""
 
@@ -1325,24 +1328,26 @@ class ChPreviewThread(threading.Thread):
         self.clear = False
         self.abort = False
 
-    def payload(self, clear=False):
+    def payload(self, clear=False, force=False):
         """Code to run."""
 
         self.modified = False
         # Ignore selection and edit events inside the routine
         self.ignore_all = True
         if ch_preview is not None:
-            view = sublime.active_window().active_view()
-            if view:
-                if clear:
-                    ch_preview.erase_phantoms(view)
-                else:
-                    ch_preview.do_search(view)
-            self.ignore_all = False
+            try:
+                view = sublime.active_window().active_view()
+                if view:
+                    if clear:
+                        ch_preview.erase_phantoms(view)
+                        ch_preview.reset_previous()
+                    else:
+                        ch_preview.do_search(view, force)
+            except:
+                pass
             if clear:
                 self.clear = False
-        else:
-            self.ignore_all = False
+        self.ignore_all = False
         self.time = time()
 
     def kill(self):
@@ -1357,13 +1362,14 @@ class ChPreviewThread(threading.Thread):
         """Thread loop."""
 
         while not self.abort:
-            if not self.ignore_all and self.clear:
-                sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
-            elif self.modified is True and time() - self.time > self.wait_time:
-                self.clear = True
-                sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
-            elif not self.modified:
-                sublime.set_timeout_async(self.payload, 0)
+            if not self.ignore_all:
+                if self.clear:
+                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+                elif self.modified is True and time() - self.time > self.wait_time:
+                    self.clear = True
+                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+                elif not self.modified:
+                    sublime.set_timeout_async(self.payload, 0)
             sleep(0.5)
 
 
@@ -1376,12 +1382,13 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if self.ignore_event(view):
             return
 
-        if not ch_preview_thread.ignore_all:
-            now = time()
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = now
-        elif not ch_preview_thread.clear:
-            ch_preview_thread.clear = True
+        if PHANTOM_SUPPORT:
+            if not ch_preview_thread.ignore_all:
+                now = time()
+                ch_preview_thread.modified = True
+                ch_preview_thread.time = now
+            elif not ch_preview_thread.clear:
+                ch_preview_thread.clear = True
 
         self.on_selection_modified(view)
 
@@ -1838,9 +1845,10 @@ def init_plugin():
         ch_thread.kill()
     if ch_preview_thread is not None:
         ch_preview_thread.kill()
-    ch_preview = ChPreview()
-    ch_preview_thread = ChPreviewThread()
-    ch_preview_thread.start()
+    if PHANTOM_SUPPORT:
+        ch_preview = ChPreview()
+        ch_preview_thread = ChPreviewThread()
+        ch_preview_thread.start()
     ch_thread = ChThread()
     ch_thread.start()
 
@@ -1849,10 +1857,11 @@ def plugin_loaded():
     """Setup plugin."""
 
     init_plugin()
-    for w in sublime.windows():
-        for v in w.views():
-            v.settings().erase('color_helper.preview')
-            mdpopups.erase_phantoms(v, 'color_helper')
+    if PHANTOM_SUPPORT:
+        for w in sublime.windows():
+            for v in w.views():
+                v.settings().erase('color_helper.preview')
+                mdpopups.erase_phantoms(v, 'color_helper')
 
 
 def plugin_unloaded():
