@@ -434,6 +434,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = settings.get('graphic_size', "medium")
+        padding = int(self.view.settings().get('line_padding_top', 0))
+        padding += int(self.view.settings().get('line_padding_bottom', 0))
+        box_height = int(self.view.line_height()) - padding - 6
         if DISTORTION_FIX:
             sizes = {
                 "small": (10, 14, 16),
@@ -442,9 +445,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             }
         else:
             sizes = {
-                "small": (14, 14, 16),
-                "medium": (18, 18, 20),
-                "large": (22, 22, 24)
+                "small": (int(box_height * .85), int(box_height * .85), int(box_height * 1.0)),
+                "medium": (int(box_height), int(box_height), int(box_height * 1.25)),
+                "large": (int(box_height * 1.15), int(box_height * 1.15), int(box_height * 1.35))
             }
         self.height, self.width, self.height_big = sizes.get(
             self.graphic_size,
@@ -514,7 +517,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         mdpopups.show_popup(
             self.view, '<div class="color-helper content">%s</div>' % md,
             css=util.ADD_CSS,
-            max_width=600, max_height=(500 if hirespick or colornames else 725),
+            max_width=1024, max_height=(500 if hirespick or colornames else 725),
             on_navigate=self.handle_href
         )
 
