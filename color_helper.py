@@ -492,11 +492,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__add_palette_color__:%s:%s:%s' % (color, palette_type, label)
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
+        check_size = int((self.color_h - 4)/8)
+        if check_size < 2:
+            check_size = 2
         colors.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
                     color_list, '#cccccc', '#333333',
-                    height=self.color_h, width=self.color_w * 8, border_size=2
+                    height=self.color_h, width=self.color_w * 8, border_size=2, check_size=check_size
                 ),
                 label
             )
@@ -508,6 +511,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         colors = ['\n## %s\n' % label]
         count = 0
+
+        check_size = int((self.color_h - 4)/8)
+        if check_size < 2:
+            check_size = 2
+
         for f in color_list:
             parts = f.split('@')
             if len(parts) > 1:
@@ -527,7 +535,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2
+                            height=self.color_h, width=self.color_w, border_size=2,
+                            check_size=check_size
                         ),
                         f, palette_type, label,
                     )
@@ -537,7 +546,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2
+                            height=self.color_h, width=self.color_w, border_size=2,
+                            check_size=check_size
                         ), f, palette_type, label
                     )
                 )
@@ -600,10 +610,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(MARK_MENU % (color.lower() + alpha_hex))
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
+        check_size = int((self.preview_h - 4)/8)
+        if check_size < 2:
+            check_size = 2
         info.append(
             color_box_wrapper % mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
-                height=self.preview_h, width=self.preview_w, border_size=2
+                height=self.preview_h, width=self.preview_w, border_size=2, check_size=check_size
             )
         )
 
@@ -1179,6 +1192,9 @@ class ChPreview(object):
         padding += int(view.settings().get('line_padding_bottom', 0))
         old_box_height = int(view.settings().get('color_helper.box_height', 0))
         box_height = int(view.line_height()) - padding - 6
+        check_size = int((box_height - 4)/8)
+        if check_size < 2:
+            check_size = 2
 
         # If desired preview boxes are different than current,
         # we need to reload the boxes.
@@ -1264,7 +1280,7 @@ class ChPreview(object):
                         src.begin() + m.start(0),
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=box_height, width=box_height, border_size=2
+                            height=box_height, width=box_height, border_size=2, check_size=check_size
                         )
                     )
                     pt = src.begin() + m.end(0)
