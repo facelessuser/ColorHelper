@@ -40,6 +40,7 @@ color_map_data = [
 color_map = None
 color_map_size = False
 color_map_style = None
+line_height = None
 
 LINK = '<a href="insert:%s" class="color-helper small">&gt;&gt;&gt;</a> '
 WEB_COLOR = '''%s<span class="constant numeric">%s</span><br>'''
@@ -78,14 +79,17 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map
         global color_map_size
         global color_map_style
+        global line_height
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
+            self.line_height != line_height or
             color_map_style != "square"
         ):
             color_map_size = self.graphic_size
             color_map_style = "square"
+            line_height = self.line_height
 
             html_colors = []
 
@@ -181,13 +185,16 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map
         global color_map_size
         global color_map_style
+        global line_height
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
+            self.line_height != line_height or
             color_map_style != "hex"
         ):
             color_map_size = self.graphic_size
+            line_height = self.line_height
             color_map_style = "hex"
             padding = (self.width * 9)
             decrement = True
@@ -434,9 +441,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = settings.get('graphic_size', "medium")
+        self.line_height = int(self.view.line_height())
         padding = int(self.view.settings().get('line_padding_top', 0))
         padding += int(self.view.settings().get('line_padding_bottom', 0))
-        box_height = int(self.view.line_height()) - padding - 6
+        box_height = self.line_height - padding - 6
         if DISTORTION_FIX:
             sizes = {
                 "small": (10, 14, 16),
