@@ -472,7 +472,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             sizes["medium"]
         )
 
-        self.check_size = int((self.height - 4)/8)
+        self.check_size = int((self.height - 4) / 8)
         if self.check_size < 2:
             self.check_size = 2
 

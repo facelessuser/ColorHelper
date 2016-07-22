@@ -1074,11 +1074,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             sizes["medium"]
         )
 
-        self.check_size = int((self.color_h - 4)/8)
+        self.check_size = int((self.color_h - 4) / 8)
         if self.check_size < 2:
             self.check_size = 2
 
-        self.preview_check_size = int((self.preview_h - 4)/8)
+        self.preview_check_size = int((self.preview_h - 4) / 8)
         if self.preview_check_size < 2:
             self.preview_check_size = 2
 
