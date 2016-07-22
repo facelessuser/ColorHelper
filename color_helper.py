@@ -124,6 +124,7 @@ DIVIDER = '''
 reload_flag = False
 ch_last_updated = None
 ch_settings = None
+unloading = False
 
 if 'ch_thread' not in globals():
     ch_thread = None
@@ -1163,11 +1164,6 @@ class ChPreview(object):
     def __init__(self):
         """Setup."""
 
-        self.webcolor_names = re.compile(
-            r'\b(%s)\b' % '|'.join(
-                [name for name in csscolors.name2hex_map.keys()]
-            )
-        )
         self.previous_region = sublime.Region(0, 0)
 
     def on_navigate(self, href, view):
@@ -1503,7 +1499,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 }
             )
             view.settings().set('color_helper.file_palette', [])
-            view.settings().add_on_change('color_helper.reload', lambda view=view: self.on_view_settings_change(view))
+            if not unloading:
+                view.settings().add_on_change('color_helper.reload', lambda view=view: self.on_view_settings_change(view))
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -1549,12 +1546,13 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_view_settings_change(self, view):
         """Post text command event to catch syntax setting."""
 
-        rules = view.settings().get('color_helper.scan', None)
-        if rules:
-            syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
-            old_syntax = rules.get("current_syntax")
-            if old_syntax is None or old_syntax != syntax:
-                self.on_activated(view)
+        if not unloading:
+            rules = view.settings().get('color_helper.scan', None)
+            if rules:
+                syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+                old_syntax = rules.get("current_syntax")
+                if old_syntax is None or old_syntax != syntax:
+                    self.on_activated(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
@@ -1576,6 +1574,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_clone(self, view):
         """Run current file scan on clone."""
 
+        if self.ignore_event(view):
+            return
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
@@ -1584,7 +1584,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def ignore_event(self, view):
         """Check if event should be ignored."""
 
-        return view.settings().get('is_widget', False)
+        return view.settings().get('is_widget', False) or ch_thread is None
 
 
 class ChFileIndexThread(threading.Thread):
@@ -1837,15 +1837,27 @@ def settings_reload():
     ch_last_updated = time()
 
 
+def setup_previews():
+    """Setup previews."""
+
+    global ch_preview_thread
+    global ch_preview
+
+    if PHANTOM_SUPPORT:
+        if ch_preview_thread is not None:
+            ch_preview_thread.kill()
+        ch_preview = ChPreview()
+        ch_preview_thread = ChPreviewThread()
+        ch_preview_thread.start()
+
+
 def init_plugin():
     """Setup plugin variables and objects."""
 
     global ch_settings
     global ch_thread
-    global ch_preview_thread
     global ch_file_thread
     global ch_last_updated
-    global ch_preview
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
@@ -1858,14 +1870,9 @@ def init_plugin():
     # Start event thread
     if ch_thread is not None:
         ch_thread.kill()
-    if ch_preview_thread is not None:
-        ch_preview_thread.kill()
-    if PHANTOM_SUPPORT:
-        ch_preview = ChPreview()
-        ch_preview_thread = ChPreviewThread()
-        ch_preview_thread.start()
     ch_thread = ChThread()
     ch_thread.start()
+    setup_previews()
 
 
 def plugin_loaded():
@@ -1875,6 +1882,7 @@ def plugin_loaded():
     if PHANTOM_SUPPORT:
         for w in sublime.windows():
             for v in w.views():
+                v.settings().clear_on_change('color_helper.reload')
                 v.settings().erase('color_helper.preview')
                 mdpopups.erase_phantoms(v, 'color_helper')
 
@@ -1882,8 +1890,21 @@ def plugin_loaded():
 def plugin_unloaded():
     """Kill threads."""
 
-    ch_thread.kill()
+    global unloading
+    unloading = True
+
+    if ch_thread is not None:
+        ch_thread.kill()
     if ch_file_thread is not None:
         ch_file_thread.kill()
     if ch_preview_thread is not None:
         ch_preview_thread.kill()
+
+    # Clear view events
+    ch_settings.clear_on_change('reload')
+    if PHANTOM_SUPPORT:
+        for w in sublime.windows():
+            for v in w.views():
+                v.settings().clear_on_change('color_helper.reload')
+
+    unloading = False
