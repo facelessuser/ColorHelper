@@ -204,6 +204,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             decrement = True
             html_colors = []
             count = 0
+
             for row in color_map_data:
                 html_colors.append('<span class="color-helper color-map-row">')
                 if padding:
