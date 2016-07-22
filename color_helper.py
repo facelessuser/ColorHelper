@@ -492,14 +492,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__add_palette_color__:%s:%s:%s' % (color, palette_type, label)
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
-        check_size = int((self.color_h - 4)/8)
-        if check_size < 2:
-            check_size = 2
+
         colors.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
                     color_list, '#cccccc', '#333333',
-                    height=self.color_h, width=self.color_w * 8, border_size=2, check_size=check_size
+                    height=self.color_h, width=self.color_w * 8, border_size=2, check_size=self.check_size
                 ),
                 label
             )
@@ -511,10 +509,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         colors = ['\n## %s\n' % label]
         count = 0
-
-        check_size = int((self.color_h - 4)/8)
-        if check_size < 2:
-            check_size = 2
 
         for f in color_list:
             parts = f.split('@')
@@ -536,7 +530,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
                             height=self.color_h, width=self.color_w, border_size=2,
-                            check_size=check_size
+                            check_size=self.check_size
                         ),
                         f, palette_type, label,
                     )
@@ -547,7 +541,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
                             height=self.color_h, width=self.color_w, border_size=2,
-                            check_size=check_size
+                            check_size=self.check_size
                         ), f, palette_type, label
                     )
                 )
@@ -610,13 +604,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 info.append(MARK_MENU % (color.lower() + alpha_hex))
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
-        check_size = int((self.preview_h - 4)/8)
-        if check_size < 2:
-            check_size = 2
         info.append(
             color_box_wrapper % mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
-                height=self.preview_h, width=self.preview_w, border_size=2, check_size=check_size
+                height=self.preview_h, width=self.preview_w, border_size=2, check_size=self.preview_check_size
             )
         )
 
@@ -1082,6 +1073,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.graphic_size,
             sizes["medium"]
         )
+
+        self.check_size = int((self.color_h - 4)/8)
+        if self.check_size < 2:
+            self.check_size = 2
+
+        self.preview_check_size = int((self.preview_h - 4)/8)
+        if self.preview_check_size < 2:
+            self.preview_check_size = 2
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
