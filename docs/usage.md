@@ -80,6 +80,11 @@ Enable/disable auto popups.
     "auto_popup": true,
 ```
 
+### inline_previews
+Enable/disable inline color previews. `inline_previews` generates an image previews after the identified color in your source file.  You can click the preview to bring up the ColorHelper panel.
+
+![inline_previews](images/inline_previews.png)
+
 ### upper_case_hex
 When inserting a color from the tooltip, this setting will determine if hex colors get uppercased or lowercased.
 
