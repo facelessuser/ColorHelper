@@ -21,6 +21,10 @@
     // (none|color_picker|palette_picker)
     "click_color_box_to_pick": "none",
 
+    // Experimental - Enables inline color previews found beside the identified color.
+    // Requires ST 3116+ and mdpopups 1.7.4
+    "inline_previews": false,
+
     // Enable color picker option.  Will use native color picker
     // unless "use_color_picker_package" is enabled and external
     // package is installed.

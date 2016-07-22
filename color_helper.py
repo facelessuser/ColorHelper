@@ -1499,8 +1499,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 }
             )
             view.settings().set('color_helper.file_palette', [])
-            if not unloading:
-                view.settings().add_on_change('color_helper.reload', lambda view=view: self.on_view_settings_change(view))
+            if not unloading and ch_preview_thread is not None:
+                view.settings().add_on_change(
+                    'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
+                )
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -1835,6 +1837,7 @@ def settings_reload():
     global reload_flag
     reload_flag = True
     ch_last_updated = time()
+    setup_previews()
 
 
 def setup_previews():
@@ -1842,17 +1845,27 @@ def setup_previews():
 
     global ch_preview_thread
     global ch_preview
+    global unloading
 
     if PHANTOM_SUPPORT:
+        unloading = True
         if ch_preview_thread is not None:
             ch_preview_thread.kill()
-        ch_preview = ChPreview()
-        ch_preview_thread = ChPreviewThread()
-        ch_preview_thread.start()
+        for w in sublime.windows():
+            for v in w.views():
+                v.settings().clear_on_change('color_helper.reload')
+                v.settings().erase('color_helper.preview')
+                mdpopups.erase_phantoms(v, 'color_helper')
+        unloading = False
+
+        if ch_settings.get('inline_previews', False):
+            ch_preview = ChPreview()
+            ch_preview_thread = ChPreviewThread()
+            ch_preview_thread.start()
 
 
-def init_plugin():
-    """Setup plugin variables and objects."""
+def plugin_loaded():
+    """Setup plugin."""
 
     global ch_settings
     global ch_thread
@@ -1873,18 +1886,6 @@ def init_plugin():
     ch_thread = ChThread()
     ch_thread.start()
     setup_previews()
-
-
-def plugin_loaded():
-    """Setup plugin."""
-
-    init_plugin()
-    if PHANTOM_SUPPORT:
-        for w in sublime.windows():
-            for v in w.views():
-                v.settings().clear_on_change('color_helper.reload')
-                v.settings().erase('color_helper.preview')
-                mdpopups.erase_phantoms(v, 'color_helper')
 
 
 def plugin_unloaded():
