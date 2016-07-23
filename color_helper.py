@@ -1199,7 +1199,7 @@ class ChPreview(object):
         padding += int(view.settings().get('line_padding_bottom', 0))
         old_box_height = int(view.settings().get('color_helper.box_height', 0))
         box_height = int(view.line_height()) - padding - 6
-        check_size = int((box_height - 4) / 8)
+        check_size = int((box_height - 4) / 4)
         if check_size < 2:
             check_size = 2
 
