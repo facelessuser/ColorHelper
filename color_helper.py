@@ -1198,10 +1198,11 @@ class ChPreview(object):
             force = True
 
         # Calculate size of preview boxes
+        size_offset = int(ch_settings.get('inline_preview_offset', 0))
         padding = int(view.settings().get('line_padding_top', 0))
         padding += int(view.settings().get('line_padding_bottom', 0))
         old_box_height = int(view.settings().get('color_helper.box_height', 0))
-        box_height = int(view.line_height()) - padding
+        box_height = int(view.line_height()) - padding + size_offset
         check_size = int((box_height - 4) / 4)
         if check_size < 2:
             check_size = 2
@@ -1370,7 +1371,7 @@ class ChPreviewThread(threading.Thread):
                         ch_preview.reset_previous()
                     else:
                         ch_preview.do_search(view, force)
-            except:
+            except Exception:
                 pass
             if clear:
                 self.clear = False
