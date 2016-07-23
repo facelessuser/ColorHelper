@@ -1233,7 +1233,6 @@ class ChPreview(object):
             # Nothing to search for
             self.erase_phantoms(view)
 
-
         if source:
             # See what colors are allowed
             self.allowed_colors = set(rules.get('allowed_colors', []))
