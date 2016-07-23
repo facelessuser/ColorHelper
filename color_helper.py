@@ -17,9 +17,12 @@ import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 # import traceback
 
+__pc_name__ = "ColorHelper"
+
+LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 7, 5)
+
 DISTORTION_FIX = int(sublime.version()) < 3118
 PHANTOM_SUPPORT = mdpopups.version() >= (1, 7, 3)
-
 
 PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
@@ -1069,9 +1072,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         box_height = int(self.view.line_height()) - padding - 6
         if DISTORTION_FIX:
             sizes = {
-                "small": (22, 24, 22 * 2),
-                "medium": (26, 28, 26 * 2),
-                "large": (30, 32, 30 * 2)
+                "small": (22, 24, 26),
+                "medium": (26, 28, 26),
+                "large": (30, 32, 26)
             }
         else:
             sizes = {
@@ -1198,7 +1201,7 @@ class ChPreview(object):
         padding = int(view.settings().get('line_padding_top', 0))
         padding += int(view.settings().get('line_padding_bottom', 0))
         old_box_height = int(view.settings().get('color_helper.box_height', 0))
-        box_height = int(view.line_height()) - padding - 6
+        box_height = int(view.line_height()) - padding
         check_size = int((box_height - 4) / 4)
         if check_size < 2:
             check_size = 2
@@ -1899,6 +1902,19 @@ def plugin_loaded():
     ch_thread = ChThread()
     ch_thread.start()
     setup_previews()
+
+    # Try and ensure key dependencies are at the latest known good version.
+    # This is only done because Package Control does not do this on package upgrade at the present.
+    try:
+        from package_control import events
+
+        if events.post_upgrade(__pc_name__):
+            if not LATEST_SUPPORTED_MDPOPUPS and ch_settings.get('upgrade_dependencies', True):
+                window = sublime.active_window()
+                if window:
+                    window.run_command('satisfy_dependencies')
+    except ImportError:
+        print('ColorHelper: Could not import Package Control')
 
 
 def plugin_unloaded():
