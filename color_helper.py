@@ -20,6 +20,12 @@ from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 DISTORTION_FIX = int(sublime.version()) < 3118
 PHANTOM_SUPPORT = mdpopups.version() >= (1, 7, 3)
 
+
+PREVIEW_SCALE_Y = 2
+PALETTE_SCALE_X = 8
+PALETTE_SCALE_Y = 2
+BORDER_SIZE = 2
+
 # Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
 PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
@@ -498,7 +504,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             '[%s](%s)' % (
                 mdpopups.color_box(
                     color_list, '#cccccc', '#333333',
-                    height=self.color_h, width=self.color_w * 8, border_size=2, check_size=self.check_size
+                    height=self.color_h, width=self.palette_w * PALETTE_SCALE_X,
+                    border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
                 ),
                 label
             )
@@ -511,6 +518,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         colors = ['\n## %s\n' % label]
         count = 0
 
+        check_size = self.check_size(self.color_h)
         for f in color_list:
             parts = f.split('@')
             if len(parts) > 1:
@@ -530,8 +538,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2,
-                            check_size=self.check_size
+                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            check_size=check_size
                         ),
                         f, palette_type, label,
                     )
@@ -541,8 +549,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2,
-                            check_size=self.check_size
+                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            check_size=check_size
                         ), f, palette_type, label
                     )
                 )
@@ -608,7 +616,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         info.append(
             color_box_wrapper % mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
-                height=self.preview_h, width=self.preview_w, border_size=2, check_size=self.preview_check_size
+                height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
+                border_size=BORDER_SIZE, check_size=self.check_size(self.color_h * PREVIEW_SCALE_Y)
             )
         )
 
@@ -1060,28 +1069,31 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         box_height = int(self.view.line_height()) - padding - 6
         if DISTORTION_FIX:
             sizes = {
-                "small": (22, 24, 24 * 2, 24 * 6),
-                "medium": (26, 28, 28 * 2, 28 * 6),
-                "large": (30, 32, 32 * 2, 32 * 6)
+                "small": (22, 24, 22 * 2),
+                "medium": (26, 28, 26 * 2),
+                "large": (30, 32, 30 * 2)
             }
         else:
             sizes = {
-                "small": (box_height, box_height, box_height * 2, box_height * 6),
-                "medium": (int(box_height * 1.5), int(box_height * 1.5), int(box_height * 3), int(box_height * 9)),
-                "large": (int(box_height * 2), int(box_height * 2), int(box_height * 4), int(box_height * 12))
+                "small": (box_height, box_height, box_height * 2),
+                "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),
+                "large": (int(box_height * 2), int(box_height * 2), box_height * 2)
             }
-        self.color_h, self.color_w, self.preview_h, self.preview_w = sizes.get(
+        self.color_h, self.color_w, self.palette_w = sizes.get(
             self.graphic_size,
             sizes["medium"]
         )
 
-        self.check_size = int((self.color_h - 4) / 8)
-        if self.check_size < 2:
-            self.check_size = 2
+    def check_size(self, height):
+        """Create checkered size based on height."""
 
-        self.preview_check_size = int((self.preview_h - 4) / 8)
-        if self.preview_check_size < 2:
-            self.preview_check_size = 2
+        if DISTORTION_FIX:
+            check_size = 2
+        else:
+            check_size = int((height - (BORDER_SIZE * 2)) / 4)
+            if check_size < 2:
+                check_size = 2
+        return  check_size
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
@@ -1278,7 +1290,7 @@ class ChPreview(object):
                         src.begin() + m.start(0),
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=box_height, width=box_height, border_size=2, check_size=check_size
+                            height=box_height, width=box_height, border_size=BORDER_SIZE, check_size=check_size
                         )
                     )
                     pt = src.begin() + m.end(0)
