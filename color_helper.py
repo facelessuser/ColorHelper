@@ -617,7 +617,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             color_box_wrapper % mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
                 height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
-                border_size=BORDER_SIZE, check_size=self.check_size(self.color_h * PREVIEW_SCALE_Y)
+                border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
             )
         )
 
