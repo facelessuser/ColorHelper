@@ -1093,7 +1093,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             check_size = int((height - (BORDER_SIZE * 2)) / 4)
             if check_size < 2:
                 check_size = 2
-        return  check_size
+        return check_size
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
