@@ -1229,6 +1229,10 @@ class ChPreview(object):
                 elif r.end() > visible_region.end():
                     r = sublime.Region(r.begin(), min(visible_region.end() + 20, view.size()))
                 source.append(r)
+        else:
+            # Nothing to search for
+            self.erase_phantoms(view)
+
 
         if source:
             # See what colors are allowed
@@ -1288,9 +1292,7 @@ class ChPreview(object):
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
-            self.previous_region = view.visible_region()
-        else:
-            self.erase_phantoms(view)
+            self.previous_region = sublime.Region(self.previous_region.begin(), view.visible_region().end())
 
     def add_phantoms(self, view, colors):
         """Add phantoms."""
