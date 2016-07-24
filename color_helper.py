@@ -1410,7 +1410,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if self.ignore_event(view):
             return
 
-        if PHANTOM_SUPPORT:
+        if PHANTOM_SUPPORT and ch_preview_thread is not None:
             if not ch_preview_thread.ignore_all:
                 now = time()
                 ch_preview_thread.modified = True
