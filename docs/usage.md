@@ -80,6 +80,21 @@ Enable/disable auto popups.
     "auto_popup": true,
 ```
 
+### inline_previews
+Enable/disable inline color previews. `inline_previews` generates an image previews after the identified color in your source file.  You can click the preview to bring up the ColorHelper panel.
+
+![inline_previews](images/inline_previews.png)
+
+### inline_preview_offset
+
+ColorHelper does it best to calculate the correct size for inline images, but with some font's or screen resolutions (or for a reason I don't quite understand) it will get it wrong and create an image larger (or maybe smaller) than your line height which may cause an undesirable look.  Set this value to either a positive or negative value which will be applied to the inline preview's image size.
+
+```js
+    // Adjust the size of inline image previews by the offset given.
+    // Please use either a positive or negative number.
+    "inline_preview_offset": 0,
+```
+
 ### upper_case_hex
 When inserting a color from the tooltip, this setting will determine if hex colors get uppercased or lowercased.
 

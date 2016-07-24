@@ -17,7 +17,17 @@ import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 # import traceback
 
+__pc_name__ = "ColorHelper"
+
+LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 7, 5)
+
 DISTORTION_FIX = int(sublime.version()) < 3118
+PHANTOM_SUPPORT = mdpopups.version() >= (1, 7, 3)
+
+PREVIEW_SCALE_Y = 2
+PALETTE_SCALE_X = 8
+PALETTE_SCALE_Y = 2
+BORDER_SIZE = 2
 
 # Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
@@ -120,14 +130,19 @@ DIVIDER = '''
 
 '''
 
+reload_flag = False
 ch_last_updated = None
 ch_settings = None
+unloading = False
 
 if 'ch_thread' not in globals():
     ch_thread = None
 
 if 'ch_file_thread' not in globals():
     ch_file_thread = None
+
+if 'ch_preview_thread' not in globals():
+    ch_preview_thread = None
 
 
 ###########################
@@ -487,11 +502,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             label = '__add_palette_color__:%s:%s:%s' % (color, palette_type, label)
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
+
         colors.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
                     color_list, '#cccccc', '#333333',
-                    height=self.color_h, width=self.color_w * 8, border_size=2
+                    height=self.color_h, width=self.palette_w * PALETTE_SCALE_X,
+                    border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
                 ),
                 label
             )
@@ -503,6 +520,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         colors = ['\n## %s\n' % label]
         count = 0
+
+        check_size = self.check_size(self.color_h)
         for f in color_list:
             parts = f.split('@')
             if len(parts) > 1:
@@ -522,7 +541,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2
+                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            check_size=check_size
                         ),
                         f, palette_type, label,
                     )
@@ -532,7 +552,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
                             [no_alpha_color, color], '#cccccc', '#333333',
-                            height=self.color_h, width=self.color_w, border_size=2
+                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            check_size=check_size
                         ), f, palette_type, label
                     )
                 )
@@ -598,7 +619,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         info.append(
             color_box_wrapper % mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
-                height=self.preview_h, width=self.preview_w, border_size=2
+                height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
+                border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
             )
         )
 
@@ -782,7 +804,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(txt))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
+                    css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -879,7 +901,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.show_popup(
                 self.view, '<div class="color-helper content">%s</div>' % md,
-                css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
+                css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -945,7 +967,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
+                    css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -998,6 +1020,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         continue
                     elif m.group('hwba') and 'hwba' not in allowed_colors:
                         continue
+                    elif m.group('webcolors') and 'webcolors' not in allowed_colors:
+                        continue
                     color, alpha, alpha_dec = util.translate_color(m, bool(use_hex_argb))
                     break
         return color, alpha, alpha_dec
@@ -1030,7 +1054,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
                     self.view, '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS, location=-1, max_width=600, max_height=350,
+                    css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
@@ -1043,22 +1067,36 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = settings.get('graphic_size', "medium")
+        padding = int(self.view.settings().get('line_padding_top', 0))
+        padding += int(self.view.settings().get('line_padding_bottom', 0))
+        box_height = int(self.view.line_height()) - padding - 6
         if DISTORTION_FIX:
             sizes = {
-                "small": (22, 24, 24 * 2, 24 * 6),
-                "medium": (26, 28, 28 * 2, 28 * 6),
-                "large": (30, 32, 32 * 2, 32 * 6)
+                "small": (22, 24, 26),
+                "medium": (26, 28, 26),
+                "large": (30, 32, 26)
             }
         else:
             sizes = {
-                "small": (24, 24, 24 * 2, 24 * 6),
-                "medium": (28, 28, 28 * 2, 28 * 6),
-                "large": (32, 32, 32 * 2, 32 * 6)
+                "small": (box_height, box_height, box_height * 2),
+                "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),
+                "large": (int(box_height * 2), int(box_height * 2), box_height * 2)
             }
-        self.color_h, self.color_w, self.preview_h, self.preview_w = sizes.get(
+        self.color_h, self.color_w, self.palette_w = sizes.get(
             self.graphic_size,
             sizes["medium"]
         )
+
+    def check_size(self, height):
+        """Create checkered size based on height."""
+
+        if DISTORTION_FIX:
+            check_size = 2
+        else:
+            check_size = int((height - (BORDER_SIZE * 2)) / 4)
+            if check_size < 2:
+                check_size = 2
+        return check_size
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
@@ -1135,19 +1173,263 @@ class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
 ###########################
 # Threading
 ###########################
+class ChPreview(object):
+    """Color Helper preview with phantoms."""
+
+    def __init__(self):
+        """Setup."""
+
+        self.previous_region = sublime.Region(0, 0)
+
+    def on_navigate(self, href, view):
+        """Handle color box click."""
+
+        view.sel().clear()
+        view.sel().add(sublime.Region(int(href)))
+        view.run_command('color_helper', {"mode": "info"})
+
+    def do_search(self, view, force=False):
+        """Perform the search for the highlighted word."""
+
+        # Since the plugin has been reloaded, force update.
+        global reload_flag
+        if reload_flag:
+            reload_flag = False
+            force = True
+
+        # Calculate size of preview boxes
+        size_offset = int(ch_settings.get('inline_preview_offset', 0))
+        padding = int(view.settings().get('line_padding_top', 0))
+        padding += int(view.settings().get('line_padding_bottom', 0))
+        old_box_height = int(view.settings().get('color_helper.box_height', 0))
+        box_height = int(view.line_height()) - padding + size_offset
+        check_size = int((box_height - 4) / 4)
+        if check_size < 2:
+            check_size = 2
+
+        # If desired preview boxes are different than current,
+        # we need to reload the boxes.
+        if old_box_height != box_height:
+            self.erase_phantoms(view)
+            view.settings().set('color_helper.box_height', box_height)
+            force = True
+
+        # If we don't need to force previews,
+        # quit if visible region is the same as last time
+        visible_region = view.visible_region()
+        if not force and self.previous_region == visible_region:
+            return
+        self.previous_region = visible_region
+
+        # Get the current preview positions so we don't insert doubles
+        preview = set(view.settings().get('color_helper.preview', []))
+
+        # Get the rules and use them to get the needed scopes.
+        # The scopes will be used to get the searchable regions.
+        rules = util.get_rules(view)
+        scope = util.get_scope(view, rules, skip_sel_check=True)
+        source = []
+        if scope:
+            for r in view.find_by_selector(scope):
+                if r.end() < visible_region.begin():
+                    continue
+                if r.begin() > visible_region.end():
+                    continue
+                if r.begin() < visible_region.begin():
+                    start = max(visible_region.begin() - 20, 0)
+                    if r.end() > visible_region.end():
+                        end = min(visible_region.end() + 20, view.size())
+                    else:
+                        end = r.end()
+                    r = sublime.Region(start, end)
+                elif r.end() > visible_region.end():
+                    r = sublime.Region(r.begin(), min(visible_region.end() + 20, view.size()))
+                source.append(r)
+        else:
+            # Nothing to search for
+            self.erase_phantoms(view)
+
+        if source:
+            # See what colors are allowed
+            self.allowed_colors = set(rules.get('allowed_colors', []))
+            use_hex_argb = rules.get('use_hex_argb', False)
+
+            # Find the colors
+            colors = []
+            for src in source:
+                text = view.substr(src)
+                for m in util.COLOR_RE.finditer(text):
+                    if (src.begin() + m.end(0)) in preview:
+                        continue
+                    elif m.group('hex_compressed') and not self.color_okay('hex_compressed'):
+                        continue
+                    elif m.group('hexa_compressed') and not self.color_okay('hexa_compressed'):
+                        continue
+                    elif m.group('hex') and not self.color_okay('hex'):
+                        continue
+                    elif m.group('hexa') and not self.color_okay('hexa'):
+                        continue
+                    elif m.group('rgb') and not self.color_okay('rgb'):
+                        continue
+                    elif m.group('rgba') and not self.color_okay('rgba'):
+                        continue
+                    elif m.group('gray') and not self.color_okay('gray'):
+                        continue
+                    elif m.group('graya') and not self.color_okay('graya'):
+                        continue
+                    elif m.group('hsl') and not self.color_okay('hsl'):
+                        continue
+                    elif m.group('hsla') and not self.color_okay('hsla'):
+                        continue
+                    elif m.group('hwb') and not self.color_okay('hwb'):
+                        continue
+                    elif m.group('hwba') and not self.color_okay('hwba'):
+                        continue
+                    elif m.group('webcolors') and not self.color_okay('webcolors'):
+                        continue
+                    color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
+                    color += alpha if alpha is not None else 'ff'
+                    no_alpha_color = color[:-2] if len(color) > 7 else color
+                    color = '<a href="%d">%s</a>' % (
+                        src.begin() + m.start(0),
+                        mdpopups.color_box(
+                            [no_alpha_color, color], '#cccccc', '#333333',
+                            height=box_height, width=box_height, border_size=BORDER_SIZE, check_size=check_size
+                        )
+                    )
+                    pt = src.begin() + m.end(0)
+                    colors.append((color, src.begin() + m.end(0)))
+                    preview.add(pt)
+
+            # Add the phantom previews and store their location to avoid duplications
+            self.add_phantoms(view, colors)
+            view.settings().set('color_helper.preview', list(preview))
+
+            # The phantoms may have altered the viewable region,
+            # so set previous region to the current viewable region
+            self.previous_region = sublime.Region(self.previous_region.begin(), view.visible_region().end())
+
+    def add_phantoms(self, view, colors):
+        """Add phantoms."""
+
+        for color, pt in colors:
+            mdpopups.add_phantom(
+                view,
+                'color_helper',
+                sublime.Region(pt),
+                color,
+                0,
+                md=False,
+                on_navigate=lambda href, view=view: self.on_navigate(href, view)
+            )
+
+    def reset_previous(self):
+        """Reset previous region."""
+        self.previous_region = sublime.Region(0)
+
+    def erase_phantoms(self, view):
+        """Erase phantoms."""
+
+        mdpopups.erase_phantoms(view, 'color_helper')
+        view.settings().set('color_helper.preview', [])
+
+    def color_okay(self, color_type):
+        """Check if color is allowed."""
+
+        return color_type in self.allowed_colors
+
+
+class ChPreviewThread(threading.Thread):
+    """Load up defaults."""
+
+    def __init__(self):
+        """Setup the thread."""
+        self.reset()
+        threading.Thread.__init__(self)
+
+    def reset(self):
+        """Reset the thread variables."""
+        self.wait_time = 0.12
+        self.time = time()
+        self.modified = False
+        self.ignore_all = False
+        self.clear = False
+        self.abort = False
+
+    def payload(self, clear=False, force=False):
+        """Code to run."""
+
+        self.modified = False
+        # Ignore selection and edit events inside the routine
+        self.ignore_all = True
+        if ch_preview is not None:
+            try:
+                view = sublime.active_window().active_view()
+                if view:
+                    if clear:
+                        ch_preview.erase_phantoms(view)
+                        ch_preview.reset_previous()
+                    else:
+                        ch_preview.do_search(view, force)
+            except Exception:
+                pass
+            if clear:
+                self.clear = False
+        self.ignore_all = False
+        self.time = time()
+
+    def kill(self):
+        """Kill thread."""
+
+        self.abort = True
+        while self.is_alive():
+            pass
+        self.reset()
+
+    def run(self):
+        """Thread loop."""
+
+        while not self.abort:
+            if not self.ignore_all:
+                if self.clear:
+                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+                elif self.modified is True and time() - self.time > self.wait_time:
+                    self.clear = True
+                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
+                elif not self.modified:
+                    sublime.set_timeout_async(self.payload, 0)
+            sleep(0.5)
+
+
 class ColorHelperListener(sublime_plugin.EventListener):
     """Color Helper listener."""
+
+    def on_modified(self, view):
+        """Flag that we need to show a tooltip or that we need to add phantoms."""
+
+        if self.ignore_event(view):
+            return
+
+        if PHANTOM_SUPPORT and ch_preview_thread is not None:
+            if not ch_preview_thread.ignore_all:
+                now = time()
+                ch_preview_thread.modified = True
+                ch_preview_thread.time = now
+            elif not ch_preview_thread.clear:
+                ch_preview_thread.clear = True
+
+        self.on_selection_modified(view)
 
     def on_selection_modified(self, view):
         """Flag that we need to show a tooltip."""
 
-        if ch_thread.ignore_all:
+        if self.ignore_event(view):
             return
-        now = time()
-        ch_thread.modified = True
-        ch_thread.time = now
 
-    on_modified = on_selection_modified
+        if not ch_thread.ignore_all:
+            now = time()
+            ch_thread.modified = True
+            ch_thread.time = now
 
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
@@ -1234,6 +1516,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 }
             )
             view.settings().set('color_helper.file_palette', [])
+            if not unloading and ch_preview_thread is not None:
+                view.settings().add_on_change(
+                    'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
+                )
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -1263,6 +1549,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_activated(self, view):
         """Run current file scan and/or project scan if not run before."""
 
+        if self.ignore_event(view):
+            if view.settings().get('color_helper.preview', []):
+                view.settings().erase('color_helper.preview')
+            return
+
         if self.should_update(view):
             self.set_file_scan_rules(view)
             s = sublime.load_settings('color_helper.sublime-settings')
@@ -1271,12 +1562,30 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if show_current_palette:
                 start_file_index(view)
 
+    def on_view_settings_change(self, view):
+        """Post text command event to catch syntax setting."""
+
+        if not unloading:
+            rules = view.settings().get('color_helper.scan', None)
+            if rules:
+                syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+                old_syntax = rules.get("current_syntax")
+                if old_syntax is None or old_syntax != syntax:
+                    self.on_activated(view)
+
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
+
+        if self.ignore_event(view):
+            if view.settings().get('color_helper.preview', []):
+                view.settings().erase('color_helper.preview')
+            return
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
+            view.settings().erase('color_helper.preview')
+            mdpopups.erase_phantoms(view, 'color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
@@ -1284,10 +1593,17 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_clone(self, view):
         """Run current file scan on clone."""
 
+        if self.ignore_event(view):
+            return
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if show_current_palette:
             start_file_index(view)
+
+    def ignore_event(self, view):
+        """Check if event should be ignored."""
+
+        return view.settings().get('is_widget', False) or ch_thread is None
 
 
 class ChFileIndexThread(threading.Thread):
@@ -1370,6 +1686,8 @@ class ChFileIndexThread(threading.Thread):
                 continue
             elif m.group('hwba') and not self.color_okay('hwba'):
                 continue
+            elif m.group('webcolors') and not self.color_okay('webcolors'):
+                continue
             color, alpha, alpha_dec = util.translate_color(m, self.use_hex_argb)
             color += alpha if alpha is not None else 'ff'
             if not color.lower().endswith('ff'):
@@ -1378,11 +1696,6 @@ class ChFileIndexThread(threading.Thread):
                 if dlevel is not None:
                     color += '@%d' % dlevel
             colors.add(color)
-        if self.color_okay('webcolors'):
-            for m in self.webcolor_names.finditer(self.source):
-                if self.abort:
-                    break
-                colors.add(csscolors.name2hex(m.group(0)))
         if not self.abort:
             sublime.set_timeout(
                 lambda view=self.view, colors=list(colors): self.update_index(view, colors), 0
@@ -1538,11 +1851,38 @@ class ChThread(threading.Thread):
 def settings_reload():
     """Handle settings reload event."""
     global ch_last_updated
+    global reload_flag
+    reload_flag = True
     ch_last_updated = time()
+    setup_previews()
 
 
-def init_plugin():
-    """Setup plugin variables and objects."""
+def setup_previews():
+    """Setup previews."""
+
+    global ch_preview_thread
+    global ch_preview
+    global unloading
+
+    if PHANTOM_SUPPORT:
+        unloading = True
+        if ch_preview_thread is not None:
+            ch_preview_thread.kill()
+        for w in sublime.windows():
+            for v in w.views():
+                v.settings().clear_on_change('color_helper.reload')
+                v.settings().erase('color_helper.preview')
+                mdpopups.erase_phantoms(v, 'color_helper')
+        unloading = False
+
+        if ch_settings.get('inline_previews', False):
+            ch_preview = ChPreview()
+            ch_preview_thread = ChPreviewThread()
+            ch_preview_thread.start()
+
+
+def plugin_loaded():
+    """Setup plugin."""
 
     global ch_settings
     global ch_thread
@@ -1562,17 +1902,40 @@ def init_plugin():
         ch_thread.kill()
     ch_thread = ChThread()
     ch_thread.start()
+    setup_previews()
 
+    # Try and ensure key dependencies are at the latest known good version.
+    # This is only done because Package Control does not do this on package upgrade at the present.
+    try:
+        from package_control import events
 
-def plugin_loaded():
-    """Setup plugin."""
-
-    init_plugin()
+        if events.post_upgrade(__pc_name__):
+            if not LATEST_SUPPORTED_MDPOPUPS and ch_settings.get('upgrade_dependencies', True):
+                window = sublime.active_window()
+                if window:
+                    window.run_command('satisfy_dependencies')
+    except ImportError:
+        print('ColorHelper: Could not import Package Control')
 
 
 def plugin_unloaded():
     """Kill threads."""
 
-    ch_thread.kill()
+    global unloading
+    unloading = True
+
+    if ch_thread is not None:
+        ch_thread.kill()
     if ch_file_thread is not None:
         ch_file_thread.kill()
+    if ch_preview_thread is not None:
+        ch_preview_thread.kill()
+
+    # Clear view events
+    ch_settings.clear_on_change('reload')
+    if PHANTOM_SUPPORT:
+        for w in sublime.windows():
+            for v in w.views():
+                v.settings().clear_on_change('color_helper.reload')
+
+    unloading = False
