@@ -3,7 +3,7 @@ import sublime
 import sublime_plugin
 import textwrap
 
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 __pc_name__ = 'ColorHelper'
 
 
