@@ -95,6 +95,8 @@ ColorHelper does it best to calculate the correct size for inline images, but wi
     "inline_preview_offset": 0,
 ```
 
+If you need to set this per OS or per host, you can via [multiconf](#multiconf).
+
 ### upper_case_hex
 When inserting a color from the tooltip, this setting will determine if hex colors get uppercased or lowercased.
 
@@ -134,6 +136,8 @@ Controls the size of generated graphics.  Graphics in the tooltips look best lar
     // (small | medium | large)
     "graphic_size": "medium",
 ```
+
+If you need to set this per OS or per host, you can via [multiconf](#multiconf).
 
 ### enable_color_picker
 Enables the ability to launch the color picker from the tooltip.  By default, the internal color picker will be used.  If you have [@weslly](https://github.com/weslly)'s [ColorPicker](https://packagecontrol.io/packages/ColorPicker) package installed, you can use [use_color_picker_package](#use_color_picker_package) to use it instead of the internal color picker.
@@ -354,3 +358,37 @@ When outputting hex formats compress the color if possible `#334455` --> `#345`.
         {
             "compress_hex_output": true
 ```
+
+## Multiconf
+Certain settings that lend them self better to be setting up per OS or per host will be configured to use multiconf.  Multiconf is a library that will parse a setting as a normal setting or a per os and/or per host setting (if configured properly).  For the settings that have this enabled, you can optionally use the format below to specify the setting per OS or per host.
+
+The optional multiconf format requires a dictionary with a special identifier
+`#multiconf#`  and a list of dictionaries identified by a qualifier of the form
+
+```js
+    "<qualifier name>:<qualifier value>[;<qualifier name>:<qualifier value>]..."
+```
+
+For example, the following setting
+
+```js
+    "user_home": "/home"
+```
+
+would result in `get("user_home")` returning the value "/home" but it could also
+be replaced with
+
+```js
+    "user_home":  {
+                    "#multiconf#": [
+                        {"os:windows": "C:\\Users"},
+                        {"os:linux;host:his_pc": "/home"},
+                        {"os:linux;host:her_pc": "/home/her/special"}
+                    ]
+    }
+```
+
+Now the same configuration file will provide different values depending on the
+machine it's on. On an MS Windows machine the value returned by `get` will be
+"C:\\Users", and on a Linux machine with the host name 'his_pc' the value will be
+"/home", etc.
