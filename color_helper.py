@@ -28,6 +28,7 @@ PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
 PALETTE_SCALE_Y = 2
 BORDER_SIZE = 2
+PREVIEW_BORDER_SIZE = 1
 
 # Palette commands
 PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
@@ -1205,13 +1206,16 @@ class ChPreview(object):
         old_box_height = int(settings.get('color_helper.box_height', 0))
         box_height = int(view.line_height()) - padding + size_offset
         check_size = int((box_height - 4) / 4)
+        current_color_scheme = settings.get('color_scheme')
+
         if check_size < 2:
             check_size = 2
 
         # If desired preview boxes are different than current,
         # we need to reload the boxes.
-        if old_box_height != box_height:
+        if old_box_height != box_height or current_color_scheme != settings.get('color_helper.color_scheme', ''):
             self.erase_phantoms(view)
+            settings.set('color_helper.color_scheme', current_color_scheme)
             settings.set('color_helper.box_height', box_height)
             settings.set('color_helper.preview_meta', {})
             force = True
@@ -1321,11 +1325,14 @@ class ChPreview(object):
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
                     pt = src.begin() + m.end(0)
+                    rgba = RGBA(mdpopups.scope2style(view, view.scope_name(pt))['background'])
+                    rgba.invert()
                     color = '<a href="%d">%s</a>' % (
                         src.begin() + m.start(0),
                         mdpopups.color_box(
-                            [no_alpha_color, color], '#cccccc', '#333333',
-                            height=box_height, width=box_height, border_size=BORDER_SIZE, check_size=check_size
+                            [no_alpha_color, color], rgba.get_rgb(),
+                            height=box_height, width=box_height,
+                            border_size=PREVIEW_BORDER_SIZE, check_size=check_size
                         )
                     )
                     colors.append((color, pt, hash(m.group(0)), len(m.group(0)), color_type))
@@ -1627,12 +1634,16 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Post text command event to catch syntax setting."""
 
         if not unloading:
-            rules = view.settings().get('color_helper.scan', None)
+            settings = view.settings()
+            rules = settings.get('color_helper.scan', None)
             if rules:
-                syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+                syntax = os.path.splitext(settings.get('syntax').replace('Packages/', '', 1))[0]
                 old_syntax = rules.get("current_syntax")
                 if old_syntax is None or old_syntax != syntax:
                     self.on_activated(view)
+                if settings.get('color_scheme') != settings.get('color_helper.color_scheme', ''):
+                    settings.erase('color_helper.preview_meta')
+                    mdpopups.erase_phantoms(view, 'color_helper')
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
