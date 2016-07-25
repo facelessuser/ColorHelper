@@ -23,7 +23,7 @@ __pc_name__ = "ColorHelper"
 LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 7, 5)
 
 DISTORTION_FIX = int(sublime.version()) < 3118
-PHANTOM_SUPPORT = mdpopups.version() >= (1, 7, 3)
+PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3)) and (int(sublime.version()) >= 3118)
 
 PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
@@ -1656,8 +1656,9 @@ class ColorHelperListener(sublime_plugin.EventListener):
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
-            view.settings().erase('color_helper.preview_meta')
-            mdpopups.erase_phantoms(view, 'color_helper')
+            if PHANTOM_SUPPORT:
+                view.settings().erase('color_helper.preview_meta')
+                mdpopups.erase_phantoms(view, 'color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
