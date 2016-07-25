@@ -15,7 +15,7 @@ import os
 import mdpopups
 import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
-# import traceback
+import traceback
 
 __pc_name__ = "ColorHelper"
 
@@ -1198,10 +1198,11 @@ class ChPreview(object):
             force = True
 
         # Calculate size of preview boxes
+        settings = view.settings()
         size_offset = int(ch_settings.get('inline_preview_offset', 0))
-        padding = int(view.settings().get('line_padding_top', 0))
-        padding += int(view.settings().get('line_padding_bottom', 0))
-        old_box_height = int(view.settings().get('color_helper.box_height', 0))
+        padding = int(settings.get('line_padding_top', 0))
+        padding += int(settings.get('line_padding_bottom', 0))
+        old_box_height = int(settings.get('color_helper.box_height', 0))
         box_height = int(view.line_height()) - padding + size_offset
         check_size = int((box_height - 4) / 4)
         if check_size < 2:
@@ -1211,7 +1212,8 @@ class ChPreview(object):
         # we need to reload the boxes.
         if old_box_height != box_height:
             self.erase_phantoms(view)
-            view.settings().set('color_helper.box_height', box_height)
+            settings.set('color_helper.box_height', box_height)
+            settings.set('color_helper.preview_meta', {})
             force = True
 
         # If we don't need to force previews,
@@ -1222,7 +1224,7 @@ class ChPreview(object):
         self.previous_region = visible_region
 
         # Get the current preview positions so we don't insert doubles
-        preview = set(view.settings().get('color_helper.preview', []))
+        preview = settings.get('color_helper.preview_meta', {})
 
         # Get the rules and use them to get the needed scopes.
         # The scopes will be used to get the searchable regions.
@@ -1259,37 +1261,66 @@ class ChPreview(object):
             for src in source:
                 text = view.substr(src)
                 for m in util.COLOR_RE.finditer(text):
-                    if (src.begin() + m.end(0)) in preview:
+                    if str(src.begin() + m.end(0)) in preview:
                         continue
-                    elif m.group('hex_compressed') and not self.color_okay('hex_compressed'):
-                        continue
-                    elif m.group('hexa_compressed') and not self.color_okay('hexa_compressed'):
-                        continue
-                    elif m.group('hex') and not self.color_okay('hex'):
-                        continue
-                    elif m.group('hexa') and not self.color_okay('hexa'):
-                        continue
-                    elif m.group('rgb') and not self.color_okay('rgb'):
-                        continue
-                    elif m.group('rgba') and not self.color_okay('rgba'):
-                        continue
-                    elif m.group('gray') and not self.color_okay('gray'):
-                        continue
-                    elif m.group('graya') and not self.color_okay('graya'):
-                        continue
-                    elif m.group('hsl') and not self.color_okay('hsl'):
-                        continue
-                    elif m.group('hsla') and not self.color_okay('hsla'):
-                        continue
-                    elif m.group('hwb') and not self.color_okay('hwb'):
-                        continue
-                    elif m.group('hwba') and not self.color_okay('hwba'):
-                        continue
-                    elif m.group('webcolors') and not self.color_okay('webcolors'):
+                    elif m.group('hex_compressed'):
+                        if not self.color_okay('hex_compressed'):
+                            continue
+                        color_type = 'hex_compressed'
+                    elif m.group('hexa_compressed'):
+                        if not self.color_okay('hexa_compressed'):
+                            continue
+                        color_type = 'hexa_compressed'
+                    elif m.group('hex'):
+                        if not self.color_okay('hex'):
+                            continue
+                        color_type = 'hex'
+                    elif m.group('hexa'):
+                        if not self.color_okay('hexa'):
+                            continue
+                        color_type = 'hexa'
+                    elif m.group('rgb'):
+                        if not self.color_okay('rgb'):
+                            continue
+                        color_type = 'rgb'
+                    elif m.group('rgba'):
+                        if not self.color_okay('rgba'):
+                            continue
+                        color_type = 'rgba'
+                    elif m.group('gray'):
+                        if not self.color_okay('gray'):
+                            continue
+                        color_type = 'gray'
+                    elif m.group('graya'):
+                        if not self.color_okay('graya'):
+                            continue
+                        color_type = 'graya'
+                    elif m.group('hsl'):
+                        if not self.color_okay('hsl'):
+                            continue
+                        color_type = 'hsl'
+                    elif m.group('hsla'):
+                        if not self.color_okay('hsla'):
+                            continue
+                        color_type = 'hsla'
+                    elif m.group('hwb'):
+                        if not self.color_okay('hwb'):
+                            continue
+                        color_type = 'hwb'
+                    elif m.group('hwba'):
+                        if not self.color_okay('hwba'):
+                            continue
+                        color_type = 'hwba'
+                    elif m.group('webcolors'):
+                        if not self.color_okay('webcolors'):
+                            continue
+                        color_type = 'webcolors'
+                    else:
                         continue
                     color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
+                    pt = src.begin() + m.end(0)
                     color = '<a href="%d">%s</a>' % (
                         src.begin() + m.start(0),
                         mdpopups.color_box(
@@ -1297,41 +1328,79 @@ class ChPreview(object):
                             height=box_height, width=box_height, border_size=BORDER_SIZE, check_size=check_size
                         )
                     )
-                    pt = src.begin() + m.end(0)
-                    colors.append((color, src.begin() + m.end(0)))
-                    preview.add(pt)
+                    colors.append((color, pt, hash(m.group(0)), len(m.group(0)), color_type))
 
-            # Add the phantom previews and store their location to avoid duplications
-            self.add_phantoms(view, colors)
-            view.settings().set('color_helper.preview', list(preview))
+            self.add_phantoms(view, colors, preview)
+            settings.set('color_helper.preview_meta', preview)
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
             self.previous_region = sublime.Region(self.previous_region.begin(), view.visible_region().end())
 
-    def add_phantoms(self, view, colors):
+    def add_phantoms(self, view, colors, preview):
         """Add phantoms."""
 
-        for color, pt in colors:
-            mdpopups.add_phantom(
+        for color in colors:
+            pid = mdpopups.add_phantom(
                 view,
                 'color_helper',
-                sublime.Region(pt),
-                color,
+                sublime.Region(color[1]),
+                color[0],
                 0,
                 md=False,
                 on_navigate=lambda href, view=view: self.on_navigate(href, view)
             )
+            preview[str(color[1])] = [color[2], color[3], color[4], pid]
 
     def reset_previous(self):
         """Reset previous region."""
         self.previous_region = sublime.Region(0)
 
-    def erase_phantoms(self, view):
+    def erase_phantoms(self, view, incremental=False):
         """Erase phantoms."""
 
-        mdpopups.erase_phantoms(view, 'color_helper')
-        view.settings().set('color_helper.preview', [])
+        if incremental:
+            # Edits can potentially move the position of all the previews.
+            # We need to grab the phantom by their id and then apply the color regex
+            # on the phantom range +/- some extra characters so we can catch word boundaries.
+            # Clear the phantom if any of the follwoing:
+            #    - Phantom can't be found
+            #    - regex doesn't match
+            #    - regex group doesn't match color type
+            #    - match doesn't start at the same point
+            #    - hash result is wrong
+            # Update preview meta data with new results
+            old_preview = view.settings().get('color_helper.preview_meta', {})
+            preview = {}
+            for k, v in old_preview.items():
+                phantoms = mdpopups.query_phantom(view, v[3])
+                pt = phantoms[0].begin() if phantoms else None
+                if pt is None:
+                    mdpopups.erase_phantom_by_id(view, v[3])
+                else:
+                    match_start = pt - v[1]
+                    start = match_start - 5
+                    if start < 0:
+                        start = 0
+                    end = pt + 5
+                    if end > view.size():
+                        end = view.size()
+                    text = view.substr(sublime.Region(start, end))
+                    m = util.COLOR_RE.search(text)
+                    if (
+                        not m or
+                        not m.group(v[2]) or
+                        start + m.start(0) != match_start or
+                        hash(m.group(0)) != v[0]
+                    ):
+                        mdpopups.erase_phantom_by_id(view, v[3])
+                    else:
+                        preview[str(pt)] = v
+            view.settings().set('color_helper.preview_meta', preview)
+        else:
+            # Obliterate!
+            mdpopups.erase_phantoms(view, 'color_helper')
+            view.settings().set('color_helper.preview_meta', {})
 
     def color_okay(self, color_type):
         """Check if color is allowed."""
@@ -1367,14 +1436,12 @@ class ChPreviewThread(threading.Thread):
                 view = sublime.active_window().active_view()
                 if view:
                     if clear:
-                        ch_preview.erase_phantoms(view)
+                        ch_preview.erase_phantoms(view, incremental=True)
                         ch_preview.reset_previous()
                     else:
                         ch_preview.do_search(view, force)
             except Exception:
-                pass
-            if clear:
-                self.clear = False
+                print('ColorHelper: \n' + str(traceback.format_exc()))
         self.ignore_all = False
         self.time = time()
 
@@ -1391,10 +1458,7 @@ class ChPreviewThread(threading.Thread):
 
         while not self.abort:
             if not self.ignore_all:
-                if self.clear:
-                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
-                elif self.modified is True and time() - self.time > self.wait_time:
-                    self.clear = True
+                if (self.modified) is True and time() - self.time > self.wait_time:
                     sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
                 elif not self.modified:
                     sublime.set_timeout_async(self.payload, 0)
@@ -1411,12 +1475,9 @@ class ColorHelperListener(sublime_plugin.EventListener):
             return
 
         if PHANTOM_SUPPORT and ch_preview_thread is not None:
-            if not ch_preview_thread.ignore_all:
-                now = time()
-                ch_preview_thread.modified = True
-                ch_preview_thread.time = now
-            elif not ch_preview_thread.clear:
-                ch_preview_thread.clear = True
+            now = time()
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = now
 
         self.on_selection_modified(view)
 
@@ -1536,7 +1597,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             file_name = view.file_name()
             ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
             old_ext = rules.get('current_ext')
-            if ext is None or ext == old_ext:
+            if ext is None or ext != old_ext:
                 force_update = True
             syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
             old_syntax = rules.get("current_syntax")
@@ -1550,8 +1611,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Run current file scan and/or project scan if not run before."""
 
         if self.ignore_event(view):
-            if view.settings().get('color_helper.preview', []):
-                view.settings().erase('color_helper.preview')
+            if view.settings().get('color_helper.preview_meta', {}):
+                view.settings().erase('color_helper.preview_meta')
             return
 
         if self.should_update(view):
@@ -1577,14 +1638,14 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Run current file scan and/or project scan on save."""
 
         if self.ignore_event(view):
-            if view.settings().get('color_helper.preview', []):
-                view.settings().erase('color_helper.preview')
+            if view.settings().get('color_helper.preview_meta', {}):
+                view.settings().erase('color_helper.preview_meta')
             return
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
-            view.settings().erase('color_helper.preview')
+            view.settings().erase('color_helper.preview_meta')
             mdpopups.erase_phantoms(view, 'color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
@@ -1871,7 +1932,7 @@ def setup_previews():
         for w in sublime.windows():
             for v in w.views():
                 v.settings().clear_on_change('color_helper.reload')
-                v.settings().erase('color_helper.preview')
+                v.settings().erase('color_helper.preview_meta')
                 mdpopups.erase_phantoms(v, 'color_helper')
         unloading = False
 
