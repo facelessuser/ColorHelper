@@ -15,6 +15,7 @@ import os
 import mdpopups
 import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
+from ColorHelper.multiconf import get as qualify_settings
 import traceback
 
 __pc_name__ = "ColorHelper"
@@ -1066,8 +1067,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def set_sizes(self):
         """Get sizes."""
 
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        self.graphic_size = settings.get('graphic_size', "medium")
+        self.graphic_size = qualify_settings(ch_settings, 'graphic_size', 'medium')
         padding = int(self.view.settings().get('line_padding_top', 0))
         padding += int(self.view.settings().get('line_padding_bottom', 0))
         box_height = int(self.view.line_height()) - padding - 6
@@ -1200,7 +1200,7 @@ class ChPreview(object):
 
         # Calculate size of preview boxes
         settings = view.settings()
-        size_offset = int(ch_settings.get('inline_preview_offset', 0))
+        size_offset = int(qualify_settings(ch_settings, 'inline_preview_offset', 0))
         padding = int(settings.get('line_padding_top', 0))
         padding += int(settings.get('line_padding_bottom', 0))
         old_box_height = int(settings.get('color_helper.box_height', 0))

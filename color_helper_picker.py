@@ -11,6 +11,7 @@ import sublime_plugin
 from ColorHelper.lib import csscolors
 import ColorHelper.color_helper_util as util
 import copy
+from ColorHelper.multiconf import get as qualify_settings
 
 DISTORTION_FIX = int(sublime.version()) < 3118
 
@@ -457,7 +458,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         """Get sizes."""
 
         settings = sublime.load_settings('color_helper.sublime-settings')
-        self.graphic_size = settings.get('graphic_size', "medium")
+        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
         self.line_height = int(self.view.line_height())
         padding = int(self.view.settings().get('line_padding_top', 0))
         padding += int(self.view.settings().get('line_padding_bottom', 0))
