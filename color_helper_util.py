@@ -21,10 +21,10 @@ COLOR_PARTS = {
 }
 
 COMPLETE = r'''
-    (?P<hex>\#(?P<hex_content>[\dA-Fa-f]{6}))\b |
-    (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
     (?P<hexa>\#(?P<hexa_content>[\dA-Fa-f]{8}))\b |
+    (?P<hex>\#(?P<hex_content>[\dA-Fa-f]{6}))\b |
     (?P<hexa_compressed>\#(?P<hexa_compressed_content>[\dA-Fa-f]{4}))\b |
+    (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
     \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s)\s*\)) |
     \b(?P<rgba>rgba\(\s*(?P<rgba_content>
         (?:%(float)s\s*,\s*){3}(?:%(percent)s|%(float)s) | (?:%(percent)s\s*,\s*){3}(?:%(percent)s|%(float)s)
