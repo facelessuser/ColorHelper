@@ -20,7 +20,7 @@ import traceback
 
 __pc_name__ = "ColorHelper"
 
-LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 7, 5)
+LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 8, 0)
 
 DISTORTION_FIX = int(sublime.version()) < 3118
 PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3)) and (int(sublime.version()) >= 3118)
@@ -1266,6 +1266,8 @@ class ChPreview(object):
                 text = view.substr(src)
                 for m in util.COLOR_RE.finditer(text):
                     if str(src.begin() + m.end(0)) in preview:
+                        continue
+                    elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
                         continue
                     elif m.group('hex_compressed'):
                         if not self.color_okay('hex_compressed'):
