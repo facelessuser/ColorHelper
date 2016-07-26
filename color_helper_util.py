@@ -12,6 +12,7 @@ from ColorHelper.lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import mdpopups
 RELATIVE_FONT_SUPPORT = mdpopups.version() >= (1, 7, 2)
+BETTER_RELATIVE_FONT_SUPPORT = mdpopups.version() >= (1, 8, 0)
 
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
@@ -81,7 +82,20 @@ COLOR_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLET
 COLOR_ALL_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
 INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
-if RELATIVE_FONT_SUPPORT:
+if BETTER_RELATIVE_FONT_SUPPORT:
+    ADD_CSS = dedent(
+        '''
+        {% if var.sublime_version >= 3119 %}
+        .color-helper.content { margin: 0; padding: 0.5rem; }
+        .color-helper.small { font-size: 0.7rem; }
+        {% else %}
+        .color-helper.content { margin: 0; padding: 0.5em; }
+        .color-helper.small { font-size: {{'*.8px'|relativesize}}; }
+        {% endif %}
+        .color-helper.alpha { text-decoration: underline; }
+        '''
+    )
+elif RELATIVE_FONT_SUPPORT:
     ADD_CSS = dedent(
         '''
         .color-helper.content { margin: 0; padding: 0.5em; }
