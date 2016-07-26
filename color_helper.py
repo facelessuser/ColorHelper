@@ -1325,7 +1325,10 @@ class ChPreview(object):
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
                     pt = src.begin() + m.end(0)
-                    rgba = RGBA(mdpopups.scope2style(view, view.scope_name(pt))['background'])
+                    scope = view.scope_name(pt)
+                    start_scope = view.scope_name(src.begin() + m.start(0))
+                    end_scope = view.scope_name(src.begin() + m.end(0) - 1)
+                    rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.invert()
                     color = '<a href="%d">%s</a>' % (
                         src.begin() + m.start(0),
@@ -1335,7 +1338,9 @@ class ChPreview(object):
                             border_size=PREVIEW_BORDER_SIZE, check_size=check_size
                         )
                     )
-                    colors.append((color, pt, hash(m.group(0)), len(m.group(0)), color_type))
+                    colors.append(
+                        (color, pt, hash(m.group(0)), len(m.group(0)), color_type, hash(start_scope + ':' + end_scope))
+                    )
 
             self.add_phantoms(view, colors, preview)
             settings.set('color_helper.preview_meta', preview)
@@ -1357,7 +1362,7 @@ class ChPreview(object):
                 md=False,
                 on_navigate=lambda href, view=view: self.on_navigate(href, view)
             )
-            preview[str(color[1])] = [color[2], color[3], color[4], pid]
+            preview[str(color[1])] = [color[2], color[3], color[4], color[5], pid]
 
     def reset_previous(self):
         """Reset previous region."""
@@ -1380,10 +1385,10 @@ class ChPreview(object):
             old_preview = view.settings().get('color_helper.preview_meta', {})
             preview = {}
             for k, v in old_preview.items():
-                phantoms = mdpopups.query_phantom(view, v[3])
+                phantoms = mdpopups.query_phantom(view, v[4])
                 pt = phantoms[0].begin() if phantoms else None
                 if pt is None:
-                    mdpopups.erase_phantom_by_id(view, v[3])
+                    mdpopups.erase_phantom_by_id(view, v[4])
                 else:
                     match_start = pt - v[1]
                     start = match_start - 5
@@ -1398,9 +1403,10 @@ class ChPreview(object):
                         not m or
                         not m.group(v[2]) or
                         start + m.start(0) != match_start or
-                        hash(m.group(0)) != v[0]
+                        hash(m.group(0)) != v[0] or
+                        v[3] != hash(view.scope_name(match_start) + ':' + view.scope_name(pt - 1))
                     ):
-                        mdpopups.erase_phantom_by_id(view, v[3])
+                        mdpopups.erase_phantom_by_id(view, v[4])
                     else:
                         preview[str(pt)] = v
             view.settings().set('color_helper.preview_meta', preview)
