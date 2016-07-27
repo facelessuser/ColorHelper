@@ -1187,7 +1187,9 @@ class ChPreview(object):
 
         view.sel().clear()
         view.sel().add(sublime.Region(int(href)))
+        ch_thread.ignore_all = True
         view.run_command('color_helper', {"mode": "info"})
+        ch_thread.ignore_all = False
 
     def do_search(self, view, force=False):
         """Perform the search for the highlighted word."""
@@ -1265,7 +1267,7 @@ class ChPreview(object):
             for src in source:
                 text = view.substr(src)
                 for m in util.COLOR_RE.finditer(text):
-                    if str(src.begin() + m.end(0)) in preview:
+                    if str(src.begin() + m.start(0)) in preview:
                         continue
                     elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
                         continue
@@ -1326,14 +1328,14 @@ class ChPreview(object):
                     color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
-                    pt = src.begin() + m.end(0)
+                    pt = src.begin() + m.start(0)
                     scope = view.scope_name(pt)
-                    start_scope = view.scope_name(src.begin() + m.start(0))
+                    start_scope = view.scope_name(pt)
                     end_scope = view.scope_name(src.begin() + m.end(0) - 1)
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.invert()
                     color = '<a href="%d">%s</a>' % (
-                        src.begin() + m.start(0),
+                        pt,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
@@ -1392,11 +1394,10 @@ class ChPreview(object):
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
-                    match_start = pt - v[1]
-                    start = match_start - 5
+                    start = pt - 5
                     if start < 0:
                         start = 0
-                    end = pt + 5
+                    end = pt + v[1] + 5
                     if end > view.size():
                         end = view.size()
                     text = view.substr(sublime.Region(start, end))
@@ -1404,9 +1405,9 @@ class ChPreview(object):
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != match_start or
+                        start + m.start(0) != pt or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(match_start) + ':' + view.scope_name(pt - 1))
+                        v[3] != hash(view.scope_name(pt) + ':' + view.scope_name(pt + v[1] - 1))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
