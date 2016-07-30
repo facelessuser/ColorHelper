@@ -5,7 +5,6 @@
         [
             {
                 "caption": "Package Settings",
-                "mnemonic": "P",
                 "id": "package-settings",
                 "children":
                 [
@@ -26,6 +25,11 @@
                                     "file": "${packages}/User/color_helper.sublime-settings"
                                 },
                                 "caption": "Settings – User"
+                            },
+                            { "caption": "-" },
+                            {
+                                "caption": "Changelog",
+                                "command": "color_helper_changes"
                             },
                             { "caption": "-" },
                             {
