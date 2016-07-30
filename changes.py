@@ -13,7 +13,7 @@ class ColorHelperChangesCommand(sublime_plugin.WindowCommand):
         view = self.window.new_file()
         view.set_name('ColorHelper - Changlog')
         view.settings().set('gutter', False)
-        mdpopups.add_phantom(view, 'chagelog', sublime.Region(1), text, sublime.LAYOUT_INLINE)
+        mdpopups.add_phantom(view, 'chagelog', sublime.Region(0), text, sublime.LAYOUT_INLINE)
         view.set_read_only(True)
         view.set_scratch(True)
 
