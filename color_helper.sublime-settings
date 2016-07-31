@@ -137,7 +137,7 @@
                 // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
                 "constant.other.color.rgb-value.stylus",
                 "constant.color.w3c-standard-color-name.stylus",
-                "meta.property-value.stylus",
+                "meta.property-value.stylus"
             ],
             "allowed_colors": ["css3"],
             "extensions": [],
