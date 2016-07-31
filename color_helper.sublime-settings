@@ -128,6 +128,21 @@
             "extensions": [".tmTheme"],
             "use_hex_argb": false,
             "compress_hex_output": false
+        },
+        {
+            "syntax_files": [],
+            "syntax_filter": "whitelist",
+            "base_scopes": ["source.stylus"],
+            "scan_scopes": [
+                // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
+                "constant.other.color.rgb-value.stylus",
+                "constant.color.w3c-standard-color-name.stylus",
+                "meta.property-value.stylus",
+            ],
+            "allowed_colors": ["css3"],
+            "extensions": [],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         }
     ],
 
