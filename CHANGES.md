@@ -1,3 +1,9 @@
+# ColorHelper 2.0.5
+> Released Aug 1, 2016
+
+- **FIX**: Fix changelog typo
+- **FIX**: Fix odd behavior when checking padding
+
 # ColorHelper 2.0.4
 > Released Jul 29, 2016
 
