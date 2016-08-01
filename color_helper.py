@@ -1068,9 +1068,14 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Get sizes."""
 
         self.graphic_size = qualify_settings(ch_settings, 'graphic_size', 'medium')
-        padding = int(self.view.settings().get('line_padding_top', 0))
-        padding += int(self.view.settings().get('line_padding_bottom', 0))
-        box_height = int(self.view.line_height()) - padding - 6
+        top_pad = self.view.settings().get('line_padding_top', 0)
+        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
+        # Sometimes we strangely get None
+        if top_pad is None:
+            top_pad = 0
+        if bottom_pad is None:
+            bottom_pad = 0
+        box_height = int(self.view.line_height()) - int(top_pad + bottom_pad) - 6
         if DISTORTION_FIX:
             sizes = {
                 "small": (22, 24, 26),
@@ -1203,10 +1208,15 @@ class ChPreview(object):
         # Calculate size of preview boxes
         settings = view.settings()
         size_offset = int(qualify_settings(ch_settings, 'inline_preview_offset', 0))
-        padding = int(settings.get('line_padding_top', 0))
-        padding += int(settings.get('line_padding_bottom', 0))
+        top_pad = view.settings().get('line_padding_top', 0)
+        bottom_pad = view.settings().get('line_padding_bottom', 0)
+        # Sometimes we strangely get None
+        if top_pad is None:
+            top_pad = 0
+        if bottom_pad is None:
+            bottom_pad = 0
         old_box_height = int(settings.get('color_helper.box_height', 0))
-        box_height = int(view.line_height()) - padding + size_offset
+        box_height = int(view.line_height()) - int(top_pad + bottom_pad) + size_offset
         check_size = int((box_height - 4) / 4)
         current_color_scheme = settings.get('color_scheme')
 

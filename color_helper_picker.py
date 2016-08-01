@@ -460,9 +460,14 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
         self.line_height = int(self.view.line_height())
-        padding = int(self.view.settings().get('line_padding_top', 0))
-        padding += int(self.view.settings().get('line_padding_bottom', 0))
-        self.box_height = self.line_height - padding - 6
+        top_pad = self.view.settings().get('line_padding_top', 0)
+        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
+        # Sometimes we strangely get None
+        if top_pad is None:
+            top_pad = 0
+        if bottom_pad is None:
+            bottom_pad = 0
+        self.box_height = self.line_height - int(top_pad + bottom_pad) - 6
         if DISTORTION_FIX:
             sizes = {
                 "small": (10, 14, 16),
