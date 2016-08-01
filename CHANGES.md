@@ -8,7 +8,7 @@
 > Released Jul 29, 2016
 
 - **NEW**: Changelog command available in `Package Settings->ColorHelper`.  
-Will render a full changlog in an HTML phantom in a new view.
+Will render a full changelog in an HTML phantom in a new view.
 - **FIX**: Move colorbox before color  I like this as now the colorbox resides  
 within the region of the color.  And they will all line up even if color  
 format is different following them. (Fixes #46)
