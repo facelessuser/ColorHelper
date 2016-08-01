@@ -11,9 +11,9 @@ class ColorHelperChangesCommand(sublime_plugin.WindowCommand):
         """Show the changelog in a new view."""
         text = sublime.load_resource('Packages/ColorHelper/CHANGES.md')
         view = self.window.new_file()
-        view.set_name('ColorHelper - Changlog')
+        view.set_name('ColorHelper - Changelog')
         view.settings().set('gutter', False)
-        mdpopups.add_phantom(view, 'chagelog', sublime.Region(0), text, sublime.LAYOUT_INLINE)
+        mdpopups.add_phantom(view, 'changelog', sublime.Region(0), text, sublime.LAYOUT_INLINE)
         view.set_read_only(True)
         view.set_scratch(True)
 
