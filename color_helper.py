@@ -461,7 +461,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             count += 1
         return ''.join(colors)
 
-    def format_info(self, color, alpha=None):
+    def format_info(self, color, template_vars, alpha=None):
         """Format the selected color info."""
         rgba = RGBA(color)
 
@@ -482,24 +482,25 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         except Exception:
             web_color = None
 
-        self.template_vars['color'] = color
-        self.template_vars['color_dlevel'] = rgba.get_rgb().lower() + alpha_hex
-        self.template_vars['web_color'] = web_color
-        self.template_vars['hex_color'] = rgba.get_rgb().lower()
-        self.template_vars['hex_alpha'] = 'ff' if not alpha else alpha_hex_display
-        self.template_vars['ahex_color'] = rgba.get_rgb().lower()[1:]
-        self.template_vars['alpha'] = alpha if alpha else '1'
-        self.template_vars['rgb_r'] = str(rgba.r)
-        self.template_vars['rgb_g'] = str(rgba.g)
-        self.template_vars['rgb_b'] = str(rgba.b)
-        h, l, s = rgba.tohls()
-        self.template_vars['hsl_h'] = util.fmt_float(h * 360.0)
-        self.template_vars['hsl_s'] = util.fmt_float(s * 100.0)
-        self.template_vars['hsl_l'] = util.fmt_float(l * 100.0)
-        h, w, b = rgba.tohwb()
-        self.template_vars['hwb_h'] = util.fmt_float(h * 360.0)
-        self.template_vars['hwb_s'] = util.fmt_float(w * 100.0)
-        self.template_vars['hwb_l'] = util.fmt_float(b * 100.0)
+        h1, l, s = rgba.tohls()
+        h2, w, b = rgba.tohwb()
+
+        template_vars['color'] = color
+        template_vars['color_dlevel'] = rgba.get_rgb().lower() + alpha_hex
+        template_vars['web_color'] = web_color
+        template_vars['hex_color'] = rgba.get_rgb().lower()
+        template_vars['hex_alpha'] = 'ff' if not alpha else alpha_hex_display
+        template_vars['ahex_color'] = rgba.get_rgb().lower()[1:]
+        template_vars['alpha'] = alpha if alpha else '1'
+        template_vars['rgb_r'] = str(rgba.r)
+        template_vars['rgb_g'] = str(rgba.g)
+        template_vars['rgb_b'] = str(rgba.b)
+        template_vars['hsl_h'] = util.fmt_float(h1 * 360.0)
+        template_vars['hsl_s'] = util.fmt_float(s * 100.0)
+        template_vars['hsl_l'] = util.fmt_float(l * 100.0)
+        template_vars['hwb_h'] = util.fmt_float(h2 * 360.0)
+        template_vars['hwb_s'] = util.fmt_float(w * 100.0)
+        template_vars['hwb_l'] = util.fmt_float(b * 100.0)
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
@@ -515,22 +516,22 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
         if click_color_box_to_pick == 'color_picker' and show_picker:
-            self.template_vars['click_color_picker'] = True
+            template_vars['click_color_picker'] = True
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
-            self.template_vars['click_palette_picker'] = True
+            template_vars['click_palette_picker'] = True
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
-            self.template_vars['show_palette_menu'] = True
+            template_vars['show_palette_menu'] = True
         if click_color_box_to_pick != 'color_picker' and show_picker:
-            self.template_vars['show_picker_menu'] = True
+            template_vars['show_picker_menu'] = True
         if show_global_palettes or show_project_palettes:
-            self.template_vars['show_global_palette_menu'] = True
+            template_vars['show_global_palette_menu'] = True
         if show_favorite_palette:
-            self.template_vars['show_favorite_menu'] = True
-            self.template_vars['is_marked'] = (rgba.get_rgb().lower() + alpha_hex) in util.get_favs()['colors']
+            template_vars['show_favorite_menu'] = True
+            template_vars['is_marked'] = (rgba.get_rgb().lower() + alpha_hex) in util.get_favs()['colors']
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
-        self.template_vars['color_preview'] = (
+        template_vars['color_preview'] = (
             mdpopups.color_box(
                 [no_alpha_color, color], '#cccccc', '#333333',
                 height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
@@ -539,20 +540,20 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         )
 
         if show_conversions:
-            self.template_vars['show_conversions'] = True
-            self.template_vars['show_web_color'] = web_color and 'webcolors' in allowed_colors
-            self.template_vars['show_hex_color'] = "hex" in allowed_colors
+            template_vars['show_conversions'] = True
+            template_vars['show_web_color'] = web_color and 'webcolors' in allowed_colors
+            template_vars['show_hex_color'] = "hex" in allowed_colors
             if "hexa" in allowed_colors:
-                self.template_vars['show_hexa_color'] = not use_hex_argb
-                self.template_vars['show_ahex_color'] = bool(use_hex_argb)
-            self.template_vars['show_rgb_color'] = "rgb" in allowed_colors
-            self.template_vars['show_rgba_color'] = "rgba" in allowed_colors
-            self.template_vars['show_gray_color'] = "gray" in allowed_colors and util.is_gray(rgba.get_rgb())
-            self.template_vars['show_graya_color'] = "graya" in allowed_colors and util.is_gray(rgba.get_rgb())
-            self.template_vars['show_hsl_color'] = "hsl" in allowed_colors
-            self.template_vars['show_hsla_color'] = "hsla" in allowed_colors
-            self.template_vars['show_hwb_color'] = "hwb" in allowed_colors
-            self.template_vars['show_hwba_color'] = "hwba" in allowed_colors
+                template_vars['show_hexa_color'] = not use_hex_argb
+                template_vars['show_ahex_color'] = bool(use_hex_argb)
+            template_vars['show_rgb_color'] = "rgb" in allowed_colors
+            template_vars['show_rgba_color'] = "rgba" in allowed_colors
+            template_vars['show_gray_color'] = "gray" in allowed_colors and util.is_gray(rgba.get_rgb())
+            template_vars['show_graya_color'] = "graya" in allowed_colors and util.is_gray(rgba.get_rgb())
+            template_vars['show_hsl_color'] = "hsl" in allowed_colors
+            template_vars['show_hsla_color'] = "hsla" in allowed_colors
+            template_vars['show_hwb_color'] = "hwb" in allowed_colors
+            template_vars['show_hwba_color'] = "hwba" in allowed_colors
 
     def show_insert(self, color, palette_type, palette_name, update=False):
         """Show insert panel."""
@@ -584,9 +585,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h1, l, s = rgba.tohls()
             h2, w, b = rgba.tohwb()
 
-            self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
-            self.template_vars = {
-                "legacy": self.legacy_class,
+            template_vars = {
+                "legacy": util.LEGACY_CLASS,
                 "palette_type": palette_type,
                 "palette_name": palette_name,
                 "color": rgba.get_rgb(),
@@ -610,18 +610,18 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 "secondary_alpha": secondary_alpha
             }
 
-            self.template_vars['show_web_color'] = web_color and "webcolors" in allowed_colors
-            self.template_vars['show_hex_color'] = "hex" in allowed_colors
-            self.template_vars['show_hexa_color'] = "hexa" in allowed_colors and not bool(use_hex_argb)
-            self.template_vars['show_ahex_color'] = "hexa" in allowed_colors and bool(use_hex_argb)
-            self.template_vars['show_rgb_color'] = "rgb" in allowed_colors
-            self.template_vars['show_rgba_color'] = "rgba" in allowed_colors
-            self.template_vars['show_gray_color'] = "gray" in allowed_colors and util.is_gray(rgba.get_rgb())
-            self.template_vars['show_graya_color'] = "graya" in allowed_colors and util.is_gray(rgba.get_rgb())
-            self.template_vars['show_hsl_color'] = "hsl" in allowed_colors
-            self.template_vars['show_hsla_color'] = "hsla" in allowed_colors
-            self.template_vars['show_hwb_color'] = "hwb" in allowed_colors
-            self.template_vars['show_hwba_color'] = "hwba" in allowed_colors
+            template_vars['show_web_color'] = web_color and "webcolors" in allowed_colors
+            template_vars['show_hex_color'] = "hex" in allowed_colors
+            template_vars['show_hexa_color'] = "hexa" in allowed_colors and not bool(use_hex_argb)
+            template_vars['show_ahex_color'] = "hexa" in allowed_colors and bool(use_hex_argb)
+            template_vars['show_rgb_color'] = "rgb" in allowed_colors
+            template_vars['show_rgba_color'] = "rgba" in allowed_colors
+            template_vars['show_gray_color'] = "gray" in allowed_colors and util.is_gray(rgba.get_rgb())
+            template_vars['show_graya_color'] = "graya" in allowed_colors and util.is_gray(rgba.get_rgb())
+            template_vars['show_hsl_color'] = "hsl" in allowed_colors
+            template_vars['show_hsla_color'] = "hsla" in allowed_colors
+            template_vars['show_hwb_color'] = "hwb" in allowed_colors
+            template_vars['show_hwba_color'] = "hwba" in allowed_colors
 
             if update:
                 mdpopups.update_popup(
@@ -629,7 +629,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
             else:
@@ -643,7 +643,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
 
@@ -661,10 +661,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         palettes = util.get_palettes()
         project_palettes = util.get_project_palettes(self.view.window())
 
-        self.template_vars = {}
-        self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
-        self.template_vars = {
-            "legacy": self.legacy_class,
+        template_vars = {
+            "legacy": util.LEGACY_CLASS,
             "color": (color if color else '#ffffffff'),
             "show_picker_menu": show_picker,
             "show_delete_menu": (
@@ -683,7 +681,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             favs = util.get_favs()
             if len(favs['colors']) or color:
                 show_div = True
-                self.template_vars['favorite_palette'] = (
+                template_vars['favorite_palette'] = (
                     self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
                 )
 
@@ -691,13 +689,13 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             current_colors = self.view.settings().get('color_helper.file_palette', [])
             if not delete and not color and len(current_colors):
                 show_div = True
-                self.template_vars['current_palette'] = (
+                template_vars['current_palette'] = (
                     self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color)
                 )
 
         if show_global_palettes and len(palettes):
             if show_div:
-                self.template_vars['show_separator'] = True
+                template_vars['show_separator'] = True
                 show_div = False
             global_palettes = []
             for palette in palettes:
@@ -710,12 +708,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         color=color
                     )
                 )
-            self.template_vars['global_palettes'] = global_palettes
+            template_vars['global_palettes'] = global_palettes
 
         if show_project_palettes and len(project_palettes):
             if show_div:
                 show_div = False
-                self.template_vars['show_project_separator'] = True
+                template_vars['show_project_separator'] = True
             project_palettes = []
             for palette in project_palettes:
                 name = palette.get("name")
@@ -726,7 +724,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                         color=color
                     )
                 )
-                self.template_vars['project_palettes'] = project_palettes
+                template_vars['project_palettes'] = project_palettes
 
         if update:
             mdpopups.update_popup(
@@ -734,7 +732,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS,
-                template_vars=self.template_vars,
+                template_vars=template_vars,
                 nl2br=False
             )
         else:
@@ -748,7 +746,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                template_vars=self.template_vars,
+                template_vars=template_vars,
                 nl2br=False
             )
 
@@ -776,9 +774,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     target = palette
 
         if target is not None:
-            self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
-            self.template_vars = {
-                "legacy": self.legacy_class,
+            template_vars = {
+                "legacy": util.LEGACY_CLASS,
                 "delete": delete,
                 'show_delete_menu': not delete and not current,
                 "back": '__colors__' if delete else '__palettes__',
@@ -793,7 +790,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
             else:
@@ -807,7 +804,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
 
@@ -868,10 +865,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Show the color under the cursor."""
 
         color, alpha, alpha_dec = self.get_cursor_color()
-        self.template_vars = {}
-        self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
-        self.template_vars = {
-            "legacy": self.legacy_class
+        template_vars = {
+            "legacy": util.LEGACY_CLASS
         }
 
         if color is not None:
@@ -881,7 +876,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             html = []
 
             html.append(
-                self.format_info(color.lower(), alpha_dec)
+                self.format_info(color.lower(), template_vars, alpha_dec)
             )
 
             if update:
@@ -890,7 +885,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     sublime.load_resource('Packages/ColorHelper/panels/info.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
             else:
@@ -907,7 +902,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=self.template_vars,
+                    template_vars=template_vars,
                     nl2br=False
                 )
         elif update:

@@ -95,6 +95,9 @@ ADD_CSS = dedent(
     '''
 )
 
+WRAPPER_CLASS = "color-helper content"
+LEGACY_CLASS = '' if BETTER_CSS_SUPPORT else 'color-helper'
+
 CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
 CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")
 ALL = CSS4

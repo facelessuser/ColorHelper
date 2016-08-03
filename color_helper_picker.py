@@ -187,7 +187,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             check_size = self.check_size(self.height)
 
             for row in color_map_data:
-                html_colors.append('<span class="%scolor-map-row">' % self.legacy_class)
+                html_colors.append('<span class="%scolor-map-row">' % util.LEGACY_CLASS)
                 if padding:
                     pad = mdpopups.color_box(
                         [SPACER], border_size=0,
@@ -226,7 +226,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = (
             '<span class="%scurrent-color">%s</span>' % (
-                self.legacy_class,
+                util.LEGACY_CLASS,
                 mdpopups.color_box(
                     [SPACER], border_size=0,
                     height=self.height, width=(self.width * (6 if self.hex_map else 5)),
@@ -323,7 +323,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         rgba1 = util.RGBA(self.color)
         rgba2 = util.RGBA(self.color)
         html = []
-        html.append('<span class="%schannel"><a href="hirespick:%s">%s:</a>' % (self.legacy_class, color_filter, label))
+        html.append('<span class="%schannel"><a href="hirespick:%s">%s:</a>' % (util.LEGACY_CLASS, color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
@@ -484,9 +484,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.use_hex_argb = use_hex_argb
         self.compress_hex = compress_hex
         self.allowed_colors = allowed_colors
-        self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
         self.template_vars = {
-            "legacy": self.legacy_class
+            "legacy": util.LEGACY_CLASS
         }
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
         rgba = util.RGBA(color)
