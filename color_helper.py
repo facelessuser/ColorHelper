@@ -620,8 +620,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
             self.template_vars['click_palette_picker'] = True
 
-        info = []
-
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             self.template_vars['show_palette_menu'] = True
         if click_color_box_to_pick != 'color_picker' and show_picker:
@@ -644,7 +642,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if show_conversions:
             self.template_vars['show_conversions'] = True
             self.template_vars['show_web_color'] = web_color and 'webcolors' in allowed_colors
-            self.template_vars['show_hex_color'] =  "hex" in allowed_colors
+            self.template_vars['show_hex_color'] = "hex" in allowed_colors
             if "hexa" in allowed_colors:
                 self.template_vars['show_hexa_color'] = not use_hex_argb
                 self.template_vars['show_ahex_color'] = bool(use_hex_argb)
