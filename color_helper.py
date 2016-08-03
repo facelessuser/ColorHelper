@@ -1020,33 +1020,32 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 self.format_info(color.lower(), alpha_dec)
             )
 
-            # Seems CSS is not respected on update
-            # if update:
-            #     mdpopups.update_popup(
-            #         self.view,
-            #         sublime.load_resource('Packages/ColorHelper/panels/info.html'),
-            #         wrapper_class="color-helper content",
-            #         css=util.ADD_CSS,
-            #         template_vars=self.template_vars,
-            #         nl2br=False
-            #     )
-            # else:
-            self.view.settings().set('color_helper.popup_active', True)
-            self.view.settings().set('color_helper.popup_auto', self.auto)
-            mdpopups.show_popup(
-                self.view,
-                sublime.load_resource('Packages/ColorHelper/panels/info.html'),
-                wrapper_class="color-helper content",
-                css=util.ADD_CSS,
-                location=-1,
-                max_width=1024,
-                max_height=512,
-                on_navigate=self.on_navigate,
-                on_hide=self.on_hide,
-                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                template_vars=self.template_vars,
-                nl2br=False
-            )
+            if update:
+                mdpopups.update_popup(
+                    self.view,
+                    sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    wrapper_class="color-helper content",
+                    css=util.ADD_CSS,
+                    template_vars=self.template_vars,
+                    nl2br=False
+                )
+            else:
+                self.view.settings().set('color_helper.popup_active', True)
+                self.view.settings().set('color_helper.popup_auto', self.auto)
+                mdpopups.show_popup(
+                    self.view,
+                    sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    wrapper_class="color-helper content",
+                    css=util.ADD_CSS,
+                    location=-1,
+                    max_width=1024,
+                    max_height=512,
+                    on_navigate=self.on_navigate,
+                    on_hide=self.on_hide,
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                    template_vars=self.template_vars,
+                    nl2br=False
+                )
         elif update:
             self.view.hide_popup()
 
