@@ -10,7 +10,6 @@ import decimal
 from ColorHelper.lib import csscolors
 from ColorHelper.lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
-import mdpopups
 
 BETTER_CSS_SUPPORT = int(sublime.version()) >= 3119
 
