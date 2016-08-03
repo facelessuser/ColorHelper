@@ -1036,9 +1036,8 @@ class ChPreview(object):
 
         view.sel().clear()
         view.sel().add(sublime.Region(int(href)))
-        ch_thread.ignore_all = True
+        view.settings().set('color_helper.no_auto', True)
         view.run_command('color_helper', {"mode": "info"})
-        ch_thread.ignore_all = False
 
     def do_search(self, view, force=False):
         """Perform the search for the highlighted word."""
@@ -1669,6 +1668,11 @@ class ChThread(threading.Thread):
         self.ignore_all = True
         window = sublime.active_window()
         view = window.active_view()
+        if view.settings().get('color_helper.no_auto', False):
+            view.settings().set('color_helper.no_auto', False)
+            self.ignore_all = False
+            self.time = time()
+            return
         s = sublime.load_settings('color_helper.sublime-settings')
         auto_popup = s.get('auto_popup', True)
         if view is not None and auto_popup:

@@ -626,6 +626,7 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
             value = "#ffffffff"
         view = self.window.active_view()
         if view is not None:
+            view.settings().set('color_helper.no_auto', True)
             view.run_command(
                 'color_helper_picker',
                 {
