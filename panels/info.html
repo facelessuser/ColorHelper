@@ -4,7 +4,7 @@
 {% if plugin.show_picker_menu -%}
 [picker](__color_picker__:{{plugin.color}}){: {{plugin.legacy}}.small} 
 {% endif -%}
-{% if plugin.global_palette_menu -%}
+{% if plugin.show_global_palette_menu -%}
 [add](__add_color__:{{plugin.color}}){: {{plugin.legacy}}.small} 
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}

@@ -31,9 +31,6 @@ PALETTE_SCALE_Y = 2
 BORDER_SIZE = 2
 PREVIEW_BORDER_SIZE = 1
 
-# Palette commands
-PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
-
 # Convert  commands
 WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
 '''
@@ -97,35 +94,12 @@ HWBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hwba){: .color-helper 
 <span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
 '''
 
-BACK_INFO_MENU = '[back](__info__){: .color-helper .small} '
 BACK_PALETTE_MENU = '[back](__palettes__){: .color-helper .small} '
 BACK_COLORS_MENU = '[back](__colors__:%s:%s){: .color-helper .small} '
-DELETE_PALETTE_MENU = '[delete](__delete__palettes__){: .color-helper .small} '
 DELETE_COLOR_MENU = '[delete](__delete_colors__:%s:%s){: .color-helper .small} '
 DELETE_COLOR = '''
 ## Delete Color
 Click the color to delete.
-'''
-DELETE_PALETTE = '''
-## Delete Palette
-Click the palette to delete.
-'''
-NEW_PALETTE = '''
-## New Palette
-Click the link or palette to add **%(color)s**{: .keyword}.
-
-[Create New Palette](__create_palette__:__global__:%(color)s)
-
-[Create New Project Palette](__create_palette__:__project__:%(color)s)
-
----
-
-'''
-
-DIVIDER = '''
-
----
-
 '''
 
 reload_flag = False
@@ -795,31 +769,32 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         show_current_palette = s.get('enable_current_file_palette', True)
         s = sublime.load_settings('color_helper.sublime-settings')
         show_picker = s.get('enable_color_picker', True) and self.no_info
+        palettes = util.get_palettes()
+        project_palettes = util.get_project_palettes(self.view.window())
 
-        html = []
-
-        if (not self.no_info and not delete) or color:
-            html.append(BACK_INFO_MENU)
-        elif delete:
-            html.append(BACK_PALETTE_MENU)
-
-        if show_picker:
-            html.append(PICK_MENU % (color if color else '#ffffffff'))
-
-        if not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette):
-            html.append(DELETE_PALETTE_MENU)
-
-        if delete:
-            html.append(DELETE_PALETTE)
-
-        if color:
-            html.append(NEW_PALETTE % {'color': color})
+        self.template_vars = {}
+        self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
+        self.template_vars = {
+            "legacy": self.legacy_class,
+            "color": (color if color else '#ffffffff'),
+            "show_picker_menu": show_picker,
+            "show_delete_menu": (
+                not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette)
+            ),
+            "back_target": "__info__" if (not self.no_info and not delete) or color else "__palettes__",
+            "show_delete_ui": delete,
+            "show_new_ui": bool(color),
+            "show_favorite_palette": show_favorite_palette,
+            "show_current_palette": show_current_palette,
+            "show_global_palettes": show_global_palettes and len(palettes),
+            "show_project_palettes": show_project_palettes and len(project_palettes)
+        }
 
         if show_favorite_palette:
             favs = util.get_favs()
             if len(favs['colors']) or color:
                 show_div = True
-                html.append(
+                self.template_vars['favorite_palette'] = (
                     self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
                 )
 
@@ -827,58 +802,65 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             current_colors = self.view.settings().get('color_helper.file_palette', [])
             if not delete and not color and len(current_colors):
                 show_div = True
-                html.append(
+                self.template_vars['current_palette'] = (
                     self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color)
                 )
 
-        if show_global_palettes:
-            palettes = util.get_palettes()
-            if len(palettes) and show_div:
+        if show_global_palettes and len(palettes):
+            if show_div:
+                self.template_vars['show_separator'] = True
                 show_div = False
-                html.append('\n\n---\n\n')
+            global_palettes = []
             for palette in palettes:
                 show_div = True
                 name = palette.get("name")
-                html.append(
+                global_palettes.append(
                     self.format_palettes(
                         palette.get('colors', []), name, '__global__', palette.get('caption'),
                         delete=delete,
                         color=color
                     )
                 )
+            self.template_vars['global_palettes'] = global_palettes
 
-        if show_project_palettes:
-            palettes = util.get_project_palettes(self.view.window())
-            if len(palettes) and show_div:
+        if show_project_palettes and len(project_palettes):
+            if show_div:
                 show_div = False
-                html.append(DIVIDER)
-            for palette in palettes:
+                self.template_vars['show_project_separator'] = True
+            project_palettes = []
+            for palette in project_palettes:
                 name = palette.get("name")
-                html.append(
+                project_palettes.append(
                     self.format_palettes(
                         palette.get('colors', []), name, '__project__', palette.get('caption'),
                         delete=delete,
                         color=color
                     )
                 )
+                self.template_vars['project_palettes'] = project_palettes
 
         if update:
-            md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.update_popup(
                 self.view,
-                '<div class="color-helper content">%s</div>' % md,
-                css=util.ADD_CSS
+                sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                wrapper_class="color-helper content",
+                css=util.ADD_CSS,
+                template_vars=self.template_vars,
+                nl2br=False
             )
         else:
             self.view.settings().set('color_helper.popup_active', True)
             self.view.settings().set('color_helper.popup_auto', self.auto)
-            md = mdpopups.md2html(self.view, ''.join(html))
             mdpopups.show_popup(
-                self.view, '<div class="color-helper content">%s</div>' % md,
+                self.view,
+                sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                wrapper_class="color-helper content",
                 css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
-                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                template_vars=self.template_vars,
+                nl2br=False
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
