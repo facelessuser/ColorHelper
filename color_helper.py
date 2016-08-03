@@ -31,13 +31,6 @@ PALETTE_SCALE_Y = 2
 BORDER_SIZE = 2
 PREVIEW_BORDER_SIZE = 1
 
-# Palette commands
-PALETTE_MENU = '[palettes](__palettes__){: .color-helper .small} '
-PICK_MENU = '[picker](__color_picker__:%s){: .color-helper .small} '
-ADD_COLOR_MENU = '[add](__add_color__:%s){: .color-helper .small} '
-UNMARK_MENU = '[unmark](__remove_fav__:%s){: .color-helper .small}'
-MARK_MENU = '[mark](__add_fav__:%s){: .color-helper .small}'
-
 # Convert  commands
 WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
 '''
