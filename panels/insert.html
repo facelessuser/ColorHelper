@@ -1,0 +1,104 @@
+[back](__colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: {{plugin.legacy}}.small}
+
+## Insert Color
+{%- if plugin.show_web_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:name){: {{plugin.legacy}}.small}
+ <span class="constant numeric">{{plugin.web_color}}</span>
+<br>
+{%- endif %}
+{%- if plugin.show_hex_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hex){: {{plugin.legacy}}.small}
+ <span class="support type">{{plugin.color}}</span>
+<br>
+{%- endif %}
+{%- if plugin.show_hexa_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}:hexa){: {{plugin.legacy}}.small}
+ <span class="support type">{{plugin.color}}</span>
+<span class="support type color-helper alpha">{{plugin.alpha_hex}}</span>
+<br>
+{%- endif %}
+{%- if plugin.show_ahex_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}:ahex){: {{plugin.legacy}}.small}
+ <span class="support type">#</span>
+<span class="support type color-helper alpha">{{plugin.alpha_hex}}</span>
+<span class="support type">{{plugin.color_ahex}}</span>
+<br>
+{%- endif %}
+{%- if plugin.show_rgb_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgb){: {{plugin.legacy}}.small}
+ <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_rgba_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:rgba){: {{plugin.legacy}}.small}
+ <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_gray_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:gray){: {{plugin.legacy}}.small}
+ <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_graya_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:graya){: {{plugin.legacy}}.small}
+ <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.alpha}}</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_hsl_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsl){: {{plugin.legacy}}.small}
+ <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_hsla_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:hsla){: {{plugin.legacy}}.small}
+ <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_hwb_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwb){: {{plugin.legacy}}.small}
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
+<br>
+{%- endif %}
+{%- if plugin.show_hwba_color %}
+[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:hwba){: {{plugin.legacy}}.small}
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
+{%- endif %}
+{%- if plugin.secondary_alpha %}
+
+---
+
+## Use Selected Alpha
+
+  {%- if plugin.show_hexa_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}:hexa){: {{plugin.legacy}}.small}
+ <span class="support type">{{plugin.color}}</span>
+<span class="support type color-helper alpha">{{plugin.current_alpha_hex}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.show_ahex_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}:ahex){: {{plugin.legacy}}.small}
+ <span class="support type">#</span>
+<span class="support type color-helper alpha">{{plugin.current_alpha_hex}}</span>
+<span class="support type">{{plugin.color_ahex}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.show_rgba_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:rgba){: {{plugin.legacy}}.small}
+ <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.current_alpha}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.show_graya_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:graya){: {{plugin.legacy}}.small}
+ <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.current_alpha}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.show_hsla_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:hsla){: {{plugin.legacy}}.small}
+ <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.current_alpha}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.show_hwba_color %}
+[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:hwba){: {{plugin.legacy}}.small}
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.current_alpha}}</span>)
+   {%- endif %}
+{%- endif %}

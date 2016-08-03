@@ -31,77 +31,6 @@ PALETTE_SCALE_Y = 2
 BORDER_SIZE = 2
 PREVIEW_BORDER_SIZE = 1
 
-# Convert  commands
-WEB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:name){: .color-helper .small} <span class="constant numeric">%s</span>
-'''
-HEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hex){: .color-helper .small} <span class="support type">%s</span>
-'''
-HEXA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hexa){: .color-helper .small} \
-<span class="support type">%s</span>\
-<span class="support type color-helper alpha">%s</span>
-'''
-AHEX_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:ahex){: .color-helper .small} \
-<span class="support type">%s</span>\
-<span class="support type color-helper alpha">%s</span>\
-<span class="support type">%s</span>
-'''
-RGB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgb){: .color-helper .small} \
-<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)
-'''
-RGBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:rgba){: .color-helper .small} \
-<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
-'''
-GRAY_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:gray){: .color-helper .small} \
-<span class="keyword">gray</span>(<span class="constant numeric">%d</span>)
-'''
-GRAYA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:graya){: .color-helper .small} \
-<span class="keyword">gray</span>(<span class="constant numeric">%d, %s</span>)
-'''
-HSL_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsl){: .color-helper .small} \
-<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
-'''
-HSLA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hsla){: .color-helper .small} \
-<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
-'''
-HWB_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hwb){: .color-helper .small} \
-<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)
-'''
-HWBA_COLOR = '''[&gt;&gt;&gt;](__convert__:%s:hwba){: .color-helper .small} \
-<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
-'''
-
-# These convert commands will use their current alpha.
-HEXA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hexa){: .color-helper .small} \
-<span class="support type">%s</span>\
-<span class="support type color-helper alpha">%s</span>
-'''
-# These convert commands will use their current alpha.
-AHEX_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:ahex){: .color-helper .small} \
-<span class="support type">%s</span>\
-<span class="support type color-helper alpha">%s</span>\
-<span class="support type">%s</span>
-'''
-RGBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:rgba){: .color-helper .small} \
-<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)
-'''
-GRAYA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:graya){: .color-helper .small} \
-<span class="keyword">gray</span>(<span class="constant numeric">%d, %s</span>)
-'''
-HSLA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hsla){: .color-helper .small} \
-<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
-'''
-HWBA_COLOR_ALPHA = '''[&gt;&gt;&gt;](__convert_alpha__:%s:hwba){: .color-helper .small} \
-<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)
-'''
-
-BACK_PALETTE_MENU = '[back](__palettes__){: .color-helper .small} '
-BACK_COLORS_MENU = '[back](__colors__:%s:%s){: .color-helper .small} '
-DELETE_COLOR_MENU = '[delete](__delete_colors__:%s:%s){: .color-helper .small} '
-DELETE_COLOR = '''
-## Delete Color
-Click the color to delete.
-'''
-
 reload_flag = False
 ch_last_updated = None
 ch_settings = None
@@ -642,12 +571,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             rules = util.get_rules(self.view)
             allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
 
-            secondry_alpha = found and calc.alpha is not None and calc.alpha != '1'
+            secondary_alpha = found and calc.alpha is not None and calc.alpha != '1'
 
-            txt = [
-                BACK_COLORS_MENU % (palette_type, palette_name),
-                '\n## Insert Color\n'
-            ]
             rgba = RGBA(parts[0])
             alpha = util.fmt_float(float(rgba.a) / 255.0, dlevel)
 
@@ -656,106 +581,70 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             except Exception:
                 web_color = None
 
-            if web_color and "webcolors" in allowed_colors:
-                txt.append(WEB_COLOR % (rgba.get_rgb(), web_color))
-            if "hex" in allowed_colors:
-                txt.append(HEX_COLOR % (rgba.get_rgb(), rgba.get_rgb()))
-            if "hexa" in allowed_colors:
-                if use_hex_argb is None or use_hex_argb is False:
-                    txt.append(HEXA_COLOR_ALPHA % (rgba.get_rgba(), rgba.get_rgb(), rgba.get_rgba()[-2:]))
-                if use_hex_argb is None or use_hex_argb is True:
-                    txt.append(AHEX_COLOR_ALPHA % (rgba.get_rgba(), '#', rgba.get_rgba()[-2:], rgba.get_rgb()[1:]))
-            if "rgb" in allowed_colors:
-                txt.append(RGB_COLOR % (rgba.get_rgb(), rgba.r, rgba.g, rgba.b))
-            if "rgba" in allowed_colors:
-                txt.append(RGBA_COLOR_ALPHA % (rgba.get_rgba() + ("@%d" % dlevel), rgba.r, rgba.g, rgba.b, alpha))
-            if "gray" in allowed_colors and util.is_gray(rgba.get_rgb()):
-                txt.append(GRAY_COLOR % (rgba.get_rgb(), rgba.r))
-            if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
-                txt.append(GRAYA_COLOR_ALPHA % (rgba.get_rgba() + ("@%d" % dlevel), rgba.r, alpha))
-            h, l, s = rgba.tohls()
-            if "hsl" in allowed_colors:
-                txt.append(
-                    HSL_COLOR % (
-                        rgba.get_rgb(),
-                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
-                    )
-                )
-            if "hsla" in allowed_colors:
-                txt.append(
-                    HSLA_COLOR_ALPHA % (
-                        rgba.get_rgba() + ("@%d" % dlevel),
-                        util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                        alpha
-                    )
-                )
-            h, w, b = rgba.tohwb()
-            if "hwb" in allowed_colors:
-                txt.append(
-                    HWB_COLOR % (
-                        rgba.get_rgb(),
-                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
-                    )
-                )
-            if "hwba" in allowed_colors:
-                txt.append(
-                    HWBA_COLOR_ALPHA % (
-                        rgba.get_rgba() + ("@%d" % dlevel),
-                        util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                        alpha
-                    )
-                )
+            h1, l, s = rgba.tohls()
+            h2, w, b = rgba.tohwb()
 
-            if secondry_alpha:
-                txt.append('\n\n---\n\n## Use Selected Alpha\n')
-                if "hexa" in allowed_colors:
-                    if use_hex_argb is None or use_hex_argb is False:
-                        txt.append(HEXA_COLOR % (rgba.get_rgb(), rgba.get_rgb(), calc.alpha_hex))
-                    if use_hex_argb is None or use_hex_argb is True:
-                        txt.append(AHEX_COLOR % (rgba.get_rgb(), '#', calc.alpha_hex, rgba.get_rgb()[1:]))
-                if "rgba" in allowed_colors:
-                    txt.append(
-                        RGBA_COLOR % (
-                            rgba.get_rgb(),
-                            rgba.r, rgba.g, rgba.b, calc.alpha
-                        )
-                    )
-                if "graya" in allowed_colors and util.is_gray(rgba.get_rgb()):
-                    txt.append(GRAYA_COLOR % (rgba.get_rgb(), rgba.r, calc.alpha))
-                if "hsl" in allowed_colors:
-                    txt.append(
-                        HSLA_COLOR % (
-                            rgba.get_rgb(),
-                            util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                            calc.alpha
-                        )
-                    )
-                if "hwb" in allowed_colors:
-                    txt.append(
-                        HWBA_COLOR % (
-                            rgba.get_rgb(),
-                            util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                            calc.alpha
-                        )
-                    )
+            self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
+            self.template_vars = {
+                "legacy": self.legacy_class,
+                "palette_type": palette_type,
+                "palette_name": palette_name,
+                "color": rgba.get_rgb(),
+                "alpha_hex": rgba.get_rgba()[-2:],
+                "color_alpha": rgba.get_rgba(),
+                "color_ahex": rgba.get_rgba()[1:],
+                "dlevel": ("@%d" % dlevel),
+                "alpha": alpha,
+                "current_alpha_hex": calc.alpha_hex if secondary_alpha else 'FF',
+                "current_alpha": calc.alpha if secondary_alpha else '1',
+                "rgb_r": rgba.r,
+                "rgb_g": rgba.g,
+                "rgb_b": rgba.b,
+                "hsl_h": util.fmt_float(h1 * 360.0),
+                "hsl_s": util.fmt_float(s * 100.0),
+                "hsl_l": util.fmt_float(l * 100.0),
+                "hwb_h": util.fmt_float(h2 * 360.0),
+                "hwb_w": util.fmt_float(w * 100.0),
+                "hwb_b": util.fmt_float(b * 100.0),
+                "web_color": web_color,
+                "secondary_alpha": secondary_alpha
+            }
+
+            self.template_vars['show_web_color'] = web_color and "webcolors" in allowed_colors
+            self.template_vars['show_hex_color'] = "hex" in allowed_colors
+            self.template_vars['show_hexa_color'] = "hexa" in allowed_colors and not bool(use_hex_argb)
+            self.template_vars['show_ahex_color'] = "hexa" in allowed_colors and bool(use_hex_argb)
+            self.template_vars['show_rgb_color'] = "rgb" in allowed_colors
+            self.template_vars['show_rgba_color'] = "rgba" in allowed_colors
+            self.template_vars['show_gray_color'] = "gray" in allowed_colors and util.is_gray(rgba.get_rgb())
+            self.template_vars['show_graya_color'] = "graya" in allowed_colors and util.is_gray(rgba.get_rgb())
+            self.template_vars['show_hsl_color'] = "hsl" in allowed_colors
+            self.template_vars['show_hsla_color'] = "hsla" in allowed_colors
+            self.template_vars['show_hwb_color'] = "hwb" in allowed_colors
+            self.template_vars['show_hwba_color'] = "hwba" in allowed_colors
 
             if update:
-                md = mdpopups.md2html(self.view, ''.join(txt))
                 mdpopups.update_popup(
                     self.view,
-                    '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS
+                    sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    wrapper_class="color-helper content",
+                    css=util.ADD_CSS,
+                    template_vars=self.template_vars,
+                    nl2br=False
                 )
             else:
                 self.view.settings().set('color_helper.popup_active', True)
                 self.view.settings().set('color_helper.popup_auto', self.auto)
-                md = mdpopups.md2html(self.view, ''.join(txt))
                 mdpopups.show_popup(
-                    self.view, '<div class="color-helper content">%s</div>' % md,
+                    self.view,
+                    sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                    template_vars=self.template_vars,
+                    nl2br=False
                 )
 
     def show_palettes(self, delete=False, color=None, update=False):
@@ -875,13 +764,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     "name": palette_name,
                     "colors": self.view.settings().get('color_helper.file_palette', [])
                 }
-            elif palette_name == "Project Colors":
-                data = self.view.window().project_data()
-                current = True
-                target = {
-                    "name": palette_name,
-                    "colors": [] if data is None else data.get('color_helper_project_palette', [])
-                }
             elif palette_name == "Favorites":
                 target = util.get_favs()
         elif palette_type == "__global__":
@@ -894,39 +776,39 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     target = palette
 
         if target is not None:
-            html = []
-
-            if not delete:
-                html.append(BACK_PALETTE_MENU)
-                if not current:
-                    html.append(DELETE_COLOR_MENU % (palette_type, target['name']))
-            else:
-                html.append(BACK_COLORS_MENU % (palette_type, target['name']))
-
-            if delete:
-                html.append(DELETE_COLOR)
-
-            html.append(
-                self.format_colors(target['colors'], target['name'], palette_type, delete)
-            )
+            self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
+            self.template_vars = {
+                "legacy": self.legacy_class,
+                "delete": delete,
+                'show_delete_menu': not delete and not current,
+                "back": '__colors__' if delete else '__palettes__',
+                "palette_type": palette_type,
+                "palette_name": target["name"],
+                "colors": self.format_colors(target['colors'], target['name'], palette_type, delete)
+            }
 
             if update:
-                md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.update_popup(
                     self.view,
-                    '<div class="color-helper content">%s</div>' % md,
-                    css=util.ADD_CSS
+                    sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    wrapper_class="color-helper content",
+                    css=util.ADD_CSS,
+                    template_vars=self.template_vars,
+                    nl2br=False
                 )
             else:
                 self.view.settings().set('color_helper.popup_active', True)
                 self.view.settings().set('color_helper.popup_auto', self.auto)
-                md = mdpopups.md2html(self.view, ''.join(html))
                 mdpopups.show_popup(
-                    self.view, '<div class="color-helper content">%s</div>' % md,
+                    self.view,
+                    sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
-                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE
+                    flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+                    template_vars=self.template_vars,
+                    nl2br=False
                 )
 
     def get_cursor_color(self):
