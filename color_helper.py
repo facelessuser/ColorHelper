@@ -20,7 +20,7 @@ import traceback
 
 __pc_name__ = "ColorHelper"
 
-LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 8, 0)
+LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 9, 2)
 
 DISTORTION_FIX = int(sublime.version()) < 3118
 PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3)) and (int(sublime.version()) >= 3118)

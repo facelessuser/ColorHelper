@@ -1,0 +1,84 @@
+[cancel]({{plugin.cancel}}){: .color-helper .small}
+{%- if plugin.picker %}
+ [CSS color names](colornames){: .color-helper .small}
+ [enter new color](edit){: .color-helper .small}
+{%- endif %}
+{%- if plugin.color_names %}
+
+## CSS Color Names
+
+{{plugin.channel_names}}
+{%- elif plugin.hires %}
+
+## {{plugin.hires_color}}
+
+{{plugin.channel_hires}}
+{%- else %}
+
+{{plugin.color_picker}}
+{{plugin.current_color}}
+
+---
+
+{{plugin.channel_1}}
+{{plugin.channel_2}}
+{{plugin.channel_3}}
+{{plugin.channel_alpha}}
+[switch to {{plugin.color_switch}}]({{plugin.color_switch}}){: .color-helper .small}
+
+---
+
+  {%- if plugin.webcolor_info %}
+<a href="insert:{{plugin.webcolor_value}}" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="constant numeric">{{plugin.webcolor_value}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.hex_info %}
+<a href="insert:{{plugin.hex_link}}" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="support type">{{plugin.hex_display}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.hexa_info %}
+<a href="insert:{{plugin.hexa_link}}" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="support type">{{plugin.hexa_display}}</span>
+<span class="support type {{plugin.legacy}}alpha">{{plugin.hexa_alpha}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.ahex_info %}
+<a href="insert:{{plugin.ahex_link}}" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="support type">#</span>
+<span class="support type {{plugin.legacy}}alpha">{{plugin.ahex_alpha}}</span>
+<span class="support type">{{plugin.ahex_display}}</span>
+<br>
+  {%- endif %}
+  {%- if plugin.rgb_info %}
+<a href="insert:rgb({{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}})" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.rgba_info %}
+<a href="insert:rgba({{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}})" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.hsl_info %}
+<a href="insert:hsl({{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%)" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.hsla_info %}
+<a href="insert:hsla({{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}})" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.hwb_info %}
+<a href="insert:hwb({{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%)" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
+<br>
+  {%- endif %}
+  {%- if plugin.hwba_info %}
+<a href="insert:hwb({{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}})" class="{{plugin.legacy}}small">&gt;&gt;&gt;</a>
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
+<br>
+  {%- endif %}
+{%- endif %}

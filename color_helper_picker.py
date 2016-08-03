@@ -43,29 +43,6 @@ color_map_size = False
 color_map_style = None
 line_height = None
 
-LINK = '<a href="insert:%s" class="color-helper small">&gt;&gt;&gt;</a> '
-WEB_COLOR = '''%s<span class="constant numeric">%s</span><br>'''
-HEX_COLOR = '''%s<span class="support type">%s</span><br>'''
-HEXA_COLOR = '''%s<span class="support type">%s</span><span class="support type color-helper alpha">%s</span><br>'''
-AHEX_COLOR = '''%s\
-<span class="support type">%s</span>\
-<span class="support type color-helper alpha">%s</span>\
-<span class="support type">%s</span>
-'''
-RGB_COLOR = '''%s<span class="keyword">rgb</span>(<span class="constant numeric">%d, %d, %d</span>)<br>'''
-RGBA_COLOR = '''%s<span class="keyword">rgba</span>(<span class="constant numeric">%d, %d, %d, %s</span>)<br>'''
-HSL_COLOR = '''%s<span class="keyword">hsl</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
-HSLA_COLOR = '''%s<span class="keyword">hsla</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
-HWB_COLOR = '''%s<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%</span>)<br>'''
-HWBA_COLOR = '''%s<span class="keyword">hwb</span>(<span class="constant numeric">%s, %s%%, %s%%, %s</span>)<br>'''
-
-RGB_INSERT = 'rgb(%d, %d, %d)'
-RGBA_INSERT = 'rgba(%d, %d, %d, %s)'
-HSL_INSERT = 'hsl(%s, %s%%, %s%%)'
-HSLA_INSERT = 'hsla(%s, %s%%, %s%%, %s)'
-HWB_INSERT = 'hwb(%s, %s%%, %s%%)'
-HWBA_INSERT = 'hwb(%s, %s%%, %s%%, %s)'
-
 SPACER = '#00000000'
 OUTER_BORDER = '#fefefeff'
 INNER_BORDER = '#333333ff'
@@ -74,7 +51,7 @@ INNER_BORDER = '#333333ff'
 class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     """Experimental color picker."""
 
-    def get_color_map_square(self, text):
+    def get_color_map_square(self):
         """Get a square variant of the color map."""
 
         global color_map
@@ -184,9 +161,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 l -= lfac
 
             color_map = ''.join(['<span>%s</span><br>' % ''.join([y1 for y1 in x1]) for x1 in html_colors]) + '\n\n'
-        text.append(color_map)
+        self.template_vars['color_picker'] = color_map
 
-    def get_color_map_hex(self, text):
+    def get_color_map_hex(self):
         """Get color wheel."""
 
         global color_map
@@ -210,7 +187,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             check_size = self.check_size(self.height)
 
             for row in color_map_data:
-                html_colors.append('<span class="color-helper color-map-row">')
+                html_colors.append('<span class="%scolor-map-row">' % self.legacy_class)
                 if padding:
                     pad = mdpopups.color_box(
                         [SPACER], border_size=0,
@@ -241,14 +218,15 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 count += 1
             html_colors.append('\n\n')
             color_map = ''.join(html_colors)
-        text.append(color_map)
+        self.template_vars['color_picker'] = color_map
 
-    def get_current_color(self, text):
+    def get_current_color(self):
         """Get current color."""
 
         check_size = self.check_size(self.height)
-        text.append(
-            '<span class="color-helper current-color">%s</span>\n\n' % (
+        html = (
+            '<span class="%scurrent-color">%s</span>' % (
+                self.legacy_class,
                 mdpopups.color_box(
                     [SPACER], border_size=0,
                     height=self.height, width=(self.width * (6 if self.hex_map else 5)),
@@ -261,16 +239,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 )
             )
         )
+        self.template_vars['current_color'] = html
 
-    def get_css_color_names(self, text):
+    def get_css_color_names(self):
         """Get CSS color names."""
 
         check_size = self.check_size(self.box_height)
+        html = []
         for name in sorted(csscolors.name2hex_map):
             color = util.RGBA(csscolors.name2hex(name)).get_rgba()
 
-            text.append(
-                '[%s](%s) %s\n' % (
+            html.append(
+                '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color], OUTER_BORDER, INNER_BORDER,
                         border_size=2, height=self.box_height, width=self.box_height * 8, check_size=check_size
@@ -279,8 +259,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     name
                 )
             )
+        self.template_vars['channel_names'] = ''.join(html)
 
-    def get_hires_color_channel(self, text, color_filter):
+    def get_hires_color_channel(self, color_filter):
         """Get get a list of all colors within range."""
 
         ranges = {
@@ -297,6 +278,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         h, l, s = rgba.tohls()
         minimum, maximum = ranges[color_filter]
         check_size = self.check_size(self.box_height)
+        html = []
         for x in range(minimum, maximum + 1):
             if color_filter == 'red':
                 rgba.r = x
@@ -323,8 +305,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 rgba.fromhls(h, l, s)
                 label = str(x)
             color = rgba.get_rgba()
-            text.append(
-                '[%s](%s) %s\n' % (
+            html.append(
+                '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color], OUTER_BORDER, INNER_BORDER,
                         border_size=2, height=self.box_height, width=self.box_height * 8, check_size=check_size
@@ -333,13 +315,15 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     label
                 )
             )
+        self.template_vars['channel_hires'] = ''.join(html)
 
-    def get_channel(self, text, label, minimum, maximum, color_filter):
+    def get_channel(self, channel, label, minimum, maximum, color_filter):
         """Get color channel."""
 
         rgba1 = util.RGBA(self.color)
         rgba2 = util.RGBA(self.color)
-        text.append('<span class="color-helper channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
+        html = []
+        html.append('<span class="%schannel"><a href="hirespick:%s">%s:</a>' % (self.legacy_class, color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
@@ -356,8 +340,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 )
             )
             count -= 1
-        text += reversed(temp)
-        text.append(
+        html += reversed(temp)
+        html.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
                     [self.color], OUTER_BORDER, INNER_BORDER,
@@ -370,7 +354,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         while count:
             getattr(rgba2, color_filter)(maximum)
             kwargs = {"border_size": 2, "height": self.height, "width": self.width, "check_size": check_size}
-            text.append(
+            html.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
                         [rgba2.get_rgba()], OUTER_BORDER, INNER_BORDER,
@@ -380,7 +364,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 )
             )
             count -= 1
-        text.append('</span>\n\n')
+        html.append('</span><br>')
+        self.template_vars[channel] = ''.join(html)
 
     def compress_hex_color(self, color):
         """Compress hex color if possible."""
@@ -389,70 +374,61 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             color = util.compress_hex(color)
         return color
 
-    def get_color_info(self, text):
+    def get_color_info(self):
         """Get color info."""
 
         rgba = util.RGBA(self.color)
+        self.template_vars['rgb_r'] = rgba.r
+        self.template_vars['rgb_g'] = rgba.g
+        self.template_vars['rgb_b'] = rgba.b
+        self.template_vars['alpha'] = self.alpha
+        h, l, s = rgba.tohls()
+        self.template_vars['hsl_h'] = util.fmt_float(h * 360.0)
+        self.template_vars['hsl_l'] = util.fmt_float(l * 100.0)
+        self.template_vars['hsl_s'] = util.fmt_float(s * 100.0)
+        h, w, b = rgba.tohwb()
+        self.template_vars['hwb_h'] = util.fmt_float(h * 360.0)
+        self.template_vars['hwb_w'] = util.fmt_float(w * 100.0)
+        self.template_vars['hwb_b'] = util.fmt_float(b * 100.0)
 
         if self.web_color and 'webcolors' in self.allowed_colors:
-            text.append(WEB_COLOR % (LINK % self.web_color, self.web_color))
+            self.template_vars['webcolor_info'] = True
+            self.template_vars['webcolor_value'] = self.web_color
         if 'hex' in self.allowed_colors or 'hex_compressed' in self.allowed_colors:
             color = self.color[:-2].lower()
-            text.append(HEX_COLOR % (LINK % self.compress_hex_color(color), color))
+            self.template_vars['hex_info'] = True
+            self.template_vars['hex_link'] = self.compress_hex_color(color)
+            self.template_vars['hex_display'] = color
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors) and
             (self.use_hex_argb is None or self.use_hex_argb is False)
         ):
             color = self.color.lower()
-            text.append(HEXA_COLOR % (LINK % self.compress_hex_color(color), color[:-2], color[-2:]))
+            self.template_vars['hexa_info'] = True
+            self.template_vars['hexa_link'] = self.compress_hex_color(color)
+            self.template_vars['hexa_display'] = color[:-2]
+            self.template_vars['hexa_alpha'] = color[-2:]
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed') and
             (self.use_hex_argb is None or self.use_hex_argb is True)
         ):
             color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
-            text.append(AHEX_COLOR % (LINK % self.compress_hex_color(color), color[0], color[-2:], color[1:-2]))
+            self.template_vars['ahex_info'] = True
+            self.template_vars['ahex_link'] = self.compress_hex_color(color)
+            self.template_vars['ahex_alpha'] = color[:-2]
+            self.template_vars['ahex_display'] = color[1:-2]
         if 'rgb' in self.allowed_colors:
-            color = RGB_INSERT % (rgba.r, rgba.g, rgba.b)
-            text.append(RGB_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b))
+            self.template_vars['rgb_info'] = True
         if 'rgba' in self.allowed_colors:
-            color = RGBA_INSERT % (rgba.r, rgba.g, rgba.b, self.alpha)
-            text.append(RGBA_COLOR % (LINK % color, rgba.r, rgba.g, rgba.b, self.alpha))
-        h, l, s = rgba.tohls()
+            self.template_vars['rgba_info'] = True
         if 'hsl' in self.allowed_colors:
-            color = HSL_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0))
-            text.append(
-                HSL_COLOR % (
-                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0)
-                )
-            )
+            self.template_vars['hsl_info'] = True
         if 'hsla' in self.allowed_colors:
-            color = HSLA_INSERT % (
-                util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0), self.alpha
-            )
-            text.append(
-                HSLA_COLOR % (
-                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(s * 100.0), util.fmt_float(l * 100.0),
-                    self.alpha
-                )
-            )
-        h, w, b = rgba.tohwb()
+            self.template_vars['hsla_info'] = True
         if 'hwb' in self.allowed_colors:
-            color = HWB_INSERT % (util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0))
-            text.append(
-                HWB_COLOR % (
-                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0)
-                )
-            )
+            self.template_vars['hwb_info'] = True
         if 'hwba' in self.allowed_colors:
-            color = HWBA_INSERT % (
-                util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0), self.alpha
-            )
-            text.append(
-                HWBA_COLOR % (
-                    LINK % color, util.fmt_float(h * 360.0), util.fmt_float(w * 100.0), util.fmt_float(b * 100.0),
-                    self.alpha
-                )
-            )
+            self.template_vars['hwba_info'] = True
 
     def set_sizes(self):
         """Get sizes."""
@@ -508,6 +484,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.use_hex_argb = use_hex_argb
         self.compress_hex = compress_hex
         self.allowed_colors = allowed_colors
+        self.legacy_class = '' if util.BETTER_CSS_SUPPORT else 'color-helper'
+        self.template_vars = {
+            "legacy": self.legacy_class
+        }
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
         rgba = util.RGBA(color)
         self.set_sizes()
@@ -519,48 +499,45 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         except Exception:
             self.web_color = None
 
-        text = []
         if colornames:
-            text.append('[cancel](%s){: .color-helper .small} ' % self.color)
-            text.append('\n\n## CSS Color Names\n\n')
-            self.get_css_color_names(text)
+            self.template_vars['color_names'] = True
+            self.template_vars['cancel'] = self.color
+            self.get_css_color_names()
         elif hirespick:
-            text.append('[cancel](%s){: .color-helper .small} ' % self.color)
-            text.append('\n\n## %s\n\n' % hirespick)
-            self.get_hires_color_channel(text, hirespick)
+            self.template_vars['hires'] = True
+            self.template_vars['cancel'] = self.color
+            self.template_vars['hires_color'] = hirespick
+            self.get_hires_color_channel(hirespick)
         else:
-            text.append('[cancel](cancel){: .color-helper .small} ')
-            text.append('[CSS color names](colornames){: .color-helper .small} ')
-            text.append('[enter new color](edit){: .color-helper .small}\n\n')
+            self.template_vars['picker'] = True
+            self.template_vars['cancel'] = 'cancel'
             if self.hex_map:
-                self.get_color_map_hex(text)
+                self.get_color_map_hex()
             else:
-                self.get_color_map_square(text)
-            self.get_current_color(text)
-            text.append('\n\n---\n\n')
+                self.get_color_map_square()
+            self.get_current_color()
             if hsl:
-                self.get_channel(text, 'H', -15, 15, 'hue')
-                self.get_channel(text, 'S', 0.975, 1.025, 'saturation')
-                self.get_channel(text, 'L', 0.975, 1.025, 'luminance')
+                self.get_channel('channel_1', 'H', -15, 15, 'hue')
+                self.get_channel('channel_2', 'S', 0.975, 1.025, 'saturation')
+                self.get_channel('channel_3', 'L', 0.975, 1.025, 'luminance')
             else:
-                self.get_channel(text, 'R', 0.975, 1.025, 'red')
-                self.get_channel(text, 'G', 0.975, 1.025, 'green')
-                self.get_channel(text, 'B', 0.975, 1.025, 'blue')
-            self.get_channel(text, 'A', 0.975, 1.025, 'alpha')
-            text.append(
-                '[switch to %s](%s){: .color-helper .small}\n' % (
-                    'rgb' if self.hsl else 'hsl', 'rgb' if self.hsl else 'hsl'
-                )
-            )
-            text.append('\n\n---\n\n')
-            self.get_color_info(text)
+                self.get_channel('channel_1', 'R', 0.975, 1.025, 'red')
+                self.get_channel('channel_2', 'G', 0.975, 1.025, 'green')
+                self.get_channel('channel_3', 'B', 0.975, 1.025, 'blue')
+            self.get_channel('channel_alpha', 'A', 0.975, 1.025, 'alpha')
 
-        md = mdpopups.md2html(self.view, ''.join(text))
+            self.template_vars['color_switch'] = 'rgb' if self.hsl else 'hsl'
+            self.get_color_info()
+
         mdpopups.show_popup(
-            self.view, '<div class="color-helper content">%s</div>' % md,
+            self.view,
+            sublime.load_resource('Packages/ColorHelper/panels/color-picker.html'),
             css=util.ADD_CSS,
+            wrapper_class="color-helper content",
             max_width=1024, max_height=(500 if hirespick or colornames else 725),
-            on_navigate=self.handle_href
+            on_navigate=self.handle_href,
+            template_vars=self.template_vars,
+            nl2br=False
         )
 
     def handle_href(self, href):
