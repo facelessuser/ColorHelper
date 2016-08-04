@@ -6,6 +6,9 @@ mdpopups 1.9.3.
 - **FIX**: Fix issues where certain popups (colorpicker after manual color  
 edit) would get overridden by auto-popups of the color info panel.
 - **FIX**: Issues related to inserted colors.
+- **FIX**: Fixed issue where certain colors that required word boundaries where  
+still getting marked even though they were preceeded by invalid characters such  
+as `@#$.-_`.
 
 # ColorHelper 2.0.5
 > Released Aug 1, 2016

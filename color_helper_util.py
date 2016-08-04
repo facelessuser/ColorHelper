@@ -77,9 +77,9 @@ TAG_STYLE_ATTR_RE = re.compile(
 HEX_IS_GRAY_RE = re.compile(r'(?i)^#([0-9a-f]{2})\1\1')
 HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
 
-COLOR_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
-COLOR_ALL_RE = re.compile(r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
-INDEX_ALL_RE = re.compile((r'(?x)(?i)(?!<[@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
+COLOR_RE = re.compile(r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
+COLOR_ALL_RE = re.compile(r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
+INDEX_ALL_RE = re.compile((r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
 ADD_CSS = dedent(
     '''
