@@ -1,5 +1,5 @@
 # ColorHelper 2.1.0
-> Released Aug X, 2016
+> Released Aug 4, 2016
 
 - **NEW**: Moved popup panel formatting into external template files. Requires  
 mdpopups 1.9.3.
