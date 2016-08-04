@@ -1,3 +1,12 @@
+# ColorHelper 2.1.0
+> Released Aug X, 2016
+
+- **NEW**: Moved popup panel formatting into external template files. Requires  
+mdpopups 1.9.3.
+- **FIX**: Fix issues where certain popups (colorpicker after manual color  
+edit) would get overridden by auto-popups of the color info panel.
+- **FIX**: Issues related to inserted colors.
+
 # ColorHelper 2.0.5
 > Released Aug 1, 2016
 

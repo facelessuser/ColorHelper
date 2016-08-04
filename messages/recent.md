@@ -1,7 +1,12 @@
-# ColorHelper 2.0.0
+# ColorHelper 2.1.0
 
-## New
+If you experience issues after the upgrade, check 
+`Preferences->Package Settings->ColorHelper->Support Info` and see if you have 
+mdpopups 1.9.3 installed.  If you do not, run Package Control's `Satisfy 
+Dependency command.
 
-- Show inline color previews in Sublime Text 3118+!  See docs for more info.  Can be turned off if the feature is not desired.
-- Should update mdpopups to the latest one on Package Control upgrade (restart required after upgrade).
-- Images should scale with font size in Sublime Text 3118+.  You can still select small, medium, and large resources, but they will be relative to the font size now.
+This release mainly contains some bug fixes, and the migration of panel 
+formatting to external template files (which is why we need mdpopups 1.9.3).
+
+See `Preferences->Package Settings->ColorHelper->Changelog` for more info on 
+the release.
