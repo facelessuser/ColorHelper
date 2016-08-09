@@ -70,6 +70,8 @@
                 "text.html"
             ],
             "scan_scopes": [
+                // https://packagecontrol.io/packages/CSS3
+                "meta.property-list.css -support.type.property-name.css -comment -string",
                 // CSS, CSS in HTML etc. (based on: Sublime Default)
                 "meta.property-value.css -comment -string",
                 // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
