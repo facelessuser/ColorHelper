@@ -3,17 +3,12 @@ import sublime
 import sublime_plugin
 
 CSS = '''
+html { {{'.background'|css}} }
+div.color-helper { padding: 0; margin: 0; {{'.background'|css}} }
 .color-helper h1, .color-helper h2, .color-helper h3, .color-helper h4, .color-helper h5, .color-helper h6 {
-    {{'.string'|css('color')}}
+    {{'.string'|css}}
 }
-.color-helper blockquote { {{'.comment'|css('color')}} }
-
-.color-helper {
-  {{'.background'|css('background-color')}}
-  {{'.foreground'|css('color')}} }
-  padding: 0;
-  margin: 0;
-}
+.color-helper blockquote { {{'.comment'|css}} }
 '''
 
 
