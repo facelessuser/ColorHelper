@@ -1,3 +1,9 @@
+# ColorHelper 2.1.1
+> Released Aug 8, 2016
+
+- **FIX**: CSS tweaks (minihtml)
+- **FIX**: Support for CSS3 package
+
 # ColorHelper 2.1.0
 > Released Aug 4, 2016
 
