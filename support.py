@@ -48,7 +48,7 @@ class ColorHelperSupportInfoCommand(sublime_plugin.ApplicationCommand):
         info["platform"] = sublime.platform()
         info["version"] = sublime.version()
         info["arch"] = sublime.arch()
-        info["ch_version"] = __version__
+        info["plugin_version"] = __version__
         info["pc_install"] = is_installed_by_package_control()
         try:
             import mdpopups
@@ -76,15 +76,15 @@ class ColorHelperSupportInfoCommand(sublime_plugin.ApplicationCommand):
 
         msg = textwrap.dedent(
             """\
-            - ST ver.:        %(version)s
-            - Platform:       %(platform)s
-            - Arch:           %(arch)s
-            - Plugin ver.:    %(ch_version)s
+            - ST ver.: %(version)s
+            - Platform: %(platform)s
+            - Arch: %(arch)s
+            - Plugin ver.: %(plugin_version)s
             - Install via PC: %(pc_install)s
-            - mdpopups ver.:  %(mdpopups_version)s
-            - markdown ver.:  %(markdown_version)s
-            - pygments ver.:  %(pygments_version)s
-            - jinja2 ver.:    %(jinja_version)s
+            - mdpopups ver.: %(mdpopups_version)s
+            - markdown ver.: %(markdown_version)s
+            - pygments ver.: %(pygments_version)s
+            - jinja2 ver.: %(jinja_version)s
             """ % info
         )
 
