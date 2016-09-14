@@ -125,9 +125,9 @@
             "syntax_files": [],
             "syntax_filter": "whitelist",
             "base_scopes": ["text.xml"],
-            "scan_scopes": ["text.xml -meta.tag.xml -comment -string"],
-            "allowed_colors": ["hex", "hexa"],
-            "extensions": [".tmTheme"],
+            "scan_scopes": ["text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"],
+            "allowed_colors": ["hex", "hexa", "hex_compressed"],
+            "extensions": [".tmTheme", ".stTheme"],
             "use_hex_argb": false,
             "compress_hex_output": false
         },
