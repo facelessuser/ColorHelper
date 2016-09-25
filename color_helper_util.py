@@ -10,9 +10,10 @@ import decimal
 from ColorHelper.lib import csscolors
 from ColorHelper.lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
+import platform
 
 BETTER_CSS_SUPPORT = int(sublime.version()) >= 3119
-
+LINE_HEIGHT_WORKAROUND = (int(sublime.version()) >= 3121) and (platform.system() == "Windows")
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
@@ -118,6 +119,15 @@ def debug(*args):
 
     if sublime.load_settings("color_helper.sublime-settings").get('debug', False):
         log(*args)
+
+
+def get_line_height(view):
+    """Get the line height."""
+
+    height = view.line_height()
+    settings = sublime.load_settings("color_helper.sublime-settings")
+
+    return int((height / 2.0) if LINE_HEIGHT_WORKAROUND and settings.get('line_height_workaround', False) else height)
 
 
 def color_picker_available():

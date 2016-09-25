@@ -14,6 +14,11 @@
     // Use webcolor names when value color matches a webcolor name.
     "use_webcolor_names": true,
 
+    // For Windows 10 HiDpi setups.  This is a temporary workaround
+    // to help reduce abnormally large color previews and other images.
+    // This will be removed once the issue is fixed in Sublime Text 3.
+    "line_height_workaround": false,
+
     // Color picker and palette picker by default
     // are accessed by clicking an icon on the color info panel.
     // Click access for one of thesecan be moved to the color box

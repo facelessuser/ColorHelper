@@ -919,7 +919,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             top_pad = 0
         if bottom_pad is None:
             bottom_pad = 0
-        box_height = int(self.view.line_height()) - int(top_pad + bottom_pad) - 6
+        box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) - 6
         if DISTORTION_FIX:
             sizes = {
                 "small": (22, 24, 26),
@@ -1059,7 +1059,7 @@ class ChPreview(object):
         if bottom_pad is None:
             bottom_pad = 0
         old_box_height = int(settings.get('color_helper.box_height', 0))
-        box_height = int(view.line_height()) - int(top_pad + bottom_pad) + size_offset
+        box_height = util.get_line_height(view) - int(top_pad + bottom_pad) + size_offset
         check_size = int((box_height - 4) / 4)
         current_color_scheme = settings.get('color_scheme')
 

@@ -250,6 +250,16 @@ Set whether indexing status is shown in the status bar.
     "show_index_status": true,
 ```
 
+### line_height_workaround
+Temporary workaround for Windows 10 HiDipi setups that reduces image sizes.
+
+```js
+    // For Windows 10 HiDpi setups.  This is a temporary workaround
+    // to help reduce abnormally large color previews and other images.
+    // This will be removed once the issue is fixed in Sublime Text 3.
+    "line_height_workaround": false,
+```
+
 #### color_scanning.syntax_files
 `syntax_files` is an array of syntax file (`tmLanguage` or `sublime-syntax`)names and are relative to `Packages` (extensions should be excluded).  They are used to filter views that will be targeted for scanning. Depending on how [`syntax_filter`](#color_scanningsyntax_filter) is set, `syntax_files` will either require the files to be in the list or not in the list.  If `syntax_files` is set as an empty array, all views will be targeted unless filtered further by other settings.
 
