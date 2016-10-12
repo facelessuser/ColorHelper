@@ -46,7 +46,7 @@ class InsertCalc(object):
                 self.web_color = csscolors.hex2name(target_color)
             except:
                 pass
-            self.force_alpha = True
+            self.force_alpha = False
         elif convert in ('gray', 'graya'):
             self.convert_gray = True
             self.force_alpha = convert == 'graya'
