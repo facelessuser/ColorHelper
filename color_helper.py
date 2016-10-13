@@ -1122,8 +1122,8 @@ class ChPreview(object):
                 for m in util.COLOR_RE.finditer(text):
                     src_start = src.begin() + m.start(0)
                     src_end = src.begin() + m.end(0)
-                    my_option = True
-                    pt = src_start if my_option else src_end
+                    POSITION_ON_LEFT = False
+                    pt = src_start if POSITION_ON_LEFT else src_end
                     if str(pt) in preview:
                         continue
                     elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
@@ -1246,14 +1246,18 @@ class ChPreview(object):
             preview = {}
             for k, v in old_preview.items():
                 phantoms = mdpopups.query_phantom(view, v[4])
+                print(phantoms)
                 pt = phantoms[0].begin() if phantoms else None
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
-                    start = pt - 5
+                    POSITION_ON_LEFT = False
+                    match_start = pt - v[1]
+                    match_end = pt + v[1] # TODO: Shouldn't this be + 1 or -1 like src_end?
+                    start = pt - 5 if POSITION_ON_LEFT else pt + v[1] - 5
                     if start < 0:
                         start = 0
-                    end = pt + v[1] + 5
+                    end = pt + v[1] + 5 if POSITION_ON_LEFT else pt + 5
                     if end > view.size():
                         end = view.size()
                     text = view.substr(sublime.Region(start, end))
@@ -1261,9 +1265,9 @@ class ChPreview(object):
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != pt or
+                        start + m.start(0) != match_start or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(pt) + ':' + view.scope_name(pt + v[1] - 1))
+                        v[3] != hash(view.scope_name(match_start) + ':' + view.scope_name(pt - 1))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
