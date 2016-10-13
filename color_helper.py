@@ -1120,7 +1120,11 @@ class ChPreview(object):
             for src in source:
                 text = view.substr(src)
                 for m in util.COLOR_RE.finditer(text):
-                    if str(src.begin() + m.end(0)) in preview:
+                    src_start = src.begin() + m.start(0)
+                    src_end = src.begin() + m.end(0)
+                    my_option = True
+                    pt = src_start if my_option else src_end
+                    if str(pt) in preview:
                         continue
                     elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
                         continue
@@ -1181,14 +1185,13 @@ class ChPreview(object):
                     color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
-                    pt = src.begin() + m.end(0)
                     scope = view.scope_name(pt)
-                    start_scope = view.scope_name(src.begin() + m.start(0))
-                    end_scope = view.scope_name(src.begin() + m.end(0) - 1)
+                    start_scope = view.scope_name(src_start)
+                    end_scope = view.scope_name(src_end - 1)
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.invert()
                     color = '<a href="%d">%s</a>' % (
-                        src.begin() + m.start(0),
+                        pt,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
