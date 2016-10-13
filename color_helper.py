@@ -1250,11 +1250,10 @@ class ChPreview(object):
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
-                    match_start = pt - v[1]
-                    start = match_start - 5
+                    start = pt - 5
                     if start < 0:
                         start = 0
-                    end = pt + 5
+                    end = pt + v[1] + 5
                     if end > view.size():
                         end = view.size()
                     text = view.substr(sublime.Region(start, end))
@@ -1262,9 +1261,9 @@ class ChPreview(object):
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != match_start or
+                        start + m.start(0) != pt or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(match_start) + ':' + view.scope_name(pt - 1))
+                        v[3] != hash(view.scope_name(pt) + ':' + view.scope_name(pt + v[1] - 1))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
