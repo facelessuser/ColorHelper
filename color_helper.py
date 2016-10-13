@@ -72,9 +72,11 @@ def start_file_index(view):
                     if s.get('show_index_status', True):
                         sublime.status_message('File color indexer started...')
 
+
 def preview_is_on_left():
-    """Return boolean for positioning preview on left/right"""
+    """Return boolean for positioning preview on left/right."""
     return ch_settings.get('inline_preview_position') != 'right'
+
 
 ###########################
 # Main Code
