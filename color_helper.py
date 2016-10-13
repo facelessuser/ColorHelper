@@ -72,6 +72,9 @@ def start_file_index(view):
                     if s.get('show_index_status', True):
                         sublime.status_message('File color indexer started...')
 
+def preview_is_on_left():
+    """Return boolean for positioning preview on left/right"""
+    return ch_settings.get('preview_position') != 'right'
 
 ###########################
 # Main Code
@@ -1122,8 +1125,8 @@ class ChPreview(object):
                 for m in util.COLOR_RE.finditer(text):
                     src_start = src.begin() + m.start(0)
                     src_end = src.begin() + m.end(0)
-                    POSITION_ON_LEFT = False
-                    pt = src_start if POSITION_ON_LEFT else src_end
+                    position_on_left = preview_is_on_left()
+                    pt = src_start if position_on_left else src_end
                     if str(pt) in preview:
                         continue
                     elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
@@ -1243,6 +1246,7 @@ class ChPreview(object):
             #    - hash result is wrong
             # Update preview meta data with new results
             old_preview = view.settings().get('color_helper.preview_meta', {})
+            position_on_left = preview_is_on_left()
             preview = {}
             for k, v in old_preview.items():
                 phantoms = mdpopups.query_phantom(view, v[4])
@@ -1250,9 +1254,8 @@ class ChPreview(object):
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
-                    POSITION_ON_LEFT = False
-                    color_start = pt if POSITION_ON_LEFT else pt - v[1]
-                    color_end = pt + v[1] if POSITION_ON_LEFT else pt
+                    color_start = pt if position_on_left else pt - v[1]
+                    color_end = pt + v[1] if position_on_left else pt
                     approx_color_start = color_start - 5
                     if approx_color_start < 0:
                         approx_color_start = 0
