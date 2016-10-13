@@ -1264,7 +1264,7 @@ class ChPreview(object):
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != color_start or
+                        approx_color_start + m.start(0) != color_start or
                         hash(m.group(0)) != v[0] or
                         v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1))
                     ):
