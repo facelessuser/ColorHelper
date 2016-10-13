@@ -74,7 +74,7 @@ def start_file_index(view):
 
 def preview_is_on_left():
     """Return boolean for positioning preview on left/right"""
-    return ch_settings.get('preview_position') != 'right'
+    return ch_settings.get('inline_preview_position') != 'right'
 
 ###########################
 # Main Code

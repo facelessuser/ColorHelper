@@ -34,6 +34,10 @@
     // Please use either a positive or negative number.
     "inline_preview_offset": 0,
 
+    // Adjust the position of inline image previews.
+    // (left|right)
+    "inline_preview_position": "left",
+
     // Enable color picker option.  Will use native color picker
     // unless "use_color_picker_package" is enabled and external
     // package is installed.
