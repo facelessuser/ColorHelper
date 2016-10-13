@@ -1246,15 +1246,13 @@ class ChPreview(object):
             preview = {}
             for k, v in old_preview.items():
                 phantoms = mdpopups.query_phantom(view, v[4])
-                print(phantoms)
                 pt = phantoms[0].begin() if phantoms else None
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
                     POSITION_ON_LEFT = False
                     match_start = pt - v[1]
-                    match_end = pt + v[1] # TODO: Shouldn't this be + 1 or -1 like src_end?
-                    start = pt - 5 if POSITION_ON_LEFT else pt + v[1] - 5
+                    start = pt - 5 if POSITION_ON_LEFT else match_start - 5
                     if start < 0:
                         start = 0
                     end = pt + v[1] + 5 if POSITION_ON_LEFT else pt + 5
@@ -1265,9 +1263,9 @@ class ChPreview(object):
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != match_start or
+                        start + m.start(0) != (pt if POSITION_ON_LEFT else match_start) or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(match_start) + ':' + view.scope_name(pt - 1))
+                        v[3] != hash(view.scope_name((pt if POSITION_ON_LEFT else match_start)) + ':' + view.scope_name((pt + v[1] - 1 if POSITION_ON_LEFT else pt -1))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
