@@ -1265,7 +1265,7 @@ class ChPreview(object):
                         not m.group(v[2]) or
                         start + m.start(0) != (pt if POSITION_ON_LEFT else match_start) or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name((pt if POSITION_ON_LEFT else match_start)) + ':' + view.scope_name((pt + v[1] - 1 if POSITION_ON_LEFT else pt -1))
+                        v[3] != hash(view.scope_name((pt if POSITION_ON_LEFT else match_start)) + ':' + view.scope_name((pt + v[1] - 1 if POSITION_ON_LEFT else pt - 1)))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
