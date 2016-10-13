@@ -1252,20 +1252,22 @@ class ChPreview(object):
                 else:
                     POSITION_ON_LEFT = False
                     match_start = pt - v[1]
-                    start = pt - 5 if POSITION_ON_LEFT else match_start - 5
-                    if start < 0:
-                        start = 0
-                    end = pt + v[1] + 5 if POSITION_ON_LEFT else pt + 5
-                    if end > view.size():
-                        end = view.size()
-                    text = view.substr(sublime.Region(start, end))
+                    fuzzy_color_start = pt - 5 if POSITION_ON_LEFT else match_start - 5
+                    if fuzzy_color_start < 0:
+                        fuzzy_color_start = 0
+                    fuzzy_color_end = pt + v[1] + 5 if POSITION_ON_LEFT else pt + 5
+                    if fuzzy_color_end > view.size():
+                        fuzzy_color_end = view.size()
+                    text = view.substr(sublime.Region(fuzzy_color_start, fuzzy_color_end))
                     m = util.COLOR_RE.search(text)
+                    color_start = pt if POSITION_ON_LEFT else match_start
+                    color_end = pt + v[1] - 1 if POSITION_ON_LEFT else pt - 1
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != (pt if POSITION_ON_LEFT else match_start) or
+                        start + m.start(0) != color_start or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name((pt if POSITION_ON_LEFT else match_start)) + ':' + view.scope_name((pt + v[1] - 1 if POSITION_ON_LEFT else pt - 1)))
+                        v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
