@@ -1196,7 +1196,7 @@ class ChPreview(object):
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.invert()
                     color = '<a href="%d">%s</a>' % (
-                        pt,
+                        src_start,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
