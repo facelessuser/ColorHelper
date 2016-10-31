@@ -73,6 +73,11 @@ def start_file_index(view):
                         sublime.status_message('File color indexer started...')
 
 
+def preview_is_on_left():
+    """Return boolean for positioning preview on left/right."""
+    return ch_settings.get('inline_preview_position') != 'right'
+
+
 ###########################
 # Main Code
 ###########################
@@ -1120,7 +1125,11 @@ class ChPreview(object):
             for src in source:
                 text = view.substr(src)
                 for m in util.COLOR_RE.finditer(text):
-                    if str(src.begin() + m.start(0)) in preview:
+                    src_start = src.begin() + m.start(0)
+                    src_end = src.begin() + m.end(0)
+                    position_on_left = preview_is_on_left()
+                    pt = src_start if position_on_left else src_end
+                    if str(pt) in preview:
                         continue
                     elif not visible_region.contains(sublime.Region(src.begin() + m.start(0), src.begin() + m.end(0))):
                         continue
@@ -1181,14 +1190,13 @@ class ChPreview(object):
                     color, alpha, alpha_dec = util.translate_color(m, use_hex_argb)
                     color += alpha if alpha is not None else 'ff'
                     no_alpha_color = color[:-2] if len(color) > 7 else color
-                    pt = src.begin() + m.start(0)
                     scope = view.scope_name(pt)
-                    start_scope = view.scope_name(pt)
-                    end_scope = view.scope_name(src.begin() + m.end(0) - 1)
+                    start_scope = view.scope_name(src_start)
+                    end_scope = view.scope_name(src_end - 1)
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.invert()
                     color = '<a href="%d">%s</a>' % (
-                        pt,
+                        src_start,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
@@ -1240,6 +1248,7 @@ class ChPreview(object):
             #    - hash result is wrong
             # Update preview meta data with new results
             old_preview = view.settings().get('color_helper.preview_meta', {})
+            position_on_left = preview_is_on_left()
             preview = {}
             for k, v in old_preview.items():
                 phantoms = mdpopups.query_phantom(view, v[4])
@@ -1247,20 +1256,22 @@ class ChPreview(object):
                 if pt is None:
                     mdpopups.erase_phantom_by_id(view, v[4])
                 else:
-                    start = pt - 5
-                    if start < 0:
-                        start = 0
-                    end = pt + v[1] + 5
-                    if end > view.size():
-                        end = view.size()
-                    text = view.substr(sublime.Region(start, end))
+                    color_start = pt if position_on_left else pt - v[1]
+                    color_end = pt + v[1] if position_on_left else pt
+                    approx_color_start = color_start - 5
+                    if approx_color_start < 0:
+                        approx_color_start = 0
+                    approx_color_end = color_end + 5
+                    if approx_color_end > view.size():
+                        approx_color_end = view.size()
+                    text = view.substr(sublime.Region(approx_color_start, approx_color_end))
                     m = util.COLOR_RE.search(text)
                     if (
                         not m or
                         not m.group(v[2]) or
-                        start + m.start(0) != pt or
+                        approx_color_start + m.start(0) != color_start or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(pt) + ':' + view.scope_name(pt + v[1] - 1))
+                        v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1))
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:

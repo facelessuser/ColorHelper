@@ -97,6 +97,16 @@ ColorHelper does it best to calculate the correct size for inline images, but wi
 
 If you need to set this per OS or per host, you can via [multiconf](#multiconf).
 
+### inline_preview_position
+
+Previews can be positioned to the left or right of a color. Set this value to "left" or "right to toggle its behavior.
+
+```js
+    // Adjust the position of inline image previews.
+    // (left|right)
+    "inline_preview_position": "left",
+```
+
 ### upper_case_hex
 When inserting a color from the tooltip, this setting will determine if hex colors get uppercased or lowercased.
 
