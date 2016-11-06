@@ -1,7 +1,7 @@
 site_name: ColorHelper
 repo_url: https://github.com/facelessuser/ColorHelper
 site_description: Popup tooltips for stylesheet colors.
-copyright: Copyright &copy; 2015 <a href="https://github.com/facelessuser">Isaac Muse</a>
+copyright: Copyright &copy; 2015 - 2016 <a href="https://github.com/facelessuser">Isaac Muse</a>
 pages:
   - About Markdown Popups: index.md
   - Installation: installation.md
@@ -27,3 +27,5 @@ markdown_extensions:
   - pymdownx.tasklist
   - pymdownx.progressbar
   - pymdownx.headeranchor
+extra_css:
+  - css/theme_custom.css

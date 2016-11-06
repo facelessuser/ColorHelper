@@ -1,3 +1,14 @@
+# ColorHelper 2.2.0
+> Released Nov 5, 2016
+
+- **New**: Add support for stTheme and search cdata [#59](https://github.com/facelessuser/ColorHelper/pull/59).
+- **NEW**: Workaround for Windows 10 HiDpi large image issue [#61](https://github.com/facelessuser/ColorHelper/issues/61).  
+See [document](http://facelessuser.github.io/ColorHelper/usage/#line_height_workaround) for more info.
+- **NEW**: Added toggle support for left/right positioned previews [#65](https://github.com/facelessuser/ColorHelper/pull/65).  
+See [document](http://facelessuser.github.io/ColorHelper/usage/#inline_preview_position) for more info.
+- **FIX**: Web Color insertion bug [#62](https://github.com/facelessuser/ColorHelper/issues/63).
+- **FIX**: Preview duplication bug (hopefully -- please report if not fixed) [#57](https://github.com/facelessuser/ColorHelper/issues/57).
+
 # ColorHelper 2.1.1
 > Released Aug 8, 2016
 
