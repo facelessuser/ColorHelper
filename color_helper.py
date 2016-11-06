@@ -1271,7 +1271,8 @@ class ChPreview(object):
                         not m.group(v[2]) or
                         approx_color_start + m.start(0) != color_start or
                         hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1))
+                        v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1)) or
+                        str(pt) in preview
                     ):
                         mdpopups.erase_phantom_by_id(view, v[4])
                     else:
