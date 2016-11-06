@@ -38,7 +38,8 @@ class ColorHelperChangesCommand(sublime_plugin.WindowCommand):
                 text,
                 sublime.LAYOUT_INLINE,
                 wrapper_class="color-helper",
-                css=CSS
+                css=CSS,
+                on_navigate=self.on_navigate
             )
         else:
             view.run_command('insert', {"characters": text})
