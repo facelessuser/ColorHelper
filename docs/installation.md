@@ -19,9 +19,9 @@ The recommended way to install ColorHelper is via [Package Control](https://pack
 ## Manual Installation
 
 !!! warning "Warning"
-    This is not the recommended way to install BracketHighlighter for the average user.  Installing this way **will not** get automatically updated.
+    This is not the recommended way to install ColorHelper for the average user.  Installing this way **will not** get automatically updated.
 
-    If you are forking for a pull request, you should **just** clone BH and run Package Control's `Satisfy Dependency` command to get all the dependencies.
+    If you are forking for a pull request, you should **just** clone ColorHelper and run Package Control's `Satisfy Dependency` command to get all the dependencies.
 
 For those who want to install ColorHelper without package control, here are the steps.  It understood that some people for what ever reason will prefer manually and may even have legitimate reasons to do so.  When going this route, you will have to keep all the packages updated yourself.
 
