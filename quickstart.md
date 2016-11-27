@@ -25,7 +25,7 @@ as you scroll.
 Popup panels will appear when your cursor is on a color or when you click a color preview, you can disable both  
 features if you like.
 
-For more information on using the panels, check out the [documentation](http://facelessuser.github.io/ColorHelper/usage/).
+For more information on using and configuring the panels, check out the [documentation](http://facelessuser.github.io/ColorHelper/usage/).
 
 # ColorHelper Doesn't Support My Sass or SCSS Variables
 

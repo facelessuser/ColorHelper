@@ -1,3 +1,10 @@
+# ColorHelper 2.3.0
+> Released Nov 27, 2016
+
+- **NEW**: New quickstart command in menu.
+- **NEW**: Links in menu to navigate to official documentation and issue tracker.
+- **FIX**: Fix for Sass. [#68](https://github.com/facelessuser/ColorHelper/issues/68)
+
 # ColorHelper 2.2.0
 > Released Nov 5, 2016
 
