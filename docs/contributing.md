@@ -26,6 +26,7 @@ Contribution from the community is encouraged and can be done in a variety of wa
     - Errors in console.
     - Detailed description of the problem.
     - Examples for reproducing the error.  You can post pictures, but if specific text or code is required to reproduce the issue, please provide the text in a plain text format for easy copy/paste.
+    - Provide links to 3rd party syntax highlighting package you are using if applicable.
 
     The more info provided, the greater the chance someone will take the time to answer, implement, or fix the issue.
 
@@ -55,16 +56,16 @@ There are a couple of dependencies that must be present before running the tests
 
 1. As ST3 is the only current, actively supported version, Python 3.3 must be used to validate the tests.
 
-2. Unit tests are run with `nose`.  You can install nose via:
+2. Unit tests are run with `pytest`.  You can install pytest via:
 
     ```
-    pip install nose
+    pip install pytest
     ```
 
     The tests should be run from the root folder of the plugin by using the following command:
 
     ```
-    nosetests .
+    py.test .
     ```
 
 3. Linting is performed on the entire project with `flake8`, `flake8-docstrings`, and `pep8-naming`.  These can be installed via:
