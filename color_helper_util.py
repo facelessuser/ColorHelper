@@ -157,9 +157,9 @@ def fmt_float(f, p=0):
 def get_rules(view):
     """Get auto-popup scope rule."""
 
-    rules = view.settings().get("color_helper.scan", {})
+    rules = view.settings().get("color_helper.scan")
 
-    return rules if rules.get("enabled", False) else None
+    return rules if rules is not None and rules.get("enabled", False) else None
 
 
 def get_scope(view, rules, skip_sel_check=False):
