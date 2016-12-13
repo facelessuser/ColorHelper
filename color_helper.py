@@ -1040,9 +1040,13 @@ class ChPreview(object):
         """Handle color box click."""
 
         view.sel().clear()
-        view.sel().add(sublime.Region(int(href)))
-        view.settings().set('color_helper.no_auto', True)
-        view.run_command('color_helper', {"mode": "info"})
+        previews = view.settings().get('color_helper.preview_meta', {})
+        for k, v in previews.items():
+            if href == v[5]:
+                view.sel().add(sublime.Region(int(k)))
+                view.settings().set('color_helper.no_auto', True)
+                view.run_command('color_helper', {"mode": "info"})
+                break
 
     def do_search(self, view, force=False):
         """Perform the search for the highlighted word."""
@@ -1195,8 +1199,9 @@ class ChPreview(object):
                     end_scope = view.scope_name(src_end - 1)
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
-                    color = '<a href="%d">%s</a>' % (
-                        src_start,
+                    preview_id = str(time())
+                    color = '<a href="%s">%s</a>' % (
+                        preview_id,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
@@ -1204,7 +1209,11 @@ class ChPreview(object):
                         )
                     )
                     colors.append(
-                        (color, pt, hash(m.group(0)), len(m.group(0)), color_type, hash(start_scope + ':' + end_scope))
+                        (
+                            color, pt, hash(m.group(0)), len(m.group(0)),
+                            color_type, hash(start_scope + ':' + end_scope),
+                            preview_id
+                        )
                     )
 
             self.add_phantoms(view, colors, preview)
@@ -1227,7 +1236,7 @@ class ChPreview(object):
                 md=False,
                 on_navigate=lambda href, view=view: self.on_navigate(href, view)
             )
-            preview[str(color[1])] = [color[2], color[3], color[4], color[5], pid]
+            preview[str(color[1])] = [color[2], color[3], color[4], color[5], pid, color[6]]
 
     def reset_previous(self):
         """Reset previous region."""
