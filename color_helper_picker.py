@@ -395,10 +395,14 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.template_vars['webcolor_info'] = True
             self.template_vars['webcolor_value'] = self.web_color
         if 'hex' in self.allowed_colors or 'hex_compressed' in self.allowed_colors:
+            settings = sublime.load_settings('color_helper.sublime-settings')
+            use_upper = settings.get("upper_case_hex", False)
             color = self.color[:-2].lower()
             self.template_vars['hex_info'] = True
-            self.template_vars['hex_link'] = self.compress_hex_color(color)
-            self.template_vars['hex_display'] = color
+            self.template_vars['hex_link'] = (
+                self.compress_hex_color(color).upper() if use_upper else self.compress_hex_color(color)
+            )
+            self.template_vars['hex_display'] = color.upper() if use_upper else color
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors) and
             (self.use_hex_argb is None or self.use_hex_argb is False)

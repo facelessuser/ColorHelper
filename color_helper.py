@@ -490,12 +490,19 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         h1, l, s = rgba.tohls()
         h2, w, b = rgba.tohwb()
 
+        use_upper = ch_settings.get("upper_case_hex", False)
+
         template_vars['color'] = color
         template_vars['color_dlevel'] = rgba.get_rgb().lower() + alpha_hex
         template_vars['web_color'] = web_color
-        template_vars['hex_color'] = rgba.get_rgb().lower()
-        template_vars['hex_alpha'] = 'ff' if not alpha else alpha_hex_display
-        template_vars['ahex_color'] = rgba.get_rgb().lower()[1:]
+        if use_upper:
+            template_vars['hex_color'] = rgba.get_rgb().upper() if use_upper else rgba.get_rgb().lower()
+            template_vars['hex_alpha'] = 'FF' if not alpha else alpha_hex_display.upper()
+            template_vars['ahex_color'] = rgba.get_rgb().upper()[1:]
+        else:
+            template_vars['hex_color'] = rgba.get_rgb().lower()
+            template_vars['hex_alpha'] = 'ff' if not alpha else alpha_hex_display.lower()
+            template_vars['ahex_color'] = rgba.get_rgb().lower()[1:]
         template_vars['alpha'] = alpha if alpha else '1'
         template_vars['rgb_r'] = str(rgba.r)
         template_vars['rgb_g'] = str(rgba.g)
@@ -590,14 +597,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             h1, l, s = rgba.tohls()
             h2, w, b = rgba.tohwb()
 
+            use_upper = ch_settings.get("upper_case_hex", False)
+
             template_vars = {
                 "legacy": util.LEGACY_CLASS,
                 "palette_type": palette_type,
                 "palette_name": palette_name,
-                "color": rgba.get_rgb(),
-                "alpha_hex": rgba.get_rgba()[-2:],
+                "color": rgba.get_rgb().upper() if use_upper else rgba.get_rgb().lower(),
+                "alpha_hex": rgba.get_rgba().upper()[-2:] if use_upper else rgba.get_rgba().lower()[-2:],
                 "color_alpha": rgba.get_rgba(),
-                "color_ahex": rgba.get_rgba()[1:],
+                "color_ahex": rgba.get_rgba().upper()[1:] if use_upper else rgba.get_rgb().lower()[1:],
                 "dlevel": ("@%d" % dlevel),
                 "alpha": alpha,
                 "current_alpha_hex": calc.alpha_hex if secondary_alpha else 'FF',
