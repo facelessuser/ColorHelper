@@ -1,3 +1,12 @@
+# ColorHelper 2.4.0
+> Released Dec 29, 2016
+
+- **NEW**: More subtle preview borders. [7e983cd](https://github.com/facelessuser/ColorHelper/commit/7e983cda9682648eb86fc556b65578f6319f7661)
+- **FIX**: Setting race condition. [2336ee5](https://github.com/facelessuser/ColorHelper/commit/2336ee554fb6add79ccd1a0ad1ac15d3c4576e39)
+- **FIX**: Fix preview tagging. [#72](https://github.com/facelessuser/ColorHelper/issues/72)
+- **FIX**: Fix CSS3 support. [#73](https://github.com/facelessuser/ColorHelper/issues/73)
+- **FIX**: Consistent handling hex casing. [#74](https://github.com/facelessuser/ColorHelper/issues/74)
+
 # ColorHelper 2.3.0
 > Released Nov 27, 2016
 
