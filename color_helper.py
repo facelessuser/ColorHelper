@@ -1271,7 +1271,7 @@ class ChPreview(object):
                 phantoms = view.query_phantom(v[4])
                 pt = phantoms[0].begin() if phantoms else None
                 if pt is None:
-                    view.erase_phantom_by_id(view, v[4])
+                    view.erase_phantom_by_id(v[4])
                     altered = True
                 else:
                     color_start = pt if position_on_left else pt - v[1]
