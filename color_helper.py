@@ -1209,7 +1209,7 @@ class ChPreview(object):
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
                     preview_id = str(time())
-                    color = '<a href="%s">%s</a>' % (
+                    color = '<style>html, body {margin: 0, padding:0}</style><a href="%s">%s</a>' % (
                         preview_id,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
@@ -1236,13 +1236,11 @@ class ChPreview(object):
         """Add phantoms."""
 
         for color in colors:
-            pid = mdpopups.add_phantom(
-                view,
+            pid = view.add_phantom(
                 'color_helper',
                 sublime.Region(color[1]),
                 color[0],
                 0,
-                md=False,
                 on_navigate=lambda href, view=view: self.on_navigate(href, view)
             )
             preview[str(color[1])] = [color[2], color[3], color[4], color[5], pid, color[6]]
@@ -1254,6 +1252,7 @@ class ChPreview(object):
     def erase_phantoms(self, view, incremental=False):
         """Erase phantoms."""
 
+        altered = False
         if incremental:
             # Edits can potentially move the position of all the previews.
             # We need to grab the phantom by their id and then apply the color regex
@@ -1269,10 +1268,11 @@ class ChPreview(object):
             position_on_left = preview_is_on_left()
             preview = {}
             for k, v in old_preview.items():
-                phantoms = mdpopups.query_phantom(view, v[4])
+                phantoms = view.query_phantom(v[4])
                 pt = phantoms[0].begin() if phantoms else None
                 if pt is None:
-                    mdpopups.erase_phantom_by_id(view, v[4])
+                    view.erase_phantom_by_id(view, v[4])
+                    altered = True
                 else:
                     color_start = pt if position_on_left else pt - v[1]
                     color_end = pt + v[1] if position_on_left else pt
@@ -1292,14 +1292,18 @@ class ChPreview(object):
                         v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1)) or
                         str(pt) in preview
                     ):
-                        mdpopups.erase_phantom_by_id(view, v[4])
+                        view.erase_phantom_by_id(v[4])
+                        altered = True
                     else:
                         preview[str(pt)] = v
             view.settings().set('color_helper.preview_meta', preview)
         else:
             # Obliterate!
-            mdpopups.erase_phantoms(view, 'color_helper')
+            view.erase_phantoms('color_helper')
             view.settings().set('color_helper.preview_meta', {})
+            altered = True
+        if altered:
+            self.reset_previous()
 
     def color_okay(self, color_type):
         """Check if color is allowed."""
@@ -1334,10 +1338,8 @@ class ChPreviewThread(threading.Thread):
             try:
                 view = sublime.active_window().active_view()
                 if view:
-                    if clear:
-                        ch_preview.erase_phantoms(view, incremental=True)
-                        ch_preview.reset_previous()
-                    else:
+                    ch_preview.erase_phantoms(view, incremental=True)
+                    if not clear:
                         ch_preview.do_search(view, force)
             except Exception:
                 print('ColorHelper: \n' + str(traceback.format_exc()))
@@ -1535,7 +1537,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     self.on_activated(view)
                 if settings.get('color_scheme') != settings.get('color_helper.color_scheme', ''):
                     settings.erase('color_helper.preview_meta')
-                    mdpopups.erase_phantoms(view, 'color_helper')
+                    view.erase_phantoms('color_helper')
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
@@ -1550,7 +1552,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if self.should_update(view):
             if PHANTOM_SUPPORT:
                 view.settings().erase('color_helper.preview_meta')
-                mdpopups.erase_phantoms(view, 'color_helper')
+                view.erase_phantoms('color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
@@ -1842,7 +1844,7 @@ def setup_previews():
             for v in w.views():
                 v.settings().clear_on_change('color_helper.reload')
                 v.settings().erase('color_helper.preview_meta')
-                mdpopups.erase_phantoms(v, 'color_helper')
+                v.erase_phantoms('color_helper')
         unloading = False
 
         if ch_settings.get('inline_previews', False):
