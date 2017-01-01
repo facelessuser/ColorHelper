@@ -1,3 +1,9 @@
+# ColorHelper 2.4.1
+> Released Jan 1, 2016
+
+- **FIX**: Speed improvements for rendering previews.
+- **FIX**: More fixes for duplicate preview prevention.
+
 # ColorHelper 2.4.0
 > Released Dec 29, 2016
 
