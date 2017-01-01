@@ -2,7 +2,7 @@
 """
 ASE.
 
-Copyright (c) 2015 - 2016 Isaac Muse <isaacmuse@gmail.com>
+Copyright (c) 2015 - 2017 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
 """
 from __future__ import unicode_literals
