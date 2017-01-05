@@ -1053,10 +1053,11 @@ class ChPreview(object):
         for k, v in previews.items():
             if href == v[5]:
                 phantoms = view.query_phantom(v[4])
-                pt = phantoms[0].begin()
-                view.sel().add(sublime.Region(int(pt) if preview_is_on_left() else int(pt) - int(v[1])))
-                view.settings().set('color_helper.no_auto', True)
-                view.run_command('color_helper', {"mode": "info"})
+                if phantoms:
+                    pt = phantoms[0].begin()
+                    view.sel().add(sublime.Region(int(pt) if preview_is_on_left() else int(pt) - int(v[1])))
+                    view.settings().set('color_helper.no_auto', True)
+                    view.run_command('color_helper', {"mode": "info"})
                 break
 
     def do_search(self, view, force=False):
