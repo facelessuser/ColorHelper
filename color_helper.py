@@ -1052,7 +1052,9 @@ class ChPreview(object):
         previews = view.settings().get('color_helper.preview_meta', {})
         for k, v in previews.items():
             if href == v[5]:
-                view.sel().add(sublime.Region(int(k)))
+                phantoms = view.query_phantom(v[4])
+                pt = phantoms[0].begin()
+                view.sel().add(sublime.Region(int(pt) if preview_is_on_left() else int(pt) - int(v[1])))
                 view.settings().set('color_helper.no_auto', True)
                 view.run_command('color_helper', {"mode": "info"})
                 break
