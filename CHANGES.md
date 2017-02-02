@@ -1,10 +1,19 @@
+# ColorHelper 2.4.2
+
+> Released XXX XX, 2017
+
+- **FIX**: Fix HTML escape of palette names. [#84](https://github.com/facelessuser/ColorHelper/issues/84)
+- **FIX**: Fix preview clicking. [#81](https://github.com/facelessuser/ColorHelper/issues/81)
+
 # ColorHelper 2.4.1
+
 > Released Jan 1, 2016
 
 - **FIX**: Speed improvements for rendering previews.
 - **FIX**: More fixes for duplicate preview prevention.
 
 # ColorHelper 2.4.0
+
 > Released Dec 29, 2016
 
 - **NEW**: More subtle preview borders. [7e983cd](https://github.com/facelessuser/ColorHelper/commit/7e983cda9682648eb86fc556b65578f6319f7661)
@@ -14,6 +23,7 @@
 - **FIX**: Consistent handling hex casing. [#74](https://github.com/facelessuser/ColorHelper/issues/74)
 
 # ColorHelper 2.3.0
+
 > Released Nov 27, 2016
 
 - **NEW**: New quickstart command in menu.
@@ -21,6 +31,7 @@
 - **FIX**: Fix for Sass. [#68](https://github.com/facelessuser/ColorHelper/issues/68)
 
 # ColorHelper 2.2.0
+
 > Released Nov 5, 2016
 
 - **New**: Add support for stTheme and search cdata [#59](https://github.com/facelessuser/ColorHelper/pull/59).
@@ -32,12 +43,14 @@ See [document](http://facelessuser.github.io/ColorHelper/usage/#inline_preview_p
 - **FIX**: Preview duplication bug (hopefully -- please report if not fixed) [#57](https://github.com/facelessuser/ColorHelper/issues/57).
 
 # ColorHelper 2.1.1
+
 > Released Aug 8, 2016
 
 - **FIX**: CSS tweaks (minihtml)
 - **FIX**: Support for CSS3 package
 
 # ColorHelper 2.1.0
+
 > Released Aug 4, 2016
 
 - **NEW**: Moved popup panel formatting into external template files. Requires  
@@ -50,12 +63,14 @@ still getting marked even though they were preceeded by invalid characters such
 as `@#$.-_`.
 
 # ColorHelper 2.0.5
+
 > Released Aug 1, 2016
 
 - **FIX**: Fix changelog typo
 - **FIX**: Fix odd behavior when checking padding
 
 # ColorHelper 2.0.4
+
 > Released Jul 29, 2016
 
 - **NEW**: Changelog command available in `Package Settings->ColorHelper`.  
@@ -66,6 +81,7 @@ format is different following them. (Fixes #46)
 - **FIX**: Fix flicker on colorbox click. (Fixes #41)
 
 # ColorHelper 2.0.3
+
 > Released Jul 26, 2016
 
 - **FIX**: Don't allow previews to truncated colors.
@@ -75,11 +91,13 @@ format is different following them. (Fixes #46)
 scaling.
 
 # ColorHelper 2.0.2
+
 > Released Jul 25, 2016
 
 - **FIX**: Fix breakage for ST versions without phantoms.
 
 # ColorHelper 2.0.1
+
 > Released Jul 24, 2016
 
 - **FIX**: Less clearing of inline images.
@@ -88,6 +106,7 @@ scaling.
 background.
 
 # ColorHelper 2.0.0
+
 > Released Jul 23, 2016
 
 - **NEW**: Show inline color previews in Sublime Text 3118+! Can be turned off  
@@ -100,11 +119,13 @@ still select small, medium, and large resources, but they will be relative to
 the font size now.
 
 # ColorHelper 1.4.2
+
 > Released Jul 17, 2016
 
 - **FIX**: #39 Fix font size too small in popup.
 
 # ColorHelper 1.4.1
+
 > Released Jul 6, 2016
 
 - **FIX**: Remove distortion workarounds as later Sublime versions no longer  
@@ -112,6 +133,7 @@ distort images.
 - **FIX**: Utilize latest mdpopups to handle font sizes.
 
 # ColorHelper 1.4.0
+
 > Released Apr 17, 2016
 
 - **NEW**: Allow disabling status message via the settings file option  
@@ -119,33 +141,39 @@ distort images.
 - **FIX**: Fix decimal level tracking when indexing.
 
 # ColorHelper 1.3.5
+
 > Released Mar 25, 2016
 
 - **FIX**: Fixed issue where stored decimal size was faulty and could cause  
 the current file color indexing to fail.
 
 # ColorHelper 1.3.4
+
 > Released Dec 7, 2015
 
 - **FIX**: Fix logic for populating a view's ColorHelper specific settings on  
 activation and save.
 
 # ColorHelper 1.3.3
+
 > Released Dec 6, 2015
 
 - **FIX**: Fixes related to gray, hsla, and hwba.
 
 # ColorHelper 1.3.2
+
 > Released Dec 5, 2015
 
 - **FIX**: Fix version in message.
 
 # ColorHelper 1.3.1
+
 > Released Dec 5, 2015
 
 - **FIX** Forgot to strip extension on syntax compare.
 
 # ColorHelper 1.3.0
+
 > Released Dec 5, 2015
 
 - **NEW**: Color preview will now show transparent colors with and without  
@@ -170,6 +198,7 @@ for the current view.
 - **FIX**: Clamp color channel values out of range.
 
 # ColorHelper 1.2.1
+
 > Released Nov 22, 2015
 
 - **FIX**: Remove project commands that do nothing
@@ -193,6 +222,7 @@ tooltip was getting closed. ColorHelper is now aware of manual and auto popup
 tooltips and will only auto close the auto popups when ignored while typing.
 
 # ColorHelper 1.1.0
+
 > Released Nov 19, 2015
 
 - **NEW**: Color picker built into the tooltips (optionally can be overridden  
@@ -205,23 +235,27 @@ this scenario.
 in the menu. Support for the SCSS package added.
 
 # ColorHelper 1.0.3
+
 > Released Nov 17, 2015
 
 - **FIX**: Use dependency that does not clash
 - **FIX**: Add more scope support for POST CSS
 
 # ColorHelper 1.0.2
+
 > Released Nov 16, 2015
 
 - **FIX**: Typo in code where view_window should have been view.window
 
 # ColorHlper 1.0.1
+
 > Released Nov 14, 2015
 
 - **FIX**: Markdown dependency needs to not clash with default Markdown  
 package. Renamed to python-markdown.
 
 # ColorHelper 1.0.0
+
 > Released Nov 12, 2015
 
 - **NEW**: Initial release.
