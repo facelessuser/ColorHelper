@@ -1220,7 +1220,7 @@ class ChPreview(object):
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
                     preview_id = str(time())
-                    color = '<style>html, body {margin: 0, padding:0}</style><a href="%s">%s</a>' % (
+                    color = '<style>html, body {margin: 0; padding:0;}</style><a href="%s">%s</a>' % (
                         preview_id,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
