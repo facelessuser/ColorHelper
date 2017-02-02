@@ -1,31 +1,56 @@
 site_name: ColorHelper
 repo_url: https://github.com/facelessuser/ColorHelper
-site_description: Popup tooltips for stylesheet colors.
-copyright: Copyright &copy; 2015 - 2016 <a href="https://github.com/facelessuser">Isaac Muse</a>
+site_description: Popup tooltips and previews for stylesheet colors.
+copyright: Copyright &copy; 2015 - 2017 <a href="https://github.com/facelessuser">Isaac Muse</a>
+
 pages:
   - About Markdown Popups: index.md
   - Installation: installation.md
   - User Guide: usage.md
   - Contributing &amp; Support: contributing.md
   - License: license.md
-theme: readthedocs
+
+theme: material
 theme_dir: doc_theme
+
 markdown_extensions:
-  - markdown.extensions.toc
-  - markdown.extensions.admonition
-  - markdown.extensions.smarty
-  - markdown.extensions.nl2br
+  - markdown.extensions.toc:
+      slugify: !!python/name:pymdownx.slugs.uslugify
+      permalink: 
+  - markdown.extensions.admonition:
+  - markdown.extensions.smarty:
+      smart_quotes: false
+  - markdown.extensions.nl2br:
   - markdown.extensions.codehilite:
       guess_lang: false
-  - pymdownx.extra
-  - pymdownx.inlinehilite
-  - pymdownx.magiclink
-  - pymdownx.tilde
-  - pymdownx.caret
-  - pymdownx.smartsymbols
-  - pymdownx.githubemoji
-  - pymdownx.tasklist
-  - pymdownx.progressbar
-  - pymdownx.headeranchor
+  - pymdownx.extra:
+  - pymdownx.inlinehilite:
+  - pymdownx.magiclink:
+  - pymdownx.tilde:
+  - pymdownx.caret:
+  - pymdownx.smartsymbols:
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.escapeall:
+      hardbreak: true
+      nbsp: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.progressbar:
+  - pymdownx.plainhtml:
+      strip_attributes: ''
+  - pymdownx.snippets:
+      base_path: docs/snippets
+
+extra:
+  palette:
+    primary: blue
+    accent: purple
+  font:
+    text: Roboto
+    code: Roboto Mono
+  social:
+    - type: github
+      link: https://github.com/facelessuser
 extra_css:
-  - css/theme_custom.css
+  - extra.css

@@ -1,7 +1,3 @@
-# License {: .doctitle}
-
----
-
 ColorHelper is released under the MIT license.
 
 Copyright (c) 2015 - 2017 Isaac Muse <isaacmuse@gmail.com>

@@ -1,9 +1,10 @@
 # ColorHelper 2.4.2
 
-> Released XXX XX, 2017
+> Released Feb 2, 2017
 
 - **FIX**: Fix HTML escape of palette names. [#84](https://github.com/facelessuser/ColorHelper/issues/84)
 - **FIX**: Fix preview clicking. [#81](https://github.com/facelessuser/ColorHelper/issues/81)
+- **FIX**: Fix margins on previews. [#83](https://github.com/facelessuser/ColorHelper/issues/83)
 
 # ColorHelper 2.4.1
 

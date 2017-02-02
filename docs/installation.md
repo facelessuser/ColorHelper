@@ -1,10 +1,7 @@
-# Installation {: .doctitle}
-Installing ColorHelper.
-
----
-
 ## Package Control
 The recommended way to install ColorHelper is via [Package Control](https://packagecontrol.io/).  Package Control will install the correct branch on your system and keep it up to date.
+
+---
 
 1. Ensure Package Control is installed.  Instructions are found [here](https://packagecontrol.io/installation).
 
@@ -197,7 +194,6 @@ For those who want to install ColorHelper without package control, here are the 
     add_dependency('python-markdown')
     add_dependency('python-jinja2')
     add_dependency('mdpopups')
-
     ```
 
 4. Restart and enjoy.
@@ -214,3 +210,5 @@ For those who want to install ColorHelper without package control, here are the 
     ```
 
 3. Restart Sublime Text.
+
+--8<-- "refs.md"
