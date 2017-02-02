@@ -17,6 +17,7 @@ import ColorHelper.color_helper_util as util
 from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
 from ColorHelper.multiconf import get as qualify_settings
 import traceback
+from html.parser import HTMLParser
 
 __pc_name__ = "ColorHelper"
 
@@ -84,21 +85,28 @@ def preview_is_on_left():
 class ColorHelperCommand(sublime_plugin.TextCommand):
     """Color Helper command object."""
 
+    html_parser = HTMLParser()
+
     def on_hide(self):
         """Hide popup event."""
 
         self.view.settings().set('color_helper.popup_active', False)
         self.view.settings().set('color_helper.popup_auto', self.auto)
 
+    def unescape(self, value):
+        """Unescape url."""
+
+        return self.html_parser.unescape(value)
+
     def on_navigate(self, href):
         """Handle link clicks."""
 
         if href.startswith('__insert__'):
             parts = href.split(':', 3)
-            self.show_insert(parts[1], parts[2], parts[3])
+            self.show_insert(parts[1], parts[2], self.unescape(parts[3]))
         elif href.startswith('__colors__'):
             parts = href.split(':', 2)
-            self.show_colors(parts[1], parts[2], update=True)
+            self.show_colors(parts[1], self.unescape(parts[2]), update=True)
         elif href == '__close__':
             self.view.hide_popup()
         elif href == '__palettes__':
@@ -113,20 +121,20 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.remove_fav(href.split(':', 1)[1])
         elif href.startswith('__delete_colors__'):
             parts = href.split(':', 2)
-            self.show_colors(parts[1], parts[2], delete=True, update=True)
+            self.show_colors(parts[1], self.unescape(parts[2]), delete=True, update=True)
         elif href.startswith('__delete_color__'):
             parts = href.split(':', 3)
-            self.delete_color(parts[1], parts[2], parts[3])
+            self.delete_color(parts[1], parts[2], self.unescape(parts[3]))
         elif href == '__delete__palettes__':
             self.show_palettes(delete=True, update=True)
         elif href.startswith('__delete__palette__'):
             parts = href.split(':', 2)
-            self.delete_palette(parts[1], parts[2])
+            self.delete_palette(parts[1], self.unescape(parts[2]))
         elif href.startswith('__add_color__'):
             self.show_palettes(color=href.split(':', 1)[1], update=True)
         elif href.startswith('__add_palette_color__'):
             parts = href.split(':', 3)
-            self.add_palette(parts[1], parts[2], parts[3])
+            self.add_palette(parts[1], parts[2], self.unescape(parts[3]))
         elif href.startswith('__create_palette__'):
             parts = href.split(':', 2)
             self.prompt_palette_name(parts[1], parts[2])
