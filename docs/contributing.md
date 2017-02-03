@@ -50,7 +50,7 @@ Continuous integration tests on are run on all pull requests and commits via Tra
 ### Running Validation Tests
 
 !!! tip "Tip"
-    If you are running Sublime on a OSX or Linux/Unix system, you run all tests by by running the shell script (assuming you have installed your environment fulfills all requirements below):
+    If you are running Sublime on a Mac OS or Linux/Unix system, you run all tests by by running the shell script (assuming you have installed your environment fulfills all requirements below):
 
     ```
     chmod +x run_tests.sh
@@ -61,7 +61,7 @@ There are a couple of dependencies that must be present before running the tests
 
 1. As ST3 is the only current, actively supported version, Python 3.3 must be used to validate the tests.
 
-2. Unit tests are run with `pytest`.  You can install pytest via:
+2. Unit tests are run with `pytest`.  You can install `pytest` via:
 
     ```
     pip install pytest
