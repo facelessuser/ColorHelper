@@ -8,7 +8,7 @@ ColorHelper is a CSS/SCSS/Sass tooltip.  When the cursor is on a CSS color, the 
 
 ## Color Info
 
-The Color Info Panel will show a preview of the color, and other format variations of the color such as: color name, hex, rgb, rgba, hsl, and hsla format; if desired, you can convert the selected color to one of the shown formats by clicking the link to the left.
+The Color Info Panel will show a preview of the color, and other format variations of the color such as: color name, `hex`, `rgb`, `rgba`, `hsl`, and `hsla` format; if desired, you can convert the selected color to one of the shown formats by clicking the link to the left.
 
 ![color info](images/color_info.png)
 
@@ -16,7 +16,7 @@ From the color info panel, you can launch a color picker, bookmark colors as a f
 
 ## Color Picker
 
-The internal color picker can be launched from the view's context menu, the command palette, or from the [Color Info Panel](#color_info).  When launched it will use the color under the cursor (if available) as its starting color. The internal color picker is contained inside a tooltip.  It has a color map section at the top where different colors can be selected. It shows various valid CSS formats of the colors at the bottom.  And it shows either rgba channels or hlsa channels; a toggle is available to switch between them.
+The internal color picker can be launched from the view's context menu, the command palette, or from the [Color Info Panel](#color_info).  When launched it will use the color under the cursor (if available) as its starting color. The internal color picker is contained inside a tooltip.  It has a color map section at the top where different colors can be selected. It shows various valid CSS formats of the colors at the bottom.  And it shows either `rgba` channels or `hlsa` channels; a toggle is available to switch between them.
 
 ![color picker](images/color_picker.png)
 
@@ -30,7 +30,7 @@ If you would like to pick from a list of CSS color names, you can select the `CS
 
 If you would like to directly enter a different color, you can select the `enter new color` option.  An input panel will be open that can receive a color in the hex form of `#RRGGBBAA` where `RR` is the red channel, `GG` is the green channel, `BB` is the blue channel, and `AA` is the alpha channel.
 
-To select a color, just click the `>>>` link to the right of the CSS format yu want.
+To select a color, just click the `>>>` link to the right of the CSS format you want.
 
 ## Add Color Panel
 
@@ -101,7 +101,7 @@ ColorHelper does it best to calculate the correct size for inline images, but wi
     "inline_preview_offset": 0,
 ```
 
-If you need to set this per OS or per host, you can via [multiconf](#multiconf).
+If you need to set this per OS or per host, you can via [`multiconf`](#multiconf).
 
 ### `inline_preview_position`
 
@@ -146,18 +146,18 @@ This will make the color preview box in the [Color Info Panel](#color-info-panel
 
 ### `graphic_size`
 
-Controls the size of generated graphics.  Graphics in the tooltips look best large as Sublime slightly distorts images, but on small screens, some of the tooltips (especially the internal color picker) may be too large.  `graphic_size` can be used ot control the size of these generated images.  Valid settings are `small`, `medium`, and `large` where `medium` is the default.
+Controls the size of generated graphics.  Graphics in the tooltips look best large as Sublime slightly distorts images, but on small screens, some of the tooltips (especially the internal color picker) may be too large.  `graphic_size` can be used to control the size of these generated images.  Valid settings are `small`, `medium`, and `large` where `medium` is the default.
 
 ```js
     // If the color picker is too big, try playing with this.
-    // Graphics in tooltips usually look better bigger (especially in Hidpi),
+    // Graphics in tooltips usually look better bigger (especially in HiDPI),
     // but that can make the tooltips really big. If they are too big,
     // you can play with this setting.  We compromise with medium.
     // (small | medium | large)
     "graphic_size": "medium",
 ```
 
-If you need to set this per OS or per host, you can via [multiconf](#multiconf).
+If you need to set this per OS or per host, you can via [`multiconf`](#multiconf).
 
 ### `enable_color_picker`
 
@@ -249,10 +249,10 @@ Set whether indexing status is shown in the status bar.
 
 ### `line_height_workaround`
 
-Temporary workaround for Windows 10 HiDipi setups that reduces image sizes.
+Temporary workaround for Windows 10 HiDPI setups that reduces image sizes.
 
 ```js
-    // For Windows 10 HiDpi setups.  This is a temporary workaround
+    // For Windows 10 HiDPI setups.  This is a temporary workaround
     // to help reduce abnormally large color previews and other images.
     // This will be removed once the issue is fixed in Sublime Text 3.
     "line_height_workaround": false,
@@ -295,7 +295,7 @@ Setting to control color scanning which is responsible for both auto-popups and 
 
 `syntax_files` is an array of syntax file (`tmLanguage` or `sublime-syntax`)names and are relative to `Packages` (extensions should be excluded).  They are used to filter views that will be targeted for scanning. Depending on how [`syntax_filter`](#color_scanningsyntax_filter) is set, `syntax_files` will either require the files to be in the list or not in the list.  If `syntax_files` is set as an empty array, all views will be targeted unless filtered further by other settings.
 
-Assuming that you have a tmLanguage file `Packages/CSS/CSS.tmLanguage`:
+Assuming that you have a `tmLanguage` file `Packages/CSS/CSS.tmLanguage`:
 
 ```js
     "color_scanning": [
@@ -371,14 +371,14 @@ Value             | Description
 `hex_compressed`  | Hex colors in the form of `#RGB`.
 `hexa`            | Hex colors with an alpha channel in the form `#RRGGBBAA` or `#AARRGGBB` if `use_hex_argb` is set to `true`.
 `hexa_compressed` | Hex colors with an alpha channel in the form `#RGBA` or `#ARGB` if `use_hex_argb` is set to `true`.
-`rgb`             | RGB colors in the form `rgb(255, 128, 0)` or `rgb(100%, 50%, 0%)`.
-`rgba`            | RGBA colors in the form `rgb(255, 128, 0, .5)` or `rgb(100%, 50%, 0%, .5)`. It also supports CSS4's alpha as a percentage format: `rgb(100%, 50%, 0%, 50%)`.
-`hsl`             | HSL colors in the form `hsl(360, 100%, 50%).
-`hsla`            | HSLA colors in the form `hsla(360, 100%, 50%, .5). It also supports CSS4's alpha as a percentage format: `hsla(360, 100%, 50%, 50%)`.
+`rgb`             | `RGB` colors in the form `rgb(255, 128, 0)` or `rgb(100%, 50%, 0%)`.
+`rgba`            | `RGBA` colors in the form `rgb(255, 128, 0, .5)` or `rgb(100%, 50%, 0%, .5)`. It also supports CSS4's alpha as a percentage format: `rgb(100%, 50%, 0%, 50%)`.
+`hsl`             | `HSL` colors in the form `hsl(360, 100%, 50%)`.
+`hsla`            | `HSLA` colors in the form `hsla(360, 100%, 50%, .5)`. It also supports CSS4's alpha as a percentage format: `hsla(360, 100%, 50%, 50%)`.
 `gray`            | CSS4's gray format: `gray(255)` or `gray(100%)`.
 `graya`           | CSS4's gray with alpha format: `gray(255, .5)` or `gray(100%, .5)`.  It also supports alpha as a percentage format: `gray(100%, 50%)`.
-`hwb`             | CSS4's HWB color format: `hwb(360, 50%, 100%)`.
-`hwba`            | CSS4's HWBA color format: `hwb(360, 50%, 100%, 5)` or `hwb(360, 50%, 100%, 50%)`.
+`hwb`             | CSS4's `HWB` color format: `hwb(360, 50%, 100%)`.
+`hwba`            | CSS4's `HWBA` color format: `hwb(360, 50%, 100%, 5)` or `hwb(360, 50%, 100%, 50%)`.
 `css3`            | All CSS3 formats: `webcolors`, `hex`, `hex_compressed`, `rgb`, `rgba`, `hsl`, `hsla`.
 `css4`            | All CSS4 formats: `css3`, `gray`, `graya`, `hwb`, `hwba`, `hexa`, `hexa_compressed`.
 `all`             | All color formats.
@@ -391,7 +391,7 @@ Value             | Description
 
 #### `color_scanning.use_hex_argb`
 
-When scanning and processing hex rgb colors with alpha channels, process them as and output them with the alpha channel first opposed to at the end.  By default the value is `false`.
+When scanning and processing hex `rgb` colors with alpha channels, process them as and output them with the alpha channel first opposed to at the end.  By default the value is `false`.
 
 ```js
     "color_scanning": [
@@ -411,9 +411,9 @@ When outputting hex formats compress the color if possible `#334455` --> `#345`.
 
 ## Multiconf
 
-Certain settings that lend them self better to be setting up per OS or per host will be configured to use multiconf.  Multiconf is a library that will parse a setting as a normal setting or a per os and/or per host setting (if configured properly).  For the settings that have this enabled, you can optionally use the format below to specify the setting per OS or per host.
+Certain settings that lend them self better to be setting up per OS or per host will be configured to use `multiconf`.  `multiconf` is a library that will parse a setting as a normal setting or a per OS and/or per host setting (if configured properly).  For the settings that have this enabled, you can optionally use the format below to specify the setting per OS or per host.
 
-The optional multiconf format requires a dictionary with a special identifier
+The optional `multiconf` format requires a dictionary with a special identifier
 `#multiconf#`  and a list of dictionaries identified by a qualifier of the form
 
 ```js
@@ -441,7 +441,7 @@ be replaced with
 
 Now the same configuration file will provide different values depending on the
 machine it's on. On an MS Windows machine the value returned by `get` will be
-"C:\\Users", and on a Linux machine with the host name 'his_pc' the value will be
+"C:\\Users", and on a Linux machine with the host name `his_pc` the value will be
 "/home", etc.
 
 --8<-- "refs.md"
