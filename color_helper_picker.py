@@ -13,8 +13,6 @@ import ColorHelper.color_helper_util as util
 import copy
 from ColorHelper.multiconf import get as qualify_settings
 
-DISTORTION_FIX = int(sublime.version()) < 3118
-
 try:
     popupver = mdpopups.version()
 except Exception:
@@ -187,7 +185,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             check_size = self.check_size(self.height)
 
             for row in color_map_data:
-                html_colors.append('<span class="%scolor-map-row">' % util.LEGACY_CLASS)
+                html_colors.append('<span class="color-map-row">')
                 if padding:
                     pad = mdpopups.color_box(
                         [SPACER], border_size=0,
@@ -225,8 +223,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.height)
         html = (
-            '<span class="%scurrent-color">%s</span>' % (
-                util.LEGACY_CLASS,
+            '<span class="current-color">%s</span>' % (
                 mdpopups.color_box(
                     [SPACER], border_size=0,
                     height=self.height, width=(self.width * (6 if self.hex_map else 5)),
@@ -323,7 +320,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         rgba1 = util.RGBA(self.color)
         rgba2 = util.RGBA(self.color)
         html = []
-        html.append('<span class="%schannel"><a href="hirespick:%s">%s:</a>' % (util.LEGACY_CLASS, color_filter, label))
+        html.append('<span class="channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
@@ -448,18 +445,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         if bottom_pad is None:
             bottom_pad = 0
         self.box_height = self.line_height - int(top_pad + bottom_pad) - 6
-        if DISTORTION_FIX:
-            sizes = {
-                "small": (10, 14, 16),
-                "medium": (14, 18, 20),
-                "large": (18, 22, 24)
-            }
-        else:
-            sizes = {
-                "small": (int(self.box_height * .85), int(self.box_height * .85), int(self.box_height * 1.0)),
-                "medium": (int(self.box_height), int(self.box_height), int(self.box_height * 1.25)),
-                "large": (int(self.box_height * 1.15), int(self.box_height * 1.15), int(self.box_height * 1.35))
-            }
+        sizes = {
+            "small": (int(self.box_height * .85), int(self.box_height * .85), int(self.box_height * 1.0)),
+            "medium": (int(self.box_height), int(self.box_height), int(self.box_height * 1.25)),
+            "large": (int(self.box_height * 1.15), int(self.box_height * 1.15), int(self.box_height * 1.35))
+        }
         self.height, self.width, self.height_big = sizes.get(
             self.graphic_size,
             sizes["medium"]
@@ -468,12 +458,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def check_size(self, height):
         """Get checkered size."""
 
-        if DISTORTION_FIX:
+        check_size = int((self.height - 4) / 4)
+        if check_size < 2:
             check_size = 2
-        else:
-            check_size = int((self.height - 4) / 4)
-            if check_size < 2:
-                check_size = 2
         return check_size
 
     def run(
@@ -488,9 +475,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.use_hex_argb = use_hex_argb
         self.compress_hex = compress_hex
         self.allowed_colors = allowed_colors
-        self.template_vars = {
-            "legacy": util.LEGACY_CLASS
-        }
+        self.template_vars = {}
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
         rgba = util.RGBA(color)
         self.set_sizes()

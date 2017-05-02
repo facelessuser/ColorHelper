@@ -1,12 +1,12 @@
 {%- if plugin.delete %}
-[back]({{plugin.back}}:{{plugin.palette_type}}:{{plugin.palette_name}}){: {{plugin.legacy}}.small}
+[back]({{plugin.back}}:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
 
 ## Delete Color
 Click the color to delete.
 {%- else %}
-[back]({{plugin.back}}){: {{plugin.legacy}}.small} 
+[back]({{plugin.back}}){: .small} 
   {% if plugin.show_delete_menu -%}
-[delete](__delete_colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: {{plugin.legacy}}.small}
+[delete](__delete_colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
   {%- endif %}
 {%- endif %}
 

@@ -12,8 +12,7 @@ from ColorHelper.lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import platform
 
-BETTER_CSS_SUPPORT = int(sublime.version()) >= 3119
-LINE_HEIGHT_WORKAROUND = (int(sublime.version()) >= 3121) and (platform.system() == "Windows")
+LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
@@ -97,7 +96,6 @@ ADD_CSS = dedent(
 )
 
 WRAPPER_CLASS = "color-helper content"
-LEGACY_CLASS = '' if BETTER_CSS_SUPPORT else 'color-helper'
 
 CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
 CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")

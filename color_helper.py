@@ -21,10 +21,7 @@ from html.parser import HTMLParser
 
 __pc_name__ = "ColorHelper"
 
-LATEST_SUPPORTED_MDPOPUPS = mdpopups.version() >= (1, 10, 0)
-
-DISTORTION_FIX = int(sublime.version()) < 3118
-PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3)) and (int(sublime.version()) >= 3118)
+PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3))
 
 PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
@@ -608,7 +605,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             use_upper = ch_settings.get("upper_case_hex", False)
 
             template_vars = {
-                "legacy": util.LEGACY_CLASS,
                 "palette_type": palette_type,
                 "palette_name": palette_name,
                 "color": rgba.get_rgb().upper() if use_upper else rgba.get_rgb().lower(),
@@ -684,7 +680,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         project_palettes = util.get_project_palettes(self.view.window())
 
         template_vars = {
-            "legacy": util.LEGACY_CLASS,
             "color": (color if color else '#ffffffff'),
             "show_picker_menu": show_picker,
             "show_delete_menu": (
@@ -797,7 +792,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         if target is not None:
             template_vars = {
-                "legacy": util.LEGACY_CLASS,
                 "delete": delete,
                 'show_delete_menu': not delete and not current,
                 "back": '__colors__' if delete else '__palettes__',
@@ -887,9 +881,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Show the color under the cursor."""
 
         color, alpha, alpha_dec = self.get_cursor_color()
-        template_vars = {
-            "legacy": util.LEGACY_CLASS
-        }
+        template_vars = {}
 
         if color is not None:
             if alpha is not None:
@@ -942,18 +934,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if bottom_pad is None:
             bottom_pad = 0
         box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) - 6
-        if DISTORTION_FIX:
-            sizes = {
-                "small": (22, 24, 26),
-                "medium": (26, 28, 26),
-                "large": (30, 32, 26)
-            }
-        else:
-            sizes = {
-                "small": (box_height, box_height, box_height * 2),
-                "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),
-                "large": (int(box_height * 2), int(box_height * 2), box_height * 2)
-            }
+        sizes = {
+            "small": (box_height, box_height, box_height * 2),
+            "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),
+            "large": (int(box_height * 2), int(box_height * 2), box_height * 2)
+        }
         self.color_h, self.color_w, self.palette_w = sizes.get(
             self.graphic_size,
             sizes["medium"]
@@ -962,12 +947,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def check_size(self, height):
         """Create checkered size based on height."""
 
-        if DISTORTION_FIX:
+        check_size = int((height - (BORDER_SIZE * 2)) / 4)
+        if check_size < 2:
             check_size = 2
-        else:
-            check_size = int((height - (BORDER_SIZE * 2)) / 4)
-            if check_size < 2:
-                check_size = 2
         return check_size
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
@@ -1886,19 +1868,6 @@ def plugin_loaded():
     ch_thread = ChThread()
     ch_thread.start()
     setup_previews()
-
-    # Try and ensure key dependencies are at the latest known good version.
-    # This is only done because Package Control does not do this on package upgrade at the present.
-    try:
-        from package_control import events
-
-        if events.post_upgrade(__pc_name__):
-            if not LATEST_SUPPORTED_MDPOPUPS and ch_settings.get('upgrade_dependencies', True):
-                window = sublime.active_window()
-                if window:
-                    window.run_command('satisfy_dependencies')
-    except ImportError:
-        print('ColorHelper: Could not import Package Control')
 
 
 def plugin_unloaded():
