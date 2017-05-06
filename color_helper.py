@@ -21,8 +21,6 @@ from html.parser import HTMLParser
 
 __pc_name__ = "ColorHelper"
 
-PHANTOM_SUPPORT = (mdpopups.version() >= (1, 7, 3))
-
 PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
 PALETTE_SCALE_Y = 2
@@ -1368,7 +1366,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if self.ignore_event(view):
             return
 
-        if PHANTOM_SUPPORT and ch_preview_thread is not None:
+        if ch_preview_thread is not None:
             now = time()
             ch_preview_thread.modified = True
             ch_preview_thread.time = now
@@ -1543,9 +1541,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
         s = sublime.load_settings('color_helper.sublime-settings')
         show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
-            if PHANTOM_SUPPORT:
-                view.settings().erase('color_helper.preview_meta')
-                view.erase_phantoms('color_helper')
+            view.settings().erase('color_helper.preview_meta')
+            view.erase_phantoms('color_helper')
             self.set_file_scan_rules(view)
         if show_current_palette:
             start_file_index(view)
@@ -1829,21 +1826,20 @@ def setup_previews():
     global ch_preview
     global unloading
 
-    if PHANTOM_SUPPORT:
-        unloading = True
-        if ch_preview_thread is not None:
-            ch_preview_thread.kill()
-        for w in sublime.windows():
-            for v in w.views():
-                v.settings().clear_on_change('color_helper.reload')
-                v.settings().erase('color_helper.preview_meta')
-                v.erase_phantoms('color_helper')
-        unloading = False
+    unloading = True
+    if ch_preview_thread is not None:
+        ch_preview_thread.kill()
+    for w in sublime.windows():
+        for v in w.views():
+            v.settings().clear_on_change('color_helper.reload')
+            v.settings().erase('color_helper.preview_meta')
+            v.erase_phantoms('color_helper')
+    unloading = False
 
-        if ch_settings.get('inline_previews', False):
-            ch_preview = ChPreview()
-            ch_preview_thread = ChPreviewThread()
-            ch_preview_thread.start()
+    if ch_settings.get('inline_previews', False):
+        ch_preview = ChPreview()
+        ch_preview_thread = ChPreviewThread()
+        ch_preview_thread.start()
 
 
 def plugin_loaded():
@@ -1885,9 +1881,8 @@ def plugin_unloaded():
 
     # Clear view events
     ch_settings.clear_on_change('reload')
-    if PHANTOM_SUPPORT:
-        for w in sublime.windows():
-            for v in w.views():
-                v.settings().clear_on_change('color_helper.reload')
+    for w in sublime.windows():
+        for v in w.views():
+            v.settings().clear_on_change('color_helper.reload')
 
     unloading = False

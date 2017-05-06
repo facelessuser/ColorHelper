@@ -83,15 +83,9 @@ INDEX_ALL_RE = re.compile((r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (CO
 
 ADD_CSS = dedent(
     '''
-    {% if var.sublime_version >= 3119 %}
     div.color-helper { margin: 0; padding: 0.5rem; }
     .color-helper .small { font-size: 0.7rem; }
     .color-helper .alpha { text-decoration: underline; }
-    {% else %}
-    .color-helper.content { margin: 0; padding: 0.5em; }
-    .color-helper.small { font-size: {{'*.8px'|relativesize}}; }
-    .color-helper.alpha { text-decoration: underline; }
-    {% endif %}
     '''
 )
 
