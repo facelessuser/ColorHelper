@@ -86,7 +86,7 @@
                 // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
                 "meta.value.css -comment -string",
                 // HTML attributes (based on: Sublime Default)
-                "meta.tag.inline.any.html string.quoted",
+                "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
                 "meta.tag.any.html meta.attribute-with-value.style.html"
             ],
             "scan_completion_scopes": [],
