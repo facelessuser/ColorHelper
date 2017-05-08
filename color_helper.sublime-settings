@@ -171,6 +171,20 @@
             "extensions": [],
             "use_hex_argb": false,
             "compress_hex_output": true
+        },
+        {
+            "syntax_files": [],
+            "syntax_filter": "whitelist",
+            "base_scopes": ["source.less"],
+            "scan_scopes": [
+                "constant.other.color.rgb-value.css",
+                "constant.color.w3c-standard-color-name.css",
+                "meta.property-value.css"
+            ],
+            "allowed_colors": ["css3"],
+            "extensions": [],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         }
     ],
 
