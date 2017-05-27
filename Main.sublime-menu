@@ -17,7 +17,8 @@
                                 "command": "edit_settings",
                                 "args": {
                                   "base_file": "${packages}/ColorHelper/color_helper.sublime-settings",
-                                  "default": "// Settings in here override those in \"ColorHelper/color_helper.sublime-settings\",\n\n{\n\t$0\n}\n"}
+                                  "default": "// Settings in here override those in \"ColorHelper/color_helper.sublime-settings\",\n\n{\n\t$0\n}\n"
+                                }
                             },
                             { "caption": "-" },
                             {
