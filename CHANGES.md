@@ -1,3 +1,12 @@
+# ColorHelper 2.5.0
+
+> Released May, 27, 2017
+
+- **NEW**: Use the newer API for opening settings [#78](https://github.com/facelessuser/ColorHelper/pull/78).
+- **NEW**: Require ST 3124+ (this will also be limited in Package Control soonish).
+- **NEW**: Add basic support for Less [#92](https://github.com/facelessuser/ColorHelper/pull/92).
+- **FIX**: Small fonts are not as small now.
+
 # ColorHelper 2.4.2
 
 > Released Feb 2, 2017

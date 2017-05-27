@@ -2,7 +2,7 @@
 RGBA.
 
 Licensed under MIT
-Copyright (c) 2012 - 2017 Isaac Muse <isaacmuse@gmail.com>
+Copyright (c) 2012 - 2016 Isaac Muse <isaacmuse@gmail.com>
 """
 import re
 from colorsys import rgb_to_hls, hls_to_rgb, rgb_to_hsv, hsv_to_rgb
@@ -96,7 +96,7 @@ class RGBA(object):
         return clamp(round_int(0.299 * self.r + 0.587 * self.g + 0.114 * self.b), 0, 255)
 
     def get_true_luminance(self):
-        """"Get true liminance."""
+        """Get true liminance."""
 
         l = self.tohls()[1]
         return clamp(round_int(l * 255.0), 0, 255)
@@ -122,7 +122,7 @@ class RGBA(object):
         self.b = round_int(clamp(self.b + (255.0 * factor) - 255.0, 0.0, 255.0))
 
     def luminance(self, factor):
-        """True luminance."""
+        """Get true luminance."""
 
         h, l, s = self.tohls()
         l = clamp(l + factor - 1.0, 0.0, 1.0)

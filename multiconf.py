@@ -40,7 +40,7 @@ Thanks to: biermeester and matthjes for their ideas and contributions
 
 Licensed under MIT.
 
-Copyright (C) 2012 - 2015 Isaac Muse
+Copyright (C) 2012 - 2017 Isaac Muse
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation
@@ -54,7 +54,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 """
 import socket
 import sublime
@@ -78,6 +77,7 @@ def get(settings_obj, key, default=None, callback=None):
       default      - the default value to return if the key value is not found.
       callback     - a callback function that, if provided, will be called with
                      the found and default values as parameters.
+
     """
 
     # Parameter validation

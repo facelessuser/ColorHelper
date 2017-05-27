@@ -180,7 +180,7 @@ class _Reader(object):
             self.bin = open(ase, 'rb')
 
     def read_header(self):
-        """"Parse the header."""
+        """Parse the header."""
 
         self.signature = self.read_string(4)
         self.version = self.read('2H')

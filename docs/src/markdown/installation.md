@@ -1,4 +1,7 @@
+# Installation
+
 ## Package Control
+
 The recommended way to install ColorHelper is via [Package Control](https://packagecontrol.io/).  Package Control will install the correct branch on your system and keep it up to date.
 
 ---
