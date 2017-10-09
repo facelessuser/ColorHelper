@@ -21,7 +21,7 @@
 
     // Color picker and palette picker by default
     // are accessed by clicking an icon on the color info panel.
-    // Click access for one of thesecan be moved to the color box
+    // Click access for one of these can be moved to the color box
     // (visual representation of the color).
     // (none|color_picker|palette_picker)
     "click_color_box_to_pick": "none",
