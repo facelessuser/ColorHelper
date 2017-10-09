@@ -137,9 +137,9 @@ class RGBA(object):
         """Convert to RGB from HSV."""
 
         r, g, b = hsv_to_rgb(h, s, v)
-        self.r = round_int(r * 255.0) & 0xFF
-        self.g = round_int(g * 255.0) & 0xFF
-        self.b = round_int(b * 255.0) & 0xFF
+        self.r = clamp(round_int(r * 255.0), 0, 255)
+        self.g = clamp(round_int(g * 255.0), 0, 255)
+        self.b = clamp(round_int(b * 255.0), 0, 255)
 
     def tohls(self):
         """Convert to HLS color format."""
@@ -150,9 +150,9 @@ class RGBA(object):
         """Convert to RGB from HSL."""
 
         r, g, b = hls_to_rgb(h, l, s)
-        self.r = round_int(r * 255.0) & 0xFF
-        self.g = round_int(g * 255.0) & 0xFF
-        self.b = round_int(b * 255.0) & 0xFF
+        self.r = clamp(round_int(r * 255.0), 0, 255)
+        self.g = clamp(round_int(g * 255.0), 0, 255)
+        self.b = clamp(round_int(b * 255.0), 0, 255)
 
     def tohwb(self):
         """Convert to HWB from RGB."""
@@ -176,9 +176,9 @@ class RGBA(object):
         s = 1.0 - (w / (1.0 - b))
         v = 1.0 - b
         r, g, b = hsv_to_rgb(h, s, v)
-        self.r = round_int(r * 255.0) & 0xFF
-        self.g = round_int(g * 255.0) & 0xFF
-        self.b = round_int(b * 255.0) & 0xFF
+        self.r = clamp(round_int(r * 255.0), 0, 255)
+        self.g = clamp(round_int(g * 255.0), 0, 255)
+        self.b = clamp(round_int(b * 255.0), 0, 255)
 
     def colorize(self, deg):
         """Colorize the color with the given hue."""
@@ -199,6 +199,19 @@ class RGBA(object):
             h += 1.0
         self.fromhls(h, l, s)
 
+    def contrast(self, factor):
+        """Adjust contrast."""
+
+        # Algorithm can't handle any thing beyond +/-255 (or a factor from 0 - 2)
+        # Convert factor between (-255, 255)
+        f = (clamp(factor, 0.0, 2.0) - 1.0) * 255.0
+        f = (259 * (f + 255)) / (255 * (259 - f))
+
+        # Increase/decrease contrast accordingly.
+        self.r = clamp(round_int((f * (self.r - 128)) + 128), 0, 255)
+        self.g = clamp(round_int((f * (self.g - 128)) + 128), 0, 255)
+        self.b = clamp(round_int((f * (self.b - 128)) + 128), 0, 255)
+
     def invert(self):
         """Invert the color."""
 
@@ -216,7 +229,7 @@ class RGBA(object):
     def grayscale(self):
         """Convert the color with a grayscale filter."""
 
-        luminance = self.get_luminance() & 0xFF
+        luminance = self.get_luminance()
         self.r = luminance
         self.g = luminance
         self.b = luminance
@@ -224,9 +237,9 @@ class RGBA(object):
     def sepia(self):
         """Apply a sepia filter to the color."""
 
-        r = clamp(round_int((self.r * .393) + (self.g * .769) + (self.b * .189)), 0, 255) & 0xFF
-        g = clamp(round_int((self.r * .349) + (self.g * .686) + (self.b * .168)), 0, 255) & 0xFF
-        b = clamp(round_int((self.r * .272) + (self.g * .534) + (self.b * .131)), 0, 255) & 0xFF
+        r = clamp(round_int((self.r * .393) + (self.g * .769) + (self.b * .189)), 0, 255)
+        g = clamp(round_int((self.r * .349) + (self.g * .686) + (self.b * .168)), 0, 255)
+        b = clamp(round_int((self.r * .272) + (self.g * .534) + (self.b * .131)), 0, 255)
         self.r, self.g, self.b = r, g, b
 
     def _get_overage(self, c):
@@ -292,6 +305,6 @@ class RGBA(object):
                     components = list(self._distribute_overage(components, overage, slots))
                 count += 1
 
-            self.r = clamp(round_int(components[0]), 0, 255) & 0xFF
-            self.g = clamp(round_int(components[1]), 0, 255) & 0xFF
-            self.b = clamp(round_int(components[2]), 0, 255) & 0xFF
+            self.r = clamp(round_int(components[0]), 0, 255)
+            self.g = clamp(round_int(components[1]), 0, 255)
+            self.b = clamp(round_int(components[2]), 0, 255)
