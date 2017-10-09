@@ -1322,16 +1322,18 @@ class ChPreviewThread(threading.Thread):
     def payload(self, clear=False, force=False):
         """Code to run."""
 
-        self.modified = False
+        if clear:
+            self.modified = False
         # Ignore selection and edit events inside the routine
         self.ignore_all = True
         if ch_preview is not None:
             try:
                 view = sublime.active_window().active_view()
                 if view:
-                    ch_preview.erase_phantoms(view, incremental=True)
                     if not clear:
                         ch_preview.do_search(view, force)
+                    else:
+                        ch_preview.erase_phantoms(view, incremental=True)
             except Exception:
                 print('ColorHelper: \n' + str(traceback.format_exc()))
         self.ignore_all = False
@@ -1350,7 +1352,7 @@ class ChPreviewThread(threading.Thread):
 
         while not self.abort:
             if not self.ignore_all:
-                if (self.modified) is True and time() - self.time > self.wait_time:
+                if self.modified is True and (time() - self.time) > self.wait_time:
                     sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
                 elif not self.modified:
                     sublime.set_timeout_async(self.payload, 0)
