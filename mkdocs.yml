@@ -1,5 +1,7 @@
 site_name: ColorHelper
+site_url: https://facelessuser.github.io/ColorHelper
 repo_url: https://github.com/facelessuser/ColorHelper
+edit_uri: tree/master/docs/src/markdown
 site_description: Popup tooltips and previews for stylesheet colors.
 copyright: Copyright &copy; 2015 - 2017 <a href="https://github.com/facelessuser">Isaac Muse</a>
 
@@ -17,7 +19,7 @@ theme_dir: docs/theme
 markdown_extensions:
   - markdown.extensions.toc:
       slugify: !!python/name:pymdownx.slugs.uslugify
-      permalink: 
+      permalink: "\ue157"
   - markdown.extensions.admonition:
   - markdown.extensions.smarty:
       smart_quotes: false
@@ -55,8 +57,8 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: docs/src/markdown/_snippets
   - pymdownx.keys:
-      separator: ＋
-  - pymdownx.spoilers:
+      separator: "\uff0b"
+  - pymdownx.details:
 
 extra:
   palette:
@@ -69,6 +71,6 @@ extra:
     - type: github
       link: https://github.com/facelessuser
 extra_css:
-  - extra-effadd97dd.css
+  - extra-9b4c72abee.css
 extra_javascript:
-  - extra-0d49409391.js
+  - extra-449b50d2b3.js
