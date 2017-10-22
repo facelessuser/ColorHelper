@@ -3,7 +3,9 @@ site_url: https://facelessuser.github.io/ColorHelper
 repo_url: https://github.com/facelessuser/ColorHelper
 edit_uri: tree/master/docs/src/markdown
 site_description: Popup tooltips and previews for stylesheet colors.
-copyright: Copyright &copy; 2015 - 2017 <a href="https://github.com/facelessuser">Isaac Muse</a>
+copyright: |
+  Copyright &copy; 2015 - 2017 <a href="https://github.com/facelessuser">Isaac Muse</a>
+  <br><span class="md-footer-custom-text">emoji provided free by </span><a href="http://www.emojione.com">EmojiOne</a>
 
 pages:
   - About Markdown Popups: index.md
@@ -71,6 +73,6 @@ extra:
     - type: github
       link: https://github.com/facelessuser
 extra_css:
-  - extra-9b4c72abee.css
+  - extra-00833721db.css
 extra_javascript:
-  - extra-449b50d2b3.js
+  - extra-4596f9831a.js
