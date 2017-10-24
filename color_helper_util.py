@@ -480,6 +480,6 @@ def translate_color(m, use_hex_argb=False, decode=False):
                 color = csscolors.name2hex(m.group('webcolors').decode('utf-8')).lower()
             else:
                 color = csscolors.name2hex(m.group('webcolors')).lower()
-        except:
+        except Exception:
             pass
     return color, alpha, alpha_dec

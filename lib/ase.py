@@ -284,7 +284,7 @@ def loads(ase):
 
         for palette in binary.read_palettes():
             palattes.append(palette)
-    except:
+    except Exception:
         binary.close()
         raise
     binary.close()
@@ -310,7 +310,7 @@ def dumps(ase, palettes):
             binary.write_group_end()
         binary.bin.seek(0)
         text = binary.bin.read()
-    except:
+    except Exception:
         binary.close()
         raise
     binary.close()
@@ -333,7 +333,7 @@ def dump(ase, palettes):
             for c in p['colors']:
                 binary.write_color(c['color'], c.get('name'))
             binary.write_group_end()
-    except:
+    except Exception:
         binary.close()
         raise
     binary.close()
@@ -349,7 +349,7 @@ def load(ase):
 
         for palette in binary.read_palettes():
             palattes.append(palette)
-    except:
+    except Exception:
         binary.close()
         raise
     binary.close()

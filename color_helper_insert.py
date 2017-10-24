@@ -44,7 +44,7 @@ class InsertCalc(object):
                 if len(target_color) > 7:
                     target_color = target_color[:-2]
                 self.web_color = csscolors.hex2name(target_color)
-            except:
+            except Exception:
                 pass
             self.force_alpha = False
         elif convert in ('gray', 'graya'):
