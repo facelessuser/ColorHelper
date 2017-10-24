@@ -153,7 +153,7 @@
             "base_scopes": ["text.xml"],
             "scan_scopes": ["text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"],
             "allowed_colors": ["hex", "hexa", "hex_compressed"],
-            "extensions": [".tmTheme", ".stTheme"],
+            "extensions": [".tmTheme", ".hidden-tmTheme", ".stTheme"],
             "use_hex_argb": false,
             "compress_hex_output": false
         },
