@@ -4,6 +4,15 @@
         "command": "color_helper_file_index"
     },
     {
+        "caption": "Color Helper: Index Colors in File Strings",
+        "command": "color_helper_file_index",
+        "args": {
+            "scan_scopes": ["source string"],
+            "allowed_colors": ["all"],
+            "use_hex_argb": true
+        }
+    },
+    {
         "caption": "Color Helper: Show Palettes",
         "command": "color_helper",
         "args": {
