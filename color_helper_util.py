@@ -94,6 +94,7 @@ WRAPPER_CLASS = "color-helper content"
 CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
 CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")
 ALL = CSS4
+COLOR_EXPANSION = {"css3": CSS3, "css4": CSS4, "all": ALL}
 
 
 def log(*args):
@@ -178,6 +179,17 @@ def get_scope_completion(view, rules, skip_sel_check=False):
             if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
                 scopes = None
     return scopes
+
+
+def expand_colors(colors):
+    """Expand color name like 'css3' into the list of corresponding colors."""
+    expanded = set()
+    for color in colors:
+        if color in COLOR_EXPANSION:
+            expanded.update(COLOR_EXPANSION[color])
+        else:
+            expanded.add(color)
+    return expanded
 
 
 def get_favs():

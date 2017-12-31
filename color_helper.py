@@ -1008,16 +1008,18 @@ class ColorHelperFileIndexCommand(sublime_plugin.WindowCommand):
     configuration it will look for colors inside the given scopes.
     """
 
-    def run(self, scan_scopes=None, allowed_colors=["all"], use_hex_argb=False):
+    def run(self, scan_scopes=None, allowed_colors=("all"), use_hex_argb=False):
         """Run the command."""
         view = self.window.active_view()
         if scan_scopes:
-            if "all" in allowed_colors:
-                allowed_colors = util.ALL
-            rules = view.settings().get('color_helper.scan')
+            # Reading the current config to avoid recomputing "last_updated",
+            # "file_ext", ...
+            # If those aren't properly set `set_file_scan_rules` will discard
+            # this config.
+            rules = view.settings().get('color_helper.scan', {})
             rules["enabled"] = True
             rules["scan_scopes"] = scan_scopes
-            rules["allowed_colors"] = allowed_colors
+            rules["allowed_colors"] = list(util.expand_colors(allowed_colors))
             rules["use_hex_argb"] = use_hex_argb
             view.settings().set('color_helper.scan', rules)
 
@@ -1444,22 +1446,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if False not in results:
                 scan_scopes += rule.get("scan_scopes", [])
                 incomplete_scopes += rule.get("scan_completion_scopes", [])
-                for color in rule.get("allowed_colors", []):
-                    if color == "css3":
-                        for c in util.CSS3:
-                            allowed_colors.add(c)
-                    elif color == "css4":
-                        for c in util.CSS4:
-                            allowed_colors.add(c)
-                    elif color == "all":
-                        for c in util.ALL:
-                            allowed_colors.add(c)
-                    else:
-                        allowed_colors.add(color)
-                if not use_hex_argb and rule.get("use_hex_argb", False):
-                    use_hex_argb = True
-                if not compress_hex and rule.get("compress_hex_output", False):
-                    compress_hex = True
+                allowed_colors.update(
+                    util.expand_colors(rule.get("allowed_colors", [])))
+                use_hex_argb = use_hex_argb or rule.get("use_hex_argb", False)
+                compress_hex = compress_hex or rule.get("compress_hex_output", False)
+
         if scan_scopes or incomplete_scopes:
             view.settings().set(
                 'color_helper.scan',
