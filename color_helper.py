@@ -1001,32 +1001,31 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         )
 
 
-class ColorHelperFileIndexCommand(sublime_plugin.WindowCommand):
+class ColorHelperFileIndexCommand(sublime_plugin.TextCommand):
     """Forces Color Helper to index the colors in the current file.
 
     If `scan_scopes` argument is provided, instead of using the normal
     configuration it will look for colors inside the given scopes.
     """
 
-    def run(self, scan_scopes=None, allowed_colors=("all"), use_hex_argb=False):
+    def run(self, edit, scan_scopes=None, allowed_colors=("all",), use_hex_argb=False):
         """Run the command."""
-        view = self.window.active_view()
         if scan_scopes:
             # Reading the current config to avoid recomputing "last_updated",
             # "file_ext", ...
             # If those aren't properly set `set_file_scan_rules` will discard
             # this config.
-            rules = view.settings().get('color_helper.scan', {})
+            rules = self.view.settings().get('color_helper.scan', {})
             rules["enabled"] = True
             rules["scan_scopes"] = scan_scopes
             rules["allowed_colors"] = list(util.expand_colors(allowed_colors))
             rules["use_hex_argb"] = use_hex_argb
-            view.settings().set('color_helper.scan', rules)
+            self.view.settings().set('color_helper.scan', rules)
 
-        rules = util.get_rules(view)
-        if rules and util.get_scope(view, rules, skip_sel_check=True):
+        rules = util.get_rules(self.view)
+        if rules and util.get_scope(self.view, rules, skip_sel_check=True):
             if ch_file_thread is None or not ch_file_thread.is_alive():
-                start_file_index(view)
+                start_file_index(self.view)
             else:
                 sublime.error_message("File indexer is already running!")
         else:
