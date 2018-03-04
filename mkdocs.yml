@@ -4,8 +4,21 @@ repo_url: https://github.com/facelessuser/ColorHelper
 edit_uri: tree/master/docs/src/markdown
 site_description: Popup tooltips and previews for stylesheet colors.
 copyright: |
-  Copyright &copy; 2015 - 2017 <a href="https://github.com/facelessuser">Isaac Muse</a>
+  Copyright &copy; 2015 - 2018 <a href="https://github.com/facelessuser">Isaac Muse</a>
   <br><span class="md-footer-custom-text">emoji provided free by </span><a href="http://www.emojione.com">EmojiOne</a>
+
+docs_dir: docs/src/markdown
+theme:
+  name: material
+  custom_dir: docs/theme
+  palette:
+    primary: blue
+    accent: blue
+  logo:
+    icon: description
+  font:
+    text: Roboto
+    code: Roboto Mono
 
 pages:
   - About Markdown Popups: index.md
@@ -13,10 +26,6 @@ pages:
   - User Guide: usage.md
   - Contributing &amp; Support: contributing.md
   - License: license.md
-
-theme: material
-docs_dir: docs/src/markdown
-theme_dir: docs/theme
 
 markdown_extensions:
   - markdown.extensions.toc:
@@ -39,10 +48,17 @@ markdown_extensions:
           lang: php
           options:
             startinline: true
+        - name: pycon3
+          lang: pycon
+          options:
+            python3: true
   - pymdownx.inlinehilite:
   - pymdownx.magiclink:
       repo_url_shortener: true
-      base_repo_url: https://github.com/facelessuser/ColorHelper
+      repo_url_shorthand: true
+      social_url_shorthand: true
+      user: facelessuser
+      repo: ColorHelper
   - pymdownx.tilde:
   - pymdownx.caret:
   - pymdownx.smartsymbols:
@@ -54,8 +70,8 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.progressbar:
-  - pymdownx.plainhtml:
-      strip_attributes: ''
+  - pymdownx.mark:
+  - pymdownx.striphtml:
   - pymdownx.snippets:
       base_path: docs/src/markdown/_snippets
   - pymdownx.keys:
@@ -63,16 +79,10 @@ markdown_extensions:
   - pymdownx.details:
 
 extra:
-  palette:
-    primary: blue
-    accent: blue
-  font:
-    text: Roboto
-    code: Roboto Mono
   social:
     - type: github
       link: https://github.com/facelessuser
 extra_css:
-  - extra-00833721db.css
+  - extra-d04c85ed4a.css
 extra_javascript:
-  - extra-4596f9831a.js
+  - extra-d8800ea088.js
