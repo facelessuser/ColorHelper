@@ -185,6 +185,18 @@
             "extensions": [],
             "use_hex_argb": false,
             "compress_hex_output": true
+        },
+        {
+            "syntax_files": [],
+            "syntax_filter": "whitelist",
+            "base_scopes": [],
+            "scan_scopes": [
+                "string.quoted.double.json",
+            ],
+            "allowed_colors": ["hex", "hex_compressed", "hexa", "hexa_compressed", "rgb", "rgba", "hsl", "hsla", "gray", "graya", "hwb", "hwba"],
+            "extensions": [".sublime-color-scheme"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
         }
     ],
 
