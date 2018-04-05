@@ -125,7 +125,7 @@
                 // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
                 "meta.property-list.css.sass -comment -string",
                 // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-                "constant.other.rgb-value.sass -comment -string",
+                "constant.other.color.rgb-value.css.sass -comment -string",
                 // SCSS (based on https://packagecontrol.io/packages/SCSS)
                 "constant.other.color.rgb-value.scss -comment -string",
                 // SCSS (based on https://packagecontrol.io/packages/SCSS)
