@@ -131,6 +131,8 @@
                 // SCSS (based on https://packagecontrol.io/packages/SCSS)
                 "constant.other.color.rgb-value.scss",
                 "support.constant.color.w3c-standard-color-name.scss",
+                "meta.property-value.css",
+                "meta.property-value.sass",
                 "meta.property-value.scss",
                 // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
                 "sass-script-maps -variable.other -comment -string"
