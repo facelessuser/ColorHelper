@@ -6,16 +6,16 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from ColorHelper.lib.rgba import RGBA
-from ColorHelper.lib import csscolors
+from .lib.rgba import RGBA
+from .lib import csscolors
 import threading
 from time import time, sleep
 import re
 import os
 import mdpopups
-import ColorHelper.color_helper_util as util
-from ColorHelper.color_helper_insert import InsertCalc, PickerInsertCalc
-from ColorHelper.multiconf import get as qualify_settings
+from . import color_helper_util as util
+from .color_helper_insert import InsertCalc, PickerInsertCalc
+from .multiconf import get as qualify_settings
 import traceback
 from html.parser import HTMLParser
 
@@ -1200,7 +1200,12 @@ class ChPreview(object):
                     rgba = RGBA(mdpopups.scope2style(view, scope)['background'])
                     rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
                     preview_id = str(time())
-                    color = '<style>html, body {margin: 0; padding: 0;} a {line-height: 0;}</style><a href="%s">%s</a>' % (
+                    color = (
+                        '<style>'
+                        'html, body {margin: 0; padding: 0;} a {line-height: 0;}'
+                        '</style>'
+                        '<a href="%s">%s</a>'
+                    ) % (
                         preview_id,
                         mdpopups.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
