@@ -9,7 +9,7 @@ from mdpopups import colorbox
 import sublime
 import sublime_plugin
 from .lib import csscolors
-from  . import color_helper_util as util
+from . import color_helper_util as util
 import copy
 from .multiconf import get as qualify_settings
 
