@@ -5,8 +5,8 @@ Copyright (c) 2015 - 2017 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
 """
 import sublime
-from ColorHelper.lib import csscolors
-import ColorHelper.color_helper_util as util
+from .lib import csscolors
+import .color_helper_util as util
 
 
 class InsertCalc(object):

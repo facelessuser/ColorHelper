@@ -8,10 +8,10 @@ import mdpopups
 from mdpopups import colorbox
 import sublime
 import sublime_plugin
-from ColorHelper.lib import csscolors
-import ColorHelper.color_helper_util as util
+from .lib import csscolors
+from  . import color_helper_util as util
 import copy
-from ColorHelper.multiconf import get as qualify_settings
+from .multiconf import get as qualify_settings
 
 try:
     popupver = mdpopups.version()

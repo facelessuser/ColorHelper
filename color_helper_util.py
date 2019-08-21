@@ -7,8 +7,8 @@ License: MIT
 import sublime
 import re
 import decimal
-from ColorHelper.lib import csscolors
-from ColorHelper.lib.rgba import RGBA, round_int, clamp
+from .lib import csscolors
+from .lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import platform
 
