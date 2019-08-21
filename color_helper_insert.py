@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 from .lib import csscolors
-import .color_helper_util as util
+from . import color_helper_util as util
 
 
 class InsertCalc(object):
