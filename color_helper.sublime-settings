@@ -124,7 +124,7 @@
                 "source.scss"
             ],
             "scan_scopes": [
-                "source.scss -comment -string",
+                "source.scss -comment -string"
             ],
             "scan_completion_scopes": [
                 "source.scss"
