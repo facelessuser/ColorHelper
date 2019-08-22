@@ -3,6 +3,7 @@
 - **NEW**: Enable CSS level 4 colors by default.
 - **NEW**: Reduce borders and in some cases remove borders around color previews.
 - **NEW**: Allow insertion of colors when there is an active selection.
+- **NEW**: Add option to override the border color used around color previews in the popup.
 - **FIX**: Fix color scope for Sass package.
 - **FIX**: Fix issue where inline color phantom could make the line height larger.
 - **FIX**: Fix compressed hex with alpha handling.

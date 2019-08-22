@@ -14,13 +14,6 @@ import copy
 from .multiconf import get as qualify_settings
 from .lib.rgba import RGBA
 
-try:
-    popupver = mdpopups.version()
-except Exception:
-    popupver = (0, 0, 0)
-
-BORDER_MAP_SUPPORT = popupver >= (1, 3, 0)
-
 color_map_data = [
     ['036', '369', '36c', '039', '009', '00c', '006'],
     ['066', '069', '09c', '06c', '03c', '00f', '33f', '339'],
@@ -41,6 +34,7 @@ color_map = None
 color_map_size = False
 color_map_style = None
 line_height = None
+default_border = None
 
 SPACER = '#00000000'
 
@@ -57,16 +51,19 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map_size
         global color_map_style
         global line_height
+        global default_border
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
             self.line_height != line_height or
+            self.default_border != default_border or
             color_map_style != "square"
         ):
             color_map_size = self.graphic_size
             color_map_style = "square"
             line_height = self.line_height
+            default_border = self.default_border
 
             html_colors = []
 
@@ -95,26 +92,25 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         "check_size": check_size
                     }
 
-                    if BORDER_MAP_SUPPORT:
-                        if y == 0 and x == 0:
-                            border_map = colorbox.TOP | colorbox.LEFT
-                        elif y == 0 and x == 14:
-                            border_map = colorbox.TOP | colorbox.RIGHT
-                        elif y == 0:
-                            border_map = colorbox.TOP
-                        elif y == 10 and x == 0:
-                            border_map = colorbox.BOTTOM | colorbox.LEFT
-                        elif y == 10 and x == 14:
-                            border_map = colorbox.BOTTOM | colorbox.RIGHT
-                        elif y == 10:
-                            border_map = colorbox.BOTTOM
-                        elif x == 0:
-                            border_map = colorbox.LEFT
-                        elif x == 14:
-                            border_map = colorbox.RIGHT
-                        else:
-                            border_map = 0
-                        kwargs["border_map"] = border_map
+                    if y == 0 and x == 0:
+                        border_map = colorbox.TOP | colorbox.LEFT
+                    elif y == 0 and x == 14:
+                        border_map = colorbox.TOP | colorbox.RIGHT
+                    elif y == 0:
+                        border_map = colorbox.TOP
+                    elif y == 10 and x == 0:
+                        border_map = colorbox.BOTTOM | colorbox.LEFT
+                    elif y == 10 and x == 14:
+                        border_map = colorbox.BOTTOM | colorbox.RIGHT
+                    elif y == 10:
+                        border_map = colorbox.BOTTOM
+                    elif x == 0:
+                        border_map = colorbox.LEFT
+                    elif x == 14:
+                        border_map = colorbox.RIGHT
+                    else:
+                        border_map = 0
+                    kwargs["border_map"] = border_map
 
                     html_colors[-1].append(
                         '<a href="%s">%s</a>' % (
@@ -142,14 +138,13 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
-                if BORDER_MAP_SUPPORT:
-                    if y == 0:
-                        border_map = 0xb
-                    elif y == 10:
-                        border_map = 0xe
-                    else:
-                        border_map = 0xa
-                    kwargs["border_map"] = border_map
+                if y == 0:
+                    border_map = 0xb
+                elif y == 10:
+                    border_map = 0xe
+                else:
+                    border_map = 0xa
+                kwargs["border_map"] = border_map
 
                 html_colors[y].append(
                     '<a href="%s">%s</a>' % (
@@ -171,15 +166,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map_size
         global color_map_style
         global line_height
+        global default_border
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
             self.line_height != line_height or
+            self.default_border != default_border or
             color_map_style != "hex"
         ):
             color_map_size = self.graphic_size
             line_height = self.line_height
+            default_border = self.default_border
             color_map_style = "hex"
             padding = (self.width * 9)
             decrement = True
@@ -187,7 +185,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             count = 0
             check_size = self.check_size(self.height)
 
-            for row in color_map_data:
+            last_row = len(color_map_data) - 1
+            for y, row in enumerate(color_map_data):
                 html_colors.append('<span class="color-map-row">')
                 if padding:
                     pad = mdpopups.color_box(
@@ -195,17 +194,41 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         height=self.height, width=padding, check_size=check_size, alpha=True
                     )
                     html_colors.append(pad)
-                for color in row:
+                last_col = len(row) - 1
+                for x, color in enumerate(row):
                     if len(self.color) == 3:
                         color = '#' + ''.join([c * 2 for c in color]) + 'ff'
                     else:
                         color = '#' + color + 'ff'
+
+                    kwargs = {
+                        "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
+                    }
+
+                    border_map = 0
+                    if y == 0 and x == 0:
+                        border_map = colorbox.TOP | colorbox.LEFT
+                    elif y == 0 and x == last_col:
+                        border_map = colorbox.TOP | colorbox.RIGHT
+                    elif y == 0:
+                        border_map = colorbox.TOP
+                    elif y == last_row and x == 0:
+                        border_map = colorbox.BOTTOM | colorbox.LEFT
+                    elif y == last_row and x == last_col:
+                        border_map = colorbox.BOTTOM | colorbox.RIGHT
+                    elif y == last_row:
+                        border_map = colorbox.BOTTOM
+                    elif x == 0:
+                        border_map = colorbox.LEFT
+                    elif x == last_col:
+                        border_map = colorbox.RIGHT
+                    kwargs['border_map'] = border_map
+
                     html_colors.append(
                         '<a href="%s">%s</a>' % (
                             color, mdpopups.color_box(
-                                [color],
-                                border_size=0, height=self.height, width=self.width,
-                                check_size=check_size
+                                [color], self.default_border,
+                                **kwargs
                             )
                         )
                     )
@@ -329,9 +352,19 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         temp = []
         count = 12
         check_size = self.check_size(self.height)
+
         while count:
             getattr(rgba1, color_filter)(minimum)
-            kwargs = {"border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size}
+
+            border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.LEFT
+            if count == 1:
+                border_map |= colorbox.RIGHT
+
+            kwargs = {
+                "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
+                "border_map": border_map
+            }
+
             temp.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
@@ -355,7 +388,16 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         count = 12
         while count:
             getattr(rgba2, color_filter)(maximum)
-            kwargs = {"border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size}
+
+            border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.RIGHT
+            if count == 12:
+                border_map |= colorbox.LEFT
+
+            kwargs = {
+                "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
+                "border_map": border_map
+            }
+
             html.append(
                 '[%s](%s)' % (
                     mdpopups.color_box(
@@ -475,8 +517,17 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
-        rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
+        rgba = None
+        settings = sublime.load_settings('color_helper.sublime-settings')
+        border_clr = settings.get('image_border_color')
+        if border_clr is not None:
+            try:
+                rgba = RGBA(border_clr)
+            except Exception:
+                pass
+        if rgba is None:
+            rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
+            rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
         self.default_border = rgba.get_rgb()
 
         self.on_done = on_done

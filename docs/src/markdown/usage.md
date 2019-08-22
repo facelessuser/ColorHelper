@@ -260,6 +260,19 @@ Temporary workaround for Windows 10 HiDPI setups that reduces image sizes.
     "line_height_workaround": false,
 ```
 
+### `image_border_color`
+
+For themes with popups that have a very different background than what is found as the default code background, it may be desirable to override image borders with a color that blends better. Border cannot be applied to images with CSS, so this option was exposed to allow user override.
+
+Colors specified in the setting must be of the form `#RRGGBB`. `null` can be used to turn remove your override.
+
+```js
+    // Override image border color. This is mainly for schemes that use a dramatically different
+    // background for popups vs code background. Color should be in the form `#RRGGBB`. Alpha channels will
+    // be ignored.
+    "image_border_color": "##ff0000"
+```
+
 ### `color_scanning`
 
 Setting to control color scanning which is responsible for both auto-popups and constructing "Current File Palette".

@@ -955,12 +955,20 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
 
-        rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
-        rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
+        rgba = None
+        s = sublime.load_settings('color_helper.sublime-settings')
+        border_clr = s.get('image_border_color')
+        if border_clr is not None:
+            try:
+                rgba = RGBA(border_clr)
+            except Exception:
+                pass
+        if rgba is None:
+            rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
+            rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
         self.default_border = rgba.get_rgb()
 
         self.set_sizes()
-        s = sublime.load_settings('color_helper.sublime-settings')
         use_color_picker_package = s.get('use_color_picker_package', False)
         self.color_picker_package = use_color_picker_package and util.color_picker_available()
         self.no_info = True

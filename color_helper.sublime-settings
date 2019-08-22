@@ -189,5 +189,10 @@
     ],
 
     // Enable project palettes in palette panel (Palettes stored in project file).
-    "enable_project_user_palettes": true
+    "enable_project_user_palettes": true,
+
+    // Override image border color. This is mainly for schemes that use a dramatically different
+    // background for popups vs code background. Color should be in the form `#RRGGBB`. Alpha channels will
+    // be ignored.
+    "image_border_color": null
 }
