@@ -291,7 +291,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
         color = "#%02x%02x%02x" % (
             int(content[1:2] * 2, 16), int(content[2:3] * 2, 16), int(content[3:] * 2, 16)
         )
-        alpha = content[0:1]
+        alpha = content[0:1] * 2
         alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
     elif m.group('hexa_compressed'):
         if decode:
@@ -301,7 +301,7 @@ def translate_color(m, use_hex_argb=False, decode=False):
         color = "#%02x%02x%02x" % (
             int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
         )
-        alpha = content[3:]
+        alpha = content[3:] * 2
         alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
     elif m.group('hex'):
         if decode:

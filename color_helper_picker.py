@@ -411,7 +411,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.template_vars['hexa_alpha'] = color[-2:]
         if (
             ('hexa' in self.allowed_colors or 'hexa_compressed') and
-            (self.use_hex_argb is None or self.use_hex_argb is True)
+            (self.use_hex_argb is True)
         ):
             color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
             self.template_vars['ahex_info'] = True
