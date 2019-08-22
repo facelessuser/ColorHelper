@@ -91,7 +91,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     rgba.fromhls(h, l, s)
                     color = rgba.get_rgba()
                     kwargs = {
-                        "border_size": 0, "height": self.height, "width": self.width,
+                        "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
                     }
 
@@ -119,7 +119,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     html_colors[-1].append(
                         '<a href="%s">%s</a>' % (
                             color, mdpopups.color_box(
-                                [color],
+                                [color], self.default_border,
                                 **kwargs
                             )
                         )
@@ -139,7 +139,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 rgba.fromhls(h, l, s)
                 color = rgba.get_rgba()
                 kwargs = {
-                    "border_size": 0, "height": self.height, "width": self.width, "check_size": check_size
+                    "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
                 if BORDER_MAP_SUPPORT:
@@ -154,7 +154,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 html_colors[y].append(
                     '<a href="%s">%s</a>' % (
                         color, mdpopups.color_box(
-                            [color],
+                            [color], self.default_border,
                             **kwargs
                         )
                     )
