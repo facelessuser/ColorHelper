@@ -324,8 +324,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Insert colors."""
 
         sels = self.view.sel()
-        if (len(sels) == 1 and sels[0].size() == 0):
+        if (len(sels) == 1):
             point = sels[0].begin()
+            is_replace = point != sels[0].end()
             parts = target_color.split('@')
             target_color = parts[0]
             dlevel = len(parts[1]) if len(parts) > 1 else 3
@@ -394,8 +395,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 calc = PickerInsertCalc(self.view, point, allowed_colors)
                 calc.calc()
                 value = target_color
-            self.view.sel().subtract(sels[0])
-            self.view.sel().add(calc.region)
+            if not is_replace:
+                self.view.sel().subtract(sels[0])
+                self.view.sel().add(calc.region)
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
