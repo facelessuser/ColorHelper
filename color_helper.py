@@ -24,7 +24,7 @@ __pc_name__ = "ColorHelper"
 PREVIEW_SCALE_Y = 2
 PALETTE_SCALE_X = 8
 PALETTE_SCALE_Y = 2
-BORDER_SIZE = 2
+BORDER_SIZE = 1
 PREVIEW_BORDER_SIZE = 1
 
 reload_flag = False
@@ -415,7 +415,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         colors.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
-                    color_list, '#cccccc', '#333333',
+                    color_list, self.default_border,
                     height=self.color_h, width=self.palette_w * PALETTE_SCALE_X,
                     border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
                 ),
@@ -449,7 +449,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [no_alpha_color, color], '#cccccc', '#333333',
+                            [no_alpha_color, color], self.default_border,
                             height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
                         ),
@@ -460,7 +460,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 colors.append(
                     '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [no_alpha_color, color], '#cccccc', '#333333',
+                            [no_alpha_color, color], self.default_border,
                             height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
                         ), f, palette_type, label
@@ -548,7 +548,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         no_alpha_color = color[:-2] if len(color) > 7 else color
         template_vars['color_preview'] = (
             mdpopups.color_box(
-                [no_alpha_color, color], '#cccccc', '#333333',
+                [no_alpha_color, color], self.default_border,
                 height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
                 border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
             )
@@ -952,6 +952,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
     def run(self, edit, mode, palette_name=None, color=None, auto=False):
         """Run the specified tooltip."""
+
+        rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
+        rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
+        self.default_border = rgba.get_rgb()
 
         self.set_sizes()
         s = sublime.load_settings('color_helper.sublime-settings')
