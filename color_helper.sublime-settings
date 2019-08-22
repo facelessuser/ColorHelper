@@ -91,7 +91,7 @@
             ],
             "scan_completion_scopes": [],
             "extensions": [],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "use_hex_argb": false,
             "compress_hex_output": true
         },
@@ -108,7 +108,7 @@
             "scan_completion_scopes": [
             ],
             "extensions": [],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "use_hex_argb": false,
             "compress_hex_output": true
         },
@@ -143,7 +143,7 @@
                 "source.sass -comment -string"
             ],
             "extensions": [],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "use_hex_argb": false,
             "compress_hex_output": true
         },
