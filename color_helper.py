@@ -934,6 +934,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if bottom_pad is None:
             bottom_pad = 0
         box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) - 6
+        if box_height < 8:
+            box_height = 8
         sizes = {
             "small": (box_height, box_height, box_height * 2),
             "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),
