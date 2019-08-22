@@ -729,17 +729,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if show_div:
                 show_div = False
                 template_vars['show_project_separator'] = True
-            project_palettes = []
+            proj_palettes = []
             for palette in project_palettes:
                 name = palette.get("name")
-                project_palettes.append(
+                proj_palettes.append(
                     self.format_palettes(
                         palette.get('colors', []), name, '__project__', palette.get('caption'),
                         delete=delete,
                         color=color
                     )
                 )
-                template_vars['project_palettes'] = project_palettes
+                template_vars['project_palettes'] = proj_palettes
 
         if update:
             mdpopups.update_popup(
