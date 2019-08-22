@@ -1,4 +1,4 @@
-# ColorHelper 2.5.0
+# ColorHelper 2.6.0
 
 New release!
 
