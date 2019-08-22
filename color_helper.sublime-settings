@@ -97,15 +97,19 @@
         },
         {
             //Sass (based on: https://packagecontrol.io/packages/Sass)
-            "syntax_files": ["Sass/Syntaxes/Sass"],
+            "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
             "syntax_filter": "whitelist",
             "base_scopes": [
-                "source.sass"
+                "source.sass",
+                "source.scss"
             ],
             "scan_scopes": [
-                "source.sass -comment -string -variable.parameter"
+                "source.sass meta.property-value.css -comment -string",
+                "source.scss meta.property-value.css -comment -string"
             ],
             "scan_completion_scopes": [
+                "source.scss meta.property-value.css -comment -string",
+                "source.sass meta.property-value.css -comment -string"
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
@@ -113,34 +117,59 @@
             "compress_hex_output": true
         },
         {
-            // A number of sass and scss syntaxes are bundled together
-            // So we will just bundle all the scss and sass rules together
-            "syntax_files": [],
+            // SCSS (based on https://packagecontrol.io/packages/SCSS)
+            "syntax_files": ["SCSS/SCSS"],
+            "syntax_filter": "whitelist",
+            "base_scopes": [
+                "source.scss"
+            ],
+            "scan_scopes": [
+                "source.scss -comment -string",
+            ],
+            "scan_completion_scopes": [
+                "source.scss"
+            ],
+            "extensions": [],
+            "allowed_colors": ["css4"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
+        },
+        {
+            // SCSS (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+            "syntax_files": [
+                "Syntax Highlighting for Sass/Syntaxes/SCSS",
+                "Syntax Highlighting for Sass/Syntaxes/Sass"
+            ],
             "syntax_filter": "whitelist",
             "base_scopes": [
                 "source.scss",
                 "source.sass"
             ],
             "scan_scopes": [
-                // Sass and SCSS (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-                "meta.property-list.css.sass -comment -string",
-                // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-                "constant.other.color.rgb-value.css.sass -comment -string",
-                // SCSS (based on https://packagecontrol.io/packages/SCSS)
-                "constant.other.color.rgb-value.scss -comment -string",
-                // SCSS (based on https://packagecontrol.io/packages/SCSS)
-                "constant.other.color.rgb-value.scss",
-                "support.constant.color.w3c-standard-color-name.scss",
-                "meta.property-value.scss",
-                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-                "sass-script-maps -variable.other -comment -string"
+                "source.scss -comment -string -support.type.property-name",
+                "source.sass -comment -string -support.type.property-name"
             ],
             "scan_completion_scopes": [
-                // SCSS (based on https://packagecontrol.io/packages/SCSS)
-                // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-                // Sass and SCSS script maps (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-                "source.scss -comment -string",
-                "source.sass -comment -string"
+                "source.scss -comment -string -support.type.property-name",
+                "source.sass -comment -string -support.type.property-name"
+            ],
+            "extensions": [],
+            "allowed_colors": ["css4"],
+            "use_hex_argb": false,
+            "compress_hex_output": true
+        },
+        {
+            // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+            "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
+            "syntax_filter": "whitelist",
+            "base_scopes": [
+                "source.postcss"
+            ],
+            "scan_scopes": [
+                "source.postcss meta.property-list.css.postcss -comment -string"
+            ],
+            "scan_completion_scopes": [
+                "source.postcss meta.property-list.css.postcss -comment -string"
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
