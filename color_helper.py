@@ -514,8 +514,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         template_vars['hsl_s'] = util.fmt_float(s * 100.0)
         template_vars['hsl_l'] = util.fmt_float(l * 100.0)
         template_vars['hwb_h'] = util.fmt_float(h2 * 360.0)
-        template_vars['hwb_s'] = util.fmt_float(w * 100.0)
-        template_vars['hwb_l'] = util.fmt_float(b * 100.0)
+        template_vars['hwb_w'] = util.fmt_float(w * 100.0)
+        template_vars['hwb_b'] = util.fmt_float(b * 100.0)
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)

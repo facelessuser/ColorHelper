@@ -81,12 +81,12 @@
   {%- endif %}
   {%- if plugin.show_hwb_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwb){: .small}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_w}}%, {{plugin.hsl_b}}%</span>)
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
 <br>
   {%- endif %}
   {%- if plugin.show_hwba_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwba){: .small}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_w}}%, {{plugin.hsl_b}}%, {{plugin.alpha}}</span>)
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
 <br>
   {%- endif %}
 {%- endif %}
