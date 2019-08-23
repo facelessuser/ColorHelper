@@ -926,6 +926,12 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         """Get sizes."""
 
         self.graphic_size = qualify_settings(ch_settings, 'graphic_size', 'medium')
+        try:
+            self.graphic_scale = qualify_settings(ch_settings, 'graphic_scale', 1)
+            if not isinstance(self.graphic_scale, (int, float)) or self.graphic_scale < 0:
+                self.graphic_scale = 1
+        except Exception:
+            self.graphic_scale = 1
         top_pad = self.view.settings().get('line_padding_top', 0)
         bottom_pad = self.view.settings().get('line_padding_bottom', 0)
         # Sometimes we strangely get None
@@ -936,6 +942,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) - 6
         if box_height < 8:
             box_height = 8
+        box_height = int(box_height * self.graphic_scale)
         sizes = {
             "small": (box_height, box_height, box_height * 2),
             "medium": (int(box_height * 1.5), int(box_height * 1.5), box_height * 2),

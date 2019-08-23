@@ -35,6 +35,7 @@ color_map_size = False
 color_map_style = None
 line_height = None
 default_border = None
+color_scale = None
 
 SPACER = '#00000000'
 
@@ -52,15 +53,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map_style
         global line_height
         global default_border
+        global color_scale
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
+            self.graphic_scale != color_scale or
             self.line_height != line_height or
             self.default_border != default_border or
             color_map_style != "square"
         ):
             color_map_size = self.graphic_size
+            color_scale = self.graphic_scale
             color_map_style = "square"
             line_height = self.line_height
             default_border = self.default_border
@@ -167,15 +171,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global color_map_style
         global line_height
         global default_border
+        global color_scale
 
         if (
             color_map is None or
             self.graphic_size != color_map_size or
+            self.graphic_scale != color_scale or
             self.line_height != line_height or
             self.default_border != default_border or
             color_map_style != "hex"
         ):
             color_map_size = self.graphic_size
+            color_scale = self.graphic_scale
             line_height = self.line_height
             default_border = self.default_border
             color_map_style = "hex"
@@ -483,6 +490,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
+        try:
+            self.graphic_scale = qualify_settings(settings, 'graphic_scale', 1)
+            if not isinstance(self.graphic_scale, (int, float)) or self.graphic_scale < 0:
+                self.graphic_scale = 1
+        except Exception:
+            self.graphic_scale = 1
         self.line_height = util.get_line_height(self.view)
         top_pad = self.view.settings().get('line_padding_top', 0)
         bottom_pad = self.view.settings().get('line_padding_bottom', 0)
@@ -494,10 +507,19 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.box_height = self.line_height - int(top_pad + bottom_pad) - 6
         if self.box_height < 8:
             self.box_height = 8
+        self.box_height = int(self.box_height * self.graphic_scale)
         sizes = {
-            "small": (int(self.box_height * .85), int(self.box_height * .85), int(self.box_height * 1.0)),
-            "medium": (int(self.box_height), int(self.box_height), int(self.box_height * 1.25)),
-            "large": (int(self.box_height * 1.15), int(self.box_height * 1.15), int(self.box_height * 1.35))
+            "small": (int(self.box_height), int(self.box_height), int(self.box_height + self.box_height / 4)),
+            "medium": (
+                int(self.box_height * 1.5),
+                int(self.box_height * 1.5),
+                int(self.box_height * 1.5 + (self.box_height * 1.5) / 4)
+            ),
+            "large": (
+                int(self.box_height * 2),
+                int(self.box_height * 2),
+                int(self.box_height * 2 + (self.box_height * 2) / 4)
+            )
         }
         self.height, self.width, self.height_big = sizes.get(
             self.graphic_size,
