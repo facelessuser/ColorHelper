@@ -492,7 +492,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
         self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
         if not isinstance(self.graphic_scale, (int, float)):
-                self.graphic_scale = None
+            self.graphic_scale = None
         self.line_height = util.get_line_height(self.view)
         top_pad = self.view.settings().get('line_padding_top', 0)
         bottom_pad = self.view.settings().get('line_padding_bottom', 0)
