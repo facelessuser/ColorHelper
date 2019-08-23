@@ -283,7 +283,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color], self.default_border,
-                        border_size=BORDER_SIZE, height=self.box_height, width=self.box_height * 8,
+                        border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
                     color,
@@ -340,7 +340,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color], self.default_border,
-                        border_size=BORDER_SIZE, height=self.box_height, width=self.box_height * 8,
+                        border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
                     color,
@@ -490,12 +490,9 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         settings = sublime.load_settings('color_helper.sublime-settings')
         self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
-        try:
-            self.graphic_scale = qualify_settings(settings, 'graphic_scale', 1)
-            if not isinstance(self.graphic_scale, (int, float)) or self.graphic_scale < 0:
-                self.graphic_scale = 1
-        except Exception:
-            self.graphic_scale = 1
+        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
+        if not isinstance(self.graphic_scale, (int, float)):
+                self.graphic_scale = None
         self.line_height = util.get_line_height(self.view)
         top_pad = self.view.settings().get('line_padding_top', 0)
         bottom_pad = self.view.settings().get('line_padding_bottom', 0)
@@ -504,22 +501,18 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             top_pad = 0
         if bottom_pad is None:
             bottom_pad = 0
-        self.box_height = self.line_height - int(top_pad + bottom_pad) - 6
-        if self.box_height < 8:
-            self.box_height = 8
-        self.box_height = int(self.box_height * self.graphic_scale)
+        box_height = self.line_height - int(top_pad + bottom_pad) - 6
+        if self.graphic_scale is not None:
+            box_height = box_height * self.graphic_scale
+            self.graphic_size = "small"
+        small = max(box_height, 8)
+        medium = max(box_height * 1.5, 8)
+        large = max(box_height * 2, 8)
+        self.box_height = int(small)
         sizes = {
-            "small": (int(self.box_height), int(self.box_height), int(self.box_height + self.box_height / 4)),
-            "medium": (
-                int(self.box_height * 1.5),
-                int(self.box_height * 1.5),
-                int(self.box_height * 1.5 + (self.box_height * 1.5) / 4)
-            ),
-            "large": (
-                int(self.box_height * 2),
-                int(self.box_height * 2),
-                int(self.box_height * 2 + (self.box_height * 2) / 4)
-            )
+            "small": (int(small), int(small), int(small + small / 4)),
+            "medium": (int(medium), int(medium), int(medium + medium / 4)),
+            "large": (int(large), int(large), int(large + large / 4))
         }
         self.height, self.width, self.height_big = sizes.get(
             self.graphic_size,

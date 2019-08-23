@@ -43,12 +43,15 @@
     // package is installed.
     "enable_color_picker": true,
 
-    // If the color picker is too big, try playing with this.
-    // Graphics in tooltips usually look better bigger (especially in Hidpi),
-    // but that can make the tooltips really big. If they are too big,
-    // you can play with this setting.  We compromise with medium.
+    // If the color picker is too big or too small, try playing with this.
+    // This is a coarse control which scales image size relative to the
+    // approximate line height. small (1x), medium (1.5x), and large (2x).
     // (small | medium | large)
     "graphic_size": "medium",
+
+    // Fine scaling of image sizes. Overrides `graphic_size`.
+    // Use an integer or floating point value. `null` disables fine scaling.
+    "graphic_scale": null,
 
     // Use https://github.com/weslly/ColorPicker for the color picker if installed.
     "use_color_picker_package": false,
