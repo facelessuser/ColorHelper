@@ -18,6 +18,7 @@ from .color_helper_insert import InsertCalc, PickerInsertCalc
 from .multiconf import get as qualify_settings
 import traceback
 from html.parser import HTMLParser
+from queue import Queue
 
 __pc_name__ = "ColorHelper"
 
@@ -146,6 +147,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         return
         if ch_thread.ignore_all:
             return
+        start_task()
         now = time()
         ch_thread.modified = True
         ch_thread.time = now
@@ -1410,6 +1412,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             return
 
         if not ch_thread.ignore_all:
+            start_task()
             now = time()
             ch_thread.modified = True
             ch_thread.time = now
@@ -1696,6 +1699,7 @@ class ChThread(threading.Thread):
         """Setup the thread."""
 
         self.reset()
+        self.queue = Queue()
         threading.Thread.__init__(self)
 
     def reset(self):
@@ -1703,6 +1707,7 @@ class ChThread(threading.Thread):
 
         self.wait_time = 0.12
         self.time = time()
+        self.queue = Queue()
         self.modified = False
         self.ignore_all = False
         self.abort = False
@@ -1824,6 +1829,7 @@ class ChThread(threading.Thread):
         """Kill thread."""
 
         self.abort = True
+        self.queue.put(True)
         while self.is_alive():
             pass
         self.reset()
@@ -1831,10 +1837,14 @@ class ChThread(threading.Thread):
     def run(self):
         """Thread loop."""
 
+        task = False
         while not self.abort:
-            if self.modified is True and time() - self.time > self.wait_time:
-                sublime.set_timeout(lambda: self.payload(), 0)
-            sleep(0.5)
+            task = self.queue.get()
+            while task and not self.abort:
+                if self.modified is True and time() - self.time > self.wait_time:
+                    sublime.set_timeout(self.payload, 0)
+                    task = False
+                sleep(0.5)
 
 
 ###########################
@@ -1847,6 +1857,13 @@ def settings_reload():
     reload_flag = True
     ch_last_updated = time()
     setup_previews()
+
+
+def start_task():
+    """Start task."""
+
+    if ch_thread.is_alive():
+        ch_thread.queue.put(True)
 
 
 def setup_previews():
