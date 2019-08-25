@@ -12,7 +12,7 @@ theme:
   name: material
   custom_dir: docs/theme
   palette:
-    primary: blue
+    primary: black
     accent: blue
   logo:
     icon: description
