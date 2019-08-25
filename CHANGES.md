@@ -3,7 +3,8 @@
 - **NEW**: Enable CSS level 4 colors by default.
 - **NEW**: Reduce borders and in some cases remove borders around color previews.
 - **NEW**: Allow insertion of colors when there is an active selection.
-- **NEW**: Add option to override the border color used around color previews in the popup.
+- **NEW**: Add option to override the border color used around color previews in  
+the popup.
 - **FIX**: Reduce busy processes when idle.
 - **FIX**: Fixes for SCSS and Sass packages.
 - **FIX**: Fix issue where inline color phantom could make the line height larger.
@@ -11,7 +12,8 @@
 - **FIX**: Fix `hwb` display in info dialog.
 - **FIX**: Project palettes not showing up.
 - **FIX**: Fix for compressed hex colors with alpha.
-- **FIX**: Ensure minimum size of graphics in order to prevent issue where an error is thrown when image size is too small.
+- **FIX**: Ensure minimum size of graphics in order to prevent issue where an  
+error is thrown when image size is too small.
 
 # ColorHelper 2.5.1
 

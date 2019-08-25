@@ -12,7 +12,7 @@ theme:
   name: material
   custom_dir: docs/theme
   palette:
-    primary: blue
+    primary: black
     accent: blue
   logo:
     icon: description
@@ -84,6 +84,6 @@ extra:
     - type: github
       link: https://github.com/facelessuser
 extra_css:
-  - extra-d04c85ed4a.css
+  - extra-30d8e6755c.css
 extra_javascript:
-  - extra-d8800ea088.js
+  - extra-0b9b22dd13.js
