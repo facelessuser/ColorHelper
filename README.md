@@ -40,6 +40,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 [travis-image]: https://img.shields.io/travis/facelessuser/ColorHelper.svg
 [travis-link]: https://travis-ci.org/facelessuser/ColorHelper
-[pc-image]: https://img.shields.io/packagecontrol/dt/ColorHelper.svg
+[pc-image]: https://img.shields.io/packagecontrol/dt/ColorHelper.svg?logo=sublime%20text&logoColor=cccccc
 [pc-link]: https://packagecontrol.io/packages/ColorHelper
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg
