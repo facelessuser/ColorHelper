@@ -32,14 +32,14 @@ COLOR_TYPE = 0x0000
 DB_STRING_SIZE_SZ = 2
 
 # 4 char color type
-# 3 * float rgb channel
+# 3 * float RGB channel
 # 1 * unsigned short
 RGB_SIZE = 18
 
 # ASE version
 ASE_VERSION = 1
 
-# For calculating size of bytes from struct format string
+# For calculating size of bytes from structure format string
 UNIT_SIZE = {
     'c': 1,
     'b': 1,
@@ -64,7 +64,7 @@ def split_channels(rgb):
     """
     Split an RGB color into channels.
 
-    Take a color of the format #RRGGBBAA (alpha optional and will be stripped)
+    Take a color of the format `#RRGGBBAA` (alpha optional and will be stripped)
     and convert to a tuple with format (r, g, b).
     """
 
@@ -76,7 +76,7 @@ def split_channels(rgb):
 
 
 def format_byte_size(fmt):
-    """Determine the number of bytes form the fmt string."""
+    """Determine the number of bytes form the format string."""
 
     b = 0
     for m in RE_UNIT.finditer(fmt):
@@ -242,7 +242,7 @@ class _Reader(object):
         self.bin.close()
 
     def read_palettes(self):
-        """Parse therough the ASE file returning palettes."""
+        """Parse the through the ASE file returning palettes."""
 
         palette = {}
         while self.total_blocks > 0:
@@ -361,7 +361,7 @@ if __name__ == "__main__":
 
     palettes = [
         {
-            # Testing unicode
+            # Testing Unicode
             # http://www.colourlovers.com/palette/629637/(%E2%97%95%E3%80%9D%E2%97%95)
             'title': '(Ã¢â€”â€¢Ã£â‚¬ÂÃ¢â€”â€¢)',
             'colors': [

@@ -90,7 +90,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.view.settings().set('color_helper.popup_auto', self.auto)
 
     def unescape(self, value):
-        """Unescape url."""
+        """Unescape URL."""
 
         return self.html_parser.unescape(value)
 
@@ -142,7 +142,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             self.insert_color(parts[1], parts[2])
 
     def repop(self):
-        """Setup thread to repopup tooltip."""
+        """Setup thread to re-popup tooltip."""
 
         return
         if ch_thread.ignore_all:
@@ -187,7 +187,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         self.repop()
 
     def add_palette(self, color, palette_type, palette_name):
-        """Add pallete."""
+        """Add palette."""
 
         if palette_type == "__special__":
             if palette_name == 'Favorites':
@@ -1278,7 +1278,7 @@ class ChPreview(object):
             # Edits can potentially move the position of all the previews.
             # We need to grab the phantom by their id and then apply the color regex
             # on the phantom range +/- some extra characters so we can catch word boundaries.
-            # Clear the phantom if any of the follwoing:
+            # Clear the phantom if any of the following:
             #    - Phantom can't be found
             #    - regex doesn't match
             #    - regex group doesn't match color type

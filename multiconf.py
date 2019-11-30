@@ -1,24 +1,27 @@
 r"""
 Multiconf allows the reading of platform and or host specific values from Sublime settings.
 
-Multiconf is a module that allows you to read platforma and/or host
+Multiconf is a module that allows you to read platform and/or host
 specific configuration values to be used by Sublime Text 2 plugins.
 
 Using this module's `get` function, allows the user to replace any settings
 value in a '.settings' file with a dictionary containing multiple values.
 
-Mulitconf does this by using a dictionary with a special identifier
+Multiconf does this by using a dictionary with a special identifier
 "#multiconf#"  and a list of dictionaries identified by a qualifier of the form
 
     "<qualifier name>:<qualifier value>[;<qualifier name>:<qualifier value>]..."
 
 For example, the following setting
 
+```
     "user_home": "/home"
+```
 
 would result in `get("user_home")` returning the value "/home" but it could also
 be replaced with
 
+```
     "user_home":  {
                     "#multiconf#": [
                         {"os:windows": "C:\\Users"},
@@ -26,10 +29,11 @@ be replaced with
                         {"os:linux;host:her_pc": "/home/her/special"}
                     ]
     }
+```
 
 Now the same configuration file will provide different values depending on the
 machine it's on. On an MS Windows machine the value returned by `get` will be
-"C:\\Users", and on a Linux machine with the host name 'his_pc' the value will be
+"C:\\Users", and on a Linux machine with the host name `his_pc` the value will be
 "/home".
 
 -----
@@ -147,7 +151,7 @@ class Qualifications(object):
 
     @classmethod
     def exists(cls, key):
-        """See if qualifieer exists."""
+        """See if qualifier exists."""
 
         return (key in cls.__qualifiers)
 
