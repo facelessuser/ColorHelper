@@ -606,7 +606,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         )
 
     def handle_href(self, href):
-        """Handle href."""
+        """Handle HREF."""
 
         hires = None
         hsl = self.hsl
