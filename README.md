@@ -24,7 +24,7 @@ ColorHelper makes work with colors easier by providing inline color previews in 
 
 # Documentation
 
-http://facelessuser.github.io/ColorHelper/
+https://facelessuser.github.io/ColorHelper/
 
 # License
 
