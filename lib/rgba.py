@@ -15,6 +15,52 @@ CHANNEL_TO_PERCENT = 100.0 / 255.0
 SCALE_PERCENT = 1 / 100.0
 SCALE_HALF_PERCENT = 1 / 50.0
 
+CS_RGB = 0
+CS_HSL = 1
+CS_HWB = 2
+
+OP_NULL = 0
+OP_SCALE = 1
+OP_ADD = 2
+OP_SUB = 3
+
+
+def rgb_blend_channel(c1, c2, f):
+    """Blend the red, green, blue style channel."""
+
+    return clamp(
+        round_int(abs(c1 * f + c2 * (1 - f))),
+        0, 255
+    )
+
+
+def percent_blend_channel(c1, c2, f):
+    """Blend the percent style channel."""
+
+    return clamp(
+        abs(c1 * f + c2 * (1 - f)),
+        0.0, 1.0
+    )
+
+
+def hue_blend_channel(c1, c2, f):
+    """Blend the hue style channel."""
+
+    c1 *= 360.0
+    c2 *= 360.0
+
+    if abs(c1 - c2) > 180.0:
+        if c1 < c2:
+            c1 += 360.0
+        else:
+            c2 += 360.0
+
+    value = abs(c1 * f + c2 * (1 - f))
+    while value > 360.0:
+        value -= 360.0
+
+    return value * HUE_SCALE
+
 
 def mix_channel(cf, af, cb, ab):
     """
@@ -82,7 +128,7 @@ class RGBA(object):
             return int(s[1] * 2, 16), int(s[2] * 2, 16), int(s[3] * 2, 16), 0xFF
 
     def get_rgba(self):
-        """Get the `RGB` color with the alpha channel."""
+        """Get the RGB color with the alpha channel."""
 
         return "#%02X%02X%02X%02X" % (self.r, self.g, self.b, self.a)
 
@@ -119,43 +165,98 @@ class RGBA(object):
         l = self.tohls()[1]
         return clamp(round_int(l * 255.0), 0, 255)
 
-    def alpha(self, factor):
+    def alpha(self, factor, op=OP_SCALE):
         """Adjust alpha."""
 
-        self.a = round_int(clamp(self.a + (255.0 * factor) - 255.0, 0.0, 255.0))
+        if op == OP_SCALE:
+            self.a = round_int(clamp(self.a + (255.0 * factor) - 255.0, 0.0, 255.0))
+        elif op == OP_ADD:
+            self.a = round_int(clamp(self.a + (self.a * factor), 0.0, 255.0))
+        elif op == OP_SUB:
+            self.a = round_int(clamp(self.a - (self.a * factor), 0.0, 255.0))
+        else:
+            self.a = 255.0 * factor
 
-    def red(self, factor):
+    def red(self, factor, op=OP_SCALE):
         """Adjust red."""
 
-        self.r = round_int(clamp(self.r + (255.0 * factor) - 255.0, 0.0, 255.0))
+        if op == OP_SCALE:
+            self.r = round_int(clamp(self.r + (255.0 * factor) - 255.0, 0.0, 255.0))
+        elif op == OP_ADD:
+            self.r = round_int(clamp(self.r + (self.r * factor), 0.0, 255.0))
+        elif op == OP_SUB:
+            self.r = round_int(clamp(self.r - (self.r * factor), 0.0, 255.0))
+        else:
+            self.a = 255.0 * factor
 
-    def green(self, factor):
+    def green(self, factor, op=OP_SCALE):
         """Adjust green."""
 
-        self.g = round_int(clamp(self.g + (255.0 * factor) - 255.0, 0.0, 255.0))
+        if op == OP_SCALE:
+            self.g = round_int(clamp(self.g + (255.0 * factor) - 255.0, 0.0, 255.0))
+        elif op == OP_ADD:
+            self.g = round_int(clamp(self.g + (self.g * factor), 0.0, 255.0))
+        elif op == OP_SUB:
+            self.g = round_int(clamp(self.g - (self.g * factor), 0.0, 255.0))
+        else:
+            self.a = 255.0 * factor
 
-    def blue(self, factor):
+    def blue(self, factor, op=OP_SCALE):
         """Adjust blue."""
 
-        self.b = round_int(clamp(self.b + (255.0 * factor) - 255.0, 0.0, 255.0))
+        if op == OP_SCALE:
+            self.b = round_int(clamp(self.b + (255.0 * factor) - 255.0, 0.0, 255.0))
+        elif op == OP_ADD:
+            self.b = round_int(clamp(self.b + (self.b * factor), 0.0, 255.0))
+        elif op == OP_SUB:
+            self.b = round_int(clamp(self.b - (self.b * factor), 0.0, 255.0))
+        else:
+            self.a = 255.0 * factor
 
-    def blend(self, color, percent, alpha=False):
+    def blend(self, color, percent, alpha=False, color_space=CS_RGB):
         """Blend color."""
 
-        factor = clamp(round_int(clamp(float(percent), 0.0, 100.0) * PERCENT_TO_CHANNEL), 0, 255)
         r, g, b, a = self._split_channels(color)
+        factor = clamp(clamp(float(percent), 0.0, 100.0) * SCALE_PERCENT, 0.0, 1.0)
 
-        self.r = mix_channel(self.r, factor, r, 255)
-        self.g = mix_channel(self.g, factor, g, 255)
-        self.b = mix_channel(self.b, factor, b, 255)
+        if color_space == CS_RGB:
+            self.r = rgb_blend_channel(self.r, r, factor)
+            self.g = rgb_blend_channel(self.g, g, factor)
+            self.b = rgb_blend_channel(self.b, b, factor)
+        elif color_space == CS_HSL:
+            orig_h, orig_l, orig_s = self.tohls()
+            blend_h, blend_l, blend_s = rgb_to_hls(r * RGB_CHANNEL_SCALE, g * RGB_CHANNEL_SCALE, b * RGB_CHANNEL_SCALE)
+            h = hue_blend_channel(orig_h, blend_h, factor)
+            l = percent_blend_channel(orig_l, blend_l, factor)
+            s = percent_blend_channel(orig_s, blend_s, factor)
+            self.fromhls(h, l, s)
+        elif color_space == CS_HWB:
+            orig_h, orig_w, orig_b = self.tohwb()
+            blend_h, s, v = rgb_to_hsv(r * RGB_CHANNEL_SCALE, g * RGB_CHANNEL_SCALE, b * RGB_CHANNEL_SCALE)
+            blend_w = (1.0 - s) * v
+            blend_b = 1.0 - v
+            h = hue_blend_channel(orig_h, blend_h, factor)
+            w = percent_blend_channel(orig_w, blend_w, factor)
+            b = percent_blend_channel(orig_b, blend_b, factor)
+            self.fromhwb(h, w, b)
+        else:
+            raise ValueError('Invalid color space value: {}'.format(str(color_space)))
+
         if alpha:
-            self.a = mix_channel(self.a, factor, a, 255)
+            self.a = rgb_blend_channel(self.a, a, factor)
 
-    def luminance(self, factor):
+    def luminance(self, factor, op=OP_SCALE):
         """Get true luminance."""
 
         h, l, s = self.tohls()
-        l = clamp(l + factor - 1.0, 0.0, 1.0)
+        if op == OP_SCALE:
+            l = clamp(l + factor - 1.0, 0.0, 1.0)
+        elif op == OP_ADD:
+            l = clamp(l + (l * factor), 0.0, 1.0)
+        elif op == OP_SUB:
+            l = clamp(l - (l * factor), 0.0, 1.0)
+        else:
+            l = clamp(factor, 0.0, 1.0)
         self.fromhls(h, l, s)
 
     def tohsv(self):
@@ -249,11 +350,18 @@ class RGBA(object):
         self.g ^= 0xFF
         self.b ^= 0xFF
 
-    def saturation(self, factor):
+    def saturation(self, factor, op=OP_SCALE):
         """Saturate or unsaturate the color by the given factor."""
 
         h, l, s = self.tohls()
-        s = clamp(s + factor - 1.0, 0.0, 1.0)
+        if op == OP_SCALE:
+            s = clamp(s + factor - 1.0, 0.0, 1.0)
+        elif op == OP_ADD:
+            s = clamp(s + (s * factor), 0.0, 1.0)
+        elif op == OP_SUB:
+            s = clamp(s - (s * factor), 0.0, 1.0)
+        else:
+            s = clamp(factor, 0.0, 1.0)
         self.fromhls(h, l, s)
 
     def grayscale(self):
