@@ -43,7 +43,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [github-ci-image]: https://github.com/facelessuser/ColorHelper/workflows/build/badge.svg
 [github-ci-link]: https://github.com/facelessuser/ColorHelper/actions?workflow=build
 [discord-image]: https://img.shields.io/discord/678289859768745989?logo=discord&logoColor=aaaaaa&color=mediumpurple&labelColor=333333
-[discord-link]: https://discord.gg/RKHTt2q
+[discord-link]: https://discord.gg/TWs8Tgr
 [pc-image]: https://img.shields.io/packagecontrol/dt/ColorHelper.svg?labelColor=333333&logo=sublime%20text
 [pc-link]: https://packagecontrol.io/packages/ColorHelper
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg?labelColor=333333
