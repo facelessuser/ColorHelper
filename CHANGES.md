@@ -1,3 +1,5 @@
+# ColorHelper
+
 ## 2.7.0
 
 - **NEW**: HSL can support alpha channels as `hsl` or `hsla` (per the CSS spec).
