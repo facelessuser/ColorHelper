@@ -24,6 +24,7 @@ RGBA
 SCSS
 Screencap
 Screenshot
+Twemoji
 Unescape
 argb
 biermeester
