@@ -11,13 +11,20 @@ from .lib import csscolors
 from .lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import platform
+import math
+
+CONVERT_TURN = 360
+CONVERT_GRAD = 90 / 100
 
 LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
 FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
     "percent": r"[+\-]?(?:(?:\d*\.\d+)|\d+)%",
-    "float": r"[+\-]?(?:(?:\d*\.\d+)|\d+)"
+    "float": r"[+\-]?(?:(?:\d*\.\d+)|\d+)",
+    "angle": r"[+\-]?(?:(?:\d*\.\d+)|\d+)(deg|rad|turn|grad)?"
+
+
 }
 
 COMPLETE = r'''
@@ -29,10 +36,10 @@ COMPLETE = r'''
     \b(?P<rgba>rgba\(\s*(?P<rgba_content>
         (?:%(float)s\s*,\s*){3}(?:%(percent)s|%(float)s) | (?:%(percent)s\s*,\s*){3}(?:%(percent)s|%(float)s)
     )\s*\)) |
-    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(float)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hsla>hsla\(\s*(?P<hsla_content>%(float)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
-    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(float)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(float)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
+    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hsla>hsla?\(\s*(?P<hsla_content>%(angle)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
+    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(angle)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
     \b(?P<gray>gray\(\s*(?P<gray_content>%(float)s|%(percent)s)\s*\)) |
     \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(float)s|%(percent)s)\s*,\s*(?:%(percent)s|%(float)s))\s*\))
 ''' % COLOR_PARTS
@@ -94,6 +101,22 @@ WRAPPER_CLASS = "color-helper content"
 CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
 CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")
 ALL = CSS4
+
+
+def norm_angle(angle):
+    """Normalize angle units."""
+
+    if angle.endswith('turn'):
+        value = float(angle[:-4]) * CONVERT_TURN
+    elif angle.endswith('rad'):
+        value = math.degrees(float(angle[:-3]))
+    elif angle.endswith('grad'):
+        value = float(angle[:-3]) * CONVERT_GRAD
+    elif angle.endswith('deg'):
+        value = float(angle[:-3])
+    else:
+        value = float(angle)
+    return value
 
 
 def log(*args):
@@ -410,13 +433,14 @@ def translate_color(m, use_hex_argb=False, decode=False):
             alpha, alpha_dec = alpha_percent_normalize(content[1])
         else:
             alpha, alpha_dec = alpha_dec_normalize(content[1])
-    elif m.group('hsl'):
+    elif m.group('hsl') or m.group('hsla'):
+        content = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
         if decode:
-            content = [x.strip() for x in m.group('hsl_content').decode('utf-8').split(',')]
+            content = [x.strip() for x in content.decode('utf-8').split(',')]
         else:
-            content = [x.strip() for x in m.group('hsl_content').split(',')]
+            content = [x.strip() for x in content.split(',')]
         rgba = RGBA()
-        hue = float(content[0])
+        hue = norm_angle(content[0])
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
@@ -424,31 +448,19 @@ def translate_color(m, use_hex_argb=False, decode=False):
         l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhls(h, l, s)
         color = rgba.get_rgb()
-    elif m.group('hsla'):
+        if len(content) == 4:
+            if content[3].endswith('%'):
+                alpha, alpha_dec = alpha_percent_normalize(content[3])
+            else:
+                alpha, alpha_dec = alpha_dec_normalize(content[3])
+    elif m.group('hwb') or m.group('hwba'):
+        content = m.group('hwb_content') if m.group('hwb') else m.group('hwba_content')
         if decode:
-            content = [x.strip() for x in m.group('hsla_content').decode('utf-8').split(',')]
+            content = [x.strip() for x in content.decode('utf-8').split(',')]
         else:
-            content = [x.strip() for x in m.group('hsla_content').split(',')]
+            content = [x.strip() for x in content.split(',')]
         rgba = RGBA()
-        hue = float(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhls(h, l, s)
-        color = rgba.get_rgb()
-        if content[3].endswith('%'):
-            alpha, alpha_dec = alpha_percent_normalize(content[3])
-        else:
-            alpha, alpha_dec = alpha_dec_normalize(content[3])
-    elif m.group('hwb'):
-        if decode:
-            content = [x.strip() for x in m.group('hwb_content').decode('utf-8').split(',')]
-        else:
-            content = [x.strip() for x in m.group('hwb_content').split(',')]
-        rgba = RGBA()
-        hue = float(content[0])
+        hue = norm_angle(content[0])
         if hue < 0.0 or hue > 360.0:
             hue = hue % 360.0
         h = hue / 360.0
@@ -456,24 +468,11 @@ def translate_color(m, use_hex_argb=False, decode=False):
         b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
         rgba.fromhwb(h, w, b)
         color = rgba.get_rgb()
-    elif m.group('hwba'):
-        if decode:
-            content = [x.strip() for x in m.group('hwba_content').decode('utf-8').split(',')]
-        else:
-            content = [x.strip() for x in m.group('hwba_content').split(',')]
-        rgba = RGBA()
-        hue = float(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhwb(h, w, b)
-        color = rgba.get_rgb()
-        if content[3].endswith('%'):
-            alpha, alpha_dec = alpha_percent_normalize(content[3])
-        else:
-            alpha, alpha_dec = alpha_dec_normalize(content[3])
+        if len(content) == 4:
+            if content[3].endswith('%'):
+                alpha, alpha_dec = alpha_percent_normalize(content[3])
+            else:
+                alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('webcolors'):
         try:
             if decode:
