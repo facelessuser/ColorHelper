@@ -108,10 +108,10 @@ def norm_angle(angle):
 
     if angle.endswith('turn'):
         value = float(angle[:-4]) * CONVERT_TURN
+    elif angle.endswith('grad'):
+        value = float(angle[:-4]) * CONVERT_GRAD
     elif angle.endswith('rad'):
         value = math.degrees(float(angle[:-3]))
-    elif angle.endswith('grad'):
-        value = float(angle[:-3]) * CONVERT_GRAD
     elif angle.endswith('deg'):
         value = float(angle[:-3])
     else:
