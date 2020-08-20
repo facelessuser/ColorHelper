@@ -1437,11 +1437,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
                         break
 
             syntax_files = rule.get("syntax_files", [])
-            syntax_filter = rule.get("syntax_filter", "whitelist")
+            syntax_filter = rule.get("syntax_filter", "allowlist")
             syntax_okay = bool(
                 not syntax_files or (
-                    (syntax_filter == "whitelist" and syntax in syntax_files) or
-                    (syntax_filter == "blacklist" and syntax not in syntax_files)
+                    (syntax_filter == "allowlist" and syntax in syntax_files) or
+                    (syntax_filter == "blocklist" and syntax not in syntax_files)
                 )
             )
             results.append(syntax_okay)

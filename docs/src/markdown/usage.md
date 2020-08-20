@@ -292,7 +292,7 @@ Setting to control color scanning which is responsible for both auto-popups and 
     "color_scanning": [
         {
             "syntax_files": [],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.css",
                 "text.html"
@@ -329,12 +329,12 @@ Assuming that you have a `tmLanguage` file `Packages/CSS/CSS.tmLanguage`:
 
 #### `color_scanning.syntax_filter`
 
-`syntax_filter` will cause [`syntax_files`](#color_scanningsyntax_files) to be treated as either a `blacklist` or `whitelist`.  Acceptable values are `"blacklist"` and `"whitelist"`.  `"whitelist"` is the default setting.
+`syntax_filter` will cause [`syntax_files`](#color_scanningsyntax_files) to be treated as either a `blocklist` or `allowlist`.  Acceptable values are `"blocklist"` and `"allowlist"`.  `"allowlist"` is the default setting.
 
 ```js
     "color_scanning": [
         {
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
 ```
 
 #### `color_scanning.base_scopes`

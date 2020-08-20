@@ -76,7 +76,7 @@
     "color_scanning": [
         {
             "syntax_files": [],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.css",
                 "text.html"
@@ -101,7 +101,7 @@
         {
             //Sass (based on: https://packagecontrol.io/packages/Sass)
             "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.sass",
                 "source.scss"
@@ -122,7 +122,7 @@
         {
             // SCSS (based on https://packagecontrol.io/packages/SCSS)
             "syntax_files": ["SCSS/SCSS"],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.scss"
             ],
@@ -143,7 +143,7 @@
                 "Syntax Highlighting for Sass/Syntaxes/SCSS",
                 "Syntax Highlighting for Sass/Syntaxes/Sass"
             ],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.scss",
                 "source.sass"
@@ -164,7 +164,7 @@
         {
             // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
             "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.postcss"
             ],
@@ -181,7 +181,7 @@
         },
         {
             "syntax_files": [],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": ["text.xml"],
             "scan_scopes": ["text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"],
             "allowed_colors": ["hex", "hexa", "hex_compressed"],
@@ -191,7 +191,7 @@
         },
         {
             "syntax_files": [],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": ["source.stylus"],
             "scan_scopes": [
                 // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
@@ -206,7 +206,7 @@
         },
         {
             "syntax_files": [],
-            "syntax_filter": "whitelist",
+            "syntax_filter": "allowlist",
             "base_scopes": ["source.less"],
             "scan_scopes": [
                 "constant.other.color.rgb-value.css",
