@@ -12,6 +12,21 @@ from .lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import platform
 import math
+import mdpopups
+
+FRONTMATTER = mdpopups.format_frontmatter(
+    {
+        "allow_code_wrap": False,
+        "markdown_extensions": [
+            "markdown.extensions.admonition",
+            "markdown.extensions.attr_list",
+            "markdown.extensions.def_list",
+            "pymdownx.betterem",
+            "pymdownx.magiclink",
+            "pymdownx.extrarawhtml"
+        ]
+    }
+)
 
 CONVERT_TURN = 360
 CONVERT_GRAD = 90 / 100
