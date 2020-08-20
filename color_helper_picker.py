@@ -596,13 +596,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         mdpopups.show_popup(
             self.view,
-            sublime.load_resource('Packages/ColorHelper/panels/color-picker.html'),
+            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/color-picker.html'),
             css=util.ADD_CSS,
             wrapper_class="color-helper content",
             max_width=1024, max_height=(500 if hirespick or colornames else 725),
             on_navigate=self.handle_href,
-            template_vars=self.template_vars,
-            nl2br=False
+            template_vars=self.template_vars
         )
 
     def handle_href(self, href):

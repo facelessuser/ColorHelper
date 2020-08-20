@@ -646,25 +646,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
             else:
                 self.view.settings().set('color_helper.popup_active', True)
                 self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
 
     def show_palettes(self, delete=False, color=None, update=False):
@@ -748,25 +746,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         if update:
             mdpopups.update_popup(
                 self.view,
-                sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS,
-                template_vars=template_vars,
-                nl2br=False
+                template_vars=template_vars
             )
         else:
             self.view.settings().set('color_helper.popup_active', True)
             self.view.settings().set('color_helper.popup_auto', self.auto)
             mdpopups.show_popup(
                 self.view,
-                sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                 on_navigate=self.on_navigate,
                 on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                template_vars=template_vars,
-                nl2br=False
+                template_vars=template_vars
             )
 
     def show_colors(self, palette_type, palette_name, delete=False, update=False):
@@ -805,25 +801,23 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
             else:
                 self.view.settings().set('color_helper.popup_active', True)
                 self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
 
     def get_cursor_color(self):
@@ -898,18 +892,17 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
             else:
                 self.view.settings().set('color_helper.popup_active', True)
                 self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
-                    sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
                     location=-1,
@@ -918,8 +911,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     on_navigate=self.on_navigate,
                     on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
-                    template_vars=template_vars,
-                    nl2br=False
+                    template_vars=template_vars
                 )
         elif update:
             self.view.hide_popup()
