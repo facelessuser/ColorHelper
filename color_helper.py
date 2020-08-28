@@ -1453,11 +1453,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 scan_scopes += rule.get("scan_scopes", [])
                 incomplete_scopes += rule.get("scan_completion_scopes", [])
                 for color in rule.get("allowed_colors", []):
-                    if color == "css3":
-                        for c in util.CSS3:
-                            allowed_colors.add(c)
-                    elif color == "css4":
-                        for c in util.CSS4:
+                    if color in ("css3", "css4", "L4"):
+                        if color in ("css3",):
+                            print("DEPRECATED: '{}' specifier is deprecated, please use 'css4'".format(color))
+                        for c in util.LEVEL4:
                             allowed_colors.add(c)
                     elif color == "all":
                         for c in util.ALL:

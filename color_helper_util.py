@@ -14,6 +14,8 @@ import platform
 import math
 import mdpopups
 
+RE_CHAN_SPLIT = re.compile(r'(?:\s*[,/]\s*|\s+)')
+
 FRONTMATTER = mdpopups.format_frontmatter(
     {
         "allow_code_wrap": False,
@@ -47,14 +49,54 @@ COMPLETE = r'''
     (?P<hex>\#(?P<hex_content>[\dA-Fa-f]{6}))\b |
     (?P<hexa_compressed>\#(?P<hexa_compressed_content>[\dA-Fa-f]{4}))\b |
     (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
-    \b(?P<rgb>rgb\(\s*(?P<rgb_content>(?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s)\s*\)) |
-    \b(?P<rgba>rgba\(\s*(?P<rgba_content>
-        (?:%(float)s\s*,\s*){3}(?:%(percent)s|%(float)s) | (?:%(percent)s\s*,\s*){3}(?:%(percent)s|%(float)s)
+    \b(?P<rgb>rgba?\(\s*(?P<rgb_content>
+        (?:
+            (?:%(float)s\s+){2}%(float)s | (?:%(percent)s\s+){2}%(percent)s
+        ) |
+        (?:
+            (?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s
+        )
     )\s*\)) |
-    \b(?P<hsl>hsl\(\s*(?P<hsl_content>%(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hsla>hsla?\(\s*(?P<hsla_content>%(angle)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
-    \b(?P<hwb>hwb\(\s*(?P<hwb_content>%(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s)\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>%(angle)s\s*,\s*(?:%(percent)s\s*,\s*){2}(?:%(percent)s|%(float)s))\s*\)) |
+    \b(?P<rgba>rgba?\(\s*(?P<rgba_content>
+        (?:
+            (?:%(float)s\s+){2}%(float)s | (?:%(percent)s\s+){2}%(percent)s
+        )\s*/\s*(?:%(percent)s|%(float)s) |
+        (?:
+            (?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s
+        )\s*,\s*(?:%(percent)s|%(float)s)
+    )\s*\)) |
+    \b(?P<hsl>hsla?\(\s*(?P<hsl_content>
+        (?:
+            %(angle)s\s+%(percent)s\s+%(percent)s
+        ) |
+        (?:
+           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
+        )
+    )\s*\)) |
+    \b(?P<hsla>hsla?\(\s*(?P<hsla_content>
+        (?:
+            %(angle)s\s+%(percent)s\s+%(percent)s
+        )\s*/\s*(?:%(percent)s|%(float)s) |
+        (?:
+           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
+        )\s*,\s*(?:%(percent)s|%(float)s)
+    )\s*\)) |
+    \b(?P<hwb>hwb\(\s*(?P<hwb_content>
+        (?:
+            %(angle)s\s+%(percent)s\s+%(percent)s
+        ) |
+        (?:
+           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
+        )
+    )\s*\)) |
+    \b(?P<hwba>hwb\(\s*(?P<hwba_content>
+        (?:
+            %(angle)s\s+%(percent)s\s+%(percent)s
+        )\s*/\s*(?:%(percent)s|%(float)s) |
+        (?:
+           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
+        )\s*,\s*(?:%(percent)s|%(float)s)
+    )\s*\)) |
     \b(?P<gray>gray\(\s*(?P<gray_content>%(float)s|%(percent)s)\s*\)) |
     \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(float)s|%(percent)s)\s*,\s*(?:%(percent)s|%(float)s))\s*\))
 ''' % COLOR_PARTS
@@ -113,9 +155,11 @@ ADD_CSS = dedent(
 
 WRAPPER_CLASS = "color-helper content"
 
-CSS3 = ("webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla")
-CSS4 = CSS3 + ("gray", "graya", "hwb", "hwba", "hexa", "hexa_compressed")
-ALL = CSS4
+LEVEL4 = (
+    "webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla",
+    "hwb", "hwba", "gray", "graya", "hexa", "hexa_compressed"
+)
+ALL = LEVEL4
 
 
 def norm_angle(angle):
@@ -388,11 +432,13 @@ def translate_color(m, use_hex_argb=False, decode=False):
             )
             alpha = content[3:]
             alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-    elif m.group('rgb'):
+    elif m.group('rgb') or m.group('rgba'):
+        content = m.group('rgba_content') if m.group('rgba') else m.group('rgb_content')
         if decode:
-            content = [x.strip() for x in m.group('rgb_content').decode('utf-8').split(',')]
+            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
         else:
-            content = [x.strip() for x in m.group('rgb_content').split(',')]
+            content = RE_CHAN_SPLIT.split(content)
+
         if content[0].endswith('%'):
             r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
             g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
@@ -404,26 +450,51 @@ def translate_color(m, use_hex_argb=False, decode=False):
                 clamp(round_int(float(content[1])), 0, 255),
                 clamp(round_int(float(content[2])), 0, 255)
             )
-    elif m.group('rgba'):
+        if len(content) == 4:
+            if content[3].endswith('%'):
+                alpha, alpha_dec = alpha_percent_normalize(content[3])
+            else:
+                alpha, alpha_dec = alpha_dec_normalize(content[3])
+    elif m.group('hsl') or m.group('hsla'):
+        content = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
         if decode:
-            content = [x.strip() for x in m.group('rgba_content').decode('utf-8').split(',')]
+            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
         else:
-            content = [x.strip() for x in m.group('rgba_content').split(',')]
-        if content[0].endswith('%'):
-            r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            b = round_int(clamp(float(content[2].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            color = "#%02x%02x%02x" % (r, g, b)
+            content = RE_CHAN_SPLIT.split(content)
+        rgba = RGBA()
+        hue = norm_angle(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
+        rgba.fromhls(h, l, s)
+        color = rgba.get_rgb()
+        if len(content) == 4:
+            if content[3].endswith('%'):
+                alpha, alpha_dec = alpha_percent_normalize(content[3])
+            else:
+                alpha, alpha_dec = alpha_dec_normalize(content[3])
+    elif m.group('hwb') or m.group('hwba'):
+        content = m.group('hwb_content') if m.group('hwb') else m.group('hwba_content')
+        if decode:
+            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
         else:
-            color = "#%02x%02x%02x" % (
-                clamp(round_int(float(content[0])), 0, 255),
-                clamp(round_int(float(content[1])), 0, 255),
-                clamp(round_int(float(content[2])), 0, 255)
-            )
-        if content[3].endswith('%'):
-            alpha, alpha_dec = alpha_percent_normalize(content[3])
-        else:
-            alpha, alpha_dec = alpha_dec_normalize(content[3])
+            content = RE_CHAN_SPLIT.split(content)
+        rgba = RGBA()
+        hue = norm_angle(content[0])
+        if hue < 0.0 or hue > 360.0:
+            hue = hue % 360.0
+        h = hue / 360.0
+        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
+        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
+        rgba.fromhwb(h, w, b)
+        color = rgba.get_rgb()
+        if len(content) == 4:
+            if content[3].endswith('%'):
+                alpha, alpha_dec = alpha_percent_normalize(content[3])
+            else:
+                alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('gray'):
         if decode:
             content = m.group('gray_content').decode('utf-8')
@@ -448,46 +519,6 @@ def translate_color(m, use_hex_argb=False, decode=False):
             alpha, alpha_dec = alpha_percent_normalize(content[1])
         else:
             alpha, alpha_dec = alpha_dec_normalize(content[1])
-    elif m.group('hsl') or m.group('hsla'):
-        content = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
-        if decode:
-            content = [x.strip() for x in content.decode('utf-8').split(',')]
-        else:
-            content = [x.strip() for x in content.split(',')]
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhls(h, l, s)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
-    elif m.group('hwb') or m.group('hwba'):
-        content = m.group('hwb_content') if m.group('hwb') else m.group('hwba_content')
-        if decode:
-            content = [x.strip() for x in content.decode('utf-8').split(',')]
-        else:
-            content = [x.strip() for x in content.split(',')]
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhwb(h, w, b)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
     elif m.group('webcolors'):
         try:
             if decode:

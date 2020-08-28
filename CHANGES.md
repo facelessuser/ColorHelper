@@ -1,8 +1,13 @@
 # ColorHelper
 
-## 2.8.0
+## 3.0.0
 
+- **NEW**: `rgb`, `hsl`, and `hwb` all support the new format `rgb(100, 20 30 / 30%)`. In the future `hwb` may drop
+  comma separated support (`hwb(30, 40%, 50%)`) as the spec no longer allows it. No browers seem to implement `hwb` at
+  this time either. For now, we support comma separated mode.
+- **NEW**: Deprecated color specifiers `css3`, if specified, `css4` will be used instead.
 - **NEW**: all instances of `blacklist` and `whitelist` are now known as `blocklist` and `allowlist` respectively.
+- **FIX**: Insert logic issues.
 
 ## 2.7.0
 

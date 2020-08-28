@@ -199,7 +199,7 @@
                 "constant.color.w3c-standard-color-name.stylus",
                 "meta.property-value.stylus"
             ],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "extensions": [],
             "use_hex_argb": false,
             "compress_hex_output": true
@@ -213,7 +213,7 @@
                 "constant.color.w3c-standard-color-name.css",
                 "meta.property-value.css"
             ],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "extensions": [],
             "use_hex_argb": false,
             "compress_hex_output": true
