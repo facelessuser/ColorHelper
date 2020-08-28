@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 2.8.0
+
+- **NEW**: all instances of `blacklist` and `whitelist` are now known as `blocklist` and `allowlist` respectively.
+
 ## 2.7.0
 
 - **NEW**: HSL can support alpha channels as `hsl` or `hsla` (per the CSS spec).
