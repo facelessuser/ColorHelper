@@ -11,8 +11,9 @@ theme:
   name: material
   custom_dir: docs/theme
   palette:
-    primary: drac-purple
-    accent: drac-purple
+    scheme: dracula
+    primary: deep purple
+    accent: deep purple
   icon:
     logo: material/book-open-page-variant
   font:
