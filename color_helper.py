@@ -311,6 +311,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
             use_hex_argb = rules.get("use_hex_argb", False) if rules else False
             compress_hex = rules.get("compress_hex_output", False) if rules else False
+            space_separator_syntax = set(rules.get("space_separator_syntax", []) if rules else [])
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
@@ -318,7 +319,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     'use_hex_argb': use_hex_argb,
                     'compress_hex': compress_hex,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
-                    'on_cancel': on_cancel
+                    'on_cancel': on_cancel,
+                    'space_separator_syntax': list(space_separator_syntax)
                 }
             )
 
@@ -337,6 +339,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 use_hex_argb = rules.get("use_hex_argb", False) if rules else False
                 allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
                 compress_hex = rules.get('compress_hex_output', False) if rules else False
+                space_syntax = set(rules.get('space_separator_syntax', []) if rules else [])
                 calc = InsertCalc(self.view, point, target_color, convert, allowed_colors, use_hex_argb)
                 calc.calc()
                 if alpha:
@@ -345,13 +348,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 if calc.web_color and not calc.alpha:
                     value = calc.web_color
                 elif calc.convert_rgb:
-                    value = "%d, %d, %d" % (
-                        int(calc.color[1:3], 16),
-                        int(calc.color[3:5], 16),
-                        int(calc.color[5:7], 16)
+                    sep, asep = (' ', ' /') if "all" in space_syntax or "rgb" in space_syntax else (', ', ',')
+                    value = sep.join(
+                        [
+                            str(int(calc.color[1:3], 16)),
+                            str(int(calc.color[3:5], 16)),
+                            str(int(calc.color[5:7], 16))
+                        ]
                     )
                     if calc.alpha:
-                        value += ', %s' % calc.alpha
+                        value += '%s %s' % (asep, calc.alpha)
                     value = ("rgba(%s)" if calc.alpha else "rgb(%s)") % value
                 elif calc.convert_gray:
                     value = "%d" % int(calc.color[1:3], 16)
@@ -361,24 +367,30 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 elif calc.convert_hsl:
                     hsl = RGBA(calc.color)
                     h, l, s = hsl.tohls()
-                    value = "%s, %s%%, %s%%" % (
-                        util.fmt_float(h * 360.0),
-                        util.fmt_float(s * 100.0),
-                        util.fmt_float(l * 100.0)
+                    sep, asep = (' ', ' /') if "all" in space_syntax or "hsl" in space_syntax else (', ', ',')
+                    value = sep.join(
+                        [
+                            str(util.fmt_float(h * 360.0)),
+                            str(util.fmt_float(s * 100.0)) + "%",
+                            str(util.fmt_float(l * 100.0)) + "%"
+                        ]
                     )
                     if calc.alpha:
-                        value += ', %s' % calc.alpha
+                        value += '%s %s' % (asep, calc.alpha)
                     value = ("hsla(%s)" if calc.alpha else "hsl(%s)") % value
                 elif calc.convert_hwb:
                     hwb = RGBA(calc.color)
                     h, w, b = hwb.tohwb()
-                    value = "%s, %s%%, %s%%" % (
-                        util.fmt_float(h * 360.0),
-                        util.fmt_float(w * 100.0),
-                        util.fmt_float(b * 100.0)
+                    sep, asep = (' ', ' /') if "all" in space_syntax or "hwb" in space_syntax else (', ', ',')
+                    value = sep.join(
+                        [
+                            util.fmt_float(h * 360.0),
+                            util.fmt_float(w * 100.0) + "%",
+                            util.fmt_float(b * 100.0) + "%"
+                        ]
                     )
                     if calc.alpha:
-                        value += ', %s' % calc.alpha
+                        value += '%s %s' % (asep, calc.alpha)
                     value = "hwb(%s)" % value
                 else:
                     use_upper = ch_settings.get("upper_case_hex", False)
@@ -480,6 +492,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         rules = util.get_rules(self.view)
         allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
         use_hex_argb = rules.get("use_hex_argb", False) if rules else None
+        space_syntax = set(rules.get("space_separator_syntax", []) if rules else [])
+        all_space = "all" in space_syntax
         if alpha is not None:
             parts = alpha.split('.')
             dlevel = len(parts[1]) if len(parts) > 1 else None
@@ -514,12 +528,16 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         template_vars['rgb_r'] = str(rgba.r)
         template_vars['rgb_g'] = str(rgba.g)
         template_vars['rgb_b'] = str(rgba.b)
+        template_vars['rgb_comma'] = not all_space and "rgb" not in space_syntax
         template_vars['hsl_h'] = util.fmt_float(h1 * 360.0)
         template_vars['hsl_s'] = util.fmt_float(s * 100.0)
         template_vars['hsl_l'] = util.fmt_float(l * 100.0)
+        template_vars['hsl_comma'] = not all_space and "hsl" not in space_syntax
         template_vars['hwb_h'] = util.fmt_float(h2 * 360.0)
         template_vars['hwb_w'] = util.fmt_float(w * 100.0)
         template_vars['hwb_b'] = util.fmt_float(b * 100.0)
+        template_vars['hwb_comma'] = not all_space and "hwb" not in space_syntax
+        template_vars['gray_comma'] = not all_space and "gray" not in space_syntax
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
@@ -585,6 +603,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             rules = util.get_rules(self.view)
             use_hex_argb = rules.get("use_hex_argb", False) if rules else None
             allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
+            space_syntax = set(rules.get("space_separator_syntax", []) if rules else [])
+            all_space = "all" in space_syntax
             calc = InsertCalc(self.view, point, parts[0], 'rgba', allowed_colors, bool(use_hex_argb))
             found = calc.calc()
 
@@ -627,7 +647,11 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 "hwb_w": util.fmt_float(w * 100.0),
                 "hwb_b": util.fmt_float(b * 100.0),
                 "web_color": web_color,
-                "secondary_alpha": secondary_alpha
+                "secondary_alpha": secondary_alpha,
+                "rgb_comma": not all_space and "rgb" not in space_syntax,
+                "hsl_comma": not all_space and "hsl" not in space_syntax,
+                "hwb_comma": not all_space and "hwb" not in space_syntax,
+                "gray_comma": not all_space and "gray" not in space_syntax
             }
 
             template_vars['show_web_color'] = web_color and "webcolors" in allowed_colors
@@ -1420,6 +1444,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         scan_scopes = []
         incomplete_scopes = []
         allowed_colors = set()
+        space_separator_syntax = set()
         use_hex_argb = False
         compress_hex = False
 
@@ -1463,6 +1488,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                             allowed_colors.add(c)
                     else:
                         allowed_colors.add(color)
+                space_separator_syntax = set(rule.get("space_separator_syntax", []))
                 if not use_hex_argb and rule.get("use_hex_argb", False):
                     use_hex_argb = True
                 if not compress_hex and rule.get("compress_hex_output", False):
@@ -1479,7 +1505,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "compress_hex_output": compress_hex,
                     "current_ext": ext,
                     "current_syntax": syntax,
-                    "last_updated": ch_last_updated
+                    "last_updated": ch_last_updated,
+                    "space_separator_syntax": list(space_separator_syntax)
                 }
             )
         else:

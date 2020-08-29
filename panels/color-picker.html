@@ -53,33 +53,63 @@
 <br>
   {%- endif %}
   {%- if plugin.rgb_info %}
+    {%- if plugin.rgb_comma %}
 <a href="insert:rgb({{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}})" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
+    {%- else %}
+<a href="insert:rgb({{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}})" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.rgba_info %}
+    {%- if plugin.rgb_comma %}
 <a href="insert:rgba({{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
+    {%- else %}
+<a href="insert:rgba({{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.hsl_info %}
+    {%- if plugin.hsl_comma %}
 <a href="insert:hsl({{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%)" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
+    {%- else %}
+<a href="insert:hsl({{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}%)" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}%</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.hsla_info %}
+    {%- if plugin.hsl_comma %}
 <a href="insert:hsla({{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
+    {%- else %}
+<a href="insert:hsla({{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% ? {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.hwb_info %}
+    {%- if plugin.hwb_comma %}
 <a href="insert:hwb({{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%)" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
+    {%- else %}
+<a href="insert:hwb({{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}%)" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}%</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.hwba_info %}
+    {%- if plugin.hwb_comma %}
 <a href="insert:hwb({{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
+    {%- else %}
+<a href="insert:hwb({{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.alpha}})" class="small">&gt;&gt;&gt;</a>
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
 {%- endif %}

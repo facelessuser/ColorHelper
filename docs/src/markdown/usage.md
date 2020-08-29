@@ -308,9 +308,10 @@ Setting to control color scanning which is responsible for both auto-popups and 
             ],
             "scan_completion_scopes": [],
             "extensions": [],
-            "allowed_colors": ["css3"],
+            "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
     ]
 ```
@@ -403,8 +404,7 @@ Value             | Description
 `graya`           | CSS4's gray with alpha format: `gray(255, .5)` or `gray(100%, .5)`.  It also supports alpha as a percentage format: `gray(100%, 50%)`.
 `hwb`             | CSS4's `HWB` color format: `hwb(360, 50%, 100%)`.
 `hwba`            | CSS4's `HWBA` color format: `hwb(360, 50%, 100%, 5)` or `hwb(360, 50%, 100%, 50%)`.
-`css3`            | All CSS3 formats: `webcolors`, `hex`, `hex_compressed`, `rgb`, `rgba`, `hsl`, `hsla`.
-`css4`            | All CSS4 formats: `css3`, `gray`, `graya`, `hwb`, `hwba`, `hexa`, `hexa_compressed`.
+`css4`            | All CSS4 formats: `webcolors`, `hex`, `hex_compressed`, `rgb`, `rgba`, `hsl`, `hsla`, `gray`, `graya`, `hwb`, `hwba`, `hexa`, `hexa_compressed`.
 `all`             | All color formats.
 
 ```js
@@ -412,6 +412,9 @@ Value             | Description
         {
             "allowed_colors": ["css3"]
 ```
+
+!!! warning "Deprecated 3.0"
+    The key `css3` has been deprecated. While it will still be accepted, it is currently an alias for `css4`.
 
 #### `color_scanning.use_hex_argb`
 
@@ -431,6 +434,19 @@ When outputting hex formats compress the color if possible `#334455` --> `#345`.
     "color_scanning": [
         {
             "compress_hex_output": true
+```
+
+#### `color_scanning.space_separator_syntax`
+
+When representing colors in popups or inserting them, the color formats of `rgb`, `hsl`, `hwb`, and `gray` can be
+displayed in the traditional way or in the space separator form (`rgb(r g b / a)`). If desired, this new format can be
+enabled as default via the `space_separator_syntax` option. Most rules enable this for `hwb` and `gray` as the level 4
+specifications do not allow the comma separated for for these new color formats.
+
+```js
+    "color_scanning": [
+        {
+            "space_separator_syntax": ["hwb", "gray"]
 ```
 
 ## Multiconf

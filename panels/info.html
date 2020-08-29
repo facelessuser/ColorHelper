@@ -48,12 +48,20 @@
   {%- endif %}
   {%- if plugin.show_rgb_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgb){: .small}
+    {%- if plugin.rgb_comma %}
  <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
+    {%- else %}
+ <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_rgba_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgba){: .small}
+    {%- if plugin.rgb_comma %}
  <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
+    {%- else %}
+ <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_gray_color %}
@@ -63,27 +71,47 @@
   {%- endif %}
   {%- if plugin.show_graya_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:graya){: .small}
+    {%- if plugin.gray_comma %}
  <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.alpha}}</span>)
+    {%- else %}
+ <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}} / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hsl_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsl){: .small}
+    {%- if plugin.hsl_comma %}
  <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
+    {%- else %}
+ <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}%</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hsla_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsla){: .small}
+    {%- if plugin.hsl_comma %}
  <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
+    {%- else %}
+ <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hwb_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwb){: .small}
+    {%- if plugin.hwb_comma %}
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
+    {%- else %}
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}%</span>)
+    {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hwba_color %}
 [&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwba){: .small}
+    {%- if plugin.hwb_comma %}
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
+    {%- else %}
+ <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.alpha}}</span>)
+    {%- endif %}
 <br>
   {%- endif %}
 {%- endif %}
