@@ -96,7 +96,8 @@
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             //Sass (based on: https://packagecontrol.io/packages/Sass)
@@ -117,7 +118,8 @@
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             // SCSS (based on https://packagecontrol.io/packages/SCSS)
@@ -135,7 +137,8 @@
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             // SCSS (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
@@ -159,7 +162,8 @@
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
@@ -177,7 +181,8 @@
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             "syntax_files": [],
@@ -202,7 +207,8 @@
             "allowed_colors": ["css4"],
             "extensions": [],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         },
         {
             "syntax_files": [],
@@ -216,7 +222,8 @@
             "allowed_colors": ["css4"],
             "extensions": [],
             "use_hex_argb": false,
-            "compress_hex_output": true
+            "compress_hex_output": true,
+            "space_separator_syntax": ["gray", "hwb"]
         }
     ],
 
