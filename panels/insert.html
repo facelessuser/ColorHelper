@@ -49,6 +49,7 @@
   {%- if plugin.gray_comma %}
  <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.alpha}}</span>)
   {%- else %}
+ <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}} / {{plugin.alpha}}</span>)
   {%- endif %}
 <br>
 {%- endif %}
@@ -110,7 +111,7 @@
  <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.current_alpha}}</span>)
   {%- else %}
  <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.current_alpha}}</span>)
-  {%- end %}
+  {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_graya_color %}
@@ -119,7 +120,7 @@
  <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.current_alpha}}</span>)
   {%- else %}
  <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}} / {{plugin.current_alpha}}</span>)
-  {%- end %}
+  {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hsla_color %}
@@ -128,7 +129,7 @@
  <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.current_alpha}}</span>)
   {%- else %}
  <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.current_alpha}}</span>)
-  {%- end %}
+  {%- endif %}
 <br>
   {%- endif %}
   {%- if plugin.show_hwba_color %}
@@ -137,6 +138,6 @@
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.current_alpha}}</span>)
   {%- else %}
  <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.current_alpha}}</span>)
-  {%- end %}
-   {%- endif %}
+  {%- endif %}
+  {%- endif %}
 {%- endif %}

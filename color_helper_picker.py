@@ -12,7 +12,7 @@ from .lib import csscolors
 from . import color_helper_util as util
 import copy
 from .multiconf import get as qualify_settings
-from .lib.rgba import RGBA
+from .lib.colorlib import RGB, OP_NULL
 
 color_map_data = [
     ['036', '369', '36c', '039', '009', '00c', '006'],
@@ -71,7 +71,6 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
             html_colors = []
 
-            rgba = util.RGBA()
             h = 0
             s = 0.9
             l = 0.9
@@ -89,8 +88,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     ]
                 )
                 for x in range(0, 15):
-                    rgba.fromhls(h, l, s)
-                    color = rgba.get_rgba()
+                    rgb = RGB(HSL("HSL({:f} {:f}% {:f}%)".format(h * 360.0, s * 100, l * 100)))
+                    color = rgb.get_rgba()
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
@@ -133,11 +132,13 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             rgba.r = 255.0
             rgba.g = 255.0
             rgba.b = 255.0
+            rgb = RGB('rgb(255 255 255)')
+            hsl = HSL(RGB)
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                h, lum, s = rgba.tohls()
-                rgba.fromhls(h, l, s)
-                color = rgba.get_rgba()
+                hsl = HSL(rgb)
+                hsl.l = l
+                color = RGB(rgba).get_hexa()
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
@@ -277,7 +278,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         check_size = self.check_size(self.box_height)
         html = []
         for name in sorted(csscolors.name2hex_map):
-            color = util.RGBA(csscolors.name2hex(name)).get_rgba()
+            color = RGB(csscolors.name2hex(name)).get_hexa()
 
             html.append(
                 '[%s](%s) %s<br>' % (
@@ -305,7 +306,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             "luminance": (0, 100)
         }
 
-        rgba = util.RGBA(self.color)
+        rgba = RGBA(self.color)
         h, l, s = rgba.tohls()
         minimum, maximum = ranges[color_filter]
         check_size = self.check_size(self.box_height)
@@ -352,16 +353,49 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_channel(self, channel, label, minimum, maximum, color_filter):
         """Get color channel."""
 
-        rgba1 = util.RGBA(self.color)
-        rgba2 = util.RGBA(self.color)
+        if self.mode == "rgb":
+            rgba1 = util.RGBA(self.color)
+            rgba2 = util.RGBA(self.color)
+        elif self.mode == "hsl":
+            rgba1 = util.RGBA().fromhls(*self.color_values[:3])
+            rgba1.alpha(self.color_values[3], op=OP_NULL)
+            rgba2 = util.RGBA().fromhls(*self.color_values[:3])
+            rgba2.alpha(self.color_values[3], op=OP_NULL)
+        elif self.mode == "hwb":
+            rgba1 = util.RGBA().fromhwb(*self.color_values[:3])
+            rgba1.alpha(self.color_values[3], op=OP_NULL)
+            rgba2 = util.RGBA().fromhwb(*self.color_values[:3])
+            rgba2.alpha(self.color_values[3], op=OP_NULL)
         html = []
         html.append('<span class="channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
 
+        print('---start---')
+        color_values1 = self.color_values[:]
+        color_values2 = self.color_values[:]
+
         while count:
-            getattr(rgba1, color_filter)(minimum)
+            convert = getattr(rgba1, color_filter)(minimum)
+            if self.mode == 'hsl':
+                print('---first-----------------')
+                print(self.color_values)
+                if color_filter == 'hue':
+                    color_values1[0] = convert
+                elif color_filter == "saturation":
+                    color_values1[2] = convert
+                else:
+                    color_values1[1] = convert
+                print(color_values1)
+            elif self.mode == 'hwb':
+                if color_filter == 'hue':
+                    color_values1[0] = convert
+                elif color_filter == "white":
+                    color_values1[1] = convert
+                else:
+                    color_values1[2] = convert
+                print(color_values1)
 
             border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.LEFT
             if count == 1:
@@ -378,7 +412,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         [rgba1.get_rgba()], self.default_border,
                         **kwargs
                     ),
-                    rgba1.get_rgba()
+                    rgba1.get_rgba() if self.mode == 'rgb' else ("%f %f %f %f" % tuple(color_values1))
                 )
             )
             count -= 1
@@ -389,12 +423,26 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                     [self.color], self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 ),
-                self.color
+                self.color if self.mode == 'rgb' else ("%f %f %f %f" % tuple(self.color_values))
             )
         )
         count = 12
         while count:
-            getattr(rgba2, color_filter)(maximum)
+            convert = getattr(rgba2, color_filter)(maximum)
+            if self.mode == 'hsl':
+                if color_filter == 'hue':
+                    color_values2[0] = convert
+                elif color_filter == "saturation":
+                    color_values2[2] = convert
+                else:
+                    color_values2[1] = convert
+            elif self.mode == 'hwb':
+                if color_filter == 'hue':
+                    color_values2[0] = convert
+                elif color_filter == "white":
+                    color_values2[1] = convert
+                else:
+                    color_values2[2] = convert
 
             border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.RIGHT
             if count == 12:
@@ -411,7 +459,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                         [rgba2.get_rgba()], self.default_border,
                         **kwargs
                     ),
-                    rgba2.get_rgba()
+                    rgba2.get_rgba() if self.mode == 'rgb' else ("%f %f %f %f" % tuple(color_values2))
                 )
             )
             count -= 1
@@ -533,8 +581,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
     def run(
         self, edit, color='#ffffff', allowed_colors=util.ALL, use_hex_argb=None,
-        compress_hex=False, hsl=False, hirespick=None, colornames=False,
-        on_done=None, on_cancel=None, space_separator_syntax=None
+        compress_hex=False, mode="rgb", hirespick=None, colornames=False,
+        on_done=None, on_cancel=None, space_separator_syntax=None, **kwargs
     ):
         """Run command."""
 
@@ -559,9 +607,19 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         self.allowed_colors = allowed_colors
         self.template_vars = {}
         self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
-        rgba = util.RGBA(color)
+        if mode == "rgb":
+            rgba = util.RGBA(color)
+            self.color_values = [rgba.r, rgba.g, rgba.b, rgba.a]
+        elif mode == "hsl":
+            self.color_values = [float(x) for x in color.split(' ')]
+            rgba = util.RGBA().fromhls(*self.color_values[:3])
+            rgba.alpha(self.color_values[3], op=OP_NULL)
+        elif mode == "hwb":
+            self.color_values = [float(x) for x in color.split(' ')]
+            rgba = util.RGBA().fromhwb(*self.color_values[:3])
+            rgba.alpha(self.color_values[3], op=OP_NULL)
         self.set_sizes()
-        self.hsl = hsl
+        self.mode = mode
         self.color = rgba.get_rgba()
         self.alpha = util.fmt_float(float(int(self.color[-2:], 16)) / 255.0, 3)
         try:
@@ -586,17 +644,27 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             else:
                 self.get_color_map_square()
             self.get_current_color()
-            if hsl:
+            if mode == "hsl":
                 self.get_channel('channel_1', 'H', -15, 15, 'hue')
                 self.get_channel('channel_2', 'S', 0.975, 1.025, 'saturation')
                 self.get_channel('channel_3', 'L', 0.975, 1.025, 'luminance')
+            elif mode == "hwb":
+                self.get_channel('channel_1', 'H', -15, 15, 'hue')
+                self.get_channel('channel_2', 'W', 0.975, 1.025, 'white')
+                self.get_channel('channel_3', 'B', 0.975, 1.025, 'black')
             else:
                 self.get_channel('channel_1', 'R', 0.975, 1.025, 'red')
                 self.get_channel('channel_2', 'G', 0.975, 1.025, 'green')
                 self.get_channel('channel_3', 'B', 0.975, 1.025, 'blue')
             self.get_channel('channel_alpha', 'A', 0.975, 1.025, 'alpha')
 
-            self.template_vars['color_switch'] = 'rgb' if self.hsl else 'hsl'
+            if mode == 'rgb':
+                switch = 'hsl'
+            elif mode == 'hsl':
+                switch = 'hwb'
+            else:
+                switch = 'rgb'
+            self.template_vars['color_switch'] = switch
             self.get_color_info()
 
         mdpopups.show_popup(
@@ -613,11 +681,26 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         """Handle HREF."""
 
         hires = None
-        hsl = self.hsl
+        mode = self.mode
         colornames = False
-        if href in ('hsl', 'rgb'):
-            hsl = href == 'hsl'
-            color = self.color
+        if href in ('hsl', 'rgb', 'hwb'):
+            if mode == 'rgb':
+                rgba = util.RGBA(self.color)
+            elif mode == 'hsl':
+                rgba = util.RGBA().fromhls(*self.color_values[:3])
+                rgba.alpha(self.color_values[3], op=OP_NULL)
+            elif mode == 'hwb':
+                rgba = util.RGBA().fromhwb(*self.color_values[:3])
+                rgba.alpha(self.color_values[3], op=OP_NULL)
+            mode = href
+            if mode == 'rgb':
+                color = self.color
+            elif mode == 'hsl':
+                temp = rgba.tohls() + (255.0 / rgba.a,)
+                color = "%f %f %f %f" % temp
+            elif mode == 'hwb':
+                temp = rgba.tohwb() + (255.0 / rgba.a,)
+                color = "%f %f %f %f" % temp
         elif href.startswith('insert'):
             color = href.split(':')[1]
         elif href.startswith('hirespick'):
@@ -659,7 +742,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 {
                     "color": color, "allowed_colors": self.allowed_colors,
                     "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
-                    "hsl": hsl, "hirespick": hires, "colornames": colornames,
+                    "mode": mode, "hirespick": hires, "colornames": colornames,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
@@ -671,7 +754,8 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
     def run(
         self, color="#ffffffff", allowed_colors=util.ALL,
         use_hex_argb=None, compress_hex=False,
-        on_done=None, on_cancel=None, space_separator_syntax=None
+        on_done=None, on_cancel=None, space_separator_syntax=None,
+        **kwargs
     ):
         """Run command."""
 

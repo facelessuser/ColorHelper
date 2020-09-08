@@ -100,6 +100,26 @@
             "space_separator_syntax": ["gray", "hwb"]
         },
         {
+            "syntax_files": ["PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme"],
+            "syntax_filter": "allowlist",
+            "base_scopes": [
+                "source.json.sublime.color-scheme"
+            ],
+            "scan_scopes": [
+                "source.css-color -meta.function-call.var.sublime-color-scheme",
+                "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
+            ],
+            "scan_completion_scopes": [
+                "source.css-color -meta.function-call.var.sublime-color-scheme"
+            ],
+            "extensions": [],
+            "allowed_colors": ["css4"],
+            "use_hex_argb": false,
+            "compress_hex_output": false,
+            "space_separator_syntax": [],
+            "enabled": true
+        },
+        {
             //Sass (based on: https://packagecontrol.io/packages/Sass)
             "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
             "syntax_filter": "allowlist",
@@ -108,12 +128,12 @@
                 "source.scss"
             ],
             "scan_scopes": [
-                "source.sass meta.property-value.css -comment -string",
-                "source.scss meta.property-value.css -comment -string"
+                "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
+                "source.scss meta.property-value.css -comment -string -variable.declaration.sass"
             ],
             "scan_completion_scopes": [
-                "source.scss meta.property-value.css -comment -string",
-                "source.sass meta.property-value.css -comment -string"
+                "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
+                "source.sass meta.property-value.css -comment -string -variable.declaration.sass"
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
@@ -134,6 +154,10 @@
             "scan_completion_scopes": [
                 "source.scss"
             ],
+            "output_options": [
+                {"space": "srgb", "options": {"alpha": false, "comma": true, "scale": 3}},
+                {"space": "srgb", "options": {"hex_code": true}},
+            ],
             "extensions": [],
             "allowed_colors": ["css4"],
             "use_hex_argb": false,
@@ -152,12 +176,16 @@
                 "source.sass"
             ],
             "scan_scopes": [
-                "source.scss -comment -string -support.type.property-name",
-                "source.sass -comment -string -support.type.property-name"
+                "source.scss -comment -string -support.type.property-name -variable.declaration",
+                "source.sass -comment -string -support.type.property-name -variable.declaration"
             ],
             "scan_completion_scopes": [
-                "source.scss -comment -string -support.type.property-name",
-                "source.sass -comment -string -support.type.property-name"
+                "source.scss -comment -string -support.type.property-name -variable.declaration",
+                "source.sass -comment -string -support.type.property-name -variable.declaration"
+            ],
+            "output_options": [
+                {"space": "srgb", "options": {"alpha": false, "comma": true, "scale": 3}},
+                {"space": "srgb", "options": {"hex_code": true}},
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
@@ -177,6 +205,14 @@
             ],
             "scan_completion_scopes": [
                 "source.postcss meta.property-list.css.postcss -comment -string"
+            ],
+            "output_options": [
+                {"space": "srgb", "options": {"hex_code": true}},
+                {"space": "srgb", "options": {"comma": true, "scale": 0}},
+                {"space": "hsl", "options": {"comma": true, "scale": 0}},
+                {"space": "hwb", "options": {"comma": false, "scale": 0}},
+                {"space": "lch", "options": {"comma": false, "scale": 0}},
+                {"space": "lab", "options": {"comma": false, "scale": 0}}
             ],
             "extensions": [],
             "allowed_colors": ["css4"],

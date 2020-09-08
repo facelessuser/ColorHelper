@@ -7,14 +7,15 @@ License: MIT
 import sublime
 import re
 import decimal
-from .lib import csscolors
-from .lib.rgba import RGBA, round_int, clamp
+from coloraide.css.colors import SRGB, HSL, HWB
+from coloraide.util import round_half_up, clamp, fmt_float
+from coloraide.util.parse import RE_CHAN_SPLIT
+from coloraide.css.colors import css_names
 from textwrap import dedent
 import platform
 import math
 import mdpopups
-
-RE_CHAN_SPLIT = re.compile(r'(?:\s*[,/]\s*|\s+)')
+import base64
 
 FRONTMATTER = mdpopups.format_frontmatter(
     {
@@ -34,7 +35,6 @@ CONVERT_TURN = 360
 CONVERT_GRAD = 90 / 100
 
 LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
-FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 
 COLOR_PARTS = {
     "percent": r"[+\-]?(?:(?:\d*\.\d+)|\d+)%",
@@ -109,7 +109,7 @@ INCOMPLETE = r'''
     \b(?P<gray_open>hwb\()
     '''
 
-COLOR_NAMES = r'\b(?P<webcolors>%s)\b(?!\()' % '|'.join([name for name in csscolors.name2hex_map.keys()])
+COLOR_NAMES = r'\b(?P<webcolors>%s)\b(?!\()' % '|'.join([name for name in css_names.name2hex_map.keys()])
 
 TAG_HTML_RE = re.compile(
     br'''(?x)(?i)
@@ -160,6 +160,18 @@ LEVEL4 = (
 ALL = LEVEL4
 
 
+def encode_color(color):
+    """Encode color into base64 for url links."""
+
+    return base64.b64encode(color.encode('utf-8')).decode('utf-8')
+
+
+def decode_color(color):
+    """Decode color from base64 for url links."""
+
+    return base64.b64decode(color.encode('utf-8')).decode('utf-8')
+
+
 def norm_angle(angle):
     """Normalize angle units."""
 
@@ -193,6 +205,46 @@ def debug(*args):
         log(*args)
 
 
+def get_cache_settings(view):
+    """Get meta settings."""
+
+    vid = "v:{}-w:{}".format(view.id(), view.window().id())
+    return sublime.settings("color_helper_cache.sublime-settings").get(vid, {})
+
+
+def set_cache_settings(view, options):
+    """Set cache settings."""
+
+    vid = "v:{}-w:{}".format(view.id(), view.window().id())
+    s_view = sublime.settings("color_helper_views.sublime-settings")
+    view_list = s_view.get('views', {})
+    if vid not in view_list:
+        view_list[vid] = True
+    s_view.set('views', view_list)
+    sublime.settings("color_helper_cache.sublime-settings").set(vid, options)
+
+
+def gc_cache_settings():
+    """Garbage collect cache settings."""
+
+    current = []
+    s_view = sublime.settings("color_helper_views.sublime-settings")
+    view_list = s_view.get('views', {})
+    current = set()
+    for w in sublime.windows():
+        for v in views():
+            current.add("v:{}-w:{}".format(view.id(), view.window().id()))
+
+    remove = []
+    for value in view_list.values():
+        if value not in view_list:
+            remove.append(value)
+
+    cache = sublime.settings("color_helper_cache.sublime-settings")
+    for r in remove:
+        cache.erase(r)
+
+
 def get_line_height(view):
     """Get the line height."""
 
@@ -209,21 +261,6 @@ def color_picker_available():
     s.set('color_pick_return', None)
     sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
     return s.get('color_pick_return', None)
-
-
-def fmt_float(f, p=0):
-    """Set float precision and trim precision zeros."""
-
-    string = str(
-        decimal.Decimal(f).quantize(decimal.Decimal('0.' + ('0' * p) if p > 0 else '0'), decimal.ROUND_HALF_UP)
-    )
-
-    m = FLOAT_TRIM_RE.match(string)
-    if m:
-        string = m.group('keep')
-        if m.group('keep2'):
-            string += m.group('keep2')
-    return string
 
 
 def get_rules(view):
@@ -329,24 +366,10 @@ def compress_hex(color):
     return color
 
 
-def alpha_dec_normalize(dec):
+def alpha_normalize(dec):
     """Normalize a decimal alpha value."""
 
-    temp = float(dec)
-    if temp < 0.0 or temp > 1.0:
-        dec = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-    alpha_dec = dec
-    alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
-    return alpha, alpha_dec
-
-
-def alpha_percent_normalize(perc):
-    """Normalize a percent alpha value."""
-
-    alpha_float = clamp(float(perc.strip('%')), 0.0, 100.0) / 100.0
-    alpha_dec = fmt_float(alpha_float, 3)
-    alpha = "%02X" % round_int(alpha_float * 255.0)
-    return alpha, alpha_dec
+    return "%02X" % round_half_up(float(alpha_dec) * 255.0), dec
 
 
 def translate_color(m, use_hex_argb=False, decode=False):
@@ -433,75 +456,44 @@ def translate_color(m, use_hex_argb=False, decode=False):
     elif m.group('rgb') or m.group('rgba'):
         content = m.group('rgba_content') if m.group('rgba') else m.group('rgb_content')
         if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
+            content = values.decode('utf-8')
         else:
-            content = RE_CHAN_SPLIT.split(content)
-
-        if content[0].endswith('%'):
-            r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            b = round_int(clamp(float(content[2].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            color = "#%02x%02x%02x" % (r, g, b)
-        else:
-            color = "#%02x%02x%02x" % (
-                clamp(round_int(float(content[0])), 0, 255),
-                clamp(round_int(float(content[1])), 0, 255),
-                clamp(round_int(float(content[2])), 0, 255)
-            )
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
+            content = values
+        rgb = SRGB('rgb({})'.format(content))
+        color = rgb.to_string(hex_code=True)
+        if rgb.alpha != 1.0:
+            alpha, alpha_dec = alpha_normalize(rgb.alpha)
     elif m.group('hsl') or m.group('hsla'):
-        content = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
+        values = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
         if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
+            content = values.decode('utf-8')
         else:
-            content = RE_CHAN_SPLIT.split(content)
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhls(h, l, s)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
+            content = values
+        hsl = HSL('hsl({})'.format(values))
+        rgb = SRGB(hsl)
+        color = rgb.to_string(hex_code=True)
+        if rgb.alpha != 1.0:
+            alpha, alpha_dec = alpha_normalize(rgb.alpha)
     elif m.group('hwb') or m.group('hwba'):
-        content = m.group('hwb_content') if m.group('hwb') else m.group('hwba_content')
+        values = m.group('hwb_content') if m.group('hsl') else m.group('hwb_content')
         if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
+            content = values.decode('utf-8')
         else:
-            content = RE_CHAN_SPLIT.split(content)
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhwb(h, w, b)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
+            content = values
+        hwb = HWB('hwb({})'.format(values))
+        rgb = SRGB(hwb)
+        color = rgb.to_string(hex_code=True)
+        if rgb.alpha != 1.0:
+            alpha, alpha_dec = alpha_normalize(rgb.alpha)
     elif m.group('gray'):
         if decode:
             content = m.group('gray_content').decode('utf-8')
         else:
             content = m.group('gray_content')
         if content.endswith('%'):
-            g = round_int(clamp(float(content.strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            g = round_half_up(clamp(float(content.strip('%')), 0.0, 255.0) * (255.0 / 100.0))
         else:
-            g = clamp(round_int(float(content)), 0, 255)
+            g = clamp(round_half_up(float(content)), 0, 255)
         color = "#%02x%02x%02x" % (g, g, g)
     elif m.group('graya'):
         if decode:
@@ -509,9 +501,9 @@ def translate_color(m, use_hex_argb=False, decode=False):
         else:
             content = [x.strip() for x in m.group('graya_content').split(',')]
         if content[0].endswith('%'):
-            g = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
+            g = round_half_up(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
         else:
-            g = clamp(round_int(float(content[0])), 0, 255)
+            g = clamp(round_half_up(float(content[0])), 0, 255)
         color = "#%02x%02x%02x" % (g, g, g)
         if content[1].endswith('%'):
             alpha, alpha_dec = alpha_percent_normalize(content[1])
@@ -520,9 +512,9 @@ def translate_color(m, use_hex_argb=False, decode=False):
     elif m.group('webcolors'):
         try:
             if decode:
-                color = csscolors.name2hex(m.group('webcolors').decode('utf-8')).lower()
+                color = css_names.name2hex(m.group('webcolors').decode('utf-8')).lower()
             else:
-                color = csscolors.name2hex(m.group('webcolors')).lower()
+                color = css_names.name2hex(m.group('webcolors')).lower()
         except Exception:
             pass
     return color, alpha, alpha_dec
