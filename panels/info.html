@@ -1,5 +1,8 @@
+{% if plugin.show_palette_menu -%} 
+[palettes](__palettes__){: .small} 
+{% endif -%}
 {% if plugin.show_picker_menu -%}
-[picker](__color_picker__:{{plugin.color}}){: .small} 
+[picker](__color_picker__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
 [unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 

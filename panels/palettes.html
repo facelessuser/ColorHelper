@@ -20,22 +20,3 @@ Click the link or palette to add **{{plugin.color}}**{: .keyword}.
 {%- if plugin.show_favorite_palette %}
 {{plugin.favorite_palette}}
 {%- endif %}
-{%- if plugin.show_current_palette %}
-{{plugin.current_palette}}
-{%- endif %}
-{%- if plugin.show_separator %}
-
----
-
-{% endif -%}
-{% for palette in plugin.global_palettes %}
-{{palette}}
-{% endfor %}
-{%- if plugin.show_project_separator %}
-
----
-
-{% endif -%}
-{% for palette in plugin.project_palettes %}
-{{palette}}
-{% endfor %}

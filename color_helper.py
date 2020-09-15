@@ -6,16 +6,16 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide.css import SRGB, HSL, HWB, colorcss_match
+from coloraide.css import SRGB, HSL, HWB, colorcss_match, colorcss
 from coloraide.colors import LCH as GEN_LCH
 from coloraide.css.colors import css_names
+from coloraide import colors as generic_colors
 import threading
 from time import time, sleep
 import re
 import os
 import mdpopups
 from . import color_helper_util as util
-# from .color_helper_insert import InsertCalc, PickerInsertCalc
 from .multiconf import get as qualify_settings
 import traceback
 from html.parser import HTMLParser
@@ -29,7 +29,7 @@ PREVIEW_IMG = (
     '<a href="{}">{}</a>'
 )
 
-RE_COLOR_START = re.compile(r"(?i)(?:\bhsla?\(|\bgray\(|\blch\(|\blab\(|\bhwb\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#|\brgba?\()")
+RE_COLOR_START = re.compile(r"(?i)(?:\bcolor\(|\bhsla?\(|\bgray\(|\blch\(|\blab\(|\bhwb\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#|\brgba?\()")
 
 __pc_name__ = "ColorHelper"
 
@@ -107,9 +107,6 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
     def on_navigate(self, href):
         """Handle link clicks."""
-
-        print('-----handle-----')
-        print(href)
 
         if href.startswith('__insert__'):
             parts = href.split(':', 3)
@@ -444,6 +441,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         else:
             label = '__colors__:%s:%s' % (palette_type, label)
 
+        color_box = [colorcss(color).convert("srgb").to_string(hex_code=True, alpha=True) for color in color_list[:5]]
         colors.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
@@ -464,12 +462,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.color_h)
         for f in color_list:
-            parts = f.split('@')
-            if len(parts) > 1:
-                color = parts[0]
-            else:
-                color = f
-            no_alpha_color = color[:-2] if len(f) > 7 else color
+            color = colorcss(f).convert("srgb")
             if count != 0 and (count % 8 == 0):
                 colors.append('\n\n')
             elif count != 0:
@@ -481,8 +474,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [no_alpha_color, color], self.default_border,
-                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            [color.to_string(hex_code=True, alpha=False), color.to_string(hex_code=True, alpha=True)],
+                            self.default_border, height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
                         ),
                         f, palette_type, label,
@@ -492,8 +485,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 colors.append(
                     '[%s](__insert__:%s:%s:%s)' % (
                         mdpopups.color_box(
-                            [no_alpha_color, color], self.default_border,
-                            height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
+                            [color.to_string(hex_code=True, alpha=False), color.to_string(hex_code=True, alpha=True)],
+                            self.default_border, height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
                         ), f, palette_type, label
                     )
@@ -509,9 +502,9 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         rules = util.get_rules(self.view)
         srgb = color.convert('srgb')
 
+        # Store color in normal and generic format.
         template_vars['current_color'] = current
-        template_vars['generic_color'] = GEN_LCH(color).to_string(scale=2)
-
+        template_vars['generic_color'] = color.to_string(raw=True)
         # allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
         # use_hex_argb = rules.get("use_hex_argb", False) if rules else None
 
@@ -520,30 +513,29 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
         # show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
         # show_current_palette = s.get('enable_current_file_palette', True)
-        show_conversions = s.get('enable_color_conversions', True)
         show_picker = s.get('enable_color_picker', True)
-        # palettes_enabled = (
-        #     show_global_palettes or show_project_palettes or
-        #     show_favorite_palette or show_current_palette
-        # )
+        palettes_enabled = (
+            # show_global_palettes or show_project_palettes or
+            show_favorite_palette  #.or show_current_palette
+        )
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
         if click_color_box_to_pick == 'color_picker' and show_picker:
             template_vars['click_color_picker'] = True
-        # elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
-        #     template_vars['click_palette_picker'] = True
+        elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
+            template_vars['click_palette_picker'] = True
 
-        # if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
-        #     template_vars['show_palette_menu'] = True
+        if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
+            template_vars['show_palette_menu'] = True
         if click_color_box_to_pick != 'color_picker' and show_picker:
             template_vars['show_picker_menu'] = True
         # if show_global_palettes or show_project_palettes:
         #     template_vars['show_global_palette_menu'] = True
         if show_favorite_palette:
             template_vars['show_favorite_menu'] = True
-            template_vars['is_marked'] = current in util.get_favs()['colors']
+            template_vars['is_marked'] = color.to_string(raw=True) in util.get_favs()['colors']
 
-        no_alpha_color = srgb.to_string(hex_code=True, alpha=True) if color.alpha < 1.0 else srgb.to_string(hex_code=True)
+        no_alpha_color = srgb.to_string(hex_code=True, alpha=False)
         template_vars['color_preview'] = (
             mdpopups.color_box(
                 [no_alpha_color, srgb.to_string(hex_code=True)], self.default_border,
@@ -552,6 +544,8 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             )
         )
 
+        show_conversions = s.get('enable_color_conversions', True)
+        print(show_conversions)
         if show_conversions:
 
             output_options = rules.get('output_options')
@@ -670,10 +664,10 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         show_div = False
         s = sublime.load_settings('color_helper.sublime-settings')
-        show_global_palettes = s.get('enable_global_user_palettes', True)
-        show_project_palettes = s.get('enable_project_user_palettes', True)
+        # show_global_palettes = s.get('enable_global_user_palettes', True)
+        # show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
-        show_current_palette = s.get('enable_current_file_palette', True)
+        # show_current_palette = s.get('enable_current_file_palette', True)
         s = sublime.load_settings('color_helper.sublime-settings')
         show_picker = s.get('enable_color_picker', True) and self.no_info
         palettes = util.get_palettes()
@@ -683,15 +677,15 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             "color": (color if color else '#ffffffff'),
             "show_picker_menu": show_picker,
             "show_delete_menu": (
-                not delete and not color and (show_global_palettes or show_project_palettes or show_favorite_palette)
+                not delete and not color and (show_favorite_palette)  # show_global_palettes or show_project_palettes or
             ),
             "back_target": "__info__" if (not self.no_info and not delete) or color else "__palettes__",
             "show_delete_ui": delete,
             "show_new_ui": bool(color),
-            "show_favorite_palette": show_favorite_palette,
-            "show_current_palette": show_current_palette,
-            "show_global_palettes": show_global_palettes and len(palettes),
-            "show_project_palettes": show_project_palettes and len(project_palettes)
+            "show_favorite_palette": show_favorite_palette
+            # "show_current_palette": show_current_palette,
+            # "show_global_palettes": show_global_palettes and len(palettes),
+            # "show_project_palettes": show_project_palettes and len(project_palettes)
         }
 
         if show_favorite_palette:
@@ -702,46 +696,46 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                     self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
                 )
 
-        if show_current_palette:
-            current_colors = self.view.settings().get('color_helper.file_palette', [])
-            if not delete and not color and len(current_colors):
-                show_div = True
-                template_vars['current_palette'] = (
-                    self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color)
-                )
+        # if show_current_palette:
+        #     current_colors = self.view.settings().get('color_helper.file_palette', [])
+        #     if not delete and not color and len(current_colors):
+        #         show_div = True
+        #         template_vars['current_palette'] = (
+        #             self.format_palettes(current_colors, "Current Colors", '__special__', delete=delete, color=color)
+        #         )
 
-        if show_global_palettes and len(palettes):
-            if show_div:
-                template_vars['show_separator'] = True
-                show_div = False
-            global_palettes = []
-            for palette in palettes:
-                show_div = True
-                name = palette.get("name")
-                global_palettes.append(
-                    self.format_palettes(
-                        palette.get('colors', []), name, '__global__', palette.get('caption'),
-                        delete=delete,
-                        color=color
-                    )
-                )
-            template_vars['global_palettes'] = global_palettes
+        # if show_global_palettes and len(palettes):
+        #     if show_div:
+        #         template_vars['show_separator'] = True
+        #         show_div = False
+        #     global_palettes = []
+        #     for palette in palettes:
+        #         show_div = True
+        #         name = palette.get("name")
+        #         global_palettes.append(
+        #             self.format_palettes(
+        #                 palette.get('colors', []), name, '__global__', palette.get('caption'),
+        #                 delete=delete,
+        #                 color=color
+        #             )
+        #         )
+        #     template_vars['global_palettes'] = global_palettes
 
-        if show_project_palettes and len(project_palettes):
-            if show_div:
-                show_div = False
-                template_vars['show_project_separator'] = True
-            proj_palettes = []
-            for palette in project_palettes:
-                name = palette.get("name")
-                proj_palettes.append(
-                    self.format_palettes(
-                        palette.get('colors', []), name, '__project__', palette.get('caption'),
-                        delete=delete,
-                        color=color
-                    )
-                )
-                template_vars['project_palettes'] = proj_palettes
+        # if show_project_palettes and len(project_palettes):
+        #     if show_div:
+        #         show_div = False
+        #         template_vars['show_project_separator'] = True
+        #     proj_palettes = []
+        #     for palette in project_palettes:
+        #         name = palette.get("name")
+        #         proj_palettes.append(
+        #             self.format_palettes(
+        #                 palette.get('colors', []), name, '__project__', palette.get('caption'),
+        #                 delete=delete,
+        #                 color=color
+        #             )
+        #         )
+        #         template_vars['project_palettes'] = proj_palettes
 
         if update:
             mdpopups.update_popup(
@@ -947,7 +941,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
                 pass
         if rgba is None:
             hsl = SRGB(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
-            hsl.lightness = hsl.lightness + (.2 if hsl.luminance() < 0.5 else -.2)
+            hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
             rgba = hsl.convert("srgb")
         self.default_border = rgba.to_string(hex_code=True)
 
@@ -1086,6 +1080,12 @@ class ChPreview:
         # If we don't need to force previews,
         # quit if visible region is the same as last time
         visible_region = view.visible_region()
+        position = view.viewport_position()
+        dimensions = view.viewport_extent()
+        bounds = [
+            (position[0], position[0] + dimensions[0] - 1),
+            (position[1], position[1] + dimensions[1] - 1)
+        ]
         if not force and self.previous_region == visible_region:
             return
         self.previous_region = visible_region
@@ -1112,6 +1112,18 @@ class ChPreview:
                 if obj is not None:
                     src_start = visible_region.begin() + obj.start
                     src_end = visible_region.begin() + obj.end
+                    vector_start = view.text_to_layout(src_start)
+                    vector_end = view.text_to_layout(src_end)
+                    if not (
+                        (
+                            (bounds[0][0] <= vector_start[0] <= bounds[0][1]) or
+                            (bounds[0][0] <= vector_end[0] <= bounds[0][1])
+                        ) and (
+                            (bounds[1][0] <= vector_start[1] <= bounds[1][1]) or
+                            (bounds[1][0] <= vector_end[1] <= bounds[1][1])
+                        )
+                    ):
+                        continue
                     value = view.score_selector(src_start, scope)
                     if not value:
                         continue
@@ -1128,7 +1140,7 @@ class ChPreview:
                 start_scope = view.scope_name(src_start)
                 end_scope = view.scope_name(src_end - 1)
                 hsl = SRGB(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
-                hsl.lightness = hsl.lightness + (.2 if hsl.luminance() < 0.5 else -.2)
+                hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
                 preview_id = str(time())
                 color = PREVIEW_IMG.format(
                     preview_id,

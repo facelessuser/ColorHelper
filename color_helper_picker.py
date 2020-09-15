@@ -8,27 +8,11 @@ import mdpopups
 from mdpopups import colorbox
 import sublime
 import sublime_plugin
-from .lib import csscolors
+from coloraide.css import colorcss
+from coloraide.css.colors import css_names
 from . import color_helper_util as util
 import copy
 from .multiconf import get as qualify_settings
-from .lib.colorlib import RGB, OP_NULL
-
-color_map_data = [
-    ['036', '369', '36c', '039', '009', '00c', '006'],
-    ['066', '069', '09c', '06c', '03c', '00f', '33f', '339'],
-    ['699', '099', '3cc', '0cf', '09f', '06f', '36f', '33c', '669'],
-    ['396', '0c9', '0fc', '0ff', '3cf', '39f', '69f', '66f', '60f', '60c'],
-    ['393', '0c6', '0f9', '6fc', '6ff', '6cf', '9cf', '99f', '96f', '93f', '90f'],
-    ['060', '0c0', '0f0', '6f9', '9fc', 'cff', 'ccf', 'c9f', 'c6f', 'c3f', 'c0f', '90c'],
-    ['030', '093', '3c3', '6f6', '9f9', 'cfc', 'fff', 'fcf', 'f9f', 'f6f', 'f0f', 'c0c', '606'],
-    ['360', '090', '6f3', '9f6', 'cf9', 'ffc', 'fcc', 'f9c', 'f6c', 'f3c', 'c09', '939'],
-    ['330', '690', '9f3', 'cf6', 'ff9', 'fc9', 'f99', 'f69', 'f39', 'c39', '909'],
-    ['663', '9c0', 'cf3', 'ff6', 'fc6', 'f96', 'f66', 'f06', 'c69', '936'],
-    ['996', 'cc0', 'ff0', 'fc0', 'f93', 'f60', 'ff5050', 'c06', '603'],
-    ['963', 'c90', 'f90', 'c60', 'f30', 'f00', 'c00', '903'],
-    ['630', '960', 'c30', '930', '900', '800000', '933']
-]
 
 color_map = None
 color_map_size = False
@@ -36,6 +20,7 @@ color_map_style = None
 line_height = None
 default_border = None
 color_scale = None
+last_saturation = None
 
 SPACER = '#00000000'
 
@@ -44,6 +29,15 @@ BORDER_SIZE = 1
 
 class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     """Experimental color picker."""
+
+    def get_spacer(self, width=1, height=1):
+        """Get a spacer."""
+
+        return mdpopups.color_box(
+            [SPACER], border_size=0,
+            height=self.height * height, width=self.width * width,
+            check_size=self.check_size(self.height), alpha=True
+        )
 
     def get_color_map_square(self):
         """Get a square variant of the color map."""
@@ -54,9 +48,13 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         global line_height
         global default_border
         global color_scale
+        global last_saturation
+
+        s = self.color.convert("hsl").saturation
 
         if (
             color_map is None or
+            s != last_saturation or
             self.graphic_size != color_map_size or
             self.graphic_scale != color_scale or
             self.line_height != line_height or
@@ -71,25 +69,15 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
             html_colors = []
 
-            h = 0
-            s = 0.9
-            l = 0.9
-            hfac = 15.0 / 360.0
-            lfac = 8.0 / 100.0
+            color = colorcss("hsl(0 {}% 90%)".format(s))
+            hfac = 24.0
+            lfac = 8.0
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                html_colors.append(
-                    [
-                        mdpopups.color_box(
-                            [SPACER], border_size=0,
-                            height=self.height, width=(self.width * (6 if self.hex_map else 5)),
-                            check_size=check_size, alpha=True
-                        )
-                    ]
-                )
+                html_colors.append([self.get_spacer(width=5)])
                 for x in range(0, 15):
-                    rgb = RGB(HSL("HSL({:f} {:f}% {:f}%)".format(h * 360.0, s * 100, l * 100)))
-                    color = rgb.get_rgba()
+                    # rgb = RGB(HSL("HSL({:f} {:f}% {:f}%)".format(h * 360.0, s * 100, l * 100)))
+                    value = color.convert("srgb").to_string(hex_code=True, alpha=True)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
@@ -117,28 +105,21 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                     html_colors[-1].append(
                         '<a href="%s">%s</a>' % (
-                            color, mdpopups.color_box(
-                                [color], self.default_border,
+                            color.to_string(), mdpopups.color_box(
+                                [value], self.default_border,
                                 **kwargs
                             )
                         )
                     )
-                    h += hfac
-                h = 0
-                l -= lfac
+                    color.hue = color.hue + hfac
+                color.hue = 0.0
+                color.lightness = color.lightness - lfac
 
-            l = 1.0
-            lfac = 10.0 / 100.0
-            rgba.r = 255.0
-            rgba.g = 255.0
-            rgba.b = 255.0
-            rgb = RGB('rgb(255 255 255)')
-            hsl = HSL(RGB)
+            lfac = 10.0
+            color = colorcss('hsl(0 0% 100%)')
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                hsl = HSL(rgb)
-                hsl.l = l
-                color = RGB(rgba).get_hexa()
+                value = color.convert("srgb").to_string(hex_code=True, alpha=True)
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
@@ -153,103 +134,15 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                 html_colors[y].append(
                     '<a href="%s">%s</a>' % (
-                        color, mdpopups.color_box(
-                            [color], self.default_border,
+                        color.to_string(), mdpopups.color_box(
+                            [value], self.default_border,
                             **kwargs
                         )
                     )
                 )
-                l -= lfac
+                color.lightness = color.lightness - lfac
 
             color_map = ''.join(['<span>%s</span><br>' % ''.join([y1 for y1 in x1]) for x1 in html_colors]) + '\n\n'
-        self.template_vars['color_picker'] = color_map
-
-    def get_color_map_hex(self):
-        """Get color wheel."""
-
-        global color_map
-        global color_map_size
-        global color_map_style
-        global line_height
-        global default_border
-        global color_scale
-
-        if (
-            color_map is None or
-            self.graphic_size != color_map_size or
-            self.graphic_scale != color_scale or
-            self.line_height != line_height or
-            self.default_border != default_border or
-            color_map_style != "hex"
-        ):
-            color_map_size = self.graphic_size
-            color_scale = self.graphic_scale
-            line_height = self.line_height
-            default_border = self.default_border
-            color_map_style = "hex"
-            padding = (self.width * 9)
-            decrement = True
-            html_colors = []
-            count = 0
-            check_size = self.check_size(self.height)
-
-            last_row = len(color_map_data) - 1
-            for y, row in enumerate(color_map_data):
-                html_colors.append('<span class="color-map-row">')
-                if padding:
-                    pad = mdpopups.color_box(
-                        [SPACER],
-                        height=self.height, width=padding, check_size=check_size, alpha=True
-                    )
-                    html_colors.append(pad)
-                last_col = len(row) - 1
-                for x, color in enumerate(row):
-                    if len(self.color) == 3:
-                        color = '#' + ''.join([c * 2 for c in color]) + 'ff'
-                    else:
-                        color = '#' + color + 'ff'
-
-                    kwargs = {
-                        "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
-                    }
-
-                    border_map = 0
-                    if y == 0 and x == 0:
-                        border_map = colorbox.TOP | colorbox.LEFT
-                    elif y == 0 and x == last_col:
-                        border_map = colorbox.TOP | colorbox.RIGHT
-                    elif y == 0:
-                        border_map = colorbox.TOP
-                    elif y == last_row and x == 0:
-                        border_map = colorbox.BOTTOM | colorbox.LEFT
-                    elif y == last_row and x == last_col:
-                        border_map = colorbox.BOTTOM | colorbox.RIGHT
-                    elif y == last_row:
-                        border_map = colorbox.BOTTOM
-                    elif x == 0:
-                        border_map = colorbox.LEFT
-                    elif x == last_col:
-                        border_map = colorbox.RIGHT
-                    kwargs['border_map'] = border_map
-
-                    html_colors.append(
-                        '<a href="%s">%s</a>' % (
-                            color, mdpopups.color_box(
-                                [color], self.default_border,
-                                **kwargs
-                            )
-                        )
-                    )
-                html_colors.append('</span><br>')
-                if count == 6:
-                    decrement = False
-                if decrement:
-                    padding -= int(self.width / 2)
-                else:
-                    padding += int(self.width / 2)
-                count += 1
-            html_colors.append('\n\n')
-            color_map = ''.join(html_colors)
         self.template_vars['color_picker'] = color_map
 
     def get_current_color(self):
@@ -257,15 +150,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.height)
         html = (
-            '<span class="current-color">%s</span>' % (
+            '<span class="current-color">{}</span>'.format(
+                self.get_spacer(width=5) +
                 mdpopups.color_box(
-                    [SPACER], border_size=0,
-                    height=self.height, width=(self.width * (6 if self.hex_map else 5)),
-                    check_size=check_size, alpha=True
-                ) +
-                mdpopups.color_box(
-                    [self.color], self.default_border,
-                    border_size=BORDER_SIZE, height=self.height, width=self.width * (13 if self.hex_map else 16),
+                    [self.color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                    border_size=BORDER_SIZE, height=self.height * 2, width=self.width * 16,
                     check_size=check_size
                 )
             )
@@ -277,17 +166,17 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.box_height)
         html = []
-        for name in sorted(csscolors.name2hex_map):
-            color = RGB(csscolors.name2hex(name)).get_hexa()
+        for name in sorted(css_names.name2hex_map):
+            color = colorcss(name)
 
             html.append(
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
-                        [color], self.default_border,
+                        [color.to_string(hex_code=True)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
-                    color,
+                    color.to_string(),
                     name
                 )
             )
@@ -300,51 +189,55 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             "red": (0, 255),
             "green": (0, 255),
             "blue": (0, 255),
-            "alpha": (0, 255),
+            "alpha": (0, 100),
             "hue": (0, 360),
             "saturation": (0, 100),
-            "luminance": (0, 100)
+            "lightness": (0, 100),
+            "whiteness": (0, 100),
+            "blackness": (0, 100)
         }
 
-        rgba = RGBA(self.color)
-        h, l, s = rgba.tohls()
         minimum, maximum = ranges[color_filter]
         check_size = self.check_size(self.box_height)
         html = []
+        color = self.color.clone()
         for x in range(minimum, maximum + 1):
             if color_filter == 'red':
-                rgba.r = x
+                color.red = x / 255.0
                 label = str(x)
             elif color_filter == 'green':
-                rgba.g = x
+                color.green = x / 255.0
                 label = str(x)
             elif color_filter == 'blue':
-                rgba.b = x
+                color.blue = x / 255.0
                 label = str(x)
             elif color_filter == 'alpha':
-                rgba.a = x
-                label = util.fmt_float(rgba.a * mdpopups.rgba.RGB_CHANNEL_SCALE, 3)
+                color.alpha = x / 100.0
+                label = "{:d}%".format(x)
             elif color_filter == 'hue':
-                h = x * mdpopups.rgba.HUE_SCALE
-                rgba.fromhls(h, l, s)
-                label = str(x)
+                color.hue = x
+                label = "{:d}deg".format(x)
             elif color_filter == 'saturation':
-                s = x * 0.01
-                rgba.fromhls(h, l, s)
-                label = str(x)
-            elif color_filter == 'luminance':
-                l = x * 0.01
-                rgba.fromhls(h, l, s)
-                label = str(x)
-            color = rgba.get_rgba()
+                color.saturation = x
+                label = "{:d}%".format(x)
+            elif color_filter == 'lightness':
+                color.lightness = x
+                label = "{:d}%".format(x)
+            elif color_filter == "whiteness":
+                color.whiteness = x
+                label = "{:d}%".format(x)
+            elif color_filter == "blackness":
+                color.blackness = x
+                label = "{:d}%".format(x)
+
             html.append(
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
-                        [color], self.default_border,
+                        [color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
-                    color,
+                    color.to_string(),
                     label
                 )
             )
@@ -353,115 +246,101 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_channel(self, channel, label, minimum, maximum, color_filter):
         """Get color channel."""
 
-        if self.mode == "rgb":
-            rgba1 = util.RGBA(self.color)
-            rgba2 = util.RGBA(self.color)
-        elif self.mode == "hsl":
-            rgba1 = util.RGBA().fromhls(*self.color_values[:3])
-            rgba1.alpha(self.color_values[3], op=OP_NULL)
-            rgba2 = util.RGBA().fromhls(*self.color_values[:3])
-            rgba2.alpha(self.color_values[3], op=OP_NULL)
-        elif self.mode == "hwb":
-            rgba1 = util.RGBA().fromhwb(*self.color_values[:3])
-            rgba1.alpha(self.color_values[3], op=OP_NULL)
-            rgba2 = util.RGBA().fromhwb(*self.color_values[:3])
-            rgba2.alpha(self.color_values[3], op=OP_NULL)
         html = []
         html.append('<span class="channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
+        clone = self.color.clone()
 
-        print('---start---')
-        color_values1 = self.color_values[:]
-        color_values2 = self.color_values[:]
-
+        mn = minimum
+        first = True
         while count:
-            convert = getattr(rgba1, color_filter)(minimum)
-            if self.mode == 'hsl':
-                print('---first-----------------')
-                print(self.color_values)
-                if color_filter == 'hue':
-                    color_values1[0] = convert
-                elif color_filter == "saturation":
-                    color_values1[2] = convert
-                else:
-                    color_values1[1] = convert
-                print(color_values1)
-            elif self.mode == 'hwb':
-                if color_filter == 'hue':
-                    color_values1[0] = convert
-                elif color_filter == "white":
-                    color_values1[1] = convert
-                else:
-                    color_values1[2] = convert
-                print(color_values1)
+            coord = getattr(clone, color_filter) + mn
+            setattr(clone, color_filter, coord)
 
-            border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.LEFT
-            if count == 1:
-                border_map |= colorbox.RIGHT
+            if not clone.in_gamut():
+                temp.append(self.get_spacer(width=count))
+                break
+            elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
+                temp.append(self.get_spacer(width=count))
+                break
+            elif self.mode in ("hsl", "hwb") and color_filter == "hue" and (coord < 0 or coord > 360):
+                temp.append(self.get_spacer(width=count))
+                break
+            else:
+                border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.LEFT
+                if first:
+                    border_map |= colorbox.RIGHT
+                    first = False
 
-            kwargs = {
-                "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
-                "border_map": border_map
-            }
+                kwargs = {
+                    "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
+                    "border_map": border_map
+                }
 
-            temp.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba1.get_rgba()], self.default_border,
-                        **kwargs
-                    ),
-                    rgba1.get_rgba() if self.mode == 'rgb' else ("%f %f %f %f" % tuple(color_values1))
+                temp.append(
+                    '[%s](%s)' % (
+                        mdpopups.color_box(
+                            [clone.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                            **kwargs
+                        ),
+                        clone.to_string()
+                    )
                 )
-            )
+            clone.mutate(self.color)
+            mn += minimum
             count -= 1
         html += reversed(temp)
         html.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
-                    [self.color], self.default_border,
+                    [self.color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 ),
-                self.color if self.mode == 'rgb' else ("%f %f %f %f" % tuple(self.color_values))
+                self.color.to_string()
             )
         )
+        first = True
         count = 12
+        mx = maximum
+
+        clone.mutate(self.color)
         while count:
-            convert = getattr(rgba2, color_filter)(maximum)
-            if self.mode == 'hsl':
-                if color_filter == 'hue':
-                    color_values2[0] = convert
-                elif color_filter == "saturation":
-                    color_values2[2] = convert
-                else:
-                    color_values2[1] = convert
-            elif self.mode == 'hwb':
-                if color_filter == 'hue':
-                    color_values2[0] = convert
-                elif color_filter == "white":
-                    color_values2[1] = convert
-                else:
-                    color_values2[2] = convert
+            coord = getattr(clone, color_filter) + mx
+            setattr(clone, color_filter, coord)
 
-            border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.RIGHT
-            if count == 12:
-                border_map |= colorbox.LEFT
+            if not clone.in_gamut():
+                html.append(self.get_spacer(width=count))
+                break
+            elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
+                html.append(self.get_spacer(width=count))
+                break
+            elif self.mode in ("hsl", "hwb") and color_filter == "hue" and (coord < 0 or coord > 360):
+                html.append(self.get_spacer(width=count))
+                break
+            else:
+                border_map = colorbox.TOP | colorbox.BOTTOM | colorbox.RIGHT
+                if first:
+                    border_map |= colorbox.LEFT
+                    first = False
 
-            kwargs = {
-                "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
-                "border_map": border_map
-            }
+                kwargs = {
+                    "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size,
+                    "border_map": border_map
+                }
 
-            html.append(
-                '[%s](%s)' % (
-                    mdpopups.color_box(
-                        [rgba2.get_rgba()], self.default_border,
-                        **kwargs
-                    ),
-                    rgba2.get_rgba() if self.mode == 'rgb' else ("%f %f %f %f" % tuple(color_values2))
+                html.append(
+                    '[%s](%s)' % (
+                        mdpopups.color_box(
+                            [clone.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                            **kwargs
+                        ),
+                        clone.to_string()
+                    )
                 )
-            )
+            clone.mutate(self.color)
+            mx += maximum
             count -= 1
         html.append('</span><br>')
         self.template_vars[channel] = ''.join(html)
@@ -475,6 +354,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
     def get_color_info(self):
         """Get color info."""
+
+        return
 
         all_space = "all" in self.space_separator_syntax
         rgba = util.RGBA(self.color)
@@ -581,51 +462,40 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
     def run(
         self, edit, color='#ffffff', allowed_colors=util.ALL, use_hex_argb=None,
-        compress_hex=False, mode="rgb", hirespick=None, colornames=False,
+        compress_hex=False, mode=None, hirespick=None, colornames=False,
         on_done=None, on_cancel=None, space_separator_syntax=None, **kwargs
     ):
         """Run command."""
 
-        rgba = None
+        # Calculate image border.
+        border_color = None
         settings = sublime.load_settings('color_helper.sublime-settings')
-        border_clr = settings.get('image_border_color')
-        if border_clr is not None:
+        border_color = settings.get('image_border_color')
+        if border_color is not None:
             try:
-                rgba = RGBA(border_clr)
+                border_color = colorcss(border_color)
             except Exception:
                 pass
-        if rgba is None:
-            rgba = RGBA(mdpopups.scope2style(self.view, '')['background'])
-            rgba.brightness(1.1 if rgba.get_luminance() <= 127 else .9)
-        self.default_border = rgba.get_rgb()
+        if border_color is None:
+            border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
+            border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
+        self.default_border = border_color.convert("srgb").to_string(hex_code=True, alpha=True)
 
-        self.space_separator_syntax = space_separator_syntax if space_separator_syntax is not None else []
         self.on_done = on_done
         self.on_cancel = on_cancel
-        self.use_hex_argb = use_hex_argb
-        self.compress_hex = compress_hex
-        self.allowed_colors = allowed_colors
         self.template_vars = {}
-        self.hex_map = sublime.load_settings('color_helper.sublime-settings').get('use_hex_color_picker', True)
-        if mode == "rgb":
-            rgba = util.RGBA(color)
-            self.color_values = [rgba.r, rgba.g, rgba.b, rgba.a]
-        elif mode == "hsl":
-            self.color_values = [float(x) for x in color.split(' ')]
-            rgba = util.RGBA().fromhls(*self.color_values[:3])
-            rgba.alpha(self.color_values[3], op=OP_NULL)
-        elif mode == "hwb":
-            self.color_values = [float(x) for x in color.split(' ')]
-            rgba = util.RGBA().fromhwb(*self.color_values[:3])
-            rgba.alpha(self.color_values[3], op=OP_NULL)
+
+        self.original = colorcss(color)
+        if mode is None or mode not in ("srgb", "hsl", "hwb"):
+            if self.original.space() in ("srgb", "hsl", "hwb"):
+                mode = self.original.space()
+            else:
+                mode = "srgb"
+        self.color = self.original.convert(mode)
+        if not self.color.in_gamut():
+            self.color.fit_gamut()
         self.set_sizes()
         self.mode = mode
-        self.color = rgba.get_rgba()
-        self.alpha = util.fmt_float(float(int(self.color[-2:], 16)) / 255.0, 3)
-        try:
-            self.web_color = csscolors.hex2name(rgba.get_rgb())
-        except Exception:
-            self.web_color = None
 
         if colornames:
             self.template_vars['color_names'] = True
@@ -639,31 +509,29 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         else:
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = 'cancel'
-            if self.hex_map:
-                self.get_color_map_hex()
-            else:
-                self.get_color_map_square()
+            self.get_color_map_square()
             self.get_current_color()
             if mode == "hsl":
-                self.get_channel('channel_1', 'H', -15, 15, 'hue')
-                self.get_channel('channel_2', 'S', 0.975, 1.025, 'saturation')
-                self.get_channel('channel_3', 'L', 0.975, 1.025, 'luminance')
+                self.get_channel('channel_1', 'H', -5, 5, 'hue')
+                self.get_channel('channel_2', 'S', -1, 1, 'saturation')
+                self.get_channel('channel_3', 'L', -1, 1, 'lightness')
             elif mode == "hwb":
-                self.get_channel('channel_1', 'H', -15, 15, 'hue')
-                self.get_channel('channel_2', 'W', 0.975, 1.025, 'white')
-                self.get_channel('channel_3', 'B', 0.975, 1.025, 'black')
+                self.get_channel('channel_1', 'H', -5, 5, 'hue')
+                self.get_channel('channel_2', 'W', -1, 1, 'whiteness')
+                self.get_channel('channel_3', 'B', -1, 1, 'blackness')
             else:
-                self.get_channel('channel_1', 'R', 0.975, 1.025, 'red')
-                self.get_channel('channel_2', 'G', 0.975, 1.025, 'green')
-                self.get_channel('channel_3', 'B', 0.975, 1.025, 'blue')
-            self.get_channel('channel_alpha', 'A', 0.975, 1.025, 'alpha')
+                self.get_channel('channel_1', 'R', -0.02, 0.02, 'red')
+                self.get_channel('channel_2', 'G', -0.02, 0.02, 'green')
+                self.get_channel('channel_3', 'B', -0.02, 0.02, 'blue')
+            self.get_channel('channel_alpha', 'A', -0.02, 0.02, 'alpha')
 
-            if mode == 'rgb':
+            if mode == 'srgb':
                 switch = 'hsl'
             elif mode == 'hsl':
                 switch = 'hwb'
             else:
-                switch = 'rgb'
+                switch = 'srgb'
+            self.template_vars['color_value'] = self.color.to_string()
             self.template_vars['color_switch'] = switch
             self.get_color_info()
 
@@ -680,37 +548,24 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def handle_href(self, href):
         """Handle HREF."""
 
+        print(href)
         hires = None
         mode = self.mode
         colornames = False
-        if href in ('hsl', 'rgb', 'hwb'):
-            if mode == 'rgb':
-                rgba = util.RGBA(self.color)
-            elif mode == 'hsl':
-                rgba = util.RGBA().fromhls(*self.color_values[:3])
-                rgba.alpha(self.color_values[3], op=OP_NULL)
-            elif mode == 'hwb':
-                rgba = util.RGBA().fromhwb(*self.color_values[:3])
-                rgba.alpha(self.color_values[3], op=OP_NULL)
+        if href in ('hsl', 'srgb', 'hwb'):
+            print('this-------')
+            color = self.color.convert(href).to_string()
             mode = href
-            if mode == 'rgb':
-                color = self.color
-            elif mode == 'hsl':
-                temp = rgba.tohls() + (255.0 / rgba.a,)
-                color = "%f %f %f %f" % temp
-            elif mode == 'hwb':
-                temp = rgba.tohwb() + (255.0 / rgba.a,)
-                color = "%f %f %f %f" % temp
         elif href.startswith('insert'):
             color = href.split(':')[1]
         elif href.startswith('hirespick'):
             hires = href.split(':')[1]
-            color = self.color
+            color = self.color.to_string()
         elif href == "colornames":
-            color = self.color
+            color = self.color.to_string()
             colornames = True
         elif href == 'edit':
-            color = self.color
+            color = self.color.to_string()
         else:
             color = href
         if href == 'cancel':
@@ -724,8 +579,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.window().run_command(
                 'color_helper_picker_panel',
                 {
-                    "color": color, "allowed_colors": self.allowed_colors,
-                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
+                    "color": color,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
@@ -740,8 +594,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker',
                 {
-                    "color": color, "allowed_colors": self.allowed_colors,
-                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
+                    "color": color,
                     "mode": mode, "hirespick": hires, "colornames": colornames,
                     "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
@@ -761,12 +614,13 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
 
         self.on_done = on_done
         self.on_cancel = on_cancel
-        self.compress_hex = compress_hex
-        self.use_hex_argb = use_hex_argb
-        self.allowed_colors = allowed_colors
-        self.space_separator_syntax = space_separator_syntax
+        # self.compress_hex = compress_hex
+        # self.use_hex_argb = use_hex_argb
+        # self.allowed_colors = allowed_colors
+        # self.space_separator_syntax = space_separator_syntax
+        self.color = colorcss(color)
         view = self.window.show_input_panel(
-            '(hex) #RRGGBBAA', color, self.handle_value, None, None
+            'Color', self.color.to_string(), self.handle_value, None, None
         )
         view.sel().clear()
         view.sel().add(sublime.Region(0, view.size()))
@@ -776,18 +630,18 @@ class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
 
         value = value.strip()
         try:
-            value = util.RGBA(value).get_rgba()
+            color = colorcss(value)
         except Exception:
-            value = "#ffffffff"
+            color = None
+        if color is None:
+            color = colorcss("#ffffffff")
         view = self.window.active_view()
         if view is not None:
             view.settings().set('color_helper.no_auto', True)
             view.run_command(
                 'color_helper_picker',
                 {
-                    "color": value, "allowed_colors": self.allowed_colors,
-                    "use_hex_argb": self.use_hex_argb, "compress_hex": self.compress_hex,
-                    "on_done": self.on_done, "on_cancel": self.on_cancel,
-                    "space_separator_syntax": self.space_separator_syntax
+                    "color": color.to_string(),
+                    "on_done": self.on_done, "on_cancel": self.on_cancel
                 }
             )
