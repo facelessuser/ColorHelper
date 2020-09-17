@@ -2,14 +2,13 @@
 
 ## 3.0.0
 
-- **NEW**: `rgb`, `hsl`, and `hwb` all support the new format `rgb(r g b / a)`. In the future `hwb` may drop
+- **NEW**: `rgb`, `hsl`, and `hwb` all support the new format `rgb(r g b / a)`. In the future `hwb` may or may not drop
   comma separated support (`hwb(30, 40%, 50%)`) as the spec no longer allows it. No browers seem to implement `hwb` at
   this time either. For now, we support comma separated mode.
-- **NEW**: Deprecated color specifiers `css3`, if specified, `css4` will be used instead.
 - **NEW**: All instances of `blacklist` and `whitelist` are now known as `blocklist` and `allowlist` respectively.
-- **NEW**: Add rule option `space_separator_syntax` that can be used to specify if a particular color form should use
-  the form `rgb(r g b / a)` opposed to `rgb(r, g, b, a)`. 
 - **FIX**: Insert logic issues.
+- **FIX**: ColorPicker now will always work in the color space of the current mode. This will prevent HSL and HWB from
+  losing their hue angle if saturation is reduced to zero and then back up again.
 
 ## 2.7.0
 
