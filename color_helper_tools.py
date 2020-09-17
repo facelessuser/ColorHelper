@@ -22,19 +22,8 @@ class _ColorInputHandler(sublime_plugin.TextInputHandler):
 
         self.view = view
         self.on_cancel = on_cancel
-
-        # Calculate image border.
-        border_color = None
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        border_color = settings.get('image_border_color')
-        if border_color is not None:
-            try:
-                border_color = colorcss(border_color)
-            except Exception:
-                pass
-        if border_color is None:
-            border_color = colorcss(mdpopups.scope2style(view, '')['background']).convert("hsl")
-            border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
+        border_color = colorcss(mdpopups.scope2style(view, '')['background']).convert("hsl")
+        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
         self.default_border = border_color.convert("srgb").to_string(hex_code=True, alpha=True)
         self.out_of_gamut_border = colorcss("red").to_string(hex_code=True, alpha=True)
         self.out_of_gamut = colorcss("rgb(0 0 0 / 0)").to_string(hex_code=True, alpha=True)
