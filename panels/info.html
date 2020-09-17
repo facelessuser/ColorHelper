@@ -23,8 +23,5 @@
 
 ---
 
-{%- for output in plugin.outputs %}
-[&gt;&gt;&gt;](__convert__:{{output[0]}} "Convert") <span>{{output[1]}}</span>
-<br>
-{%- endfor %}
+[convert](__insert__:{{plugin.current_color}}:__info__){: .small}
 {%- endif %}

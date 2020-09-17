@@ -23,5 +23,9 @@
         "args": {
             "mode": "color_picker"
         }
+    },
+    {
+        "caption": "ColorHelper",
+        "command": "color_helper_edit"
     }
 ]

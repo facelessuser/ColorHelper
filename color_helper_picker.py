@@ -4,10 +4,10 @@ ColorHelper.
 Copyright (c) 2015 - 2017 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
 """
-import mdpopups
-from mdpopups import colorbox
 import sublime
 import sublime_plugin
+import mdpopups
+from mdpopups import colorbox
 from coloraide.css import colorcss
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
@@ -16,19 +16,102 @@ from .multiconf import get as qualify_settings
 
 color_map = None
 color_map_size = False
-color_map_style = None
 line_height = None
 default_border = None
 color_scale = None
 last_saturation = None
 
-SPACER = '#00000000'
+GENERIC = {"raw": True}
+HEX = {"hex_code": True}
+HEX_NA = {"hex_code": True, "alpha": False}
 
+SPACER = colorcss("transparent").to_string(**HEX)
 BORDER_SIZE = 1
 
 
 class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     """Experimental color picker."""
+
+    def setup(self, color, mode, on_done, on_cancel):
+        """Setup properties for rendering."""
+
+        self.on_done = on_done
+        self.on_cancel = on_cancel
+        self.template_vars = {}
+        color = colorcss(color)
+        self.setup_image_border()
+        self.setup_sizes()
+        self.setup_mode(color, mode)
+        self.color = color.convert(self.mode)
+        if not self.color.in_gamut():
+            self.color.fit_gamut()
+
+    def setup_image_border(self):
+        """Setup_image_border."""
+
+        # Calculate border color for images
+        border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
+        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
+        self.default_border = border_color.convert("srgb").to_string(**HEX)
+
+    def setup_sizes(self):
+        """Get sizes."""
+
+        settings = sublime.load_settings('color_helper.sublime-settings')
+        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
+        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
+
+        if not isinstance(self.graphic_scale, (int, float)):
+            self.graphic_scale = None
+
+        # Calculate color box height
+        self.line_height = util.get_line_height(self.view)
+        top_pad = self.view.settings().get('line_padding_top', 0)
+        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
+        if top_pad is None:
+            # Sometimes we strangely get None
+            top_pad = 0
+        if bottom_pad is None:
+            bottom_pad = 0
+        box_height = self.line_height - int(top_pad + bottom_pad) - 6
+
+        # Scale size
+        if self.graphic_scale is not None:
+            box_height = box_height * self.graphic_scale
+            self.graphic_size = "small"
+        small = max(box_height, 8)
+        medium = max(box_height * 1.5, 8)
+        large = max(box_height * 2, 8)
+        self.box_height = int(small)
+        sizes = {
+            "small": (int(small), int(small), int(small + small / 4)),
+            "medium": (int(medium), int(medium), int(medium + medium / 4)),
+            "large": (int(large), int(large), int(large + large / 4))
+        }
+        self.height, self.width, self.height_big = sizes.get(
+            self.graphic_size,
+            sizes["medium"]
+        )
+
+    def setup_mode(self, color, mode):
+        """Setup mode."""
+
+        # Use the provided mode, if any, or use the mode of the color
+        # If the color is not one of the supported spaces, use sRGB.
+        if mode is None or mode not in ("srgb", "hsl", "hwb"):
+            if color.space() in ("srgb", "hsl", "hwb"):
+                mode = color.space()
+            else:
+                mode = "srgb"
+        self.mode = mode
+
+    def check_size(self, height):
+        """Get checkered size."""
+
+        check_size = int((height - 4) / 4)
+        if check_size < 2:
+            check_size = 2
+        return check_size
 
     def get_spacer(self, width=1, height=1):
         """Get a spacer."""
@@ -44,7 +127,6 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         global color_map
         global color_map_size
-        global color_map_style
         global line_height
         global default_border
         global color_scale
@@ -52,23 +134,26 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
         s = self.color.convert("hsl").saturation
 
+        # Only update if the last time we rendered we changed
+        # something that would require a new render.
         if (
             color_map is None or
             s != last_saturation or
             self.graphic_size != color_map_size or
             self.graphic_scale != color_scale or
             self.line_height != line_height or
-            self.default_border != default_border or
-            color_map_style != "square"
+            self.default_border != default_border
         ):
             color_map_size = self.graphic_size
             color_scale = self.graphic_scale
-            color_map_style = "square"
+
             line_height = self.line_height
             default_border = self.default_border
 
             html_colors = []
 
+            # Generate the colors with each row being dark than the last.
+            # Each column will progress through hues.
             color = colorcss("hsl(0 {}% 90%)".format(s))
             hfac = 24.0
             lfac = 8.0
@@ -77,7 +162,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 html_colors.append([self.get_spacer(width=5)])
                 for x in range(0, 15):
                     # rgb = RGB(HSL("HSL({:f} {:f}% {:f}%)".format(h * 360.0, s * 100, l * 100)))
-                    value = color.convert("srgb").to_string(hex_code=True, alpha=True)
+                    value = color.convert("srgb").to_string(**HEX)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
@@ -105,7 +190,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                     html_colors[-1].append(
                         '<a href="%s">%s</a>' % (
-                            color.to_string(), mdpopups.color_box(
+                            color.to_string(**GENERIC),
+                            mdpopups.color_box(
                                 [value], self.default_border,
                                 **kwargs
                             )
@@ -115,11 +201,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 color.hue = 0.0
                 color.lightness = color.lightness - lfac
 
+            # Generate a grayscale bar.
             lfac = 10.0
             color = colorcss('hsl(0 0% 100%)')
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                value = color.convert("srgb").to_string(hex_code=True, alpha=True)
+                value = color.convert("srgb").to_string(**HEX)
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
@@ -134,7 +221,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                 html_colors[y].append(
                     '<a href="%s">%s</a>' % (
-                        color.to_string(), mdpopups.color_box(
+                        color.to_string(**GENERIC),
+                        mdpopups.color_box(
                             [value], self.default_border,
                             **kwargs
                         )
@@ -148,12 +236,15 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
     def get_current_color(self):
         """Get current color."""
 
-        check_size = self.check_size(self.height)
+        # Show a previw of the current color.
+        check_size = self.check_size(self.height * 2)
+        preview = self.color.convert("srgb")
         html = (
             '<span class="current-color">{}</span>'.format(
                 self.get_spacer(width=5) +
                 mdpopups.color_box(
-                    [self.color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                    [preview.to_string(**HEX_NA), preview.to_string(**HEX)],
+                    self.default_border,
                     border_size=BORDER_SIZE, height=self.height * 2, width=self.width * 16,
                     check_size=check_size
                 )
@@ -172,11 +263,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             html.append(
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
-                        [color.to_string(hex_code=True)], self.default_border,
+                        [color.to_string(**HEX)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
-                    color.to_string(),
+                    color.to_string(**GENERIC),
                     name
                 )
             )
@@ -233,11 +324,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             html.append(
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
-                        [color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                        [color.convert("srgb").to_string(**HEX)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
                     ),
-                    color.to_string(),
+                    color.to_string(**GENERIC),
                     label
                 )
             )
@@ -282,10 +373,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 temp.append(
                     '[%s](%s)' % (
                         mdpopups.color_box(
-                            [clone.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                            [clone.convert("srgb").to_string(**HEX)], self.default_border,
                             **kwargs
                         ),
-                        clone.to_string()
+                        clone.to_string(**GENERIC)
                     )
                 )
             clone.mutate(self.color)
@@ -295,10 +386,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         html.append(
             '[%s](%s)' % (
                 mdpopups.color_box(
-                    [self.color.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                    [self.color.convert("srgb").to_string(**HEX)], self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 ),
-                self.color.to_string()
+                self.color.to_string(**GENERIC)
             )
         )
         first = True
@@ -333,10 +424,10 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 html.append(
                     '[%s](%s)' % (
                         mdpopups.color_box(
-                            [clone.convert("srgb").to_string(hex_code=True, alpha=True)], self.default_border,
+                            [clone.convert("srgb").to_string(**HEX)], self.default_border,
                             **kwargs
                         ),
-                        clone.to_string()
+                        clone.to_string(**GENERIC)
                     )
                 )
             clone.mutate(self.color)
@@ -345,177 +436,124 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         html.append('</span><br>')
         self.template_vars[channel] = ''.join(html)
 
-    def compress_hex_color(self, color):
-        """Compress hex color if possible."""
+    def handle_href(self, href):
+        """Handle HREF."""
 
-        if self.compress_hex:
-            color = util.compress_hex(color)
-        return color
+        hires = None
+        colornames = False
+        mode = self.mode
+        if href in ('hsl', 'srgb', 'hwb'):
+            # If we received a color space switch to that picker.
+            color = self.color.convert(href).to_string(**GENERIC)
+            mode = href
+        elif href.startswith('insert'):
+            # We will need to call the insert dialog
+            color = href.split(':')[1]
+        elif href.startswith('hirespick'):
+            # We need to open a high resolution channel picker
+            hires = href.split(':')[1]
+            color = self.color.to_string(**GENERIC)
+        elif href == "colornames":
+            # We need to open the color name picker
+            color = self.color.to_string(**GENERIC)
+            colornames = True
+        elif href == 'edit':
+            # We want to edit the color
+            color = self.color.to_string(**GENERIC)
+        else:
+            # Process we need to update the current color
+            color = href
+        if href == 'cancel':
+            # Close color picker and call the callback if one was provided
+            mdpopups.hide_popup(self.view)
+            if self.on_cancel is not None:
+                call = self.on_cancel.get('command', 'color_helper')
+                args = self.on_cancel.get('args', {})
+                self.view.run_command(call, args)
+        elif href == 'edit':
+            # Edit color in edit panel
+            mdpopups.hide_popup(self.view)
 
-    def get_color_info(self):
-        """Get color info."""
+            # Provide callback info for the color picker.
+            on_done = {
+                "command": "color_helper_picker",
+                "args": {
+                    "mode": self.mode
+                }
+            }
 
-        return
+            # On edit cancel, call the color picker with the current color.
+            on_cancel = {
+                "command": "color_helper_picker",
+                "args": {
+                    "mode": self.mode,
+                    "color": self.color.to_string(**GENERIC)
+                }
+            }
 
-        all_space = "all" in self.space_separator_syntax
-        rgba = util.RGBA(self.color)
-        self.template_vars['rgb_r'] = rgba.r
-        self.template_vars['rgb_g'] = rgba.g
-        self.template_vars['rgb_b'] = rgba.b
-        self.template_vars['alpha'] = self.alpha
-        h, l, s = rgba.tohls()
-        self.template_vars['hsl_h'] = util.fmt_float(h * 360.0)
-        self.template_vars['hsl_l'] = util.fmt_float(l * 100.0)
-        self.template_vars['hsl_s'] = util.fmt_float(s * 100.0)
-        h, w, b = rgba.tohwb()
-        self.template_vars['hwb_h'] = util.fmt_float(h * 360.0)
-        self.template_vars['hwb_w'] = util.fmt_float(w * 100.0)
-        self.template_vars['hwb_b'] = util.fmt_float(b * 100.0)
-        self.template_vars['rgb_comma'] = not all_space and "rgb" not in self.space_separator_syntax
-        self.template_vars['hsl_comma'] = not all_space and "hsl" not in self.space_separator_syntax
-        self.template_vars['hwb_comma'] = not all_space and "hwb" not in self.space_separator_syntax
-
-        if self.web_color and 'webcolors' in self.allowed_colors:
-            self.template_vars['webcolor_info'] = True
-            self.template_vars['webcolor_value'] = self.web_color
-        if 'hex' in self.allowed_colors or 'hex_compressed' in self.allowed_colors:
-            settings = sublime.load_settings('color_helper.sublime-settings')
-            use_upper = settings.get("upper_case_hex", False)
-            color = self.color[:-2].lower()
-            self.template_vars['hex_info'] = True
-            self.template_vars['hex_link'] = (
-                self.compress_hex_color(color).upper() if use_upper else self.compress_hex_color(color)
+            # Call the edit input panel
+            self.view.run_command(
+                'color_helper_edit',
+                {
+                    "initial": color, "on_done": on_done, "on_cancel": on_cancel
+                }
             )
-            self.template_vars['hex_display'] = color.upper() if use_upper else color
-        if (
-            ('hexa' in self.allowed_colors or 'hexa_compressed' in self.allowed_colors) and
-            (self.use_hex_argb is None or self.use_hex_argb is False)
-        ):
-            color = self.color.lower()
-            self.template_vars['hexa_info'] = True
-            self.template_vars['hexa_link'] = self.compress_hex_color(color)
-            self.template_vars['hexa_display'] = color[:-2]
-            self.template_vars['hexa_alpha'] = color[-2:]
-        if (
-            ('hexa' in self.allowed_colors or 'hexa_compressed') and
-            (self.use_hex_argb is True)
-        ):
-            color = '#' + (self.color[-2:] + self.color[1:-2]).lower()
-            self.template_vars['ahex_info'] = True
-            self.template_vars['ahex_link'] = self.compress_hex_color(color)
-            self.template_vars['ahex_alpha'] = color[:-2]
-            self.template_vars['ahex_display'] = color[1:-2]
-        if 'rgb' in self.allowed_colors:
-            self.template_vars['rgb_info'] = True
-        if 'rgba' in self.allowed_colors:
-            self.template_vars['rgba_info'] = True
-        if 'hsl' in self.allowed_colors:
-            self.template_vars['hsl_info'] = True
-        if 'hsla' in self.allowed_colors:
-            self.template_vars['hsla_info'] = True
-        if 'hwb' in self.allowed_colors:
-            self.template_vars['hwb_info'] = True
-        if 'hwba' in self.allowed_colors:
-            self.template_vars['hwba_info'] = True
 
-    def set_sizes(self):
-        """Get sizes."""
-
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
-        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
-        if not isinstance(self.graphic_scale, (int, float)):
-            self.graphic_scale = None
-        self.line_height = util.get_line_height(self.view)
-        top_pad = self.view.settings().get('line_padding_top', 0)
-        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
-        # Sometimes we strangely get None
-        if top_pad is None:
-            top_pad = 0
-        if bottom_pad is None:
-            bottom_pad = 0
-        box_height = self.line_height - int(top_pad + bottom_pad) - 6
-        if self.graphic_scale is not None:
-            box_height = box_height * self.graphic_scale
-            self.graphic_size = "small"
-        small = max(box_height, 8)
-        medium = max(box_height * 1.5, 8)
-        large = max(box_height * 2, 8)
-        self.box_height = int(small)
-        sizes = {
-            "small": (int(small), int(small), int(small + small / 4)),
-            "medium": (int(medium), int(medium), int(medium + medium / 4)),
-            "large": (int(large), int(large), int(large + large / 4))
-        }
-        self.height, self.width, self.height_big = sizes.get(
-            self.graphic_size,
-            sizes["medium"]
-        )
-
-    def check_size(self, height):
-        """Get checkered size."""
-
-        check_size = int((self.height - 4) / 4)
-        if check_size < 2:
-            check_size = 2
-        return check_size
+        elif href.startswith('insert'):
+            # Call back to ColorHelper to insert the color.
+            mdpopups.hide_popup(self.view)
+            if self.on_done is not None:
+                call = self.on_done.get('command', 'color_helper')
+                args = copy.deepcopy(self.on_done.get('args', {}))
+                args['color'] = color
+                self.view.run_command(call, args)
+        else:
+            # Call color picker with the provided color.
+            self.view.run_command(
+                'color_helper_picker',
+                {
+                    "color": color,
+                    "mode": mode, "hirespick": hires, "colornames": colornames,
+                    "on_done": self.on_done, "on_cancel": self.on_cancel
+                }
+            )
 
     def run(
-        self, edit, color='#ffffff', allowed_colors=util.ALL, use_hex_argb=None,
-        compress_hex=False, mode=None, hirespick=None, colornames=False,
-        on_done=None, on_cancel=None, space_separator_syntax=None, **kwargs
+        self, edit, color='#ffffff', mode=None, hirespick=None, colornames=False,
+        on_done=None, on_cancel=None, **kwargs
     ):
         """Run command."""
 
-        # Calculate image border.
-        border_color = None
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        border_color = settings.get('image_border_color')
-        if border_color is not None:
-            try:
-                border_color = colorcss(border_color)
-            except Exception:
-                pass
-        if border_color is None:
-            border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
-            border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
-        self.default_border = border_color.convert("srgb").to_string(hex_code=True, alpha=True)
+        print('---start---')
+        print(color)
+        # Setup
+        self.setup(color, mode, on_done, on_cancel)
 
-        self.on_done = on_done
-        self.on_cancel = on_cancel
-        self.template_vars = {}
+        print(self.color)
 
-        self.original = colorcss(color)
-        if mode is None or mode not in ("srgb", "hsl", "hwb"):
-            if self.original.space() in ("srgb", "hsl", "hwb"):
-                mode = self.original.space()
-            else:
-                mode = "srgb"
-        self.color = self.original.convert(mode)
-        if not self.color.in_gamut():
-            self.color.fit_gamut()
-        self.set_sizes()
-        self.mode = mode
-
+        # Show the appropriate dialog
         if colornames:
+            # Show color name picker
             self.template_vars['color_names'] = True
             self.template_vars['cancel'] = self.color
             self.get_css_color_names()
         elif hirespick:
+            # Show high resolution channel picker
             self.template_vars['hires'] = True
             self.template_vars['cancel'] = self.color
             self.template_vars['hires_color'] = hirespick
             self.get_hires_color_channel(hirespick)
         else:
+            # Show the normal color picker of the specified space
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = 'cancel'
             self.get_color_map_square()
             self.get_current_color()
-            if mode == "hsl":
+            if self.mode == "hsl":
                 self.get_channel('channel_1', 'H', -5, 5, 'hue')
                 self.get_channel('channel_2', 'S', -1, 1, 'saturation')
                 self.get_channel('channel_3', 'L', -1, 1, 'lightness')
-            elif mode == "hwb":
+            elif self.mode == "hwb":
                 self.get_channel('channel_1', 'H', -5, 5, 'hue')
                 self.get_channel('channel_2', 'W', -1, 1, 'whiteness')
                 self.get_channel('channel_3', 'B', -1, 1, 'blackness')
@@ -533,8 +571,8 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
                 switch = 'srgb'
             self.template_vars['color_value'] = self.color.to_string()
             self.template_vars['color_switch'] = switch
-            self.get_color_info()
 
+        # Display picker
         mdpopups.show_popup(
             self.view,
             util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/color-picker.html'),
@@ -544,104 +582,3 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             on_navigate=self.handle_href,
             template_vars=self.template_vars
         )
-
-    def handle_href(self, href):
-        """Handle HREF."""
-
-        print(href)
-        hires = None
-        mode = self.mode
-        colornames = False
-        if href in ('hsl', 'srgb', 'hwb'):
-            print('this-------')
-            color = self.color.convert(href).to_string()
-            mode = href
-        elif href.startswith('insert'):
-            color = href.split(':')[1]
-        elif href.startswith('hirespick'):
-            hires = href.split(':')[1]
-            color = self.color.to_string()
-        elif href == "colornames":
-            color = self.color.to_string()
-            colornames = True
-        elif href == 'edit':
-            color = self.color.to_string()
-        else:
-            color = href
-        if href == 'cancel':
-            mdpopups.hide_popup(self.view)
-            if self.on_cancel is not None:
-                call = self.on_cancel.get('command', 'color_helper')
-                args = self.on_cancel.get('args', {})
-                self.view.run_command(call, args)
-        elif href == 'edit':
-            mdpopups.hide_popup(self.view)
-            self.view.window().run_command(
-                'color_helper_picker_panel',
-                {
-                    "color": color,
-                    "on_done": self.on_done, "on_cancel": self.on_cancel
-                }
-            )
-        elif href.startswith('insert'):
-            mdpopups.hide_popup(self.view)
-            if self.on_done is not None:
-                call = self.on_done.get('command', 'color_helper')
-                args = copy.deepcopy(self.on_done.get('args', {}))
-                args['color'] = color
-                self.view.run_command(call, args)
-        else:
-            self.view.run_command(
-                'color_helper_picker',
-                {
-                    "color": color,
-                    "mode": mode, "hirespick": hires, "colornames": colornames,
-                    "on_done": self.on_done, "on_cancel": self.on_cancel
-                }
-            )
-
-
-class ColorHelperPickerPanel(sublime_plugin.WindowCommand):
-    """Open color picker with color from panel."""
-
-    def run(
-        self, color="#ffffffff", allowed_colors=util.ALL,
-        use_hex_argb=None, compress_hex=False,
-        on_done=None, on_cancel=None, space_separator_syntax=None,
-        **kwargs
-    ):
-        """Run command."""
-
-        self.on_done = on_done
-        self.on_cancel = on_cancel
-        # self.compress_hex = compress_hex
-        # self.use_hex_argb = use_hex_argb
-        # self.allowed_colors = allowed_colors
-        # self.space_separator_syntax = space_separator_syntax
-        self.color = colorcss(color)
-        view = self.window.show_input_panel(
-            'Color', self.color.to_string(), self.handle_value, None, None
-        )
-        view.sel().clear()
-        view.sel().add(sublime.Region(0, view.size()))
-
-    def handle_value(self, value):
-        """Open color picker."""
-
-        value = value.strip()
-        try:
-            color = colorcss(value)
-        except Exception:
-            color = None
-        if color is None:
-            color = colorcss("#ffffffff")
-        view = self.window.active_view()
-        if view is not None:
-            view.settings().set('color_helper.no_auto', True)
-            view.run_command(
-                'color_helper_picker',
-                {
-                    "color": color.to_string(),
-                    "on_done": self.on_done, "on_cancel": self.on_cancel
-                }
-            )
