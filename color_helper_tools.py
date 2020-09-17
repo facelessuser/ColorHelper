@@ -4,6 +4,7 @@ from coloraide.css import colorcss
 import mdpopups
 from .multiconf import get as qualify_settings
 from . import color_helper_util as util
+from .color_helper_mixin import _ColorBoxMixin
 import copy
 import functools
 # import re
@@ -16,18 +17,16 @@ PREVIEW_IMG = '''\
 # RE_MIX = re.compile(r'^(.*?)(?:\s+\+\s+(.*?)([0-9]+(?:\.[0-9]+)?)?)?$' )
 
 
-class _ColorInputHandler(sublime_plugin.TextInputHandler):
+class _ColorInputHandler(_ColorBoxMixin, sublime_plugin.TextInputHandler):
+    """Color input handler base class."""
+
     def __init__(self, view, on_cancel=None, **kwargs):
         """Initialize."""
 
         self.view = view
         self.on_cancel = on_cancel
-        border_color = colorcss(mdpopups.scope2style(view, '')['background']).convert("hsl")
-        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
-        self.default_border = border_color.convert("srgb").to_string(hex_code=True, alpha=True)
-        self.out_of_gamut_border = colorcss("red").to_string(hex_code=True, alpha=True)
-        self.out_of_gamut = colorcss("rgb(0 0 0 / 0)").to_string(hex_code=True, alpha=True)
-        self.set_sizes()
+        self.setup_image_border()
+        self.setup_sizes()
 
     def cancel(self):
         """On cancel."""
@@ -37,50 +36,10 @@ class _ColorInputHandler(sublime_plugin.TextInputHandler):
             args = self.on_cancel.get('args', {})
             self.view.run_command(call, args)
 
-    def set_sizes(self):
-        """Get sizes."""
-
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
-        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
-        if not isinstance(self.graphic_scale, (int, float)):
-            self.graphic_scale = None
-        self.line_height = util.get_line_height(self.view)
-        top_pad = self.view.settings().get('line_padding_top', 0)
-        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
-        # Sometimes we strangely get None
-        if top_pad is None:
-            top_pad = 0
-        if bottom_pad is None:
-            bottom_pad = 0
-        box_height = self.line_height - int(top_pad + bottom_pad) - 6
-        if self.graphic_scale is not None:
-            box_height = box_height * self.graphic_scale
-            self.graphic_size = "small"
-        small = max(box_height, 8)
-        medium = max(box_height * 1.5, 8)
-        large = max(box_height * 2, 8)
-        self.box_height = int(small)
-        sizes = {
-            "small": (int(small), int(small), int(small + small / 4)),
-            "medium": (int(medium), int(medium), int(medium + medium / 4)),
-            "large": (int(large), int(large), int(large + large / 4))
-        }
-        self.height, self.width, self.height_big = sizes.get(
-            self.graphic_size,
-            sizes["medium"]
-        )
-
-    def check_size(self, height):
-        """Get checkered size."""
-
-        check_size = int((height - 4) / 8)
-        if check_size < 2:
-            check_size = 2
-        return check_size
-
 
 class ColorInputHandler(_ColorInputHandler):
+    """Handle color inputs."""
+
     def __init__(self, view, initial=None, **kwargs):
         """Initialize."""
 
@@ -120,7 +79,7 @@ class ColorInputHandler(_ColorInputHandler):
 
             height = self.height * 4
             width = self.width * 4
-            check_size = self.check_size(height)
+            check_size = self.check_size(height, scale=8)
 
             html = PREVIEW_IMG.format(
                 mdpopups.color_box(

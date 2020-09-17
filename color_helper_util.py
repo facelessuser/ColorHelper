@@ -10,6 +10,10 @@ import platform
 import mdpopups
 import base64
 
+GENERIC = {"raw": True}
+HEX = {"hex_code": True}
+HEX_NA = {"hex_code": True, "alpha": False}
+
 FRONTMATTER = mdpopups.format_frontmatter(
     {
         "allow_code_wrap": False,

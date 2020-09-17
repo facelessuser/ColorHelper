@@ -11,8 +11,9 @@ from mdpopups import colorbox
 from coloraide.css import colorcss
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
+from .color_helper_mixin import _ColorBoxMixin
+from .color_helper_util import GENERIC, HEX, HEX_NA
 import copy
-from .multiconf import get as qualify_settings
 
 color_map = None
 color_map_size = False
@@ -21,15 +22,10 @@ default_border = None
 color_scale = None
 last_saturation = None
 
-GENERIC = {"raw": True}
-HEX = {"hex_code": True}
-HEX_NA = {"hex_code": True, "alpha": False}
-
-SPACER = colorcss("transparent").to_string(**HEX)
 BORDER_SIZE = 1
 
 
-class ColorHelperPickerCommand(sublime_plugin.TextCommand):
+class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
     """Experimental color picker."""
 
     def setup(self, color, mode, on_done, on_cancel):
@@ -41,57 +37,11 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         color = colorcss(color)
         self.setup_image_border()
         self.setup_sizes()
+        self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
         self.color = color.convert(self.mode)
         if not self.color.in_gamut():
             self.color.fit_gamut()
-
-    def setup_image_border(self):
-        """Setup_image_border."""
-
-        # Calculate border color for images
-        border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
-        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
-        self.default_border = border_color.convert("srgb").to_string(**HEX)
-
-    def setup_sizes(self):
-        """Get sizes."""
-
-        settings = sublime.load_settings('color_helper.sublime-settings')
-        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
-        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
-
-        if not isinstance(self.graphic_scale, (int, float)):
-            self.graphic_scale = None
-
-        # Calculate color box height
-        self.line_height = util.get_line_height(self.view)
-        top_pad = self.view.settings().get('line_padding_top', 0)
-        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
-        if top_pad is None:
-            # Sometimes we strangely get None
-            top_pad = 0
-        if bottom_pad is None:
-            bottom_pad = 0
-        box_height = self.line_height - int(top_pad + bottom_pad) - 6
-
-        # Scale size
-        if self.graphic_scale is not None:
-            box_height = box_height * self.graphic_scale
-            self.graphic_size = "small"
-        small = max(box_height, 8)
-        medium = max(box_height * 1.5, 8)
-        large = max(box_height * 2, 8)
-        self.box_height = int(small)
-        sizes = {
-            "small": (int(small), int(small), int(small + small / 4)),
-            "medium": (int(medium), int(medium), int(medium + medium / 4)),
-            "large": (int(large), int(large), int(large + large / 4))
-        }
-        self.height, self.width, self.height_big = sizes.get(
-            self.graphic_size,
-            sizes["medium"]
-        )
 
     def setup_mode(self, color, mode):
         """Setup mode."""
@@ -104,23 +54,6 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             else:
                 mode = "srgb"
         self.mode = mode
-
-    def check_size(self, height):
-        """Get checkered size."""
-
-        check_size = int((height - 4) / 4)
-        if check_size < 2:
-            check_size = 2
-        return check_size
-
-    def get_spacer(self, width=1, height=1):
-        """Get a spacer."""
-
-        return mdpopups.color_box(
-            [SPACER], border_size=0,
-            height=self.height * height, width=self.width * width,
-            check_size=self.check_size(self.height), alpha=True
-        )
 
     def get_color_map_square(self):
         """Get a square variant of the color map."""

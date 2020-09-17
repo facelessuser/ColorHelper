@@ -1,0 +1,78 @@
+import sublime
+import mdpopups
+from . import color_helper_util as util
+from .color_helper_util import GENERIC, HEX, HEX_NA
+from .multiconf import get as qualify_settings
+from coloraide.css import colorcss
+
+SPACER = colorcss("transparent").to_string(**HEX)
+
+
+class _ColorBoxMixin:
+    """Color box mixin class."""
+
+    def setup_image_border(self):
+        """Setup_image_border."""
+
+        # Calculate border color for images
+        border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
+        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
+        self.default_border = border_color.convert("srgb").to_string(**HEX)
+        self.out_of_gamut = colorcss("transparent").to_string(**HEX)
+        self.out_of_gamut_border = colorcss(self.view.style().get('redish', "red")).to_string(**HEX)
+
+    def get_spacer(self, width=1, height=1):
+        """Get a spacer."""
+
+        return mdpopups.color_box(
+            [SPACER], border_size=0,
+            height=self.height * height, width=self.width * width,
+            check_size=self.check_size(self.height), alpha=True
+        )
+
+    def setup_sizes(self):
+        """Get sizes."""
+
+        settings = sublime.load_settings('color_helper.sublime-settings')
+        self.graphic_size = qualify_settings(settings, 'graphic_size', 'medium')
+        self.graphic_scale = qualify_settings(settings, 'graphic_scale', None)
+
+        if not isinstance(self.graphic_scale, (int, float)):
+            self.graphic_scale = None
+
+        # Calculate color box height
+        self.line_height = util.get_line_height(self.view)
+        top_pad = self.view.settings().get('line_padding_top', 0)
+        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
+        if top_pad is None:
+            # Sometimes we strangely get None
+            top_pad = 0
+        if bottom_pad is None:
+            bottom_pad = 0
+        box_height = self.line_height - int(top_pad + bottom_pad) - 6
+
+        # Scale size
+        if self.graphic_scale is not None:
+            box_height = box_height * self.graphic_scale
+            self.graphic_size = "small"
+        small = max(box_height, 8)
+        medium = max(box_height * 1.5, 8)
+        large = max(box_height * 2, 8)
+        self.box_height = int(small)
+        sizes = {
+            "small": (int(small), int(small)),
+            "medium": (int(medium), int(medium)),
+            "large": (int(large), int(large))
+        }
+        self.height, self.width = sizes.get(
+            self.graphic_size,
+            sizes["medium"]
+        )
+
+    def check_size(self, height, scale=4):
+        """Get checkered size."""
+
+        check_size = int((height - 4) / scale)
+        if check_size < 2:
+            check_size = 2
+        return check_size
