@@ -457,12 +457,8 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        print('---start---')
-        print(color)
         # Setup
         self.setup(color, mode, on_done, on_cancel)
-
-        print(self.color)
 
         # Show the appropriate dialog
         if colornames:

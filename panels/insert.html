@@ -1,5 +1,5 @@
 {%- if plugin.dialog_type not in ("__info__", "__color_picker__") %}
-[back](__colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
+[back](__colors__:{{plugin.dialog_type}}:{{plugin.palette_name}}){: .small}
 {%- elif plugin.dialog_type == "__info__" %}
 [back](__info__){: .small}
 {%- else %}

@@ -4,6 +4,9 @@
 {% if plugin.show_picker_menu -%}
 [picker](__color_picker__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
+{% if plugin.show_global_palette_menu -%}
+[add](__add_color__:{{plugin.generic_color}}){: .small} 
+{% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
 [unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 
 {% elif plugin.show_favorite_menu and not plugin.is_marked -%}

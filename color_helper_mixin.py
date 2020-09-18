@@ -4,12 +4,23 @@ from . import color_helper_util as util
 from .color_helper_util import GENERIC, HEX, HEX_NA
 from .multiconf import get as qualify_settings
 from coloraide.css import colorcss
+from collections import namedtuple
 
 SPACER = colorcss("transparent").to_string(**HEX)
 
 
+class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'])):
+    """Preview."""
+
+
 class _ColorBoxMixin:
     """Color box mixin class."""
+
+    def setup_gamut_style(self):
+        """Setup the gamut style."""
+
+        ch_settings = sublime.load_settings('color_helper.sublime-settings')
+        self.gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
 
     def setup_image_border(self):
         """Setup_image_border."""
@@ -76,3 +87,25 @@ class _ColorBoxMixin:
         if check_size < 2:
             check_size = 2
         return check_size
+
+    def get_preview(self, color):
+        """Get preview."""
+
+        message = ''
+        preview_border = self.default_border
+        if not color.in_gamut("srgb"):
+            message = 'preview out of gamut'
+            if self.gamut_style in ("lch-chroma", "clip"):
+                srgb = color.convert("srgb", fit_gamut=self.gamut_style)
+                preview1 = srgb.to_string(**HEX_NA)
+                preview2 = srgb.to_string(**HEX)
+            else:
+                preview1 = self.out_of_gamut
+                preview2 = self.out_of_gamut
+                preview_border = self.out_of_gamut_border
+        else:
+            srgb = color.convert("srgb")
+            preview1 = srgb.to_string(**HEX_NA)
+            preview2 = srgb.to_string(**HEX)
+
+        return Preview(preview1, preview2, preview_border, message)
