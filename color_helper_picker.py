@@ -435,11 +435,16 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         elif href.startswith('insert'):
             # Call back to ColorHelper to insert the color.
             mdpopups.hide_popup(self.view)
-            if self.on_done is not None:
-                call = self.on_done.get('command', 'color_helper')
-                args = copy.deepcopy(self.on_done.get('args', {}))
-                args['color'] = color
-                self.view.run_command(call, args)
+            if self.on_done is None:
+                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result"}}
+            else:
+                on_done = self.on_done
+            call = on_done.get('command')
+            if call is None:
+                return
+            args = copy.deepcopy(on_done.get('args', {}))
+            args['color'] = color
+            self.view.run_command(call, args)
         else:
             # Call color picker with the provided color.
             self.view.run_command(

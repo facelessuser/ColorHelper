@@ -115,11 +115,14 @@ class ColorHelperEditCommand(sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        if on_done is not None:
-            call = on_done.get('command', 'color_helper')
-            args = copy.deepcopy(on_done.get('args', {}))
-            args["color"] = color
-            self.view.run_command(call, args)
+        if on_done is None:
+            on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result"}}
+        call = on_done.get('command')
+        if call is None:
+            return
+        args = copy.deepcopy(on_done.get('args', {}))
+        args['color'] = color
+        self.view.run_command(call, args)
 
     def input(self, kwargs):
         """Input."""

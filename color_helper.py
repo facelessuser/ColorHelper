@@ -255,19 +255,11 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             else:
                 on_cancel = None
             rules = util.get_rules(self.view)
-            allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
-            use_hex_argb = rules.get("use_hex_argb", False) if rules else False
-            compress_hex = rules.get("compress_hex_output", False) if rules else False
-            space_separator_syntax = set(rules.get("space_separator_syntax", []) if rules else [])
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
-                    'allowed_colors': allowed_colors,
-                    'use_hex_argb': use_hex_argb,
-                    'compress_hex': compress_hex,
                     'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
-                    'on_cancel': on_cancel,
-                    'space_separator_syntax': list(space_separator_syntax)
+                    'on_cancel': on_cancel
                 }
             )
 
@@ -280,10 +272,11 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             is_replace = point != sels[0].end()
             obj = self.get_cursor_color()
             value = target_color
-            repl_region = sublime.Region(obj.start, obj.end)
-            if not is_replace:
-                self.view.sel().subtract(sels[0])
-                self.view.sel().add(repl_region)
+            if obj is not None:
+                repl_region = sublime.Region(obj.start, obj.end)
+                if not is_replace:
+                    self.view.sel().subtract(sels[0])
+                    self.view.sel().add(repl_region)
             self.view.run_command("insert", {"characters": value})
         self.view.hide_popup()
 
@@ -443,7 +436,11 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         if color is not None and len(sels) == 1:
             rules = util.get_rules(self.view)
 
-            output_options = rules.get('output_options')
+            if rules is None:
+                ch_settings = sublime.load_settings('color_helper.sublime-settings')
+                output_options = ch_settings.get('generic_output', [])
+            else:
+                output_options = rules.get('output_options')
             outputs = []
             for output in output_options:
                 value = color.convert(output["space"]).to_string(**output["options"])
@@ -726,12 +723,11 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 self.show_palettes()
         elif mode == "color_picker":
             self.no_info = True
-            color, alpha = self.get_cursor_color()[:-1]
-            if color is not None:
-                if alpha is not None:
-                    color += alpha
+            obj = self.get_cursor_color()
+            if obj is None:
+                color = colorcss("white").to_string(**util.GENERIC)
             else:
-                color = '#ffffffff'
+                color = obj.color.to_string(**util.GENERIC)
             self.color_picker(color)
         elif mode == "color_picker_result":
             self.show_insert(color, '__color_picker__')

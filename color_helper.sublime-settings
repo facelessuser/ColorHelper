@@ -72,6 +72,17 @@
     // Enable color conversion options on color info panel
     "enable_color_conversions": true,
 
+    // If a there is no rule for the current file, any insert will use
+    // the generic output options below.
+    "generic_output": [
+        {"space": "srgb", "options": {"hex_code": true}},
+        {"space": "srgb", "options": {"comma": true, "precision": 0}},
+        {"space": "hsl", "options": {"comma": true, "precision": 0}},
+        {"space": "hwb", "options": {"comma": false, "precision": 0}},
+        {"space": "lch", "options": {"comma": false, "precision": 0}},
+        {"space": "lab", "options": {"comma": false, "precision": 0}}
+    ],
+
     // Scanning rules
     "color_scanning": [
         {
