@@ -91,7 +91,7 @@ class ChPreview:
 
         # Calculate size of preview boxes
         box_height = self.calculate_box_size(view)
-        check_size = int((box_height - 4) / 4)
+        check_size = int((box_height - 2) / 4)
         if check_size < 2:
             check_size = 2
 

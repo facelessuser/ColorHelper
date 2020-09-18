@@ -188,7 +188,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
     def get_css_color_names(self):
         """Get CSS color names."""
 
-        check_size = self.check_size(self.box_height)
+        check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2hex_map):
             color = colorcss(name)
@@ -197,7 +197,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color.to_string(**HEX)], self.default_border,
-                        border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
+                        border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
                     color.to_string(**GENERIC),
@@ -222,7 +222,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         }
 
         minimum, maximum = ranges[color_filter]
-        check_size = self.check_size(self.box_height)
+        check_size = self.check_size(self.height)
         html = []
         color = self.color.clone()
         for x in range(minimum, maximum + 1):
@@ -258,7 +258,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 '[%s](%s) %s<br>' % (
                     mdpopups.color_box(
                         [color.convert("srgb").to_string(**HEX)], self.default_border,
-                        border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
+                        border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
                     color.to_string(**GENERIC),

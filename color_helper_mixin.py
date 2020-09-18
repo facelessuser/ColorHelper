@@ -69,7 +69,6 @@ class _ColorBoxMixin:
         small = max(box_height, 8)
         medium = max(box_height * 1.5, 8)
         large = max(box_height * 2, 8)
-        self.box_height = int(small)
         sizes = {
             "small": (int(small), int(small)),
             "medium": (int(medium), int(medium)),
@@ -83,7 +82,7 @@ class _ColorBoxMixin:
     def check_size(self, height, scale=4):
         """Get checkered size."""
 
-        check_size = int((height - 4) / scale)
+        check_size = int((height - 2) / scale)
         if check_size < 2:
             check_size = 2
         return check_size
