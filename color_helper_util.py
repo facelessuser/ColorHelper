@@ -10,9 +10,9 @@ import platform
 import mdpopups
 import base64
 
-GENERIC = {"raw": True}
-HEX = {"hex_code": True}
-HEX_NA = {"hex_code": True, "alpha": False}
+GENERIC = {"options": {"color": True}}
+HEX = {"options": {"hex": True}}
+HEX_NA = {"options": {"hex": True}, "alpha": False}
 
 FRONTMATTER = mdpopups.format_frontmatter(
     {

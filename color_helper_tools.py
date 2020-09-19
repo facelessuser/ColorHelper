@@ -71,10 +71,10 @@ class ColorInputHandler(_ColorInputHandler):
             preview_border = self.default_border
             message = ""
             if not srgb.in_gamut():
-                srgb.fit_gamut("srgb")
+                srgb.fit("srgb")
                 message = '<br><em style="font-size: 0.9em;">* color is out of gamut and was adjusted for preview</em>'
-            preview = srgb.to_string(hex_code=True, alpha=False)
-            preview_alpha = srgb.to_string(hex_code=True, alpha=True)
+            preview = srgb.to_string(**util.HEX_NA)
+            preview_alpha = srgb.to_string(**util.HEX)
             preview_border = self.default_border
 
             height = self.height * 4

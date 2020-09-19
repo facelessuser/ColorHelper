@@ -95,7 +95,7 @@ class _ColorBoxMixin:
         if not color.in_gamut("srgb"):
             message = 'preview out of gamut'
             if self.gamut_style in ("lch-chroma", "clip"):
-                srgb = color.convert("srgb", fit_gamut=self.gamut_style)
+                srgb = color.convert("srgb", fit=self.gamut_style)
                 preview1 = srgb.to_string(**HEX_NA)
                 preview2 = srgb.to_string(**HEX)
             else:

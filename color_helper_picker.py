@@ -41,7 +41,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         self.setup_mode(color, mode)
         self.color = color.convert(self.mode)
         if not self.color.in_gamut():
-            self.color.fit_gamut()
+            self.color.fit()
 
     def setup_mode(self, color, mode):
         """Setup mode."""

@@ -131,8 +131,8 @@ class ChPreview:
 
         if source and scope:
             # Get preview element colors
-            out_of_gamut = colorcss("transparent").to_string(hex_code=True, alph=True)
-            out_of_gamut_border = colorcss(view.style().get('redish', "red")).to_string(hex_code=True)
+            out_of_gamut = colorcss("transparent").to_string(**util.HEX)
+            out_of_gamut_border = colorcss(view.style().get('redish', "red")).to_string(**util.HEX)
             gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
 
             # Find the colors
@@ -174,23 +174,23 @@ class ChPreview:
                 # Calculate a reasonable border color for our image at this location and get color strings
                 hsl = colorcss(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
                 hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
-                preview_border = hsl.convert("srgb").to_string(hex_code=True)
+                preview_border = hsl.convert("srgb").to_string(**util.HEX)
                 color = obj.color
                 title = ''
                 if not color.in_gamut("srgb"):
                     title = ' title="Out of gamut"'
                     if gamut_style in ("lch-chroma", "clip"):
-                        srgb = color.convert("srgb", fit_gamut=gamut_style)
-                        preview1 = srgb.to_string(hex_code=True, alpha=False)
-                        preview2 = srgb.to_string(hex_code=True, alpha=True)
+                        srgb = color.convert("srgb", fit=gamut_style)
+                        preview1 = srgb.to_string(**util.HEX_NA)
+                        preview2 = srgb.to_string(**util.HEX)
                     else:
                         preview1 = out_of_gamut
                         preview2 = out_of_gamut
                         preview_border = out_of_gamut_border
                 else:
                     srgb = color.convert("srgb")
-                    preview1 = srgb.to_string(hex_code=True, alpha=False)
-                    preview2 = srgb.to_string(hex_code=True, alpha=True)
+                    preview1 = srgb.to_string(**util.HEX_NA)
+                    preview2 = srgb.to_string(**util.HEX)
 
                 # Create preview
                 start_scope = view.scope_name(src_start)
@@ -496,6 +496,21 @@ class ColorHelperListener(sublime_plugin.EventListener):
         else:
             force_update = True
         return force_update
+
+    def on_post_save(self, view):
+        """Run current file scan and/or project scan on save."""
+
+        if self.ignore_event(view):
+            if view.settings().get('color_helper.preview_meta', {}):
+                view.settings().erase('color_helper.preview_meta')
+            return
+
+        s = sublime.load_settings('color_helper.sublime-settings')
+        show_current_palette = s.get('enable_current_file_palette', True)
+        if self.should_update(view):
+            view.settings().erase('color_helper.preview_meta')
+            view.erase_phantoms('color_helper')
+            self.set_file_scan_rules(view)
 
     def on_view_settings_change(self, view):
         """Post text command event to catch syntax setting."""

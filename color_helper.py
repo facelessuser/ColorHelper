@@ -368,7 +368,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
 
         # Store color in normal and generic format.
         template_vars['current_color'] = current
-        template_vars['generic_color'] = color.to_string(raw=True)
+        template_vars['generic_color'] = color.to_string(**util.GENERIC)
 
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
@@ -394,7 +394,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             template_vars['show_global_palette_menu'] = True
         if show_favorite_palette:
             template_vars['show_favorite_menu'] = True
-            template_vars['is_marked'] = color.to_string(raw=True) in util.get_favs()['colors']
+            template_vars['is_marked'] = color.to_string(**util.GENERIC) in util.get_favs()['colors']
 
         preview = self.get_preview(color)
         message = ''
@@ -455,7 +455,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 "dialog_type": dialog_type,
                 "palette_name": palette_name,
                 "current_color": original,
-                "color": color.to_string(raw=True)
+                "color": color.to_string(**util.GENERIC)
             }
             template_vars['outputs'] = outputs
 
