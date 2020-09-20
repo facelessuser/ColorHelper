@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide.css import colorcss_match, colorcss
+from coloraide.css import Color
 import threading
 from time import time, sleep
 import re
@@ -131,8 +131,8 @@ class ChPreview:
 
         if source and scope:
             # Get preview element colors
-            out_of_gamut = colorcss("transparent").to_string(**util.HEX)
-            out_of_gamut_border = colorcss(view.style().get('redish', "red")).to_string(**util.HEX)
+            out_of_gamut = Color("transparent").to_string(**util.HEX)
+            out_of_gamut_border = Color(view.style().get('redish', "red")).to_string(**util.HEX)
             gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
 
             # Find the colors
@@ -142,7 +142,7 @@ class ChPreview:
             for m in RE_COLOR_START.finditer(source):
                 # Test if we have found a valid color
                 start = m.start()
-                obj = colorcss_match(source, start=start)
+                obj = Color.match(source, start=start)
                 if obj is not None:
                     src_start = visible_region.begin() + obj.start
                     src_end = visible_region.begin() + obj.end
@@ -172,7 +172,7 @@ class ChPreview:
                     continue
 
                 # Calculate a reasonable border color for our image at this location and get color strings
-                hsl = colorcss(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
+                hsl = Color(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
                 hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
                 preview_border = hsl.convert("srgb").to_string(**util.HEX)
                 color = obj.color
@@ -273,7 +273,7 @@ class ChPreview:
                         approx_color_end = view.size()
                     text = view.substr(sublime.Region(approx_color_start, approx_color_end))
 
-                    obj = colorcss_match(text, color_start) is not None
+                    obj = Color.match(text, color_start) is not None
                     if (
                         obj is not None or
                         approx_color_start + obj.start != color_start or

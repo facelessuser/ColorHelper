@@ -75,12 +75,12 @@
     // If a there is no rule for the current file, any insert will use
     // the generic output options below.
     "generic_output": [
-        {"space": "srgb", "options": {"options": {"hex": true}}},
-        {"space": "srgb", "options": {"options": {"comma": true}, "precision": 0}},
-        {"space": "hsl", "options": {"options": {"comma": true}, "precision": 0}},
-        {"space": "hwb", "options": {"options": {"comma": false}, "precision": 0}},
-        {"space": "lch", "options": {"options": {"comma": false}, "precision": 0}},
-        {"space": "lab", "options": {"options": {"comma": false}, "precision": 0}}
+        {"space": "srgb", "format": {"options": {"hex": true}}},
+        {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+        {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+        {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+        {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+        {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
     ],
 
     // Scanning rules
@@ -166,8 +166,8 @@
                 "source.scss"
             ],
             "output_options": [
-                {"space": "srgb", "options": {"alpha": false, "comma": true, "scale": 3}},
-                {"space": "srgb", "options": {"hex_code": true}},
+                {"space": "srgb", "format": {"alpha": false, "comma": true, "scale": 3}},
+                {"space": "srgb", "format": {"hex_code": true}},
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
@@ -195,12 +195,12 @@
                 "source.sass -comment -string -support.type.property-name -variable.declaration"
             ],
             "output_options": [
-                {"space": "srgb", "options": {"options": {"hex": true}}},
-                {"space": "srgb", "options": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "options": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "options": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "options": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "options": {"options": {"comma": false}, "precision": 0}}
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
             "extensions": [],
             "allowed_colors": ["css4"],
@@ -222,12 +222,12 @@
                 "source.postcss meta.property-list.css.postcss -comment -string"
             ],
             "output_options": [
-                {"space": "srgb", "options": {"options": {"hex": true}}},
-                {"space": "srgb", "options": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "options": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "options": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "options": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "options": {"options": {"comma": false}, "precision": 0}}
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
             "extensions": [],
             "allowed_colors": ["css4"],

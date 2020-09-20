@@ -3,10 +3,10 @@ import mdpopups
 from . import color_helper_util as util
 from .color_helper_util import GENERIC, HEX, HEX_NA
 from .multiconf import get as qualify_settings
-from coloraide.css import colorcss
+from coloraide.css import Color
 from collections import namedtuple
 
-SPACER = colorcss("transparent").to_string(**HEX)
+SPACER = Color("transparent").to_string(**HEX)
 
 
 class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'])):
@@ -26,11 +26,11 @@ class _ColorBoxMixin:
         """Setup_image_border."""
 
         # Calculate border color for images
-        border_color = colorcss(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
+        border_color = Color(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
         border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
         self.default_border = border_color.convert("srgb").to_string(**HEX)
-        self.out_of_gamut = colorcss("transparent").to_string(**HEX)
-        self.out_of_gamut_border = colorcss(self.view.style().get('redish', "red")).to_string(**HEX)
+        self.out_of_gamut = Color("transparent").to_string(**HEX)
+        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**HEX)
 
     def get_spacer(self, width=1, height=1):
         """Get a spacer."""

@@ -8,7 +8,7 @@ import sublime
 import sublime_plugin
 import mdpopups
 from mdpopups import colorbox
-from coloraide.css import colorcss
+from coloraide.css import Color
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorBoxMixin
@@ -34,7 +34,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         self.on_done = on_done
         self.on_cancel = on_cancel
         self.template_vars = {}
-        color = colorcss(color)
+        color = Color(color)
         self.setup_image_border()
         self.setup_sizes()
         self.height_big = int(self.height + self.height / 4)
@@ -87,7 +87,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being dark than the last.
             # Each column will progress through hues.
-            color = colorcss("hsl(0 {}% 90%)".format(s))
+            color = Color("hsl(0 {}% 90%)".format(s))
             hfac = 24.0
             lfac = 8.0
             check_size = self.check_size(self.height)
@@ -136,7 +136,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
 
             # Generate a grayscale bar.
             lfac = 10.0
-            color = colorcss('hsl(0 0% 100%)')
+            color = Color('hsl(0 0% 100%)')
             check_size = self.check_size(self.height)
             for y in range(0, 11):
                 value = color.convert("srgb").to_string(**HEX)
@@ -191,7 +191,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2hex_map):
-            color = colorcss(name)
+            color = Color(name)
 
             html.append(
                 '[%s](%s) %s<br>' % (
@@ -312,7 +312,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                         clone.to_string(**GENERIC)
                     )
                 )
-            clone.mutate(self.color)
+            clone.update(self.color)
             mn += minimum
             count -= 1
         html += reversed(temp)
@@ -329,7 +329,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         count = 12
         mx = maximum
 
-        clone.mutate(self.color)
+        clone.update(self.color)
         while count:
             coord = getattr(clone, color_filter) + mx
             setattr(clone, color_filter, coord)
@@ -363,7 +363,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                         clone.to_string(**GENERIC)
                     )
                 )
-            clone.mutate(self.color)
+            clone.update(self.color)
             mx += maximum
             count -= 1
         html.append('</span><br>')

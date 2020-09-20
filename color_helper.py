@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide.css import SRGB, colorcss_match, colorcss
+from coloraide.css import Color
 import re
 import mdpopups
 from . import color_helper_util as util
@@ -295,7 +295,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
 
         color_box = []
         for color in color_list[:5]:
-            c = colorcss(color)
+            c = Color(color)
             preview = self.get_preview(c)
             color_box.append(preview.preview2)
 
@@ -321,7 +321,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         width = self.width * 2
         check_size = self.check_size(height)
         for f in color_list:
-            color = colorcss(f)
+            color = Color(f)
             if count != 0 and (count % 8 == 0):
                 colors.append('\n\n')
             elif count != 0:
@@ -415,7 +415,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             output_options = rules.get('output_options')
             outputs = []
             for output in output_options:
-                value = color.convert(output["space"]).to_string(**output["options"])
+                value = color.convert(output["space"]).to_string(**output["format"])
                 outputs.append(
                     (
                         util.encode_color(value),
@@ -430,7 +430,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         """Show insert panel."""
 
         original = color
-        color = colorcss(color)
+        color = Color(color)
 
         sels = self.view.sel()
         if color is not None and len(sels) == 1:
@@ -443,7 +443,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 output_options = rules.get('output_options')
             outputs = []
             for output in output_options:
-                value = color.convert(output["space"]).to_string(**output["options"])
+                value = color.convert(output["space"]).to_string(**output["format"])
                 outputs.append(
                     (
                         util.encode_color(value),
@@ -496,7 +496,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         project_palettes = util.get_project_palettes(self.view.window())
 
         template_vars = {
-            "color": (colorcss(color if color else '#ffffffff').to_string()),
+            "color": (Color(color if color else '#ffffffff').to_string()),
             "show_picker_menu": show_picker,
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
@@ -651,7 +651,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             for m in RE_COLOR_START.finditer(bfr):
                 if m:
                     pos = m.start(0)
-                    obj = colorcss_match(bfr, start=pos)
+                    obj = Color.match(bfr, start=pos)
                     if obj is not None:
                         pos = obj.end
                         if ref >= obj.start and ref < obj.end:
@@ -725,14 +725,13 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = colorcss("white").to_string(**util.GENERIC)
+                color = Color("white").to_string(**util.GENERIC)
             else:
                 color = obj.color.to_string(**util.GENERIC)
             self.color_picker(color)
         elif mode == "color_picker_result":
             self.show_insert(color, '__color_picker__')
         elif mode == "info":
-            print('info')
             self.no_info = False
             self.no_palette = False
             self.show_color_info()

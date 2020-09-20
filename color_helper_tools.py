@@ -1,6 +1,6 @@
 import sublime
 import sublime_plugin
-from coloraide.css import colorcss
+from coloraide.css import Color
 import mdpopups
 from .multiconf import get as qualify_settings
 from . import color_helper_util as util
@@ -63,7 +63,7 @@ class ColorInputHandler(_ColorInputHandler):
         """Preview."""
 
         try:
-            color = colorcss(color)
+            color = Color(color)
             if color is None:
                 return ""
 
@@ -101,7 +101,7 @@ class ColorInputHandler(_ColorInputHandler):
         """Validate."""
 
         try:
-            color = colorcss(color)
+            color = Color(color)
             return color is not None
         except Exception:
             return False
