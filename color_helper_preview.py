@@ -25,7 +25,7 @@ PREVIEW_IMG = (
 
 PREVIEW_BORDER_SIZE = 1
 
-RE_COLOR_START = re.compile(r"(?i)(?:\bcolor\(|\bhsla?\(|\bgray\(|\blch\(|\blab\(|\bhwb\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#|\brgba?\()")
+RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
 reload_flag = False
 ch_last_updated = None
@@ -134,15 +134,19 @@ class ChPreview:
             out_of_gamut = Color("transparent").to_string(**util.HEX)
             out_of_gamut_border = Color(view.style().get('redish', "red")).to_string(**util.HEX)
             gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
+            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
+
+            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
 
             # Find the colors
             colors = []
             start = 0
             end = len(source)
-            for m in RE_COLOR_START.finditer(source):
+            for m in color_trigger.finditer(source):
                 # Test if we have found a valid color
                 start = m.start()
-                obj = Color.match(source, start=start)
+                obj = ColorClass.match(source, start=start)
                 if obj is not None:
                     src_start = visible_region.begin() + obj.start
                     src_end = visible_region.begin() + obj.end
@@ -175,7 +179,7 @@ class ChPreview:
                 hsl = Color(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
                 hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
                 preview_border = hsl.convert("srgb").to_string(**util.HEX)
-                color = obj.color
+                color = Color(obj.color)
                 title = ''
                 if not color.in_gamut("srgb"):
                     title = ' title="Out of gamut"'
@@ -391,8 +395,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
         incomplete_scopes = []
         allowed_colors = set()
         space_separator_syntax = set()
-        use_hex_argb = False
-        compress_hex = False
 
         for rule in rules:
             results = []
@@ -423,23 +425,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if False not in results:
                 scan_scopes += rule.get("scan_scopes", [])
                 incomplete_scopes += rule.get("scan_completion_scopes", [])
-                for color in rule.get("allowed_colors", []):
-                    if color in ("css3", "css4", "L4"):
-                        if color in ("css3",):
-                            print("DEPRECATED: '{}' specifier is deprecated, please use 'css4'".format(color))
-                        for c in util.LEVEL4:
-                            allowed_colors.add(c)
-                    elif color == "all":
-                        for c in util.ALL:
-                            allowed_colors.add(c)
-                    else:
-                        allowed_colors.add(color)
                 outputs = rule.get("output_options", [])
-                if not use_hex_argb and rule.get("use_hex_argb", False):
-                    use_hex_argb = True
-                if not compress_hex and rule.get("compress_hex_output", False):
-                    compress_hex = True
+                colorclass = rule.get("color_class", "coloraide.css.Color")
+                color_trigger = rule.get("color_trigger", RE_COLOR_START)
                 break
+
         if scan_scopes or incomplete_scopes:
             view.settings().set(
                 'color_helper.scan',
@@ -447,13 +437,12 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "enabled": True,
                     "scan_scopes": scan_scopes,
                     "scan_completion_scopes": incomplete_scopes,
-                    "allowed_colors": list(allowed_colors),
-                    "use_hex_argb": use_hex_argb,
-                    "compress_hex_output": compress_hex,
                     "current_ext": ext,
                     "current_syntax": syntax,
                     "last_updated": ch_last_updated,
-                    "output_options": outputs
+                    "output_options": outputs,
+                    "color_class": colorclass,
+                    "color_trigger": color_trigger
                 }
             )
         else:
@@ -476,26 +465,35 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Check if an update should be performed."""
 
         force_update = False
-        color_palette_initialized = view.settings().get('color_helper.file_palette', None) is not None
         rules = view.settings().get('color_helper.scan', None)
-        if not color_palette_initialized:
-            force_update = True
-        elif rules:
+        if rules:
             last_updated = rules.get('last_updated', None)
             if last_updated is None or last_updated < ch_last_updated:
+                print('this?')
                 force_update = True
             file_name = view.file_name()
             ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
             old_ext = rules.get('current_ext')
             if ext is None or ext != old_ext:
+                print('this2?')
                 force_update = True
             syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
             old_syntax = rules.get("current_syntax")
             if old_syntax is None or old_syntax != syntax:
+                print('this3?')
                 force_update = True
         else:
+            print('this4?')
             force_update = True
         return force_update
+
+    def on_activated(self, view):
+        """On activated."""
+
+        if self.should_update(view):
+            view.settings().erase('color_helper.preview_meta')
+            view.erase_phantoms('color_helper')
+            self.set_file_scan_rules(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
@@ -505,8 +503,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 view.settings().erase('color_helper.preview_meta')
             return
 
-        s = sublime.load_settings('color_helper.sublime-settings')
-        show_current_palette = s.get('enable_current_file_palette', True)
         if self.should_update(view):
             view.settings().erase('color_helper.preview_meta')
             view.erase_phantoms('color_helper')
@@ -559,6 +555,7 @@ def setup_previews():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
             v.settings().erase('color_helper.preview_meta')
+            v.settings().erase('color_helper.scan')
             v.erase_phantoms('color_helper')
     unloading = False
 

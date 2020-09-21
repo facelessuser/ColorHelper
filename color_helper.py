@@ -15,7 +15,7 @@ import traceback
 from html.parser import HTMLParser
 from .color_helper_mixin import _ColorBoxMixin
 
-RE_COLOR_START = re.compile(r"(?i)(?:\bcolor\(|\bhsla?\(|\bgray\(|\blch\(|\blab\(|\bhwb\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#|\brgba?\()")
+RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
 __pc_name__ = "ColorHelper"
 
@@ -409,22 +409,19 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             message
         )
 
-        show_conversions = s.get('enable_color_conversions', True)
-        if show_conversions:
-
-            output_options = rules.get('output_options')
-            outputs = []
-            for output in output_options:
-                value = color.convert(output["space"]).to_string(**output["format"])
-                outputs.append(
-                    (
-                        util.encode_color(value),
-                        value
-                    )
+        output_options = rules.get('output_options')
+        outputs = []
+        for output in output_options:
+            value = color.convert(output["space"]).to_string(**output["format"])
+            outputs.append(
+                (
+                    util.encode_color(value),
+                    value
                 )
+            )
 
-            template_vars['outputs'] = outputs
-            template_vars['show_conversions'] = True
+        template_vars['outputs'] = outputs
+        template_vars['show_conversions'] = True
 
     def show_insert(self, color, dialog_type, palette_name=None, update=False):
         """Show insert panel."""
@@ -438,12 +435,17 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
 
             if rules is None:
                 ch_settings = sublime.load_settings('color_helper.sublime-settings')
-                output_options = ch_settings.get('generic_output', [])
+                generic = ch_settings.get('generic_output', {})
+                module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+                output_options = generic.get('output_options', {})
             else:
+                module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
                 output_options = rules.get('output_options')
+            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
             outputs = []
+            custom = ColorClass(color)
             for output in output_options:
-                value = color.convert(output["space"]).to_string(**output["format"])
+                value = custom.convert(output["space"]).to_string(**output["format"])
                 outputs.append(
                     (
                         util.encode_color(value),
@@ -645,18 +647,30 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
                 end = visible.end()
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
+
             rules = util.get_rules(self.view)
-            # use_hex_argb = rules.get("use_hex_argb", False) if rules else False
-            # allowed_colors = rules.get('allowed_colors', []) if rules else util.ALL
-            for m in RE_COLOR_START.finditer(bfr):
+            if rules is None:
+                ch_settings = sublime.load_settings('color_helper.sublime-settings')
+                generic = ch_settings.get('generic_output', {})
+                module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+                output_options = generic.get('output_options', {})
+                color_trigger = re.compile(generic.get('color_trigger', RE_COLOR_START))
+            else:
+                module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+                output_options = rules.get('output_options')
+                color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
+            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
+
+            for m in color_trigger.finditer(bfr):
                 if m:
                     pos = m.start(0)
-                    obj = Color.match(bfr, start=pos)
+                    obj = ColorClass.match(bfr, start=pos)
                     if obj is not None:
                         pos = obj.end
                         if ref >= obj.start and ref < obj.end:
                             obj.start = start + obj.start
                             obj.end = start + obj.end
+                            obj.color = Color(obj.color)
                             color = obj
                             break
         return color

@@ -40,11 +40,6 @@ ADD_CSS = dedent(
 
 WRAPPER_CLASS = "color-helper content"
 
-LEVEL4 = (
-    "webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla",
-    "hwb", "hwba", "gray", "graya", "hexa", "hexa_compressed"
-)
-ALL = LEVEL4
 
 
 def encode_color(color):
