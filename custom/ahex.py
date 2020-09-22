@@ -15,8 +15,6 @@ class ASRGB(SRGB):
         """Match a CSS color string."""
 
         m = cls.MATCH.match(string, start)
-        print('-----match')
-        print(m)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             return cls.split_channels(m.group(0)), m.end(0)
         return None, None
@@ -24,9 +22,6 @@ class ASRGB(SRGB):
     @classmethod
     def split_channels(cls, color):
         """Split channels."""
-
-        print('----split---')
-        print(color)
 
         return (
             cls.tx_channel(0, "#" + color[3:5]),

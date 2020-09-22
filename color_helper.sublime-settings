@@ -182,6 +182,7 @@
             // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
             "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
             "syntax_filter": "allowlist",
+            // "color_class": "ColorHelper.custom.ahex.ColorAhex",
             "base_scopes": [
                 "source.postcss"
             ],

@@ -13,7 +13,8 @@ from . import color_helper_util as util
 from .multiconf import get as qualify_settings
 import traceback
 from html.parser import HTMLParser
-from .color_helper_mixin import _ColorBoxMixin
+from .color_helper_mixin import _ColorMixin
+import importlib
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
@@ -28,7 +29,7 @@ BORDER_SIZE = 1
 ###########################
 # Main Code
 ###########################
-class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
+class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     """Color Helper command object."""
 
     html_parser = HTMLParser()
@@ -441,7 +442,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             else:
                 module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
                 output_options = rules.get('output_options')
-            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
+            ColorClass = ColorClass = getattr(importlib.import_module(module), color_class)
             outputs = []
             custom = ColorClass(color)
             for output in output_options:
@@ -648,23 +649,10 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             bfr = self.view.substr(sublime.Region(start, end))
             ref = point - start
 
-            rules = util.get_rules(self.view)
-            if rules is None:
-                ch_settings = sublime.load_settings('color_helper.sublime-settings')
-                generic = ch_settings.get('generic_output', {})
-                module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-                output_options = generic.get('output_options', {})
-                color_trigger = re.compile(generic.get('color_trigger', RE_COLOR_START))
-            else:
-                module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-                output_options = rules.get('output_options')
-                color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
-            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
-
-            for m in color_trigger.finditer(bfr):
+            for m in self.color_trigger.finditer(bfr):
                 if m:
                     pos = m.start(0)
-                    obj = ColorClass.match(bfr, start=pos)
+                    obj = self.custom_color_class.match(bfr, start=pos)
                     if obj is not None:
                         pos = obj.end
                         if ref >= obj.start and ref < obj.end:
@@ -722,6 +710,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
         self.setup_image_border()
         self.setup_sizes()
         self.setup_gamut_style()
+        self.setup_color_class()
         self.palette_w = self.width * 2
         self.color_picker_package = False
         # use_color_picker_package = s.get('use_color_picker_package', False)
@@ -753,6 +742,7 @@ class ColorHelperCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
     def is_enabled(self, mode, palette_name=None, color=None, auto=False):
         """Check if command is enabled."""
 
+        self.setup_color_class()
         s = sublime.load_settings('color_helper.sublime-settings')
         return bool(
             (mode == "info" and self.get_cursor_color() is not None) or

@@ -15,6 +15,7 @@ import mdpopups
 from . import color_helper_util as util
 import traceback
 from .multiconf import get as qualify_settings
+import importlib
 
 PREVIEW_IMG = (
     '<style>'
@@ -137,7 +138,7 @@ class ChPreview:
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
             color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
 
-            ColorClass = getattr(__import__(module, fromlist=[color_class]), color_class)
+            ColorClass = getattr(importlib.import_module(module), color_class)
 
             # Find the colors
             colors = []
@@ -469,21 +470,17 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if rules:
             last_updated = rules.get('last_updated', None)
             if last_updated is None or last_updated < ch_last_updated:
-                print('this?')
                 force_update = True
             file_name = view.file_name()
             ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
             old_ext = rules.get('current_ext')
             if ext is None or ext != old_ext:
-                print('this2?')
                 force_update = True
             syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
             old_syntax = rules.get("current_syntax")
             if old_syntax is None or old_syntax != syntax:
-                print('this3?')
                 force_update = True
         else:
-            print('this4?')
             force_update = True
         return force_update
 

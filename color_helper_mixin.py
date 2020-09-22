@@ -5,6 +5,8 @@ from .color_helper_util import GENERIC, HEX, HEX_NA
 from .multiconf import get as qualify_settings
 from coloraide.css import Color
 from collections import namedtuple
+import re
+import importlib
 
 SPACER = Color("transparent").to_string(**HEX)
 
@@ -13,7 +15,7 @@ class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'
     """Preview."""
 
 
-class _ColorBoxMixin:
+class _ColorMixin:
     """Color box mixin class."""
 
     def setup_gamut_style(self):
@@ -31,6 +33,26 @@ class _ColorBoxMixin:
         self.default_border = border_color.convert("srgb").to_string(**HEX)
         self.out_of_gamut = Color("transparent").to_string(**HEX)
         self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**HEX)
+
+    def setup_color_class(self):
+        """Get the color class for the view."""
+
+        rules = util.get_rules(self.view)
+        if rules is None:
+            ch_settings = sublime.load_settings('color_helper.sublime-settings')
+            generic = ch_settings.get('generic_output', {})
+            module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            self.output_options = generic.get('output_options', {})
+            self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))
+        else:
+            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            self.output_options = rules.get('output_options')
+            self.color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
+        self.color_class = Color
+        try:
+            self.custom_color_class = getattr(importlib.import_module(module), color_class)
+        except Exception as e:
+            self.custom_color_class = self.color_class
 
     def get_spacer(self, width=1, height=1):
         """Get a spacer."""

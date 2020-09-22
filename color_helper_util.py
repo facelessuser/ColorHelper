@@ -10,6 +10,8 @@ import platform
 import mdpopups
 import base64
 
+RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
+
 GENERIC = {"options": {"color": True}}
 HEX = {"options": {"hex": True}}
 HEX_NA = {"options": {"hex": True}, "alpha": False}

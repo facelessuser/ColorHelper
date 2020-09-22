@@ -11,7 +11,7 @@ from mdpopups import colorbox
 from coloraide.css import Color
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
-from .color_helper_mixin import _ColorBoxMixin
+from .color_helper_mixin import _ColorMixin
 from .color_helper_util import GENERIC, HEX, HEX_NA
 import copy
 
@@ -25,7 +25,7 @@ last_saturation = None
 BORDER_SIZE = 1
 
 
-class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
+class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
     """Experimental color picker."""
 
     def setup(self, color, mode, on_done, on_cancel):
@@ -428,7 +428,7 @@ class ColorHelperPickerCommand(_ColorBoxMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_edit',
                 {
-                    "initial": color, "on_done": on_done, "on_cancel": on_cancel
+                    "initial": Color(color).to_string(), "on_done": on_done, "on_cancel": on_cancel
                 }
             )
 
