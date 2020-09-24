@@ -145,6 +145,10 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # Get the rules and use them to get the needed scopes.
         # The scopes will be used to get the searchable regions.
         rules = util.get_rules(self.view)
+        # Bail if this if this view has no valid rule or scanning is disabled.
+        if rules is None or not rules.get("enabled", False) or not rules.get("allow_scanning", True):
+            return
+        # Get the scan scopes
         scope = util.get_scope(self.view, rules, skip_sel_check=True)
 
         if show_preview and source and scope:
@@ -424,25 +428,32 @@ class ColorHelperListener(sublime_plugin.EventListener):
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
         s = sublime.load_settings('color_helper.sublime-settings')
-        rules = s.get("color_scanning", [])
+        rules = s.get("color_rules", [])
         syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
-        scan_scopes = []
 
         # Check if view meets critera for on of our rule sets
+        matched = False
         for rule in rules:
             results = []
 
-            base_scopes = rule.get("base_scopes", [])
+            # Check if enabled.
+            if not rule.get("enabled", True):
+                continue
 
-            if not base_scopes:
-                results.append(True)
-            else:
+            # Does the base scope match?
+            passed = True
+            base_scopes = rule.get("base_scopes", [])
+            if base_scopes:
+                passed = False
                 results.append(False)
                 for base in rule.get("base_scopes", []):
                     if view.score_selector(0, base):
-                        results[-1] = True
+                        passed = True
                         break
+            if not passed:
+                continue
 
+            # Does the syntax match?
             syntax_files = rule.get("syntax_files", [])
             syntax_filter = rule.get("syntax_filter", "allowlist")
             syntax_okay = bool(
@@ -451,34 +462,41 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     (syntax_filter == "blocklist" and syntax not in syntax_files)
                 )
             )
-            results.append(syntax_okay)
+            if not syntax_okay:
+                continue
 
+            # Does the extension match?
             extensions = [e.lower() for e in rule.get("extensions", [])]
-            results.append(True if not extensions or (ext is not None and ext in extensions) else False)
+            passed = not extensions or (ext is not None and ext in extensions)
+            if not passed:
+                continue
 
-            if False not in results:
-                scan_scopes += rule.get("scan_scopes", [])
-                outputs = rule.get("output_options", [])
-                colorclass = rule.get("color_class", "coloraide.css.Color")
-                color_trigger = rule.get("color_trigger", RE_COLOR_START)
-                break
+            # Gather options if rule matches
+            scan_scopes = rule.get("scan_scopes", [])
+            allow_scanning = rule.get("allow_scanning", True) and scan_scopes
+            outputs = rule.get("output_options", [])
+            colorclass = rule.get("color_class", "coloraide.css.Color")
+            color_trigger = rule.get("color_trigger", RE_COLOR_START)
+            matched = True
+            break
 
         # Couldn't find any explicit options, so associate a generic  option set to allow basic functionality..
-        if not scan_scopes:
+        if not matched:
             generic =  s.get("generic", {})
-            if generic.get("allow_scanning", False):
-                scan_scopes += generic.get("scan_scopes", [])
-            if scan_scopes:
-                color_trigger = rule.get("color_trigger", RE_COLOR_START)
-                outputs = rule.get("output_options", [])
-                colorclass = rule.get("color_class", "coloraide.css.Color")
+            scan_scopes = generic.get("scan_scopes", [])
+            allow_scanning = generic.get("allow_scanning", True) and scan_scopes
+            outputs = generic.get("output_options", [])
+            colorclass = generic.get("color_class", "coloraide.css.Color")
+            color_trigger = generic.get("color_trigger", RE_COLOR_START)
+            matched = True
 
         # Add user configuration
-        if scan_scopes:
+        if matched:
             view.settings().set(
                 'color_helper.scan',
                 {
                     "enabled": True,
+                    "allow_scanning": allow_scanning,
                     "scan_scopes": scan_scopes,
                     "current_ext": ext,
                     "current_syntax": syntax,
