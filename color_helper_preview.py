@@ -63,9 +63,8 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         self.view.sel().clear()
         for k, v in self.previews.items():
             if href == v.timestamp:
-                phantoms = self.view.query_phantom(v.pid)
-                if phantoms:
-                    pt = phantoms[0].begin()
+                phantom = self.view.query_phantom(v.pid)
+                if phantom:
                     self.view.sel().add(sublime.Region(int(v.start)))
                     self.view.run_command('color_helper', {"mode": "info"})
                 break
@@ -76,8 +75,8 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # Calculate size of preview boxes
         settings = self.view.settings()
         size_offset = int(qualify_settings(ch_settings, 'inline_preview_offset', 0))
-        top_pad = self.view.settings().get('line_padding_top', 0)
-        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
+        top_pad = settings.get('line_padding_top', 0)
+        bottom_pad = settings.get('line_padding_bottom', 0)
         # Sometimes we strangely get None
         if top_pad is None:
             top_pad = 0
@@ -162,16 +161,15 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
             # Get custom color class
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-            ColorClass = getattr(importlib.import_module(module), color_class)
+            color_class = getattr(importlib.import_module(module), color_class)
 
             # Find the colors
             colors = []
             start = 0
-            end = len(source)
             for m in color_trigger.finditer(source):
                 # Test if we have found a valid color
                 start = m.start()
-                obj = ColorClass.match(source, start=start)
+                obj = color_class.match(source, start=start)
                 if obj is not None:
                     # Calculate visible viewport
                     src_start = visible_region.begin() + obj.start
@@ -205,9 +203,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     value = self.view.score_selector(src_start, scope)
                     if not value:
                         continue
-
-                    # Looks good!
-                    text = source[obj.start:obj.end]
                 else:
                     continue
 
@@ -342,8 +337,8 @@ class ChPreviewThread(threading.Thread):
         if w is not None:
             wid = w.id()
         this_scroll = (wid, vid)
-        if self.last_view != (wid, vid):
-            self.last_view = (wid, vid)
+        if self.last_view != this_scroll:
+            self.last_view = this_scroll
             self.scroll = True
         elif view.visible_region() != self.scroll_view:
             self.scroll = True
@@ -482,7 +477,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
         # Couldn't find any explicit options, so associate a generic  option set to allow basic functionality..
         if not matched:
-            generic =  s.get("generic", {})
+            generic = s.get("generic", {})
             scan_scopes = generic.get("scan_scopes", [])
             allow_scanning = generic.get("allow_scanning", True) and scan_scopes
             outputs = generic.get("output_options", util.DEF_OUTPUT)

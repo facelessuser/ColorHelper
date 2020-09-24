@@ -7,14 +7,11 @@ License: MIT
 import sublime
 import sublime_plugin
 from coloraide.css import Color
-import re
 import mdpopups
 from . import color_helper_util as util
-from .multiconf import get as qualify_settings
-import traceback
 from html.parser import HTMLParser
 from .color_helper_mixin import _ColorMixin
-import importlib
+
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
@@ -639,8 +636,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Get cursor color."""
 
         color = None
-        alpha = None
-        alpha_dec = None
         sels = self.view.sel()
         if (len(sels) == 1 and sels[0].size() == 0):
             point = sels[0].begin()
@@ -708,7 +703,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def run(self, edit, mode, palette_name=None, color=None):
         """Run the specified tooltip."""
 
-        s = sublime.load_settings('color_helper.sublime-settings')
         self.setup_image_border()
         self.setup_sizes()
         self.setup_gamut_style()

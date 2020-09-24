@@ -1,8 +1,8 @@
+"""Color Helper tools."""
 import sublime
 import sublime_plugin
 from coloraide.css import Color
 import mdpopups
-from .multiconf import get as qualify_settings
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorMixin
 import copy
@@ -132,7 +132,6 @@ def evaluate(string):
 
     try:
         color = string.strip()
-        length = len(color)
         second = None
         percent = None
         space = None
@@ -200,15 +199,11 @@ def evaluate_contrast(string):
 
     try:
         color = string.strip()
-        length = len(color)
         second = None
-        percent = None
-        space = None
 
         # Try to capture the color or the two colors to mix
         first, more = parse_color_contrast(color)
         if first and more is not None:
-            percent2 = None
             if more is False:
                 first = None
             else:
@@ -333,7 +328,7 @@ class ColorInputHandler(_ColorInputHandler):
                     color.to_string()
                 )
             return sublime.Html(html)
-        except Exception as e:
+        except Exception:
             import traceback
             print(traceback.format_exc())
             return ""
@@ -393,7 +388,6 @@ class ColorContrastInputHandler(_ColorInputHandler):
 
             html = ""
             if len(colors) >= 3:
-                lum1 = colors[0].luminance()
                 lum2 = colors[1].luminance()
                 lum3 = colors[2].luminance()
                 if len(colors) > 3:
@@ -418,7 +412,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
                     Color(colors[1]).to_string(options={"comma": True})
                 )
             return sublime.Html(html)
-        except Exception as e:
+        except Exception:
             import traceback
             print(traceback.format_exc())
             return ""
@@ -459,7 +453,7 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
             args['color'] = color.to_string(**util.GENERIC)
             self.view.run_command(call, args)
 
-    def input(self, kwargs):
+    def input(self, kwargs):  # noqa: A003
         """Input."""
 
         return ColorInputHandler(self.view, **kwargs)
@@ -488,7 +482,7 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
             args['color'] = color.to_string(**util.GENERIC)
             self.view.run_command(call, args)
 
-    def input(self, kwargs):
+    def input(self, kwargs):  # noqa: A003
         """Input."""
 
         return ColorContrastInputHandler(self.view, **kwargs)

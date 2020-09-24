@@ -1,7 +1,8 @@
+"""Mix-in class."""
 import sublime
 import mdpopups
 from . import color_helper_util as util
-from .color_helper_util import GENERIC, HEX, HEX_NA
+from .color_helper_util import HEX, HEX_NA
 from .multiconf import get as qualify_settings
 from coloraide.css import Color
 from collections import namedtuple
@@ -51,7 +52,7 @@ class _ColorMixin:
         self.color_class = Color
         try:
             self.custom_color_class = getattr(importlib.import_module(module), color_class)
-        except Exception as e:
+        except Exception:
             self.custom_color_class = self.color_class
 
     def get_spacer(self, width=1, height=1):

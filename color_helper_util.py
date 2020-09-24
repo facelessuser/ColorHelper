@@ -53,7 +53,6 @@ DEF_OUTPUT = [
 ]
 
 
-
 def encode_color(color):
     """Encode color into base64 for url links."""
 
