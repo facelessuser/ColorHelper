@@ -61,7 +61,6 @@ class ChPreview:
                 if phantoms:
                     pt = phantoms[0].begin()
                     view.sel().add(sublime.Region(int(pt) if preview_is_on_left() else int(pt) - int(v[1])))
-                    view.settings().set('color_helper.no_auto', True)
                     view.run_command('color_helper', {"mode": "info"})
                 break
 
@@ -346,9 +345,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
         rules = s.get("color_scanning", [])
         syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
         scan_scopes = []
-        incomplete_scopes = []
-        allowed_colors = set()
-        space_separator_syntax = set()
 
         for rule in rules:
             results = []
@@ -378,19 +374,17 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
             if False not in results:
                 scan_scopes += rule.get("scan_scopes", [])
-                incomplete_scopes += rule.get("scan_completion_scopes", [])
                 outputs = rule.get("output_options", [])
                 colorclass = rule.get("color_class", "coloraide.css.Color")
                 color_trigger = rule.get("color_trigger", RE_COLOR_START)
                 break
 
-        if scan_scopes or incomplete_scopes:
+        if scan_scopes:
             view.settings().set(
                 'color_helper.scan',
                 {
                     "enabled": True,
                     "scan_scopes": scan_scopes,
-                    "scan_completion_scopes": incomplete_scopes,
                     "current_ext": ext,
                     "current_syntax": syntax,
                     "last_updated": ch_last_updated,
@@ -409,11 +403,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "last_updated": ch_last_updated
                 }
             )
-            view.settings().set('color_helper.file_palette', [])
-            if not unloading and ch_preview_thread is not None:
-                view.settings().add_on_change(
-                    'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
-                )
+        if not unloading and ch_preview_thread is not None:
+            view.settings().clear_on_change('color_helper.reload')
+            view.settings().add_on_change(
+                'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
+            )
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -427,7 +421,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             file_name = view.file_name()
             ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
             old_ext = rules.get('current_ext')
-            if ext is None or ext != old_ext:
+            if ext != old_ext:
                 force_update = True
             syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
             old_syntax = rules.get("current_syntax")

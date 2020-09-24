@@ -786,7 +786,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     s.get('enable_global_user_palettes', True) or
                     s.get('enable_project_user_palettes', True) or
                     s.get('enable_favorite_palette', True) or
-                    s.get('enable_current_file_palette', True) or
                     s.get('enable_project_palette', True)
                 )
             ) or
