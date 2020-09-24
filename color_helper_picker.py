@@ -271,7 +271,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Get color channel."""
 
         html = []
-        html.append('<span class="channel"><a href="hirespick:%s">%s:</a>' % (color_filter, label))
+        html.append('<span class="channel"><a href="__hirespick__:%s">%s:</a>' % (color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
@@ -375,35 +375,36 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         hires = None
         colornames = False
         mode = self.mode
-        if href in ('hsl', 'srgb', 'hwb'):
+        if href.startswith('__space__'):
             # If we received a color space switch to that picker.
-            color = self.color.convert(href).to_string(**GENERIC)
-            mode = href
-        elif href.startswith('insert'):
+            space = href.split(':')[1]
+            color = self.color.convert(space).to_string(**GENERIC)
+            mode = space
+        elif href.startswith('__insert__'):
             # We will need to call the insert dialog
             color = href.split(':')[1]
-        elif href.startswith('hirespick'):
+        elif href.startswith('__hirespick__'):
             # We need to open a high resolution channel picker
             hires = href.split(':')[1]
             color = self.color.to_string(**GENERIC)
-        elif href == "colornames":
+        elif href == "__colornames__":
             # We need to open the color name picker
             color = self.color.to_string(**GENERIC)
             colornames = True
-        elif href in ('edit', 'contrast'):
+        elif href in ('__edit__', '__contrast__'):
             # We want to edit the color
             color = self.color.to_string(**GENERIC)
         else:
             # Process we need to update the current color
             color = href
-        if href == 'cancel':
+        if href == '__cancel__':
             # Close color picker and call the callback if one was provided
             mdpopups.hide_popup(self.view)
             if self.on_cancel is not None:
                 call = self.on_cancel.get('command', 'color_helper')
                 args = self.on_cancel.get('args', {})
                 self.view.run_command(call, args)
-        elif href in ('edit', 'contrast'):
+        elif href in ('__edit__', '__contrast__'):
             # Edit color in edit panel
             mdpopups.hide_popup(self.view)
 
@@ -426,13 +427,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Call the edit input panel
             self.view.run_command(
-                'color_helper_edit' if href == 'edit' else 'color_helper_contrast_ratio',
+                'color_helper_edit' if href == '__edit__' else 'color_helper_contrast_ratio',
                 {
                     "initial": Color(color).to_string(), "on_done": on_done, "on_cancel": on_cancel
                 }
             )
 
-        elif href.startswith('insert'):
+        elif href.startswith('__insert__'):
             # Call back to ColorHelper to insert the color.
             mdpopups.hide_popup(self.view)
             if self.on_done is None:
@@ -480,7 +481,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         else:
             # Show the normal color picker of the specified space
             self.template_vars['picker'] = True
-            self.template_vars['cancel'] = 'cancel'
+            self.template_vars['cancel'] = '__cancel__'
             self.get_color_map_square()
             self.get_current_color()
             if self.mode == "hsl":
