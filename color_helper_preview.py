@@ -120,6 +120,12 @@ class ChPreview:
             return
         self.previous_region = visible_region
         source = view.substr(visible_region)
+        preview_on_select = ch_settings.get("preview_on_select", False)
+        show_preview = True
+        if preview_on_select and len(view.sel()) != 1:
+            show_preview = False
+        elif preview_on_select:
+            sel = view.sel()[0]
 
         # Get the current preview positions so we don't insert doubles
         preview = settings.get('color_helper.preview_meta', {})
@@ -129,7 +135,7 @@ class ChPreview:
         rules = util.get_rules(view)
         scope = util.get_scope(view, rules, skip_sel_check=True)
 
-        if source and scope:
+        if show_preview and source and scope:
             # Get preview element colors
             out_of_gamut = Color("transparent").to_string(**util.HEX)
             out_of_gamut_border = Color(view.style().get('redish', "red")).to_string(**util.HEX)
@@ -161,6 +167,8 @@ class ChPreview:
                             (bounds[1][0] <= vector_end[1] <= bounds[1][1])
                         )
                     ):
+                        continue
+                    if preview_on_select and not sublime.Region(obj.start, obj.end).intersects(sel):
                         continue
                     value = view.score_selector(src_start, scope)
                     if not value:
@@ -332,9 +340,13 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
     def on_selection_modified(self, view):
         """Flag that we need to show a tooltip."""
-
         if self.ignore_event(view):
             return
+
+        if ch_preview_thread is not None and ch_settings.get("preview_on_select", False):
+            now = time()
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = now
 
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
