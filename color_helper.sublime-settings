@@ -38,6 +38,24 @@
     "inline_previews": true,
 
     //////////////////
+    // Gamut
+    //////////////////
+
+    // When presented with an image preview that will be out of gamut,
+    // this controls how to display it. (lch-chroma|clip|none).
+    //
+    // - `lch-chroma`: while holding everything constant, chroma is reduced
+    //                 until the color is in gamut. Each step of the way,
+    //                 the color is clipped and compared to see if it is
+    //                 close enough.
+    //
+    //.- `clip`:       simple clipping.
+    //
+    // - `none`:       don't display a color at all, just show
+    //                 an indicator that the color is out of gamut.
+    "gamut_style": "lch-chroma",
+
+    //////////////////
     // Palettes
     //////////////////
 
@@ -75,7 +93,7 @@
     // single selections. If selection is empty (just a caret),
     // If the caret is at the start or within the color region, a preview
     // will also show.
-    "preview_on_select": true ,
+    "preview_on_select": false ,
 
 
     //////////////////
