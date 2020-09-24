@@ -314,6 +314,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     self.view.sel().subtract(sels[0])
                     self.view.sel().add(repl_region)
             self.view.run_command("insert", {"characters": value})
+            self.view.sel().clear()
+            self.view.sel().add(sublime.Region(obj.start))
         self.view.hide_popup()
 
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):

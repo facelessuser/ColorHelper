@@ -16,6 +16,7 @@ from . import color_helper_util as util
 import traceback
 from .multiconf import get as qualify_settings
 import importlib
+from collections import namedtuple
 
 PREVIEW_IMG = (
     '<style>'
@@ -42,46 +43,56 @@ def preview_is_on_left():
     return ch_settings.get('inline_preview_position') != 'right'
 
 
-class ChPreview:
+class ColorSwatch(namedtuple('ColorSwatch', ['start', 'end', 'pid', 'timestamp'])):
+    """Color swatch."""
+
+
+class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
     """Color Helper preview with phantoms."""
 
-    def __init__(self):
+    def __init__(self, view):
         """Setup."""
 
+        super().__init__(view)
         self.previous_region = sublime.Region(0, 0)
+        self.previews = {}
 
-    def on_navigate(self, href, view):
+    def on_navigate(self, href):
         """Handle color box click."""
 
-        view.sel().clear()
-        previews = view.settings().get('color_helper.preview_meta', {})
-        for k, v in previews.items():
-            if href == v[5]:
-                phantoms = view.query_phantom(v[4])
+        self.view.sel().clear()
+        for k, v in self.previews.items():
+            if href == v.timestamp:
+                phantoms = self.view.query_phantom(v.pid)
                 if phantoms:
                     pt = phantoms[0].begin()
-                    view.sel().add(sublime.Region(int(pt) if preview_is_on_left() else int(pt) - int(v[1])))
-                    view.run_command('color_helper', {"mode": "info"})
+                    self.view.sel().add(sublime.Region(int(v.start)))
+                    self.view.run_command('color_helper', {"mode": "info"})
                 break
 
-    def calculate_box_size(self, view):
+    def calculate_box_size(self):
         """Calculate the preview box size."""
 
         # Calculate size of preview boxes
-        settings = view.settings()
+        settings = self.view.settings()
         size_offset = int(qualify_settings(ch_settings, 'inline_preview_offset', 0))
-        top_pad = view.settings().get('line_padding_top', 0)
-        bottom_pad = view.settings().get('line_padding_bottom', 0)
+        top_pad = self.view.settings().get('line_padding_top', 0)
+        bottom_pad = self.view.settings().get('line_padding_bottom', 0)
         # Sometimes we strangely get None
         if top_pad is None:
             top_pad = 0
         if bottom_pad is None:
             bottom_pad = 0
-        box_height = util.get_line_height(view) - int(top_pad + bottom_pad) + size_offset
+        box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) + size_offset
         return box_height
 
-    def do_search(self, view, force=False):
-        """Perform the search for the highlighted word."""
+    def do_search(self, force=False):
+        """
+        Perform the search for the highlighted word.
+
+        TODO: This function is a big boy. We should look into breaking it up.
+              With that said, this is low priority.
+        """
 
         # Since the plugin has been reloaded, force update.
         global reload_flag
@@ -90,28 +101,30 @@ class ChPreview:
             force = True
 
         # Calculate size of preview boxes
-        box_height = self.calculate_box_size(view)
+        box_height = self.calculate_box_size()
         check_size = int((box_height - 2) / 4)
         if check_size < 2:
             check_size = 2
 
         # If desired preview boxes are different than current,
         # we need to reload the boxes.
-        settings = view.settings()
+        settings = self.view.settings()
         old_box_height = int(settings.get('color_helper.box_height', 0))
         current_color_scheme = settings.get('color_scheme')
-        if old_box_height != box_height or current_color_scheme != settings.get('color_helper.color_scheme', ''):
-            self.erase_phantoms(view)
+        if (
+            force or old_box_height != box_height or
+            current_color_scheme != settings.get('color_helper.color_scheme', '')
+        ):
+            self.erase_phantoms()
             settings.set('color_helper.color_scheme', current_color_scheme)
             settings.set('color_helper.box_height', box_height)
-            settings.set('color_helper.preview_meta', {})
             force = True
 
         # If we don't need to force previews,
         # quit if visible region is the same as last time
-        visible_region = view.visible_region()
-        position = view.viewport_position()
-        dimensions = view.viewport_extent()
+        visible_region = self.view.visible_region()
+        position = self.view.viewport_position()
+        dimensions = self.view.viewport_extent()
         bounds = [
             (position[0], position[0] + dimensions[0] - 1),
             (position[1], position[1] + dimensions[1] - 1)
@@ -119,30 +132,32 @@ class ChPreview:
         if not force and self.previous_region == visible_region:
             return
         self.previous_region = visible_region
-        source = view.substr(visible_region)
+        source = self.view.substr(visible_region)
+
+        # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
         show_preview = True
-        if preview_on_select and len(view.sel()) != 1:
+        if preview_on_select and len(self.view.sel()) != 1:
             show_preview = False
         elif preview_on_select:
-            sel = view.sel()[0]
-
-        # Get the current preview positions so we don't insert doubles
-        preview = settings.get('color_helper.preview_meta', {})
+            sel = self.view.sel()[0]
 
         # Get the rules and use them to get the needed scopes.
         # The scopes will be used to get the searchable regions.
-        rules = util.get_rules(view)
-        scope = util.get_scope(view, rules, skip_sel_check=True)
+        rules = util.get_rules(self.view)
+        scope = util.get_scope(self.view, rules, skip_sel_check=True)
 
         if show_preview and source and scope:
-            # Get preview element colors
+            # Get out of gamut related options
             out_of_gamut = Color("transparent").to_string(**util.HEX)
-            out_of_gamut_border = Color(view.style().get('redish', "red")).to_string(**util.HEX)
+            out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
             gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
-            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+
+            # Get triggers that identify where colors are likely
             color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
 
+            # Get custom color class
+            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
             ColorClass = getattr(importlib.import_module(module), color_class)
 
             # Find the colors
@@ -154,10 +169,14 @@ class ChPreview:
                 start = m.start()
                 obj = ColorClass.match(source, start=start)
                 if obj is not None:
+                    # Calculate visible viewport
                     src_start = visible_region.begin() + obj.start
                     src_end = visible_region.begin() + obj.end
-                    vector_start = view.text_to_layout(src_start)
-                    vector_end = view.text_to_layout(src_end)
+                    vector_start = self.view.text_to_layout(src_start)
+                    vector_end = self.view.text_to_layout(src_end)
+                    region = sublime.Region(src_start, src_end)
+
+                    # Check if within visible view
                     if not (
                         (
                             (bounds[0][0] <= vector_start[0] <= bounds[0][1]) or
@@ -168,11 +187,22 @@ class ChPreview:
                         )
                     ):
                         continue
-                    if preview_on_select and not sublime.Region(obj.start, obj.end).intersects(sel):
+
+                    # If "preview on select" is enabled, only show preview if within a selection
+                    # or if the selection as no width and the color comes right after.
+                    if (
+                        preview_on_select and
+                        not(sel.empty() and sel.begin() == region.begin()) and
+                        not region.intersects(sel)
+                    ):
                         continue
-                    value = view.score_selector(src_start, scope)
+
+                    # Check if the first point within the color matches our scope rules
+                    value = self.view.score_selector(src_start, scope)
                     if not value:
                         continue
+
+                    # Looks good!
                     text = source[obj.start:obj.end]
                 else:
                     continue
@@ -180,11 +210,12 @@ class ChPreview:
                 # Calculate point at which we which to insert preview
                 position_on_left = preview_is_on_left()
                 pt = src_start if position_on_left else src_end
-                if str(pt) in preview:
+                if str(region.begin()) in self.previews:
+                    # Already exists
                     continue
 
                 # Calculate a reasonable border color for our image at this location and get color strings
-                hsl = Color(mdpopups.scope2style(view, view.scope_name(pt))['background']).convert("hsl")
+                hsl = Color(mdpopups.scope2style(self.view, self.view.scope_name(pt))['background']).convert("hsl")
                 hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
                 preview_border = hsl.convert("srgb").to_string(**util.HEX)
                 color = Color(obj.color)
@@ -205,11 +236,9 @@ class ChPreview:
                     preview2 = srgb.to_string(**util.HEX)
 
                 # Create preview
-                start_scope = view.scope_name(src_start)
-                end_scope = view.scope_name(src_end - 1)
-                preview_id = str(time())
-                color = PREVIEW_IMG.format(
-                    preview_id,
+                timestamp = str(time())
+                html = PREVIEW_IMG.format(
+                    timestamp,
                     title,
                     mdpopups.color_box(
                         [preview1, preview2], preview_border,
@@ -219,50 +248,64 @@ class ChPreview:
                 )
                 colors.append(
                     (
-                        color, pt, hash(text), len(text),
-                        obj.color.space(), hash(start_scope + ':' + end_scope),
-                        preview_id
+                        html,
+                        pt,
+                        region.begin(),
+                        region.end(),
+                        timestamp
                     )
                 )
 
             # Add all previews
-            self.add_phantoms(view, colors, preview)
-            settings.set('color_helper.preview_meta', preview)
+            self.add_phantoms(colors)
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
-            self.previous_region = sublime.Region(self.previous_region.begin(), view.visible_region().end())
+            self.previous_region = sublime.Region(self.previous_region.begin(), self.view.visible_region().end())
 
-    def add_phantoms(self, view, colors, preview):
+    def add_phantoms(self, colors):
         """Add phantoms."""
 
-        for color in colors:
-            pid = view.add_phantom(
+        for html, pt, start, end, timestamp in colors:
+            pid = self.view.add_phantom(
                 'color_helper',
-                sublime.Region(color[1]),
-                color[0],
+                sublime.Region(pt),
+                html,
                 0,
-                on_navigate=lambda href, view=view: self.on_navigate(href, view)
+                on_navigate=self.on_navigate
             )
-            preview[str(color[1])] = [color[2], color[3], color[4], color[5], pid, color[6]]
+            self.previews[str(start)] = ColorSwatch(start, end, pid, timestamp)
 
     def reset_previous(self):
         """Reset previous region."""
         self.previous_region = sublime.Region(0)
 
-    def erase_phantoms(self, view):
+    def erase_phantoms(self):
         """Erase phantoms."""
 
         # Obliterate!
-        view.erase_phantoms('color_helper')
-        view.settings().set('color_helper.preview_meta', {})
-        altered = True
+        self.view.erase_phantoms('color_helper')
+        self.previews.clear()
         self.reset_previous()
 
-    def color_okay(self, color_type):
-        """Check if color is allowed."""
+    def run(self, edit, clear=False, force=False):
+        """Run."""
 
-        return color_type in self.allowed_colors
+        if ch_preview_thread.ignore_all:
+            return
+        else:
+            ch_preview_thread.ignore_all = True
+
+        try:
+            if clear:
+                self.erase_phantoms()
+            else:
+                self.do_search(force)
+        except Exception:
+            self.erase_phantoms()
+            util.debug('ColorHelper: \n' + str(traceback.format_exc()))
+        ch_preview_thread.ignore_all = False
+        ch_preview_thread.time = time()
 
 
 class ChPreviewThread(threading.Thread):
@@ -278,29 +321,53 @@ class ChPreviewThread(threading.Thread):
         self.wait_time = 0.12
         self.time = time()
         self.modified = False
+        self.force = False
         self.ignore_all = False
-        self.clear = False
         self.abort = False
+        self.scroll = False
+        self.last_view = (-1, -1)
+        self.scroll_view = None
 
-    def payload(self, clear=False, force=False):
+    def scroll_check(self):
+        """Check if we should issue a scroll event."""
+
+        view = sublime.active_window().active_view()
+        vid = view.id()
+        wid = -1
+        w = view.window()
+        if w is not None:
+            wid = w.id()
+        this_scroll = (wid, vid)
+        if self.last_view != (wid, vid):
+            self.last_view = (wid, vid)
+            self.scroll = True
+        elif view.visible_region() != self.scroll_view:
+            self.scroll = True
+            self.scroll_view = view.visible_region()
+            self.time = time()
+
+    def payload(self):
         """Code to run."""
 
-        if clear:
+        clear = False
+        force = False
+        if self.modified:
+            clear = True
             self.modified = False
+        elif self.force:
+            force = True
+            self.force = False
+        else:
+            self.scroll = False
+
         # Ignore selection and edit events inside the routine
-        self.ignore_all = True
-        if ch_preview is not None:
+        if not self.ignore_all:
             try:
                 view = sublime.active_window().active_view()
-                if view:
-                    if not clear:
-                        ch_preview.do_search(view, force)
-                    else:
-                        ch_preview.erase_phantoms(view)
+                args = {"clear": clear, "force": force}
+                view.run_command('color_helper_preview', args)
             except Exception:
                 util.debug('ColorHelper: \n' + str(traceback.format_exc()))
-        self.ignore_all = False
-        self.time = time()
 
     def kill(self):
         """Kill thread."""
@@ -315,10 +382,13 @@ class ChPreviewThread(threading.Thread):
 
         while not self.abort:
             if not self.ignore_all:
-                if self.modified is True and (time() - self.time) > self.wait_time:
-                    sublime.set_timeout_async(lambda: self.payload(clear=True), 0)
-                elif not self.modified:
+                if (
+                    (self.modified is True or self.scroll is True or self.force is True) and
+                    (time() - self.time) > self.wait_time
+                ):
                     sublime.set_timeout_async(self.payload, 0)
+                else:
+                    sublime.set_timeout_async(self.scroll_check, 0)
             sleep(0.5)
 
 
@@ -332,9 +402,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
             return
 
         if ch_preview_thread is not None:
-            now = time()
             ch_preview_thread.modified = True
-            ch_preview_thread.time = now
+            ch_preview_thread.time = time()
 
         self.on_selection_modified(view)
 
@@ -344,9 +413,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
             return
 
         if ch_preview_thread is not None and ch_settings.get("preview_on_select", False):
-            now = time()
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = now
+            # We only render previews when things change or a scroll occurs.
+            # On selection, we just need to force the change.
+            ch_preview_thread.time = time()
+            ch_preview_thread.force = True
 
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
@@ -358,6 +428,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
         scan_scopes = []
 
+        # Check if view meets critera for on of our rule sets
         for rule in rules:
             results = []
 
@@ -392,6 +463,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 color_trigger = rule.get("color_trigger", RE_COLOR_START)
                 break
 
+        # Couldn't find any explicit options, so associate a generic  option set to allow basic functionality..
         if not scan_scopes:
             generic =  s.get("generic", {})
             if generic.get("allow_scanning", False):
@@ -401,6 +473,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 outputs = rule.get("output_options", [])
                 colorclass = rule.get("color_class", "coloraide.css.Color")
 
+        # Add user configuration
         if scan_scopes:
             view.settings().set(
                 'color_helper.scan',
@@ -416,6 +489,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 }
             )
         else:
+            # Nothing enabled here.
             view.settings().set(
                 'color_helper.scan',
                 {
@@ -425,6 +499,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "last_updated": ch_last_updated
                 }
             )
+
+        # Watch for settings changes so we can update if necessary.
         if not unloading and ch_preview_thread is not None:
             view.settings().clear_on_change('color_helper.reload')
             view.settings().add_on_change(
@@ -457,21 +533,21 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """On activated."""
 
         if self.should_update(view):
-            view.settings().erase('color_helper.preview_meta')
-            view.erase_phantoms('color_helper')
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = time()
             self.set_file_scan_rules(view)
 
     def on_post_save(self, view):
         """Run current file scan and/or project scan on save."""
 
         if self.ignore_event(view):
-            if view.settings().get('color_helper.preview_meta', {}):
-                view.settings().erase('color_helper.preview_meta')
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = time()
             return
 
         if self.should_update(view):
-            view.settings().erase('color_helper.preview_meta')
-            view.erase_phantoms('color_helper')
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = time()
             self.set_file_scan_rules(view)
 
     def on_view_settings_change(self, view):
@@ -486,8 +562,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 if old_syntax is None or old_syntax != syntax:
                     self.on_activated(view)
                 if settings.get('color_scheme') != settings.get('color_helper.color_scheme', ''):
-                    settings.erase('color_helper.preview_meta')
-                    view.erase_phantoms('color_helper')
+                    ch_preview_thread.modified = True
+                    ch_preview_thread.time = time()
 
     def ignore_event(self, view):
         """Check if event should be ignored."""
@@ -511,7 +587,6 @@ def setup_previews():
     """Setup previews."""
 
     global ch_preview_thread
-    global ch_preview
     global unloading
 
     unloading = True
@@ -520,13 +595,12 @@ def setup_previews():
     for w in sublime.windows():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
-            v.settings().erase('color_helper.preview_meta')
             v.settings().erase('color_helper.scan')
             v.erase_phantoms('color_helper')
     unloading = False
 
     if ch_settings.get('inline_previews', False):
-        ch_preview = ChPreview()
+        # ch_preview = ChPreview()
         ch_preview_thread = ChPreviewThread()
         ch_preview_thread.start()
 
