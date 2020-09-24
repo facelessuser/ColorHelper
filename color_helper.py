@@ -420,11 +420,20 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             template_vars['click_color_picker'] = True
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
             template_vars['click_palette_picker'] = True
+        elif click_color_box_to_pick == "edit":
+            template_vars['click_color_edit'] = True
+        elif click_color_box_to_pick == "contrast":
+            template_vars['click_color_contrast'] = True
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             template_vars['show_palette_menu'] = True
         if click_color_box_to_pick != 'color_picker' and show_picker:
             template_vars['show_picker_menu'] = True
+        if click_color_box_to_pick != 'edit':
+            template_vars['show_edit_menu'] = True
+        if click_color_box_to_pick != 'contrast':
+            template_vars['show_contrast_menu'] = True
+
         if show_global_palettes or show_project_palettes:
             template_vars['show_global_palette_menu'] = True
         if show_favorite_palette:
