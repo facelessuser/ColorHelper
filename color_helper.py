@@ -63,8 +63,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.show_palettes(update=True)
         elif href == '__info__':
             self.show_color_info(update=True)
+        elif href.startswith('__edit__'):
+            self.edit_color(href.split(':', 1)[1])
+        elif href.startswith('__contrast__'):
+            self.contrast_color(href.split(':', 1)[1])
         elif href.startswith('__color_picker__'):
-            self.color_picker(color=href.split(':', 1)[1])
+            self.color_picker(href.split(':', 1)[1])
         elif href.startswith('__add_fav__'):
             self.add_fav(href.split(':', 1)[1])
         elif href.startswith('__remove_fav__'):
@@ -255,7 +259,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
             else:
                 on_cancel = None
-            rules = util.get_rules(self.view)
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
@@ -263,6 +266,38 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     'on_cancel': on_cancel
                 }
             )
+
+    def edit_color(self, color):
+        """Edit the color."""
+        if not self.no_info:
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
+        elif not self.no_palette:
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
+        else:
+            on_cancel = None
+        self.view.run_command(
+            'color_helper_edit', {
+                'initial': color,
+                'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
+                'on_cancel': on_cancel
+            }
+        )
+
+    def contrast_color(self, color):
+        """Edit the color."""
+        if not self.no_info:
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
+        elif not self.no_palette:
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
+        else:
+            on_cancel = None
+        self.view.run_command(
+            'color_helper_contrast_ratio', {
+                'initial': color,
+                'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
+                'on_cancel': on_cancel
+            }
+        )
 
     def insert_color(self, target_color, convert=None, picker=False, alpha=False):
         """Insert colors."""

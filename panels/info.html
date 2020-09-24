@@ -4,7 +4,9 @@
 {% if plugin.show_picker_menu -%}
 [picker](__color_picker__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
-{% if plugin.show_global_palette_menu -%}
+[edit](__edit__:{{plugin.generic_color}}){: .small} 
+[contrast](__contrast__:{{plugin.generic_color}}){: .small}
+{% if plugin.show_global_palette_menu -%} 
 [add](__add_color__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}

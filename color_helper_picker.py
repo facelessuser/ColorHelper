@@ -390,7 +390,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # We need to open the color name picker
             color = self.color.to_string(**GENERIC)
             colornames = True
-        elif href == 'edit':
+        elif href in ('edit', 'contrast'):
             # We want to edit the color
             color = self.color.to_string(**GENERIC)
         else:
@@ -403,7 +403,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 call = self.on_cancel.get('command', 'color_helper')
                 args = self.on_cancel.get('args', {})
                 self.view.run_command(call, args)
-        elif href == 'edit':
+        elif href in ('edit', 'contrast'):
             # Edit color in edit panel
             mdpopups.hide_popup(self.view)
 
@@ -426,7 +426,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Call the edit input panel
             self.view.run_command(
-                'color_helper_edit',
+                'color_helper_edit' if href == 'edit' else 'color_helper_contrast_ratio',
                 {
                     "initial": Color(color).to_string(), "on_done": on_done, "on_cancel": on_cancel
                 }

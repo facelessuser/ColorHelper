@@ -93,6 +93,14 @@
                 "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
                 "meta.tag.any.html meta.attribute-with-value.style.html"
             ],
+            "output_options": [
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
+            ],
             "scan_completion_scopes": [],
             "extensions": []
         },
@@ -108,6 +116,14 @@
             ],
             "scan_completion_scopes": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme"
+            ],
+            "output_options": [
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
             "extensions": [],
             "enabled": true
@@ -128,6 +144,14 @@
                 "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
                 "source.sass meta.property-value.css -comment -string -variable.declaration.sass"
             ],
+            "output_options": [
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
+            ],
             "extensions": []
         },
         {
@@ -144,8 +168,12 @@
                 "source.scss"
             ],
             "output_options": [
-                {"space": "srgb", "format": {"alpha": false, "comma": true, "scale": 3}},
-                {"space": "srgb", "format": {"hex_code": true}},
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
             "extensions": []
         },
@@ -193,7 +221,12 @@
                 "source.postcss meta.property-list.css.postcss -comment -string"
             ],
             "output_options": [
-                {"space": "srgb", "format": {}}
+                {"space": "srgb", "format": {"options": {"hex": true}}},
+                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
+                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
+                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
             "extensions": []
         },

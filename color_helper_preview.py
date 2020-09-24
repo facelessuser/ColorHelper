@@ -243,61 +243,14 @@ class ChPreview:
         """Reset previous region."""
         self.previous_region = sublime.Region(0)
 
-    def erase_phantoms(self, view, incremental=False):
+    def erase_phantoms(self, view):
         """Erase phantoms."""
 
-        altered = False
-        if incremental:
-            # Edits can potentially move the position of all the previews.
-            # We need to grab the phantom by their id and then apply the color regex
-            # on the phantom range +/- some extra characters so we can catch word boundaries.
-            # Clear the phantom if any of the following:
-            #    - Phantom can't be found
-            #    - regex doesn't match
-            #    - regex group doesn't match color type
-            #    - match doesn't start at the same point
-            #    - hash result is wrong
-            # Update preview meta data with new results
-            old_preview = view.settings().get('color_helper.preview_meta', {})
-            position_on_left = preview_is_on_left()
-            preview = {}
-            for k, v in old_preview.items():
-                phantoms = view.query_phantom(v[4])
-                pt = phantoms[0].begin() if phantoms else None
-                if pt is None:
-                    view.erase_phantom_by_id(v[4])
-                    altered = True
-                else:
-                    color_start = pt if position_on_left else pt - v[1]
-                    color_end = pt + v[1] if position_on_left else pt
-                    approx_color_start = color_start - 5
-                    if approx_color_start < 0:
-                        approx_color_start = 0
-                    approx_color_end = color_end + 5
-                    if approx_color_end > view.size():
-                        approx_color_end = view.size()
-                    text = view.substr(sublime.Region(approx_color_start, approx_color_end))
-
-                    obj = Color.match(text, color_start) is not None
-                    if (
-                        obj is not None or
-                        approx_color_start + obj.start != color_start or
-                        hash(m.group(0)) != v[0] or
-                        v[3] != hash(view.scope_name(color_start) + ':' + view.scope_name(color_end - 1)) or
-                        str(pt) in preview
-                    ):
-                        view.erase_phantom_by_id(v[4])
-                        altered = True
-                    else:
-                        preview[str(pt)] = v
-            view.settings().set('color_helper.preview_meta', preview)
-        else:
-            # Obliterate!
-            view.erase_phantoms('color_helper')
-            view.settings().set('color_helper.preview_meta', {})
-            altered = True
-        if altered:
-            self.reset_previous()
+        # Obliterate!
+        view.erase_phantoms('color_helper')
+        view.settings().set('color_helper.preview_meta', {})
+        altered = True
+        self.reset_previous()
 
     def color_okay(self, color_type):
         """Check if color is allowed."""
@@ -336,7 +289,7 @@ class ChPreviewThread(threading.Thread):
                     if not clear:
                         ch_preview.do_search(view, force)
                     else:
-                        ch_preview.erase_phantoms(view, incremental=True)
+                        ch_preview.erase_phantoms(view)
             except Exception:
                 print('ColorHelper: \n' + str(traceback.format_exc()))
         self.ignore_all = False
