@@ -34,12 +34,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
     html_parser = HTMLParser()
 
-    def on_hide(self):
-        """Hide popup event."""
-
-        self.view.settings().set('color_helper.popup_active', False)
-        self.view.settings().set('color_helper.popup_auto', self.auto)
-
     def unescape(self, value):
         """Unescape URL."""
 
@@ -254,9 +248,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 sublime.set_timeout(self.show_color_info, 0)
         else:
             if not self.no_info:
-                on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
             elif not self.no_palette:
-                on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
+                on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
             else:
                 on_cancel = None
             self.view.run_command(
@@ -270,9 +264,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def edit_color(self, color):
         """Edit the color."""
         if not self.no_info:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
         elif not self.no_palette:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
         else:
             on_cancel = None
         self.view.run_command(
@@ -286,9 +280,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def contrast_color(self, color):
         """Edit the color."""
         if not self.no_info:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "info", "auto": self.auto}}
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
         elif not self.no_palette:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette", "auto": self.auto}}
+            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
         else:
             on_cancel = None
         self.view.run_command(
@@ -491,15 +485,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     template_vars=template_vars
                 )
             else:
-                self.view.settings().set('color_helper.popup_active', True)
-                self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
                     util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
-                    on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     template_vars=template_vars
                 )
@@ -582,15 +573,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 template_vars=template_vars
             )
         else:
-            self.view.settings().set('color_helper.popup_active', True)
-            self.view.settings().set('color_helper.popup_auto', self.auto)
             mdpopups.show_popup(
                 self.view,
                 util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                 on_navigate=self.on_navigate,
-                on_hide=self.on_hide,
                 flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                 template_vars=template_vars
             )
@@ -637,15 +625,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     template_vars=template_vars
                 )
             else:
-                self.view.settings().set('color_helper.popup_active', True)
-                self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
                     util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
-                    on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     template_vars=template_vars
                 )
@@ -705,8 +690,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     template_vars=template_vars
                 )
             else:
-                self.view.settings().set('color_helper.popup_active', True)
-                self.view.settings().set('color_helper.popup_auto', self.auto)
                 mdpopups.show_popup(
                     self.view,
                     util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html'),
@@ -716,14 +699,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     max_width=1024,
                     max_height=512,
                     on_navigate=self.on_navigate,
-                    on_hide=self.on_hide,
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     template_vars=template_vars
                 )
         elif update:
             self.view.hide_popup()
 
-    def run(self, edit, mode, palette_name=None, color=None, auto=False):
+    def run(self, edit, mode, palette_name=None, color=None):
         """Run the specified tooltip."""
 
         s = sublime.load_settings('color_helper.sublime-settings')
@@ -737,7 +719,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         # self.color_picker_package = use_color_picker_package and util.color_picker_available()
         self.no_info = True
         self.no_palette = True
-        self.auto = auto
         if mode == "palette":
             self.no_palette = False
             if palette_name is not None:
@@ -759,7 +740,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_palette = False
             self.show_color_info()
 
-    def is_enabled(self, mode, palette_name=None, color=None, auto=False):
+    def is_enabled(self, mode, palette_name=None, color=None):
         """Check if command is enabled."""
 
         self.setup_color_class()

@@ -73,46 +73,6 @@ def debug(*args):
         log(*args)
 
 
-def get_cache_settings(view):
-    """Get meta settings."""
-
-    vid = "v:{}-w:{}".format(view.id(), view.window().id())
-    return sublime.settings("color_helper_cache.sublime-settings").get(vid, {})
-
-
-def set_cache_settings(view, options):
-    """Set cache settings."""
-
-    vid = "v:{}-w:{}".format(view.id(), view.window().id())
-    s_view = sublime.settings("color_helper_views.sublime-settings")
-    view_list = s_view.get('views', {})
-    if vid not in view_list:
-        view_list[vid] = True
-    s_view.set('views', view_list)
-    sublime.settings("color_helper_cache.sublime-settings").set(vid, options)
-
-
-def gc_cache_settings():
-    """Garbage collect cache settings."""
-
-    current = []
-    s_view = sublime.settings("color_helper_views.sublime-settings")
-    view_list = s_view.get('views', {})
-    current = set()
-    for w in sublime.windows():
-        for v in views():
-            current.add("v:{}-w:{}".format(view.id(), view.window().id()))
-
-    remove = []
-    for value in view_list.values():
-        if value not in view_list:
-            remove.append(value)
-
-    cache = sublime.settings("color_helper_cache.sublime-settings")
-    for r in remove:
-        cache.erase(r)
-
-
 def get_line_height(view):
     """Get the line height."""
 
