@@ -42,11 +42,11 @@ class _ColorMixin:
             ch_settings = sublime.load_settings('color_helper.sublime-settings')
             generic = ch_settings.get('generic', {})
             module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-            self.output_options = generic.get('output_options', {})
+            self.output_options = generic.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))
         else:
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-            self.output_options = rules.get('output_options')
+            self.output_options = rules.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
         self.color_class = Color
         try:

@@ -2,15 +2,29 @@
     // Show debug logging
     "debug": false,
 
-    // Show popups automatically in configured files.
-    "auto_popup": true,
 
-    // For Windows 10 HiDpi setups.  This is a temporary workaround
+    //////////////////
+    // Graphic Sizing
+    //////////////////
+
+    // If the color picker is too big or too small, try playing with this.
+    // This is a coarse control which scales image size relative to the
+    // approximate line height. small (1x), medium (1.5x), and large (2x).
+    // (small | medium | large)
+    "graphic_size": "medium",
+
+    // Fine scaling of image sizes. Overrides `graphic_size`.
+    // Use an integer or floating point value. `null` disables fine scaling.
+    "graphic_scale": null,
+
+    // For Windows 10 HiDpi setups. This is a temporary workaround
     // to help reduce abnormally large color previews and other images.
     // This will be removed once the issue is fixed in Sublime Text 3.
     "line_height_workaround": false,
 
-    "preview_on_select": true,
+    // Adjust the size of inline image previews by the offset given.
+    // Please use either a positive or negative number.
+    "inline_preview_offset": 0,
 
     // Color picker and palette picker by default
     // are accessed by clicking an icon on the color info panel.
@@ -23,31 +37,9 @@
     // Requires ST 3116+ and mdpopups 1.7.4
     "inline_previews": true,
 
-    // Adjust the size of inline image previews by the offset given.
-    // Please use either a positive or negative number.
-    "inline_preview_offset": 0,
-
-    // Adjust the position of inline image previews.
-    // (left|right)
-    "inline_preview_position": "left",
-
-    // Enable color picker option.  Will use native color picker
-    // unless "use_color_picker_package" is enabled and external
-    // package is installed.
-    "enable_color_picker": true,
-
-    // If the color picker is too big or too small, try playing with this.
-    // This is a coarse control which scales image size relative to the
-    // approximate line height. small (1x), medium (1.5x), and large (2x).
-    // (small | medium | large)
-    "graphic_size": "medium",
-
-    // Fine scaling of image sizes. Overrides `graphic_size`.
-    // Use an integer or floating point value. `null` disables fine scaling.
-    "graphic_scale": null,
-
-    // Use https://github.com/weslly/ColorPicker for the color picker if installed.
-    "use_color_picker_package": false,
+    //////////////////
+    // Palettes
+    //////////////////
 
     // Show global palettes in palette panel
     "enable_global_user_palettes": true,
@@ -58,32 +50,105 @@
     // Enable project palettes in palette panel (Palettes stored in project file).
     "enable_project_user_palettes": true,
 
-    // Enable showing current file color palette
-    // "enable_current_file_palette": true,
+    //////////////////
+    // Color Picker
+    //////////////////
 
-    // If a there is no rule for the current file, any insert will use
-    // the generic output options below.
+    // Enable color picker option.  Will use native color picker
+    // unless "use_color_picker_package" is enabled and external
+    // package is installed.
+    "enable_color_picker": true,
+
+    // Use https://github.com/weslly/ColorPicker for the color picker if installed.
+    "use_color_picker_package": false,
+
+    //////////////////
+    // Preview
+    //////////////////
+
+    // Adjust the position of inline image previews.
+    // (left|right)
+    "inline_preview_position": "left",
+
+    // Only show color previews next to a color when the color region
+    // intersects the current selection. Currently only supported with
+    // single selections. If selection is empty (just a caret),
+    // If the caret is at the start or within the color region, a preview
+    // will also show.
+    "preview_on_select": true ,
+
+
+    //////////////////
+    // Color Rules
+    //////////////////
+
+    // If a there is no rule for the current file, commands will assume
+    // the options specified here. This allows translate custom input color
+    // formats to our defaults and back out again. Here you can also filter
+    // which color spaces are generically supported and narrow the recognition
+    // by reducing the color triggers.
+    //
+    // Available options can be viewed in `color_rule`.
+    // All `color_rule` options apply except: `sytnax_files`, `syntax_filter`, `base_scopes`, `extensions`.
+    // This is because this simply applies to all views if not matched by other rules.
     "generic": {
         "allow_scanning": false,
-        "color_trigger": "(?i)(?:\\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
-        "color_class": "coloraide.css.Color",
-        "scan_scopes": ["-comment -string"],
-        "output_options": [
-            {"space": "srgb", "format": {"options": {"hex": true}}},
-            {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-            {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-            {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-            {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-            {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}},
-            {"space": "xyz", "format": {}}
-        ]
+        "scan_scopes": ["-comment -string"]
     },
 
-    // Scanning rules
-    "color_scanning": [
+    // These are the color rules for a given view.
+    // Only one rule will apply to a given view.
+    //
+    // - `sytnax_files`:   target a view using a syntax from the given list. Defaults to an empty list.
+    //
+    // - `syntax_filter`:  specify whether `syntax_files` is an allowlist or blocklist. Can be either
+    //                     (blocklist|allowlist). Default's to `allowlist`.
+    //
+    // - `base_scopes`:    target a view whose base scope matches something from the list of scopes.
+    //                     Defaults to an empty list.
+    //
+    // - `extensions`:     target a view with an extension from the provided list. Defaults to an empty list.
+    //
+    // - `scan_scopes`:    these are the scope rules that a color will be checked against when
+    //.                    when scanning a for color to attach a color preview to. Scoopes will
+    //                     be joined together with commas. Defaults to an empty list.
+    //
+    // - `color_class`:    this allows a user to specify a custom color class derived from either
+    //                     `coloraide.colors` or `coloraide.css.colors`. This could be used to
+    //                     to create a color class that can recognize different formats when
+    //                     scanning for colors. It also allows for color spaces to have different
+    //                     output formats that can be configured via `output_options`. Defaults to
+    //                     `coloraide.css.Class`.
+    //
+    // - color_trigger`.   This can be used to specify regions that Color Helper should test to find a color.
+    //                     For instance, the color class can translate colors in the form `rgb(1 1 1 / 1)`,
+    //                     so we can specify `rgb(` and we will test the starting point to see if it is an
+    //                     actual color. Defaults to "(?i)(?:\\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)"
+    //
+    // - `output_options`: this can be used to specify the output options available when converting a color
+    //                     or inserting a color from the color picker or other tools. Specify the `space`
+    //                     from the color class to use, and the options to supply to the color class's
+    //                     `to_string` method. Defaults to:
+    //
+    //                     ```
+    //                     [
+    //                         {"space": "srgb", "format": {"options": {"hex": True}}},
+    //                         {"space": "srgb", "format": {"options": {"comma": True}, "precision": 3}},
+    //                         {"space": "hsl", "format": {"options": {"comma": True}, "precision": 3}},
+    //                         {"space": "hwb", "format": {"options": {"comma": False}, "precision": 3}},
+    //                         {"space": "lch", "format": {"options": {"comma": False}, "precision": 3}},
+    //                         {"space": "lab", "format": {"options": {"comma": False}, "precision": 3}},
+    //                         {"space": "xyz", "format": {}}
+    //                     ]
+    //                    ```
+    //
+    // - `allow_scanning`: This is an easy way to disable just scanning within a certain ruleset. Defaults to `true`.
+    //
+    //.- `enable`:         This can be used to disable a color rule entirely. Defaults to `true`.
+
+    "color_rules": [
         {
-            "syntax_files": [],
-            "syntax_filter": "allowlist",
+            "name": "HTML/CSS",
             "base_scopes": [
                 "source.css",
                 "text.html"
@@ -98,45 +163,23 @@
                 // HTML attributes (based on: Sublime Default)
                 "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
                 "meta.tag.any.html meta.attribute-with-value.style.html"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": []
+            ]
         },
         {
+            "name": "PackageDev Sublime Color Schemes",
             "syntax_files": ["PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme"],
-            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.json.sublime.color-scheme"
             ],
             "scan_scopes": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
-            ],
-            "scan_completion_scopes": [
-                "source.css-color -meta.function-call.var.sublime-color-scheme"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": [],
-            "enabled": true
+            ]
         },
         {
             //Sass (based on: https://packagecontrol.io/packages/Sass)
+            "name": "Sass",
             "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
-            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.sass",
                 "source.scss"
@@ -148,21 +191,12 @@
             "scan_completion_scopes": [
                 "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
                 "source.sass meta.property-value.css -comment -string -variable.declaration.sass"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": []
+            ]
         },
         {
             // SCSS (based on https://packagecontrol.io/packages/SCSS)
+            "name": "SCSS",
             "syntax_files": ["SCSS/SCSS"],
-            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.scss"
             ],
@@ -171,24 +205,15 @@
             ],
             "scan_completion_scopes": [
                 "source.scss"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": []
+            ]
         },
         {
             // SCSS (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
+            "name": "Syntax Highlighting for Sass",
             "syntax_files": [
                 "Syntax Highlighting for Sass/Syntaxes/SCSS",
                 "Syntax Highlighting for Sass/Syntaxes/Sass"
             ],
-            "syntax_filter": "allowlist",
             "base_scopes": [
                 "source.scss",
                 "source.sass"
@@ -200,22 +225,12 @@
             "scan_completion_scopes": [
                 "source.scss -comment -string -support.type.property-name -variable.declaration",
                 "source.sass -comment -string -support.type.property-name -variable.declaration"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": []
+            ]
         },
         {
             // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+            "name": "PostCSS",
             "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
-            "syntax_filter": "allowlist",
-            // "color_class": "ColorHelper.custom.ahex.ColorAhex",
             "base_scopes": [
                 "source.postcss"
             ],
@@ -224,49 +239,43 @@
             ],
             "scan_completion_scopes": [
                 "source.postcss meta.property-list.css.postcss -comment -string"
-            ],
-            "output_options": [
-                {"space": "srgb", "format": {"options": {"hex": true}}},
-                {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
-                {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-                {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
-            ],
-            "extensions": []
+            ]
         },
         {
+            "name": "XML",
             "syntax_files": [],
-            "syntax_filter": "allowlist",
             "base_scopes": ["text.xml"],
             "scan_scopes": [
                 "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
             ]
         },
         {
+            "name": "Stylus",
             "syntax_files": [],
-            "syntax_filter": "allowlist",
             "base_scopes": ["source.stylus"],
             "scan_scopes": [
                 // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
                 "constant.other.color.rgb-value.stylus",
                 "constant.color.w3c-standard-color-name.stylus",
                 "meta.property-value.stylus"
-            ],
-            "extensions": []
+            ]
         },
         {
+            "name": "Less",
             "syntax_files": [],
-            "syntax_filter": "allowlist",
             "base_scopes": ["source.less"],
             "scan_scopes": [
                 "constant.other.color.rgb-value.css",
                 "constant.color.w3c-standard-color-name.css",
                 "meta.property-value.css"
-            ],
-            "extensions": []
+            ]
         }
     ],
+
+
+    //////////////////
+    // Needed?
+    //////////////////
 
     // Override image border color. This is mainly for schemes that use a dramatically different
     // background for popups vs code background. Color should be in the form `#RRGGBB`. Alpha channels will

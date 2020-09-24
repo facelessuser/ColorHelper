@@ -42,6 +42,16 @@ ADD_CSS = dedent(
 
 WRAPPER_CLASS = "color-helper content"
 
+DEF_OUTPUT = [
+    {"space": "srgb", "format": {"options": {"hex": True}}},
+    {"space": "srgb", "format": {"options": {"comma": True}, "precision": 3}},
+    {"space": "hsl", "format": {"options": {"comma": True}, "precision": 3}},
+    {"space": "hwb", "format": {"options": {"comma": False}, "precision": 3}},
+    {"space": "lch", "format": {"options": {"comma": False}, "precision": 3}},
+    {"space": "lab", "format": {"options": {"comma": False}, "precision": 3}},
+    {"space": "xyz", "format": {}}
+]
+
 
 
 def encode_color(color):
