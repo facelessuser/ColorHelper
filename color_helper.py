@@ -400,7 +400,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         color = obj.color
         current = self.view.substr(sublime.Region(obj.start, obj.end))
-        rules = util.get_rules(self.view)
 
         # Store color in normal and generic format.
         template_vars['current_color'] = current
@@ -445,20 +444,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             message
         )
 
-        output_options = rules.get('output_options')
-        outputs = []
-        for output in output_options:
-            value = color.convert(output["space"]).to_string(**output["format"])
-            outputs.append(
-                (
-                    util.encode_color(value),
-                    value
-                )
-            )
-
-        template_vars['outputs'] = outputs
-        template_vars['show_conversions'] = True
-
     def show_insert(self, color, dialog_type, palette_name=None, update=False):
         """Show insert panel."""
 
@@ -467,21 +452,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         sels = self.view.sel()
         if color is not None and len(sels) == 1:
-            rules = util.get_rules(self.view)
-
-            if rules is None:
-                ch_settings = sublime.load_settings('color_helper.sublime-settings')
-                generic = ch_settings.get('generic_output', {})
-                module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-                output_options = generic.get('output_options', {})
-            else:
-                module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
-                output_options = rules.get('output_options')
-            ColorClass = ColorClass = getattr(importlib.import_module(module), color_class)
             outputs = []
-            custom = ColorClass(color)
-            for output in output_options:
-                value = custom.convert(output["space"]).to_string(**output["format"])
+            custom = self.custom_color_class(color)
+            for output in self.output_options:
+                value = custom.convert(output["space"]).to_string(**output.get("format", {}))
                 outputs.append(
                     (
                         util.encode_color(value),

@@ -290,7 +290,7 @@ class ChPreviewThread(threading.Thread):
                     else:
                         ch_preview.erase_phantoms(view)
             except Exception:
-                print('ColorHelper: \n' + str(traceback.format_exc()))
+                util.debug('ColorHelper: \n' + str(traceback.format_exc()))
         self.ignore_all = False
         self.time = time()
 
@@ -348,6 +348,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
         for rule in rules:
             results = []
+
             base_scopes = rule.get("base_scopes", [])
 
             if not base_scopes:
@@ -378,6 +379,15 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 colorclass = rule.get("color_class", "coloraide.css.Color")
                 color_trigger = rule.get("color_trigger", RE_COLOR_START)
                 break
+
+        if not scan_scopes:
+            generic =  s.get("generic", {})
+            if generic.get("allow_scanning", False):
+                scan_scopes += generic.get("scan_scopes", [])
+            if scan_scopes:
+                color_trigger = rule.get("color_trigger", RE_COLOR_START)
+                outputs = rule.get("output_options", [])
+                colorclass = rule.get("color_class", "coloraide.css.Color")
 
         if scan_scopes:
             view.settings().set(

@@ -40,7 +40,7 @@ class _ColorMixin:
         rules = util.get_rules(self.view)
         if rules is None:
             ch_settings = sublime.load_settings('color_helper.sublime-settings')
-            generic = ch_settings.get('generic_output', {})
+            generic = ch_settings.get('generic', {})
             module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
             self.output_options = generic.get('output_options', {})
             self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))

@@ -2,9 +2,6 @@
     // Show debug logging
     "debug": false,
 
-    // Show index status in the status bar.
-    "show_index_status": true,
-
     // Show popups automatically in configured files.
     "auto_popup": true,
 
@@ -56,20 +53,27 @@
     // Enable storing favorite colors to the favorite palette
     "enable_favorite_palette": true,
 
+    // Enable project palettes in palette panel (Palettes stored in project file).
+    "enable_project_user_palettes": true,
+
     // Enable showing current file color palette
     // "enable_current_file_palette": true,
 
     // If a there is no rule for the current file, any insert will use
     // the generic output options below.
-    "generic_output": {
+    "generic": {
+        "allow_scanning": false,
+        "color_trigger": "(?i)(?:\\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
         "color_class": "coloraide.css.Color",
+        "scan_scopes": ["-comment -string"],
         "output_options": [
             {"space": "srgb", "format": {"options": {"hex": true}}},
             {"space": "srgb", "format": {"options": {"comma": true}, "precision": 0}},
             {"space": "hsl", "format": {"options": {"comma": true}, "precision": 0}},
             {"space": "hwb", "format": {"options": {"comma": false}, "precision": 0}},
             {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
-            {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
+            {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}},
+            {"space": "xyz", "format": {}}
         ]
     },
 
@@ -101,7 +105,6 @@
                 {"space": "lch", "format": {"options": {"comma": false}, "precision": 0}},
                 {"space": "lab", "format": {"options": {"comma": false}, "precision": 0}}
             ],
-            "scan_completion_scopes": [],
             "extensions": []
         },
         {
@@ -262,9 +265,6 @@
             "extensions": []
         }
     ],
-
-    // Enable project palettes in palette panel (Palettes stored in project file).
-    "enable_project_user_palettes": true,
 
     // Override image border color. This is mainly for schemes that use a dramatically different
     // background for popups vs code background. Color should be in the form `#RRGGBB`. Alpha channels will
