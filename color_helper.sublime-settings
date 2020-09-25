@@ -125,7 +125,7 @@
     // All `color_rule` options apply except: `sytnax_files`, `syntax_filter`, `base_scopes`, `extensions`.
     // This is because this simply applies to all views if not matched by other rules.
     "generic": {
-        "allow_scanning": true,
+        "allow_scanning": false,
         "scan_scopes": ["-comment -string"]
     },
 

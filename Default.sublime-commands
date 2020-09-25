@@ -27,5 +27,9 @@
     {
         "caption": "Color Helper: Contrast",
         "command": "color_helper_contrast_ratio"
+    },
+    {
+        "caption": "Color Helper: Override View's Scanning",
+        "command": "color_helper_preview_override"
     }
 ]

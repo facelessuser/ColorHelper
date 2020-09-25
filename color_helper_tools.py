@@ -368,7 +368,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
                     pass
                 if color is not None:
                     color = Color(color)
-                    if color.space() not in SRGB_SPACES:
+                    if color.space() not in util.SRGB_SPACES:
                         color = color.convert("srgb", fit=self.preferred_gamut_mapping)
                     return color.to_string()
         return ''

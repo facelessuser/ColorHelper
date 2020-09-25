@@ -47,6 +47,40 @@ class ColorSwatch(namedtuple('ColorSwatch', ['start', 'end', 'pid', 'timestamp']
     """Color swatch."""
 
 
+class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
+    """Override current scanning state."""
+
+    def run(self, edit):
+        """Override the current acan "allow" state for this specific view."""
+
+        override = self.view.settings().get("color_helper.scan_override", "Remove override")
+        if override == "Force enable":
+            self.options = ["Force disable", "Remove override"]
+        elif override == "Force disable":
+            self.options = ["Force enable", "Remove override"]
+        else:
+            self.options = ["Force enable", "Force disable"]
+
+        self.view.window().show_quick_panel(self.options, self.done)
+
+    def done(self, value):
+        """"Check the selection."""
+
+        if value != -1:
+            option = self.options[value]
+            self.view.settings().set("color_helper.scan_override", option)
+            if option == "Force enable":
+                self.view.settings().set("color_helper.scan_override", option)
+                ch_preview_thread.force = True
+                ch_preview_thread.time = time()
+            elif option == "Force disable":
+                self.view.settings().set("color_helper.scan_override", option)
+                self.view.run_command("color_helper_preview", {"clear": True})
+            else:
+                self.view.settings().erase("color_helper.scan_override")
+                self.view.run_command("color_helper_preview", {"clear": True})
+
+
 class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
     """Color Helper preview with phantoms."""
 
@@ -96,6 +130,27 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
         # Since the plugin has been reloaded, force update.
         global reload_flag
+        settings = self.view.settings()
+
+        # Allow per view scan override
+        option = settings.get("color_helper.scan_override", None)
+        if option in ("Force enable", "Force disable"):
+            override = option == "Force enable"
+        else:
+            override = None
+
+        # Get the rules and use them to get the needed scopes.
+        # The scopes will be used to get the searchable regions.
+        rules = util.get_rules(self.view)
+        # Bail if this if this view has no valid rule or scanning is disabled.
+        if (
+            rules is None or not rules.get("enabled", False) or
+            (not rules.get("allow_scanning", True) and not override) or
+            override is False
+        ):
+            self.erase_phantoms()
+            return
+
         if reload_flag:
             reload_flag = False
             force = True
@@ -108,7 +163,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
         # If desired preview boxes are different than current,
         # we need to reload the boxes.
-        settings = self.view.settings()
         old_box_height = int(settings.get('color_helper.box_height', 0))
         current_color_scheme = settings.get('color_scheme')
         if (
@@ -142,12 +196,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         elif preview_on_select:
             sel = self.view.sel()[0]
 
-        # Get the rules and use them to get the needed scopes.
-        # The scopes will be used to get the searchable regions.
-        rules = util.get_rules(self.view)
-        # Bail if this if this view has no valid rule or scanning is disabled.
-        if rules is None or not rules.get("enabled", False) or not rules.get("allow_scanning", True):
-            return
         # Get the scan scopes
         scope = util.get_scope(self.view, rules, skip_sel_check=True)
 
@@ -448,6 +496,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.ignore_all = True
 
         view.settings().clear_on_change('color_helper.reload')
+        view.run_command("color_helper_preview", {"clear": True})
 
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
@@ -626,6 +675,7 @@ def setup_previews():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
             v.settings().erase('color_helper.scan')
+            v.settings().erase('color_helper.scan_override')
             v.erase_phantoms('color_helper')
     unloading = False
 
@@ -668,6 +718,7 @@ def plugin_unloaded():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
             v.settings().erase('color_helper.scan')
+            v.settings().erase('color_helper.scan_override')
             v.erase_phantoms('color_helper')
 
     unloading = False
