@@ -33,6 +33,7 @@ occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim 
 """
 
 RE_PLUS = re.compile(r'\s*\+\s*')
+RE_RATIO = re.compile(r'\s*/\s*')
 RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
 
@@ -110,7 +111,7 @@ def parse_color_contrast(string, start=0, second=False):
             # Is the first color in the input or the second?
             if not second:
                 # Plus sign indicating we have an additional color to mix
-                m = RE_PLUS.match(string, start)
+                m = RE_RATIO.match(string, start)
                 if m:
                     start = m.end(0)
                     more = start != length
@@ -270,7 +271,7 @@ class ColorInputHandler(_ColorInputHandler):
     def placeholder(self):
         """Placeholder."""
 
-        return "Color OR Color + Color"
+        return "Color [+ Color]?"
 
     def initial_text(self):
         """Initial text."""
@@ -349,7 +350,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
     def placeholder(self):
         """Placeholder."""
 
-        return "Color + Background"
+        return "Color / Color"
 
     def initial_text(self):
         """Initial text."""

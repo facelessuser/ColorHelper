@@ -31,12 +31,22 @@ class _ColorMixin:
     def setup_image_border(self):
         """Setup_image_border."""
 
-        # Calculate border color for images
-        border_color = Color(
-            mdpopups.scope2style(self.view, '')['background'],
-            filters=util.SRGB_SPACES
-        ).convert("hsl")
-        border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
+        ch_settings = sublime.load_settings('color_helper.sublime-settings')
+        border_color = ch_settings.get('image_border_color')
+        if border_color is not None:
+            try:
+                border_color = Color(border_color, filters=util.SRGB_SPACES)
+            except Exception:
+                border_color = None
+
+        if border_color is None:
+            # Calculate border color for images
+            border_color = Color(
+                self.view.style()['background'],
+                filters=util.SRGB_SPACES
+            ).convert("hsl")
+            border_color.lightness = border_color.lightness + (30 if border_color.luminance() < 0.5 else -30)
+
         self.default_border = border_color.convert("srgb").to_string(**HEX)
         self.out_of_gamut = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
         self.out_of_gamut_border = Color(

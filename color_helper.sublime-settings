@@ -4,7 +4,7 @@
 
 
     //////////////////
-    // Graphic Sizing
+    // Graphic Rendering
     //////////////////
 
     // If the color picker is too big or too small, try playing with this.
@@ -26,16 +26,20 @@
     // Please use either a positive or negative number.
     "inline_preview_offset": 0,
 
+    // Override image border color. This is mainly for schemes that use a dramatically different
+    // background for popups vs code background. Color should be either an sRGB, HSL, HWB, or named CSS color.
+    "image_border_color": null,
+
+    //////////////////
+    // Color Picker
+    //////////////////
+
     // Color picker and palette picker by default
     // are accessed by clicking an icon on the color info panel.
     // Click access for one of these can be moved to the color box
     // (visual representation of the color).
     // (none|color_picker|palette_picker|edit|contrast)
     "click_color_box_to_pick": "none",
-
-    // Enables inline color previews found beside the identified color.
-    // Requires ST 3116+ and mdpopups 1.7.4
-    "inline_previews": true,
 
     //////////////////
     // Gamut
@@ -90,6 +94,10 @@
     //////////////////
     // Preview
     //////////////////
+
+    // Enables inline color previews found beside the identified color.
+    // Requires ST 3116+ and mdpopups 1.7.4
+    "inline_previews": true,
 
     // Adjust the position of inline image previews.
     // (left|right)

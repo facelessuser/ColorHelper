@@ -223,8 +223,9 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
                     filters=util.SRGB_SPACES
                 ).convert("hsl")
-                hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
-                preview_border = hsl.convert("srgb").to_string(**util.HEX)
+                hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
+                preview_border = hsl.convert("srgb", fit=preferred_gamut_mapping).to_string(**util.HEX)
+
                 color = Color(obj.color)
                 title = ''
                 if not color.in_gamut("srgb"):
