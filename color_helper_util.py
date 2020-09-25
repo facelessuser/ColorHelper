@@ -12,9 +12,9 @@ import base64
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
-GENERIC = {"options": {"color": True}}
-HEX = {"options": {"hex": True}}
-HEX_NA = {"options": {"hex": True}, "alpha": False}
+GENERIC = {"color": True}
+HEX = {"hex": True}
+HEX_NA = {"hex": True, "alpha": False}
 
 FRONTMATTER = mdpopups.format_frontmatter(
     {
@@ -43,12 +43,12 @@ ADD_CSS = dedent(
 WRAPPER_CLASS = "color-helper content"
 
 DEF_OUTPUT = [
-    {"space": "srgb", "format": {"options": {"hex": True}}},
-    {"space": "srgb", "format": {"options": {"comma": True}, "precision": 3}},
-    {"space": "hsl", "format": {"options": {"comma": True}, "precision": 3}},
-    {"space": "hwb", "format": {"options": {"comma": False}, "precision": 3}},
-    {"space": "lch", "format": {"options": {"comma": False}, "precision": 3}},
-    {"space": "lab", "format": {"options": {"comma": False}, "precision": 3}},
+    {"space": "srgb", "format": {"hex": True}},
+    {"space": "srgb", "format": {"comma": True, "precision": 3}},
+    {"space": "hsl", "format": {"comma": True, "precision": 3}},
+    {"space": "hwb", "format": {"comma": False, "precision": 3}},
+    {"space": "lch", "format": {"comma": False, "precision": 3}},
+    {"space": "lab", "format": {"comma": False, "precision": 3}},
     {"space": "xyz", "format": {}}
 ]
 

@@ -150,12 +150,12 @@
     //
     //                     ```
     //                     [
-    //                         {"space": "srgb", "format": {"options": {"hex": True}}},
-    //                         {"space": "srgb", "format": {"options": {"comma": True}, "precision": 3}},
-    //                         {"space": "hsl", "format": {"options": {"comma": True}, "precision": 3}},
-    //                         {"space": "hwb", "format": {"options": {"comma": False}, "precision": 3}},
-    //                         {"space": "lch", "format": {"options": {"comma": False}, "precision": 3}},
-    //                         {"space": "lab", "format": {"options": {"comma": False}, "precision": 3}},
+    //                         {"space": "srgb", "format": {"hex": True}},
+    //                         {"space": "srgb", "format": {"comma": True, "precision": 3}},
+    //                         {"space": "hsl", "format": {"comma": True, "precision": 3}},
+    //                         {"space": "hwb", "format": {"comma": False, "precision": 3}},
+    //                         {"space": "lch", "format": {"comma": False, "precision": 3}},
+    //                         {"space": "lab", "format": {"comma": False, "precision": 3}},
     //                         {"space": "xyz", "format": {}}
     //                     ]
     //                    ```
