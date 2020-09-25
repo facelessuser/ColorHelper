@@ -64,7 +64,7 @@ class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
         self.view.window().show_quick_panel(self.options, self.done)
 
     def done(self, value):
-        """"Check the selection."""
+        """Check the selection."""
 
         if value != -1:
             option = self.options[value]
@@ -119,6 +119,80 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             bottom_pad = 0
         box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) + size_offset
         return box_height
+
+    def source_iter(self, visible_region):
+        """
+        Iterate through source in the viewport.
+
+        We don't want to provide all the content in a really wide scrollable view,
+        so clip each line in the visible region to the visible viewport.
+
+        Return content in consecutive chunks.
+        """
+
+        # Get viewable bounds so we can contrain both vertically and horizontally.
+        position = self.view.viewport_position()
+        dimensions = self.view.viewport_extent()
+        bounds = [
+            (position[0], position[0] + dimensions[0] - 1),
+            (position[1], position[1] + dimensions[1] - 1)
+        ]
+
+        # Get all the llines
+        lines = self.view.split_by_newlines(visible_region)
+
+        # Calculate regions of consecutive lines that do not have gaps due to clipping
+        last_start = None
+        last_end = None
+        for line in lines:
+            # Line start
+            start_clipped = False
+            start_vector = self.view.text_to_layout(line.begin())
+            if start_vector[0] < bounds[0][0]:
+                start_pt = self.view.layout_to_text((bounds[0][0], start_vector[1]))
+                if start_pt == line.begin():
+                    if last_start is not None:
+                        yield sublime.Region(last_start, last_end)
+                        last_start = None
+                        last_end = None
+                        continue
+                start_clipped = True
+            else:
+                start_pt = line.begin()
+
+            # Line end
+            end_clipped = False
+            end_vector = self.view.text_to_layout(line.end())
+            if end_vector[0] > bounds[0][1]:
+                end_pt = self.view.layout_to_text((bounds[0][1], end_vector[1]))
+                end_clipped = True
+            else:
+                end_pt = line.end()
+
+            # This region should not be included with the last
+            # as there is a gap between the last content and this content.
+            if start_clipped and last_start is not None:
+                yield sublime.Region(last_start, last_end)
+                last_start = None
+                last_end = None
+
+            # This content has been clipped and will have a gap between
+            # this and the next region, so just send it now.
+            if end_clipped:
+                yield sublime.Region(last_start if last_start else start_pt, end_pt)
+                last_start = None
+                last_end = None
+                continue
+
+            # Track this region to see if we can include more in one chunk
+            # If we already have a start, just update the end.
+            if last_start is None:
+                last_start = start_pt
+            last_end = end_pt
+
+        # Return anything we haven't already
+        if last_start is not None:
+            yield sublime.Region(last_start, last_end)
 
     def do_search(self, force=False):
         """
@@ -177,20 +251,15 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # If we don't need to force previews,
         # quit if visible region is the same as last time
         visible_region = self.view.visible_region()
-        position = self.view.viewport_position()
-        dimensions = self.view.viewport_extent()
-        bounds = [
-            (position[0], position[0] + dimensions[0] - 1),
-            (position[1], position[1] + dimensions[1] - 1)
-        ]
         if not force and self.previous_region == visible_region:
             return
         self.previous_region = visible_region
-        source = self.view.substr(visible_region)
+        # source = self.view.substr(visible_region)
 
         # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
         show_preview = True
+        sel = None
         if preview_on_select and len(self.view.sel()) != 1:
             show_preview = False
         elif preview_on_select:
@@ -199,7 +268,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # Get the scan scopes
         scope = util.get_scope(self.view, rules, skip_sel_check=True)
 
-        if show_preview and source and scope:
+        if show_preview and visible_region.size() and scope:
             # Get out of gamut related options
             out_of_gamut = Color("transparent").to_string(**util.HEX)
             out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
@@ -218,99 +287,93 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
             # Find the colors
             colors = []
-            start = 0
-            for m in color_trigger.finditer(source):
-                # Test if we have found a valid color
-                start = m.start()
-                obj = color_class.match(source, start=start, filters=filters)
-                if obj is not None:
-                    # Calculate visible viewport
-                    src_start = visible_region.begin() + obj.start
-                    src_end = visible_region.begin() + obj.end
-                    vector_start = self.view.text_to_layout(src_start)
-                    vector_end = self.view.text_to_layout(src_end)
-                    region = sublime.Region(src_start, src_end)
 
-                    # Check if within visible view
-                    if not (
-                        (
-                            (bounds[0][0] <= vector_start[0] <= bounds[0][1]) or
-                            (bounds[0][0] <= vector_end[0] <= bounds[0][1])
-                        ) and (
-                            (bounds[1][0] <= vector_start[1] <= bounds[1][1]) or
-                            (bounds[1][0] <= vector_end[1] <= bounds[1][1])
-                        )
-                    ):
+            # Find source content in the visible region.
+            # We will return consecutive content, but if the lines are too wide
+            # horizontally, they will be clipped and returend as seperate chunks.
+            for src_region in self.source_iter(visible_region):
+                source = self.view.substr(src_region)
+                start = 0
+
+                # Find colors in this source chunk.
+                for m in color_trigger.finditer(source):
+                    # Test if we have found a valid color
+                    start = m.start()
+                    obj = color_class.match(source, start=start, filters=filters)
+                    if obj is not None:
+                        # Calculate true start and end of the color source
+                        src_start = src_region.begin() + obj.start
+                        src_end = src_region.begin() + obj.end
+                        region = sublime.Region(src_start, src_end)
+
+                        # If "preview on select" is enabled, only show preview if within a selection
+                        # or if the selection as no width and the color comes right after.
+                        if (
+                            preview_on_select and
+                            not(sel.empty() and sel.begin() == region.begin()) and
+                            not region.intersects(sel)
+                        ):
+                            continue
+
+                        # Check if the first point within the color matches our scope rules
+                        value = self.view.score_selector(src_start, scope)
+                        if not value:
+                            continue
+                    else:
                         continue
 
-                    # If "preview on select" is enabled, only show preview if within a selection
-                    # or if the selection as no width and the color comes right after.
-                    if (
-                        preview_on_select and
-                        not(sel.empty() and sel.begin() == region.begin()) and
-                        not region.intersects(sel)
-                    ):
+                    # Calculate point at which we which to insert preview
+                    position_on_left = preview_is_on_left()
+                    pt = src_start if position_on_left else src_end
+                    if str(region.begin()) in self.previews:
+                        # Already exists
                         continue
 
-                    # Check if the first point within the color matches our scope rules
-                    value = self.view.score_selector(src_start, scope)
-                    if not value:
-                        continue
-                else:
-                    continue
+                    # Calculate a reasonable border color for our image at this location and get color strings
+                    hsl = Color(
+                        mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
+                        filters=util.SRGB_SPACES
+                    ).convert("hsl")
+                    hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
+                    preview_border = hsl.convert("srgb", fit=preferred_gamut_mapping).to_string(**util.HEX)
 
-                # Calculate point at which we which to insert preview
-                position_on_left = preview_is_on_left()
-                pt = src_start if position_on_left else src_end
-                if str(region.begin()) in self.previews:
-                    # Already exists
-                    continue
-
-                # Calculate a reasonable border color for our image at this location and get color strings
-                hsl = Color(
-                    mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
-                    filters=util.SRGB_SPACES
-                ).convert("hsl")
-                hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
-                preview_border = hsl.convert("srgb", fit=preferred_gamut_mapping).to_string(**util.HEX)
-
-                color = Color(obj.color)
-                title = ''
-                if not color.in_gamut("srgb"):
-                    title = ' title="Out of gamut"'
-                    if show_out_of_gamut_preview:
-                        srgb = color.convert("srgb", fit=preferred_gamut_mapping)
+                    color = Color(obj.color)
+                    title = ''
+                    if not color.in_gamut("srgb"):
+                        title = ' title="Out of gamut"'
+                        if show_out_of_gamut_preview:
+                            srgb = color.convert("srgb", fit=preferred_gamut_mapping)
+                            preview1 = srgb.to_string(**util.HEX_NA)
+                            preview2 = srgb.to_string(**util.HEX)
+                        else:
+                            preview1 = out_of_gamut
+                            preview2 = out_of_gamut
+                            preview_border = out_of_gamut_border
+                    else:
+                        srgb = color.convert("srgb")
                         preview1 = srgb.to_string(**util.HEX_NA)
                         preview2 = srgb.to_string(**util.HEX)
-                    else:
-                        preview1 = out_of_gamut
-                        preview2 = out_of_gamut
-                        preview_border = out_of_gamut_border
-                else:
-                    srgb = color.convert("srgb")
-                    preview1 = srgb.to_string(**util.HEX_NA)
-                    preview2 = srgb.to_string(**util.HEX)
 
-                # Create preview
-                timestamp = str(time())
-                html = PREVIEW_IMG.format(
-                    timestamp,
-                    title,
-                    mdpopups.color_box(
-                        [preview1, preview2], preview_border,
-                        height=box_height, width=box_height,
-                        border_size=PREVIEW_BORDER_SIZE, check_size=check_size
+                    # Create preview
+                    timestamp = str(time())
+                    html = PREVIEW_IMG.format(
+                        timestamp,
+                        title,
+                        mdpopups.color_box(
+                            [preview1, preview2], preview_border,
+                            height=box_height, width=box_height,
+                            border_size=PREVIEW_BORDER_SIZE, check_size=check_size
+                        )
                     )
-                )
-                colors.append(
-                    (
-                        html,
-                        pt,
-                        region.begin(),
-                        region.end(),
-                        timestamp
+                    colors.append(
+                        (
+                            html,
+                            pt,
+                            region.begin(),
+                            region.end(),
+                            timestamp
+                        )
                     )
-                )
 
             # Add all previews
             self.add_phantoms(colors)
