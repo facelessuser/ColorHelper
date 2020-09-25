@@ -186,9 +186,7 @@ def evaluate(string):
             colors.append(second.color)
             colors.append(first.color.mix(second.color, percent, alpha=True, space=space))
     except Exception:
-        import traceback
-        print(traceback.format_exc())
-        pass
+        colors = []
     return colors
 
 
@@ -236,9 +234,7 @@ def evaluate_contrast(string):
             else:
                 colors.append(first.convert("srgb"))
     except Exception:
-        import traceback
-        print(traceback.format_exc())
-        pass
+        colors = []
     return colors
 
 
@@ -329,8 +325,6 @@ class ColorInputHandler(_ColorInputHandler):
                 )
             return sublime.Html(html)
         except Exception:
-            import traceback
-            print(traceback.format_exc())
             return ""
 
     def validate(self, color):
@@ -340,8 +334,6 @@ class ColorInputHandler(_ColorInputHandler):
             color = evaluate(color)
             return len(color) > 0
         except Exception:
-            import traceback
-            print(traceback.format_exc())
             return False
 
 
@@ -408,13 +400,11 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
                 html += CONTRAST_DEMO.format(
-                    Color(colors[2]).to_string(options={"comma": True}),
-                    Color(colors[1]).to_string(options={"comma": True})
+                    Color(colors[2]).to_string(comma=True),
+                    Color(colors[1]).to_string(comma=True)
                 )
             return sublime.Html(html)
         except Exception:
-            import traceback
-            print(traceback.format_exc())
             return ""
 
     def validate(self, color):
@@ -425,8 +415,6 @@ class ColorContrastInputHandler(_ColorInputHandler):
             colors = evaluate_contrast(color)
             return len(colors) > 0
         except Exception:
-            import traceback
-            print(traceback.format_exc())
             return False
 
 

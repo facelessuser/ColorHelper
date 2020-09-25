@@ -545,6 +545,9 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def on_activated(self, view):
         """On activated."""
 
+        if self.ignore_event(view):
+            return
+
         if self.should_update(view):
             ch_preview_thread.modified = True
             ch_preview_thread.time = time()
@@ -554,8 +557,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
         """Run current file scan and/or project scan on save."""
 
         if self.ignore_event(view):
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = time()
             return
 
         if self.should_update(view):
@@ -581,7 +582,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def ignore_event(self, view):
         """Check if event should be ignored."""
 
-        return view.settings().get('is_widget', False)
+        return view.settings().get('is_widget', False) or ch_preview_thread is None or ch_preview_thread.ignore_all
 
 
 ###########################
@@ -650,5 +651,6 @@ def plugin_unloaded():
     for w in sublime.windows():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
+            v.erase_phantoms('color_helper')
 
     unloading = False
