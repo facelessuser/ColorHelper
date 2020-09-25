@@ -191,10 +191,10 @@
             ]
         },
         {
-            "name": "PackageDev Sublime Color Schemes",
-            "syntax_files": ["PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme"],
-            "base_scopes": [
-                "source.json.sublime.color-scheme"
+            "name": "PackageDev Sublime Schemes/Theme",
+            "syntax_files": [
+                "PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme",
+                "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
             "filters": ["srgb", "hsl", "hwb"],
             "scan_scopes": [
