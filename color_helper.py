@@ -232,17 +232,25 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Get color with color picker."""
 
         if self.color_picker_package:
+            self.view.hide_popup()
+            old_color = Color(color).convert("srgb", fit=self.preferred_gamut_mapping).to_string(**util.HEX)
             s = sublime.load_settings('color_helper_share.sublime-settings')
             s.set('color_pick_return', None)
             self.view.window().run_command(
                 'color_pick_api_get_color',
-                {'settings': 'color_helper_share.sublime-settings', "default_color": color[1:]}
+                {'settings': 'color_helper_share.sublime-settings', "default_color": old_color}
             )
             new_color = s.get('color_pick_return', None)
-            if new_color is not None and new_color != color:
-                self.insert_color(new_color)
+            if new_color is not None and new_color != old_color:
+                sublime.set_timeout(
+                    lambda c=Color(new_color).to_string(**util.GENERIC): self.view.run_command(
+                        "color_helper",
+                        {"color": c, 'mode': 'color_picker_result'}
+                    ),
+                    200
+                )
             else:
-                sublime.set_timeout(self.show_color_info, 0)
+                sublime.set_timeout(self.show_color_info, 200)
         else:
             if not self.no_info:
                 on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
@@ -708,11 +716,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_gamut_style()
         self.setup_color_class()
         self.palette_w = self.width * 2
-        self.color_picker_package = False
-        # ```
-        # use_color_picker_package = s.get('use_color_picker_package', False)
-        # self.color_picker_package = use_color_picker_package and util.color_picker_available()
-        # ```
+        s = sublime.load_settings('color_helper.sublime-settings')
+        self.color_picker_package = s.get('use_color_picker_package', False) and util.color_picker_available()
         self.no_info = True
         self.no_palette = True
         if mode == "palette":
