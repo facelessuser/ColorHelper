@@ -71,7 +71,7 @@ class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
             self.view.settings().set("color_helper.scan_override", option)
             if option == "Force enable":
                 self.view.settings().set("color_helper.scan_override", option)
-                ch_preview_thread.force = True
+                ch_preview_thread.modified = True
                 ch_preview_thread.time = time()
             elif option == "Force disable":
                 self.view.settings().set("color_helper.scan_override", option)
@@ -439,7 +439,6 @@ class ChPreviewThread(threading.Thread):
         self.wait_time = 0.12
         self.time = time()
         self.modified = False
-        self.force = False
         self.ignore_all = False
         self.abort = False
         self.scroll = False
@@ -471,15 +470,7 @@ class ChPreviewThread(threading.Thread):
             clear = False
             force = False
             if self.modified:
-                clear = True
-                self.modified = False
-                self.scroll = False
-                if self.force:
-                    force = True
-                    self.force = False
-            elif self.force:
                 force = True
-                self.force = False
                 self.modified = False
                 self.scroll = False
             else:
@@ -507,7 +498,7 @@ class ChPreviewThread(threading.Thread):
         while not self.abort:
             if not self.ignore_all:
                 if (
-                    (self.modified is True or self.scroll is True or self.force is True) and
+                    (self.modified is True or self.scroll is True is True) and
                     (time() - self.time) > self.wait_time
                 ):
                     sublime.set_timeout_async(self.payload, 0)
@@ -538,7 +529,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             # We only render previews when things change or a scroll occurs.
             # On selection, we just need to force the change.
             ch_preview_thread.time = time()
-            ch_preview_thread.force = True
+            ch_preview_thread.modified = True
 
     def on_activated(self, view):
         """On activated."""

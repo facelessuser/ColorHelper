@@ -56,6 +56,7 @@
   entire rule set. If a rule uses the same `name` as one of the existing default rules,  
   a shallow merge will be done so the values of the top level keys will be overridden  
   with the user keys and/or any additional keys will be added.
+- **NEW**: Smoother behavior of color previews when editing code.
 - **REMOVED**: Color completion. It mainly got in the way. The palette can be called any  
   time the user needs it already.
 - **REMOVED**: Hex shaped color picker option has been removed.
