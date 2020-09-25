@@ -652,7 +652,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             for m in self.color_trigger.finditer(bfr):
                 if m:
                     pos = m.start(0)
-                    obj = self.custom_color_class.match(bfr, start=pos)
+                    obj = self.custom_color_class.match(bfr, start=pos, filters=self.filters)
                     if obj is not None:
                         pos = obj.end
                         if ref >= obj.start and ref < obj.end:
@@ -723,7 +723,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = Color("white").to_string(**util.GENERIC)
+                color = Color("white", filters=util.SRGB_SPACES).to_string(**util.GENERIC)
             else:
                 color = obj.color.to_string(**util.GENERIC)
             self.color_picker(color)

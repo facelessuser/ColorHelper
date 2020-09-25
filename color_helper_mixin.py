@@ -9,7 +9,7 @@ from collections import namedtuple
 import re
 import importlib
 
-SPACER = Color("transparent").to_string(**HEX)
+SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
 
 
 class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'])):
@@ -23,17 +23,26 @@ class _ColorMixin:
         """Setup the gamut style."""
 
         ch_settings = sublime.load_settings('color_helper.sublime-settings')
-        self.gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
+        self.preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
+        if self.preferred_gamut_mapping not in ("lch-chroma", "clip"):
+            self.preferred_gamut_mapping = "lch-chroma"
+        self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
 
     def setup_image_border(self):
         """Setup_image_border."""
 
         # Calculate border color for images
-        border_color = Color(mdpopups.scope2style(self.view, '')['background']).convert("hsl")
+        border_color = Color(
+            mdpopups.scope2style(self.view, '')['background'],
+            filters=util.SRGB_SPACES
+        ).convert("hsl")
         border_color.lightness = border_color.lightness + (20 if border_color.luminance() < 0.5 else 20)
         self.default_border = border_color.convert("srgb").to_string(**HEX)
-        self.out_of_gamut = Color("transparent").to_string(**HEX)
-        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**HEX)
+        self.out_of_gamut = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
+        self.out_of_gamut_border = Color(
+            self.view.style().get('redish', "red"),
+            filters=util.SRGB_SPACES
+        ).to_string(**HEX)
 
     def setup_color_class(self):
         """Get the color class for the view."""
@@ -43,10 +52,12 @@ class _ColorMixin:
             ch_settings = sublime.load_settings('color_helper.sublime-settings')
             generic = ch_settings.get('generic', {})
             module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            self.filters = generic.get("filters", [])
             self.output_options = generic.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))
         else:
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            self.filters = rules.get("filters", [])
             self.output_options = rules.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
         self.color_class = Color
@@ -117,8 +128,8 @@ class _ColorMixin:
         preview_border = self.default_border
         if not color.in_gamut("srgb"):
             message = 'preview out of gamut'
-            if self.gamut_style in ("lch-chroma", "clip"):
-                srgb = color.convert("srgb", fit=self.gamut_style)
+            if self.show_out_of_gamut_preview:
+                srgb = color.convert("srgb", fit=self.preferred_gamut_mapping)
                 preview1 = srgb.to_string(**HEX_NA)
                 preview2 = srgb.to_string(**HEX)
             else:

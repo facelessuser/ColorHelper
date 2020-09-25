@@ -41,19 +41,26 @@
     // Gamut
     //////////////////
 
-    // When presented with an image preview that will be out of gamut,
-    // this controls how to display it. (lch-chroma|clip|none).
+    // In some cases, a color will be forced to be within gamut. Some of the
+    // tools may require a color in a certain space. Additionally, previews
+    // must be in the sRGB space, and if it is desired to visually show those
+    // colors, they must also be mapped.
+    //
+    // This controls the mapping algorithm to use: (lch-chroma|clip).
     //
     // - `lch-chroma`: while holding everything constant, chroma is reduced
     //                 until the color is in gamut. Each step of the way,
     //                 the color is clipped and compared to see if it is
-    //                 close enough.
+    //                 close enough. This will probably give overall better
+    //                 results.
     //
-    //.- `clip`:       simple clipping.
-    //
-    // - `none`:       don't display a color at all, just show
-    //                 an indicator that the color is out of gamut.
-    "gamut_style": "lch-chroma",
+    //.- `clip`:       Ranges are just cut to the minimum or maximum if they
+    //.                exceed the color spaces limits.
+    "preferred_gamut_mapping": "lch-chroma",
+
+    // Controls whether previews will try to visually show an out of gamut
+    // color by using gamut mapping.
+    "show_out_of_gamut_preview": true,
 
     //////////////////
     // Palettes
@@ -110,7 +117,7 @@
     // All `color_rule` options apply except: `sytnax_files`, `syntax_filter`, `base_scopes`, `extensions`.
     // This is because this simply applies to all views if not matched by other rules.
     "generic": {
-        "allow_scanning": false,
+        "allow_scanning": true,
         "scan_scopes": ["-comment -string"]
     },
 
@@ -189,9 +196,16 @@
             "base_scopes": [
                 "source.json.sublime.color-scheme"
             ],
+            "filters": ["srgb", "hsl", "hwb"],
             "scan_scopes": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
+            ],
+            "output_options": [
+                {"space": "srgb", "format": {"hex": true}},
+                {"space": "srgb", "format": {"comma": true, "precision": 3}},
+                {"space": "hsl", "format": {"comma": true, "precision": 3}},
+                {"space": "hwb", "format": {"comma": true, "precision": 3}}
             ]
         },
         {
@@ -205,10 +219,6 @@
             "scan_scopes": [
                 "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
                 "source.scss meta.property-value.css -comment -string -variable.declaration.sass"
-            ],
-            "scan_completion_scopes": [
-                "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
-                "source.sass meta.property-value.css -comment -string -variable.declaration.sass"
             ]
         },
         {
@@ -220,9 +230,6 @@
             ],
             "scan_scopes": [
                 "source.scss -comment -string"
-            ],
-            "scan_completion_scopes": [
-                "source.scss"
             ]
         },
         {
@@ -239,10 +246,6 @@
             "scan_scopes": [
                 "source.scss -comment -string -support.type.property-name -variable.declaration",
                 "source.sass -comment -string -support.type.property-name -variable.declaration"
-            ],
-            "scan_completion_scopes": [
-                "source.scss -comment -string -support.type.property-name -variable.declaration",
-                "source.sass -comment -string -support.type.property-name -variable.declaration"
             ]
         },
         {
@@ -253,9 +256,6 @@
                 "source.postcss"
             ],
             "scan_scopes": [
-                "source.postcss meta.property-list.css.postcss -comment -string"
-            ],
-            "scan_completion_scopes": [
                 "source.postcss meta.property-list.css.postcss -comment -string"
             ]
         },

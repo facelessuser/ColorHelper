@@ -15,6 +15,7 @@ RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\
 GENERIC = {"color": True}
 HEX = {"hex": True}
 HEX_NA = {"hex": True, "alpha": False}
+SRGB_SPACES = ("srgb", "hsl", "hwb")
 
 FRONTMATTER = mdpopups.format_frontmatter(
     {

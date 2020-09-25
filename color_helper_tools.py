@@ -35,7 +35,6 @@ occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim 
 RE_PLUS = re.compile(r'\s*\+\s*')
 RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
-SRGB_SPACES = ("srgb", "hsl", "hwb")
 
 
 def parse_color(string, start=0, second=False):
@@ -102,7 +101,7 @@ def parse_color_contrast(string, start=0, second=False):
     length = len(string)
     more = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False, filters=SRGB_SPACES)
+    color = Color.match(string, start=start, fullmatch=False, filters=util.SRGB_SPACES)
     if color:
         start = color.end
         if color.end != length:
@@ -247,6 +246,7 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
         self.view = view
         self.on_cancel = on_cancel
         self.setup_image_border()
+        self.setup_gamut_style()
         self.setup_sizes()
 
     def cancel(self):
@@ -283,7 +283,7 @@ class ColorInputHandler(_ColorInputHandler):
             if text:
                 color = None
                 try:
-                    color = self.custom_color_class(text)
+                    color = self.custom_color_class(text, filters=self.filters)
                 except Exception:
                     pass
                 if color is not None:
@@ -303,7 +303,7 @@ class ColorInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 message = ""
                 if not srgb.in_gamut():
-                    srgb.fit("srgb")
+                    srgb.fit("srgb", method=self.preferred_gamut_mapping)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
@@ -362,13 +362,13 @@ class ColorContrastInputHandler(_ColorInputHandler):
             if text:
                 color = None
                 try:
-                    color = self.custom_color_class(text)
+                    color = self.custom_color_class(text, filters=self.filters)
                 except Exception:
                     pass
                 if color is not None:
                     color = Color(color)
                     if color.space() not in SRGB_SPACES:
-                        color = color.convert("srgb", fit=True)
+                        color = color.convert("srgb", fit=self.preferred_gamut_mapping)
                     return color.to_string()
         return ''
 
@@ -400,8 +400,8 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
                 html += CONTRAST_DEMO.format(
-                    Color(colors[2]).to_string(comma=True),
-                    Color(colors[1]).to_string(comma=True)
+                    colors[2].to_string(comma=True),
+                    colors[1].to_string(comma=True)
                 )
             return sublime.Html(html)
         except Exception:

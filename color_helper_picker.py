@@ -36,12 +36,11 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.template_vars = {}
         color = Color(color)
         self.setup_image_border()
+        self.setup_gamut_style()
         self.setup_sizes()
         self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
-        self.color = color.convert(self.mode)
-        if not self.color.in_gamut():
-            self.color.fit()
+        self.color = color.convert(self.mode, fit=self.preferred_gamut_mapping)
 
     def setup_mode(self, color, mode):
         """Setup mode."""
@@ -87,7 +86,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being dark than the last.
             # Each column will progress through hues.
-            color = Color("hsl(0 {}% 90%)".format(s))
+            color = Color("hsl(0 {}% 90%)".format(s), filters=util.SRGB_SPACES)
             hfac = 24.0
             lfac = 8.0
             check_size = self.check_size(self.height)
@@ -136,7 +135,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate a grayscale bar.
             lfac = 10.0
-            color = Color('hsl(0 0% 100%)')
+            color = Color('hsl(0 0% 100%)', filters=util.SRGB_SPACES)
             check_size = self.check_size(self.height)
             for y in range(0, 11):
                 value = color.convert("srgb").to_string(**HEX)
@@ -191,7 +190,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2hex_map):
-            color = Color(name)
+            color = Color(name, filters=util.SRGB_SPACES)
 
             html.append(
                 '[%s](%s) %s<br>' % (
@@ -429,7 +428,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_edit' if href == '__edit__' else 'color_helper_contrast_ratio',
                 {
-                    "initial": Color(color).to_string(), "on_done": on_done, "on_cancel": on_cancel
+                    "initial": Color(color, filters=util.SRGB_SPACES).to_string(),
+                    "on_done": on_done, "on_cancel": on_cancel
                 }
             )
 

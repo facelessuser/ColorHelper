@@ -154,13 +154,17 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             # Get out of gamut related options
             out_of_gamut = Color("transparent").to_string(**util.HEX)
             out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
-            gamut_style = ch_settings.get('gamut_style', 'lch-chroma')
+            preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
+            if preferred_gamut_mapping not in ("lch-chroma", "clip"):
+                preferred_gamut_mapping = "lch-chroma"
+            show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
 
             # Get triggers that identify where colors are likely
             color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
 
             # Get custom color class
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            filters = rules.get("filters", [])
             color_class = getattr(importlib.import_module(module), color_class)
 
             # Find the colors
@@ -169,7 +173,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             for m in color_trigger.finditer(source):
                 # Test if we have found a valid color
                 start = m.start()
-                obj = color_class.match(source, start=start)
+                obj = color_class.match(source, start=start, filters=filters)
                 if obj is not None:
                     # Calculate visible viewport
                     src_start = visible_region.begin() + obj.start
@@ -214,15 +218,18 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     continue
 
                 # Calculate a reasonable border color for our image at this location and get color strings
-                hsl = Color(mdpopups.scope2style(self.view, self.view.scope_name(pt))['background']).convert("hsl")
+                hsl = Color(
+                    mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
+                    filters=util.SRGB_SPACES
+                ).convert("hsl")
                 hsl.lightness = hsl.lightness + (20 if hsl.luminance() < 0.5 else -20)
                 preview_border = hsl.convert("srgb").to_string(**util.HEX)
                 color = Color(obj.color)
                 title = ''
                 if not color.in_gamut("srgb"):
                     title = ' title="Out of gamut"'
-                    if gamut_style in ("lch-chroma", "clip"):
-                        srgb = color.convert("srgb", fit=gamut_style)
+                    if show_out_of_gamut_preview:
+                        srgb = color.convert("srgb", fit=preferred_gamut_mapping)
                         preview1 = srgb.to_string(**util.HEX_NA)
                         preview2 = srgb.to_string(**util.HEX)
                     else:
@@ -348,19 +355,19 @@ class ChPreviewThread(threading.Thread):
     def payload(self):
         """Code to run."""
 
-        clear = False
-        force = False
-        if self.modified:
-            clear = True
-            self.modified = False
-        elif self.force:
-            force = True
-            self.force = False
-        else:
-            self.scroll = False
-
-        # Ignore selection and edit events inside the routine
         if not self.ignore_all:
+            clear = False
+            force = False
+            if self.modified:
+                clear = True
+                self.modified = False
+            elif self.force:
+                force = True
+                self.force = False
+            else:
+                self.scroll = False
+
+            # Ignore selection and edit events inside the routine
             try:
                 view = sublime.active_window().active_view()
                 args = {"clear": clear, "force": force}
@@ -404,8 +411,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.modified = True
             ch_preview_thread.time = time()
 
-        self.on_selection_modified(view)
-
     def on_selection_modified(self, view):
         """Flag that we need to show a tooltip."""
         if self.ignore_event(view):
@@ -417,8 +422,24 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.time = time()
             ch_preview_thread.force = True
 
+    def on_activated(self, view):
+        """On activated."""
+
+        if self.ignore_event(view):
+            return
+
+        if self.should_update(view):
+            ch_preview_thread.modified = True
+            ch_preview_thread.time = time()
+            self.set_file_scan_rules(view)
+
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
+
+        if ch_preview_thread:
+            ch_preview_thread.ignore_all = True
+
+        view.settings().clear_on_change('color_helper.reload')
 
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
@@ -472,6 +493,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             outputs = rule.get("output_options", util.DEF_OUTPUT)
             colorclass = rule.get("color_class", "coloraide.css.Color")
             color_trigger = rule.get("color_trigger", RE_COLOR_START)
+            filters = rule.get("filters", [])
             matched = True
             break
 
@@ -483,6 +505,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             outputs = generic.get("output_options", util.DEF_OUTPUT)
             colorclass = generic.get("color_class", "coloraide.css.Color")
             color_trigger = generic.get("color_trigger", RE_COLOR_START)
+            filters = rule.get("filters", [])
             matched = True
 
         # Add user configuration
@@ -494,6 +517,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "allow_scanning": allow_scanning,
                     "scan_scopes": scan_scopes,
                     "current_ext": ext,
+                    "filters": filters,
                     "current_syntax": syntax,
                     "last_updated": ch_last_updated,
                     "output_options": outputs,
@@ -514,11 +538,12 @@ class ColorHelperListener(sublime_plugin.EventListener):
             )
 
         # Watch for settings changes so we can update if necessary.
-        if not unloading and ch_preview_thread is not None:
-            view.settings().clear_on_change('color_helper.reload')
-            view.settings().add_on_change(
-                'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
-            )
+        if ch_preview_thread is not None:
+            if not unloading:
+                view.settings().add_on_change(
+                    'color_helper.reload', lambda view=view: self.on_view_settings_change(view)
+                )
+            ch_preview_thread.ignore_all = False
 
     def should_update(self, view):
         """Check if an update should be performed."""
@@ -542,28 +567,6 @@ class ColorHelperListener(sublime_plugin.EventListener):
             force_update = True
         return force_update
 
-    def on_activated(self, view):
-        """On activated."""
-
-        if self.ignore_event(view):
-            return
-
-        if self.should_update(view):
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = time()
-            self.set_file_scan_rules(view)
-
-    def on_post_save(self, view):
-        """Run current file scan and/or project scan on save."""
-
-        if self.ignore_event(view):
-            return
-
-        if self.should_update(view):
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = time()
-            self.set_file_scan_rules(view)
-
     def on_view_settings_change(self, view):
         """Post text command event to catch syntax setting."""
 
@@ -582,7 +585,12 @@ class ColorHelperListener(sublime_plugin.EventListener):
     def ignore_event(self, view):
         """Check if event should be ignored."""
 
-        return view.settings().get('is_widget', False) or ch_preview_thread is None or ch_preview_thread.ignore_all
+        return (
+            view.settings().get('is_widget', False) or
+            ch_preview_thread is None or
+            ch_preview_thread.ignore_all or
+            unloading
+        )
 
 
 ###########################
@@ -651,6 +659,7 @@ def plugin_unloaded():
     for w in sublime.windows():
         for v in w.views():
             v.settings().clear_on_change('color_helper.reload')
+            v.settings().erase('color_helper.scan')
             v.erase_phantoms('color_helper')
 
     unloading = False
