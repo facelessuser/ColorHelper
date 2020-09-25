@@ -93,7 +93,6 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             for y in range(0, 11):
                 html_colors.append([self.get_spacer(width=5)])
                 for x in range(0, 15):
-                    # rgb = RGB(HSL("HSL({:f} {:f}% {:f}%)".format(h * 360.0, s * 100, l * 100)))
                     value = color.convert("srgb").to_string(**HEX)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
@@ -168,7 +167,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
     def get_current_color(self):
         """Get current color."""
 
-        # Show a previw of the current color.
+        # Show a preview of the current color.
         check_size = self.check_size(self.height * 2)
         preview = self.color.convert("srgb")
         html = (

@@ -51,7 +51,7 @@ class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
     """Override current scanning state."""
 
     def run(self, edit):
-        """Override the current acan "allow" state for this specific view."""
+        """Override the current scan "allow" state for this specific view."""
 
         override = self.view.settings().get("color_helper.scan_override", "Remove override")
         if override == "Force enable":
@@ -130,7 +130,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         Return content in consecutive chunks.
         """
 
-        # Get viewable bounds so we can contrain both vertically and horizontally.
+        # Get viewable bounds so we can constrain both vertically and horizontally.
         position = self.view.viewport_position()
         dimensions = self.view.viewport_extent()
         bounds = [
@@ -138,7 +138,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             (position[1], position[1] + dimensions[1] - 1)
         ]
 
-        # Get all the llines
+        # Get all the lines
         lines = self.view.split_by_newlines(visible_region)
 
         # Calculate regions of consecutive lines that do not have gaps due to clipping
@@ -254,7 +254,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         if not force and self.previous_region == visible_region:
             return
         self.previous_region = visible_region
-        # source = self.view.substr(visible_region)
 
         # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
@@ -290,7 +289,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
             # Find source content in the visible region.
             # We will return consecutive content, but if the lines are too wide
-            # horizontally, they will be clipped and returend as seperate chunks.
+            # horizontally, they will be clipped and returned as separate chunks.
             for src_region in self.source_iter(visible_region):
                 source = self.view.substr(src_region)
                 start = 0
@@ -564,10 +563,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
         s = sublime.load_settings('color_helper.sublime-settings')
-        rules = s.get("color_rules", [])
+        rules = util.get_settings_rules()
         syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
 
-        # Check if view meets critera for on of our rule sets
+        # Check if view meets criteria for on of our rule sets
         matched = False
         for rule in rules:
             results = []
@@ -743,7 +742,6 @@ def setup_previews():
     unloading = False
 
     if ch_settings.get('inline_previews', False):
-        # ch_preview = ChPreview()
         ch_preview_thread = ChPreviewThread()
         ch_preview_thread.start()
 

@@ -55,13 +55,13 @@ DEF_OUTPUT = [
 
 
 def encode_color(color):
-    """Encode color into base64 for url links."""
+    """Encode color into base64 for URL links."""
 
     return base64.b64encode(color.encode('utf-8')).decode('utf-8')
 
 
 def decode_color(color):
-    """Decode color from base64 for url links."""
+    """Decode color from base64 for URL links."""
 
     return base64.b64decode(color.encode('utf-8')).decode('utf-8')
 
@@ -122,19 +122,6 @@ def get_scope(view, rules, skip_sel_check=False):
     return scopes
 
 
-def get_scope_completion(view, rules, skip_sel_check=False):
-    """Get additional auto-popup scope rules for incomplete colors only."""
-
-    scopes = None
-    if rules is not None:
-        scopes = ','.join(rules.get('scan_completion_scopes', []))
-        sels = view.sel()
-        if not skip_sel_check:
-            if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
-                scopes = None
-    return scopes
-
-
 def get_favs():
     """Get favorites object."""
 
@@ -184,3 +171,27 @@ def get_project_folders(window):
     if data is None:
         data = {'folders': [{'path': f} for f in window.folders()]}
     return data.get('folders', [])
+
+
+def merge_rules(a, b):
+    """Merge two rules."""
+    c = a.copy()
+    c.update(b)
+    return c
+
+
+def get_settings_rules():
+    """Read rules from settings and allow overrides."""
+
+    s = sublime.load_settings('color_helper.sublime-settings')
+    rules = s.get("color_rules", [])
+    user_rules = s.get("user_color_rules", [])
+    names = {rule["name"]: i for i, rule in enumerate(rules) if "name" in rule}
+    for urule in user_rules:
+        name = urule.get("name")
+        if name is not None and name in names:
+            index = names[name]
+            rules[index] = merge_rules(urule, rules[index])
+        else:
+            rules.append(urule)
+    return rules

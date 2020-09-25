@@ -17,7 +17,7 @@ class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'
 
 
 class _ColorMixin:
-    """Color box mixin class."""
+    """Color box mix-in class."""
 
     def setup_gamut_style(self):
         """Setup the gamut style."""

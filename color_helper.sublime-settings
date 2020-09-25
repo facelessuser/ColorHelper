@@ -132,6 +132,10 @@
     // These are the color rules for a given view.
     // Only one rule will apply to a given view.
     //
+    // - `name`:           optional name that, if a user creates a rule in `user_color_rules`, and it
+    //                     it shares the same `name`, a shallow merge of the two rules will be made which
+    //                     will allow the user rule to override the values of top level keys.
+    //
     // - `sytnax_files`:   target a view using a syntax from the given list. Defaults to an empty list.
     //
     // - `syntax_filter`:  specify whether `syntax_files` is an allowlist or blocklist. Can be either
@@ -298,13 +302,8 @@
         }
     ],
 
-
-    //////////////////
-    // Needed?
-    //////////////////
-
-    // Override image border color. This is mainly for schemes that use a dramatically different
-    // background for popups vs code background. Color should be in the form `#RRGGBB`. Alpha channels will
-    // be ignored.
-    "image_border_color": null
+    // User rules. These will be appended to the normal `color_rules` unless they
+    // share the same name. In that case, a shallow merge will be performed allowing
+    // the values of top level keys to be overriden and new keys to be added.
+    "user_color_rules": []
 }

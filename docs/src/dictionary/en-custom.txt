@@ -24,6 +24,7 @@ RGBA
 SCSS
 Screencap
 Screenshot
+TODO
 Twemoji
 Unescape
 argb
@@ -48,6 +49,7 @@ popup
 popups
 pre
 requesters
+sRGB
 scrollable
 stylesheet
 sublicense
@@ -56,5 +58,6 @@ tooltips
 unsaturate
 uppercased
 viewable
+viewport
 webcolor
 weslly

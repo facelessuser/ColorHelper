@@ -709,8 +709,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_color_class()
         self.palette_w = self.width * 2
         self.color_picker_package = False
+        # ```
         # use_color_picker_package = s.get('use_color_picker_package', False)
         # self.color_picker_package = use_color_picker_package and util.color_picker_available()
+        # ```
         self.no_info = True
         self.no_palette = True
         if mode == "palette":
