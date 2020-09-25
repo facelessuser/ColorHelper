@@ -56,6 +56,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         super().__init__(view)
         self.previous_region = sublime.Region(0, 0)
         self.previews = {}
+        view.erase_phantoms("color_helper")
 
     def on_navigate(self, href):
         """Handle color box click."""
@@ -361,9 +362,15 @@ class ChPreviewThread(threading.Thread):
             if self.modified:
                 clear = True
                 self.modified = False
+                self.scroll = False
+                if self.force:
+                    force = True
+                    self.force = False
             elif self.force:
                 force = True
                 self.force = False
+                self.modified = False
+                self.scroll = False
             else:
                 self.scroll = False
 
