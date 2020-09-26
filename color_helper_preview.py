@@ -17,6 +17,7 @@ import traceback
 from .multiconf import get as qualify_settings
 import importlib
 from collections import namedtuple
+import sys
 
 PREVIEW_IMG = (
     '<style>'
@@ -283,6 +284,8 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
             filters = rules.get("filters", [])
             color_class = getattr(importlib.import_module(module), color_class)
+            if module in sys.modules:
+                del sys.modules[module]
 
             # Find the colors
             colors = []

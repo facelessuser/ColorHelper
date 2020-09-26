@@ -8,6 +8,7 @@ from coloraide.css import Color
 from collections import namedtuple
 import re
 import importlib
+import sys
 
 SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
 
@@ -73,7 +74,11 @@ class _ColorMixin:
         self.color_class = Color
         try:
             self.custom_color_class = getattr(importlib.import_module(module), color_class)
+            if module in sys.modules:
+                del sys.modules[module]
         except Exception:
+            import traceback
+            print(traceback.format_exc())
             self.custom_color_class = self.color_class
 
     def get_spacer(self, width=1, height=1):
