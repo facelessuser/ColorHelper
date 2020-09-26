@@ -7,8 +7,6 @@ from .multiconf import get as qualify_settings
 from coloraide.css import Color
 from collections import namedtuple
 import re
-import importlib
-import sys
 
 SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
 
@@ -62,20 +60,18 @@ class _ColorMixin:
         if rules is None:
             ch_settings = sublime.load_settings('color_helper.sublime-settings')
             generic = ch_settings.get('generic', {})
-            module, color_class = generic.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            module = generic.get("color_class", "coloraide.css.colors.Color")
             self.filters = generic.get("filters", [])
             self.output_options = generic.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))
         else:
-            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            module = rules.get("color_class", "coloraide.css.colors.Color")
             self.filters = rules.get("filters", [])
             self.output_options = rules.get('output_options', util.DEF_OUTPUT)
             self.color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
         self.color_class = Color
         try:
-            self.custom_color_class = getattr(importlib.import_module(module), color_class)
-            if module in sys.modules:
-                del sys.modules[module]
+            self.custom_color_class = util.import_color(module)
         except Exception:
             import traceback
             print(traceback.format_exc())

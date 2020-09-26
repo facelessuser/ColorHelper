@@ -33,9 +33,10 @@ occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim 
 """
 
 RE_PLUS = re.compile(r'\s*\+\s*')
-RE_RATIO = re.compile(r'\s*/\s*')
+RE_SLASH = re.compile(r'\s*/\s*')
 RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
+RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 
 
 def parse_color(string, start=0, second=False):
@@ -101,6 +102,7 @@ def parse_color_contrast(string, start=0, second=False):
 
     length = len(string)
     more = None
+    ratio = None
     # First color
     color = Color.match(string, start=start, fullmatch=False, filters=util.SRGB_SPACES)
     if color:
@@ -108,11 +110,16 @@ def parse_color_contrast(string, start=0, second=False):
         if color.end != length:
             more = True
 
+            m = RE_RATIO.match(string, start)
+            if m:
+                ratio = float(m.group(1))
+                start = m.end(0)
+
             # Is the first color in the input or the second?
-            if not second:
+            if not second and not ratio:
                 # Plus sign indicating we have an additional color to mix
-                m = RE_RATIO.match(string, start)
-                if m:
+                m = RE_SLASH.match(string, start)
+                if m and not ratio:
                     start = m.end(0)
                     more = start != length
                 else:
@@ -122,7 +129,7 @@ def parse_color_contrast(string, start=0, second=False):
 
     if color:
         color.end = start
-    return color, more
+    return color, ratio, more
 
 
 def evaluate(string):
@@ -198,14 +205,15 @@ def evaluate_contrast(string):
     try:
         color = string.strip()
         second = None
+        ratio = None
 
         # Try to capture the color or the two colors to mix
-        first, more = parse_color_contrast(color)
+        first, ratio, more = parse_color_contrast(color)
         if first and more is not None:
             if more is False:
                 first = None
             else:
-                second, more = parse_color_contrast(color, start=first.end, second=True)
+                second, ratio, more = parse_color_contrast(color, start=first.end, second=True)
                 if not second or more is False:
                     first = None
                     second = None
@@ -225,6 +233,21 @@ def evaluate_contrast(string):
             if second.alpha < 1.0:
                 second.alpha = 1.0
             colors.append(second)
+            if ratio:
+                if first.alpha < 1.0:
+                    first = first.alpha_composite(second, space="srgb")
+
+                colormod = util.import_color("ColorHelper.custom.st_colormod.Color")
+                color = colormod(
+                    "color({} min-contrast({} {}))".format(
+                        first.to_string(),
+                        second.to_string(),
+                        ratio
+                    )
+                )
+                first = Color(color).convert("srgb")
+                colors[0] = first
+
             if first.alpha < 1.0:
                 # Contrasted with current color
                 colors.append(first.alpha_composite(second, space="srgb"))
@@ -394,10 +417,12 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 else:
                     min_max = ""
                 html = (
-                    "<br><br><p><strong>Relative Luminance (fg)</strong>: {}</p>{}"
+                    "<br><br><p><strong>Fg</strong>: {}</p>"
+                    "<p><strong>Bg</strong>: {}</p>"
+                    "<p><strong>Relative Luminance (fg)</strong>: {}</p>{}"
                     "<p><strong>Relative Luminance (bg)</strong>: {}</p>"
                 ).format(
-                    lum3, min_max, lum2
+                    colors[2].to_string(), colors[1].to_string(), lum3, min_max, lum2
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
                 html += CONTRAST_DEMO.format(

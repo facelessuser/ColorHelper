@@ -9,6 +9,8 @@ from textwrap import dedent
 import platform
 import mdpopups
 import base64
+import importlib
+import sys
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
@@ -52,6 +54,16 @@ DEF_OUTPUT = [
     {"space": "lab", "format": {"comma": False, "precision": 3}},
     {"space": "xyz", "format": {}}
 ]
+
+
+def import_color(module_path):
+    """Import color module."""
+
+    module, color_class = module_path.rsplit('.', 1)
+    color_class = getattr(importlib.import_module(module), color_class)
+    if module in sys.modules:
+        del sys.modules[module]
+    return color_class
 
 
 def encode_color(color):

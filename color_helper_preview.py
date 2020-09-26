@@ -15,9 +15,7 @@ import mdpopups
 from . import color_helper_util as util
 import traceback
 from .multiconf import get as qualify_settings
-import importlib
 from collections import namedtuple
-import sys
 
 PREVIEW_IMG = (
     '<style>'
@@ -284,11 +282,9 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
 
             # Get custom color class
-            module, color_class = rules.get("color_class", "coloraide.css.colors.Color").rsplit('.', 1)
+            module = rules.get("color_class", "coloraide.css.colors.Color")
             filters = rules.get("filters", [])
-            color_class = getattr(importlib.import_module(module), color_class)
-            if module in sys.modules:
-                del sys.modules[module]
+            color_class = util.import_color(module)
 
             # Find the colors
             colors = []

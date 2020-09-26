@@ -643,11 +643,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def get_cursor_color(self):
         """Get cursor color."""
 
-        color = None
         sels = self.view.sel()
+        obj = None
         if (len(sels) == 1 and sels[0].size()):
             region = sels[0]
-            visible = self.view.visible_region()
             bfr = self.view.substr(region)
             obj = self.custom_color_class.match(bfr, fullmatch=True, filters=self.filters)
             if obj is not None:
