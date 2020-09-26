@@ -314,7 +314,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     self.view.sel().add(repl_region)
             self.view.run_command("insert", {"characters": value})
             self.view.sel().clear()
-            self.view.sel().add(sublime.Region(obj.start))
+            self.view.sel().add(sublime.Region(obj.start + len(value), obj.start))
         self.view.hide_popup()
 
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
@@ -645,31 +645,16 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         color = None
         sels = self.view.sel()
-        if (len(sels) == 1 and sels[0].size() == 0):
-            point = sels[0].begin()
+        if (len(sels) == 1 and sels[0].size()):
+            region = sels[0]
             visible = self.view.visible_region()
-            start = point - 50
-            end = point + 50
-            if start < visible.begin():
-                start = visible.begin()
-            if end > visible.end():
-                end = visible.end()
-            bfr = self.view.substr(sublime.Region(start, end))
-            ref = point - start
-
-            for m in self.color_trigger.finditer(bfr):
-                if m:
-                    pos = m.start(0)
-                    obj = self.custom_color_class.match(bfr, start=pos, filters=self.filters)
-                    if obj is not None:
-                        pos = obj.end
-                        if ref >= obj.start and ref < obj.end:
-                            obj.start = start + obj.start
-                            obj.end = start + obj.end
-                            obj.color = Color(obj.color)
-                            color = obj
-                            break
-        return color
+            bfr = self.view.substr(region)
+            obj = self.custom_color_class.match(bfr, fullmatch=True, filters=self.filters)
+            if obj is not None:
+                obj.start = region.begin()
+                obj.end = region.end()
+                obj.color = Color(obj.color)
+        return obj
 
     def show_color_info(self, update=False):
         """Show the color under the cursor."""

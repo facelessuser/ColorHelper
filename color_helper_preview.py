@@ -44,7 +44,7 @@ def preview_is_on_left():
     return ch_settings.get('inline_preview_position') != 'right'
 
 
-class ColorSwatch(namedtuple('ColorSwatch', ['start', 'end', 'pid', 'timestamp'])):
+class ColorSwatch(namedtuple('ColorSwatch', ['start', 'end', 'pid', 'uid'])):
     """Color swatch."""
 
 
@@ -98,11 +98,14 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
         self.view.sel().clear()
         for k, v in self.previews.items():
-            if href == v.timestamp:
+            if href == v.uid:
                 phantom = self.view.query_phantom(v.pid)
                 if phantom:
-                    self.view.sel().add(sublime.Region(int(v.start)))
-                    self.view.run_command('color_helper', {"mode": "info"})
+                    self.view.sel().add(sublime.Region(int(v.end), int(v.start)))
+                    sublime.set_timeout(
+                        lambda cmd="color_helper", args={"mode": "info"}: self.view.run_command(cmd, args),
+                        100
+                    )
                 break
 
     def calculate_box_size(self):
@@ -357,9 +360,9 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                         preview2 = srgb.to_string(**util.HEX)
 
                     # Create preview
-                    timestamp = str(time())
+                    unique_id = str(time()) + str(region)
                     html = PREVIEW_IMG.format(
-                        timestamp,
+                        unique_id,
                         title,
                         mdpopups.color_box(
                             [preview1, preview2], preview_border,
@@ -373,7 +376,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                             pt,
                             region.begin(),
                             region.end(),
-                            timestamp
+                            unique_id
                         )
                     )
 
@@ -387,7 +390,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
     def add_phantoms(self, colors):
         """Add phantoms."""
 
-        for html, pt, start, end, timestamp in colors:
+        for html, pt, start, end, unique_id in colors:
             pid = self.view.add_phantom(
                 'color_helper',
                 sublime.Region(pt),
@@ -395,7 +398,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                 0,
                 on_navigate=self.on_navigate
             )
-            self.previews[str(start)] = ColorSwatch(start, end, pid, timestamp)
+            self.previews[str(start)] = ColorSwatch(start, end, pid, unique_id)
 
     def reset_previous(self):
         """Reset previous region."""
