@@ -38,6 +38,74 @@ RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
 RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 
+DEF_COLORMOD = """---
+markdown_extensions:
+- markdown.extensions.attr_list
+- markdown.extensions.def_list
+- pymdownx.betterem
+- pymdownx.extrarawhtml
+...
+
+<style>
+a {
+    color: inherit;
+}
+</style>
+
+## Format
+
+**`color_syntax | color(color_syntax adjuster*)`**
+
+Supported adjusters are **alpha()**, **a()**, **lightness**, **l()**, **saturation()**, **s()**, **blend()**,
+**blenda()**.
+
+Please see [Sublime Text Documentation](https://www.sublimetext.com/docs/color_schemes.html#colors) for more info.
+"""
+
+DEF_RATIO = """---
+markdown_extensions:
+- markdown.extensions.attr_list
+- markdown.extensions.def_list
+- pymdownx.betterem
+- pymdownx.extrarawhtml
+...
+
+## Format
+
+`Color( / Color)?( ratio)?`
+
+## Instructions
+
+Colors should be either an **sRGB**, **HSL**, or **HWB** color. All others will be convert to sRGB.
+
+If only one color is provided, the default background of either **black** or **white** will be used.
+"""
+
+DEF_EDIT = """---
+markdown_extensions:
+- markdown.extensions.attr_list
+- markdown.extensions.def_list
+- pymdownx.betterem
+- pymdownx.extrarawhtml
+...
+
+## Format
+
+**`Color(( percent)? + Color( percent)?( @colorspace)?)`**
+
+## Instructions
+
+Colors can be specified in any supported color space.
+
+If two colors are provided, joined with **`+`**, the colors will be mixed.
+
+If mixing with **`+`** colors will be mixed in the color space of the first color unless a
+different one is specified with **`@colorspace`**.
+
+If percents are defined, they must add up to 100%, if they do not, they will be scaled. If
+only a single percent is defined, the other color will use **`1 - percent`**.
+"""
+
 
 def parse_color(string, start=0, second=False):
     """
@@ -228,7 +296,7 @@ def evaluate_contrast(string):
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
-            colors.append(first.convert("srgb"))
+            colors.append(first)
         if second:
             if second.alpha < 1.0:
                 second.alpha = 1.0
@@ -245,7 +313,7 @@ def evaluate_contrast(string):
                         ratio
                     )
                 )
-                first = Color(color).convert("srgb")
+                first = Color(color)
                 colors[0] = first
 
             if first.alpha < 1.0:
@@ -255,7 +323,7 @@ def evaluate_contrast(string):
                 colors.append(first.alpha_composite("white", space="srgb"))
                 colors.append(first.alpha_composite("black", space="srgb"))
             else:
-                colors.append(first.convert("srgb"))
+                colors.append(first.clone())
     except Exception:
         colors = []
     return colors
@@ -294,7 +362,7 @@ class ColorInputHandler(_ColorInputHandler):
     def placeholder(self):
         """Placeholder."""
 
-        return "Color [+ Color]?"
+        return "Color"
 
     def initial_text(self):
         """Initial text."""
@@ -347,9 +415,9 @@ class ColorInputHandler(_ColorInputHandler):
                     message,
                     color.to_string()
                 )
-            return sublime.Html(html)
+            return sublime.Html(html) if html else sublime.Html(mdpopups.md2html(self.view, DEF_EDIT))
         except Exception:
-            return ""
+            return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT))
 
     def validate(self, color):
         """Validate."""
@@ -373,7 +441,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
     def placeholder(self):
         """Placeholder."""
 
-        return "Color / Color"
+        return "Color"
 
     def initial_text(self):
         """Initial text."""
@@ -402,7 +470,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
         try:
             colors = evaluate_contrast(text)
 
-            html = ""
+            html = mdpopups.md2html(self.view, DEF_RATIO)
             if len(colors) >= 3:
                 lum2 = colors[1].luminance()
                 lum3 = colors[2].luminance()
@@ -431,15 +499,109 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 )
             return sublime.Html(html)
         except Exception:
-            return ""
+            return sublime.Html(mdpopups.md2html(self.view, DEF_RATIO))
 
     def validate(self, color):
         """Validate."""
 
-        return True
         try:
             colors = evaluate_contrast(color)
             return len(colors) > 0
+        except Exception:
+            return False
+
+
+class ColorModInputHandler(_ColorInputHandler):
+    """Handle color inputs."""
+
+    def __init__(self, view, initial=None, **kwargs):
+        """Initialize."""
+
+        self.color = initial
+        super().__init__(view, **kwargs)
+
+    def placeholder(self):
+        """Placeholder."""
+
+        return "Color"
+
+    def initial_text(self):
+        """Initial text."""
+
+        self.setup_color_class()
+        self.color_mod_class = util.import_color("ColorHelper.custom.st_colormod.Color")
+        if self.color is not None:
+            return self.color
+        elif len(self.view.sel()) == 1:
+            text = self.view.substr(self.view.sel()[0])
+            if text:
+                color = None
+                name1 = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
+                name2 = '.'.join([self.color_mod_class.__module__, self.color_mod_class.__name__])
+                if name1 == name2:
+                    # Try and handle a `color()` case if the file uses `color-mod`.
+                    # Basically, if the file already supports `color-mod` input,
+                    # then we want to return the text raw if it parses.
+                    try:
+                        color = self.color_mod_class(text, filters=util.SRGB_SPACES)
+                    except Exception:
+                        pass
+                if color is None:
+                    # Try to use the current file's input format and convert input
+                    # to the default string output for the color.
+                    try:
+                        color = self.custom_color_class(text, filters=self.filters)
+                    except Exception:
+                        pass
+                    if color is not None:
+                        # convert to a `color-mod` instance.
+                        return self.color_mod_class(color).to_string()
+                else:
+                    return text
+        return ''
+
+    def preview(self, text):
+        """Preview."""
+
+        try:
+            color = self.color_mod_class(text.strip())
+            if color is not None:
+                srgb = Color(color).convert("srgb")
+                preview_border = self.default_border
+                message = ""
+                if not srgb.in_gamut():
+                    srgb.fit("srgb", method=self.preferred_gamut_mapping)
+                    message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
+                preview = srgb.to_string(**util.HEX_NA)
+                preview_alpha = srgb.to_string(**util.HEX)
+                preview_border = self.default_border
+
+                height = self.height * 3
+                width = self.width * 3
+                check_size = self.check_size(height, scale=8)
+
+                html = PREVIEW_IMG.format(
+                    mdpopups.color_box(
+                        [
+                            preview,
+                            preview_alpha
+                        ], preview_border, border_size=1, height=height, width=width, check_size=check_size
+                    ),
+                    message,
+                    color.to_string()
+                )
+            return sublime.Html(html) if html else sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+            return sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
+
+    def validate(self, color):
+        """Validate."""
+
+        try:
+            color = self.color_mod_class(color.strip())
+            return color is not None
         except Exception:
             return False
 
@@ -500,3 +662,32 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Input."""
 
         return ColorContrastInputHandler(self.view, **kwargs)
+
+
+class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand):
+    """Open edit a color directly."""
+
+    def run(
+        self, edit, color_mod, initial=None, on_done=None, **kwargs
+    ):
+        """Run command."""
+
+        text = color_mod.strip()
+        self.custom_color_class = util.import_color("ColorHelper.custom.st_colormod.Color")
+        color = self.custom_color_class(text)
+
+        if color is not None:
+            if on_done is None:
+                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result", "insert_raw": text}}
+            call = on_done.get('command')
+            if call is None:
+                return
+            args = copy.deepcopy(on_done.get('args', {}))
+            args['color'] = color.to_string(**util.GENERIC)
+            args['insert_raw'] = text
+            self.view.run_command(call, args)
+
+    def input(self, kwargs):  # noqa: A003
+        """Input."""
+
+        return ColorModInputHandler(self.view, **kwargs)

@@ -55,7 +55,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif href == '__info__':
             self.show_color_info(update=True)
         elif href.startswith('__edit__'):
-            self.edit_color(href.split(':', 1)[1])
+            self.edit_color(*(href.split(':', 2)[1:]))
         elif href.startswith('__contrast__'):
             self.contrast_color(href.split(':', 1)[1])
         elif href.startswith('__color_picker__'):
@@ -266,8 +266,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 }
             )
 
-    def edit_color(self, color):
+    def edit_color(self, mode, color):
         """Edit the color."""
+        color = util.decode_color(color)
         if not self.no_info:
             on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
         elif not self.no_palette:
@@ -275,7 +276,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         else:
             on_cancel = None
         self.view.run_command(
-            'color_helper_edit', {
+            ('color_helper_sublime_color_mod' if mode == 'st-colormod' else 'color_helper_edit'), {
                 'initial': color,
                 'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                 'on_cancel': on_cancel
@@ -399,14 +400,24 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def format_info(self, obj, template_vars):
         """Format the selected color info."""
 
+        s = sublime.load_settings('color_helper.sublime-settings')
+        rules = util.get_rules(self.view)
+        if rules is None:
+            rules = s.get("generic", {})
+        edit_style = rules.get("edit_mode", "default")
+        if edit_style not in ("default", "st-colormod"):
+            edit_style = "default"
+
         color = obj.color
         current = self.view.substr(sublime.Region(obj.start, obj.end))
 
         # Store color in normal and generic format.
-        template_vars['current_color'] = current
+        template_vars['current_color'] = util.html_encode(current)
         template_vars['generic_color'] = color.to_string(**util.GENERIC)
+        template_vars['edit_color'] = (
+            util.encode_color(current if edit_style == "st-colormod" else color.to_string())
+        )
 
-        s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
         show_favorite_palette = s.get('enable_favorite_palette', True)
@@ -417,6 +428,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         )
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
+        template_vars['edit_mode'] = edit_style
         if click_color_box_to_pick == 'color_picker' and show_picker:
             template_vars['click_color_picker'] = True
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
@@ -454,7 +466,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             message
         )
 
-    def show_insert(self, color, dialog_type, palette_name=None, update=False):
+    def show_insert(self, color, dialog_type, palette_name=None, update=False, raw=None):
         """Show insert panel."""
 
         original = color
@@ -463,13 +475,15 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         sels = self.view.sel()
         if color is not None and len(sels) == 1:
             outputs = []
+            if raw is not None:
+                outputs.append((util.encode_color(raw), util.html_encode(raw)))
             custom = self.custom_color_class(color)
             for output in self.output_options:
                 value = custom.convert(output["space"]).to_string(**output.get("format", {}))
                 outputs.append(
                     (
                         util.encode_color(value),
-                        value
+                        util.html_encode(value)
                     )
                 )
 
@@ -692,7 +706,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif update:
             self.view.hide_popup()
 
-    def run(self, edit, mode, palette_name=None, color=None):
+    def run(self, edit, mode, palette_name=None, color=None, insert_raw=None):
         """Run the specified tooltip."""
 
         self.setup_image_border()
@@ -719,13 +733,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color = obj.color.to_string(**util.GENERIC)
             self.color_picker(color)
         elif mode == "color_picker_result":
-            self.show_insert(color, '__color_picker__')
+            self.show_insert(color, '__color_picker__', raw=insert_raw)
         elif mode == "info":
             self.no_info = False
             self.no_palette = False
             self.show_color_info()
 
-    def is_enabled(self, mode, palette_name=None, color=None):
+    def is_enabled(self, mode, palette_name=None, color=None, insert_raw=None):
         """Check if command is enabled."""
 
         self.setup_color_class()

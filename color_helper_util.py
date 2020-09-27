@@ -61,7 +61,7 @@ def import_color(module_path):
 
     module, color_class = module_path.rsplit('.', 1)
     color_class = getattr(importlib.import_module(module), color_class)
-    if module in sys.modules:
+    if module in sys.modules and not module.startswith("coloraide."):
         del sys.modules[module]
     return color_class
 
@@ -76,6 +76,15 @@ def decode_color(color):
     """Decode color from base64 for URL links."""
 
     return base64.b64decode(color.encode('utf-8')).decode('utf-8')
+
+
+def html_encode(txt):
+    """HTML encode."""
+
+    txt = txt.replace('&', '&amp;')
+    txt = txt.replace('<', '&lt;')
+    txt = txt.replace('>', '&gt;')
+    return txt
 
 
 def log(*args):

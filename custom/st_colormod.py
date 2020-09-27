@@ -402,7 +402,7 @@ class ColorMod:
         if required_lum < 0:
             required_lum = target * (lum2 + 0.05) - 0.05
 
-        is_dark = lum2 < required_lum
+        is_dark = lum2 < 0.5
         orig = color1.clone().convert("hwb")
         min_mix = 0.0
         max_mix = 200.0

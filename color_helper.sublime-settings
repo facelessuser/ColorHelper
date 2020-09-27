@@ -157,6 +157,9 @@
     //                     output formats that can be configured via `output_options`. Defaults to
     //                     `coloraide.css.Class`.
     //
+    // - `edit_mode`:      this controls the "edit" tool that is used. The default value is "default", but can also be
+    //                     be set to "st-colormod" to use an edit mode that mimics Sublimes `color-mod` implementation.
+    //
     // - color_trigger`.   This can be used to specify regions that Color Helper should test to find a color.
     //                     For instance, the color class can translate colors in the form `rgb(1 1 1 / 1)`,
     //                     so we can specify `rgb(` and we will test the starting point to see if it is an
@@ -209,6 +212,8 @@
                 "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
             "filters": ["srgb", "hsl", "hwb"],
+            "color_class": "ColorHelper.custom.st_colormod.Color",
+            "edit_mode": "st-colormod",
             "scan_scopes": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"

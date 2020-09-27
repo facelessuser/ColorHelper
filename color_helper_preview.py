@@ -606,6 +606,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             colorclass = rule.get("color_class", "coloraide.css.Color")
             color_trigger = rule.get("color_trigger", RE_COLOR_START)
             filters = rule.get("filters", [])
+            edit_mode = rule.get("edit_mode", "default")
             matched = True
             break
 
@@ -618,6 +619,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             colorclass = generic.get("color_class", "coloraide.css.Color")
             color_trigger = generic.get("color_trigger", RE_COLOR_START)
             filters = rule.get("filters", [])
+            edit_mode = rule.get("edit_mode", "default")
             matched = True
 
         # Add user configuration
@@ -634,7 +636,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "last_updated": ch_last_updated,
                     "output_options": outputs,
                     "color_class": colorclass,
-                    "color_trigger": color_trigger
+                    "color_trigger": color_trigger,
+                    "edit_mode": edit_mode
                 }
             )
         else:
