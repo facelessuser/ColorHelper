@@ -601,7 +601,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
 
             # Gather options if rule matches
             scan_scopes = rule.get("scan_scopes", [])
-            allow_scanning = rule.get("allow_scanning", True) and scan_scopes
+            allow_scanning = bool(rule.get("allow_scanning", True) and scan_scopes)
             outputs = rule.get("output_options", util.DEF_OUTPUT)
             colorclass = rule.get("color_class", "coloraide.css.Color")
             color_trigger = rule.get("color_trigger", RE_COLOR_START)
@@ -614,7 +614,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         if not matched:
             generic = s.get("generic", {})
             scan_scopes = generic.get("scan_scopes", [])
-            allow_scanning = generic.get("allow_scanning", True) and scan_scopes
+            allow_scanning = bool(generic.get("allow_scanning", True) and scan_scopes)
             outputs = generic.get("output_options", util.DEF_OUTPUT)
             colorclass = generic.get("color_class", "coloraide.css.Color")
             color_trigger = generic.get("color_trigger", RE_COLOR_START)
