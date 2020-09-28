@@ -38,7 +38,7 @@
     // are accessed by clicking an icon on the color info panel.
     // Click access for one of these can be moved to the color box
     // (visual representation of the color).
-    // (none|color_picker|palette_picker|edit|contrast)
+    // (none|color_picker|palette_picker|edit)
     "click_color_box_to_pick": "none",
 
     //////////////////
@@ -157,8 +157,10 @@
     //                     output formats that can be configured via `output_options`. Defaults to
     //                     `coloraide.css.Class`.
     //
-    // - `edit_mode`:      this controls the "edit" tool that is used. The default value is "default", but can also be
-    //                     be set to "st-colormod" to use an edit mode that mimics Sublimes `color-mod` implementation.
+    // - `edit_mode`:      this controls the "edit" tool that is used in the info panel when you click the color. The
+    //                     default value is "default", but can also be be set to "st-colormod" to use an edit mode that
+    //                     mimics Sublimes `color-mod` implementation. The other edit command, along with the rest, are
+    //                     still available under tools menu item on the popups.
     //
     // - color_trigger`.   This can be used to specify regions that Color Helper should test to find a color.
     //                     For instance, the color class can translate colors in the form `rgb(1 1 1 / 1)`,

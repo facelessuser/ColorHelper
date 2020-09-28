@@ -54,6 +54,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.show_palettes(update=True)
         elif href == '__info__':
             self.show_color_info(update=True)
+        elif href.startswith('__tools__'):
+            self.show_tools()
+        elif href.startswith('__tool__'):
+            self.show_tool(href.split(':', 1)[1])
         elif href.startswith('__edit__'):
             self.edit_color(*(href.split(':', 2)[1:]))
         elif href.startswith('__contrast__'):
@@ -266,34 +270,40 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 }
             )
 
-    def edit_color(self, mode, color):
-        """Edit the color."""
-        color = util.decode_color(color)
-        if not self.no_info:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
-        elif not self.no_palette:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
-        else:
-            on_cancel = None
-        self.view.run_command(
-            ('color_helper_sublime_color_mod' if mode == 'st-colormod' else 'color_helper_edit'), {
-                'initial': color,
-                'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
-                'on_cancel': on_cancel
-            }
-        )
+    def show_tool(self, tool):
+        """Show color tool."""
 
-    def contrast_color(self, color):
-        """Edit the color."""
+        obj = self.get_cursor_color()
+        if obj is None:
+            return
+
+        color = obj.color
+        current = self.view.substr(sublime.Region(obj.start, obj.end))
+
+        print(tool)
+
+        if tool == "__edit__":
+            cmd = "color_helper_edit"
+            edit_color = Color(color).to_string()
+        elif tool == "__contrast__":
+            cmd = "color_helper_contrast_ratio"
+            edit_color = Color(color).to_string()
+        elif tool == "__colormod__":
+            cmd = "color_helper_sublime_color_mod"
+            name = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
+            edit_color = current if name == "ColorHelper.custom.st_colormod.Color" else Color(color).to_string()
+        else:
+            return
+
         if not self.no_info:
             on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
-        elif not self.no_palette:
-            on_cancel = {'command': 'color_helper', 'args': {'mode': "palette"}}
         else:
             on_cancel = None
+
         self.view.run_command(
-            'color_helper_contrast_ratio', {
-                'initial': color,
+            cmd,
+            {
+                'initial': edit_color,
                 'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
                 'on_cancel': on_cancel
             }
@@ -414,9 +424,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Store color in normal and generic format.
         template_vars['current_color'] = util.html_encode(current)
         template_vars['generic_color'] = color.to_string(**util.GENERIC)
-        template_vars['edit_color'] = (
-            util.encode_color(current if edit_style == "st-colormod" else color.to_string())
-        )
+        template_vars['edit'] = '__colormod__' if edit_style == "st-colormod" else '__edit__'
 
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
@@ -435,17 +443,11 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             template_vars['click_palette_picker'] = True
         elif click_color_box_to_pick == "edit":
             template_vars['click_color_edit'] = True
-        elif click_color_box_to_pick == "contrast":
-            template_vars['click_color_contrast'] = True
 
         if click_color_box_to_pick != 'palette_picker' and palettes_enabled:
             template_vars['show_palette_menu'] = True
         if click_color_box_to_pick != 'color_picker' and show_picker:
             template_vars['show_picker_menu'] = True
-        if click_color_box_to_pick != 'edit':
-            template_vars['show_edit_menu'] = True
-        if click_color_box_to_pick != 'contrast':
-            template_vars['show_contrast_menu'] = True
 
         if show_global_palettes or show_project_palettes:
             template_vars['show_global_palette_menu'] = True
@@ -513,6 +515,27 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
                     template_vars=template_vars
                 )
+
+    def show_tools(self):
+        """Show tools."""
+
+        template_vars = {}
+        template_vars["back_target"] = "__info__"
+        template_vars['tools'] = [
+            ('Edit and Mix', '__tool__:__edit__'),
+            ('Contrast', '__tool__:__contrast__'),
+            ('Sublime ColorMod', '__tool__:__colormod__')
+        ]
+
+        mdpopups.show_popup(
+            self.view,
+            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html'),
+            wrapper_class="color-helper content",
+            css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
+            on_navigate=self.on_navigate,
+            flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+            template_vars=template_vars
+        )
 
     def show_palettes(self, delete=False, color=None, update=False):
         """Show preview of all palettes."""

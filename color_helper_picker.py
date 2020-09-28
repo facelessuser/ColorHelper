@@ -367,13 +367,34 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         html.append('</span><br>')
         self.template_vars[channel] = ''.join(html)
 
+    def show_tools(self):
+        """Show tools."""
+
+        template_vars = {}
+        template_vars["back_target"] = self.color
+        template_vars['tools'] = [
+            ('Edit and Mix', '__tool__:__edit__'),
+            ('Contrast', '__tool__:__contrast__'),
+            ('Sublime ColorMod', '__tool__:__colormod__')
+        ]
+
+        mdpopups.show_popup(
+            self.view,
+            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html'),
+            wrapper_class="color-helper content",
+            css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
+            on_navigate=self.handle_href,
+            flags=sublime.COOPERATE_WITH_AUTO_COMPLETE,
+            template_vars=template_vars
+        )
+
     def handle_href(self, href):
         """Handle HREF."""
 
         hires = None
         colornames = False
         mode = self.mode
-        edit_style = None
+        tool = None
         if href.startswith('__space__'):
             # If we received a color space switch to that picker.
             space = href.split(':')[1]
@@ -386,15 +407,15 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # We need to open a high resolution channel picker
             hires = href.split(':')[1]
             color = self.color.to_string(**GENERIC)
+        elif href.startswith('__tools__'):
+            color = self.color.to_string(**GENERIC)
+        elif href.startswith('__tool__'):
+            tool = href.split(':')[1]
+            color = self.color.to_string()
         elif href == "__colornames__":
             # We need to open the color name picker
             color = self.color.to_string(**GENERIC)
             colornames = True
-        elif href.startswith(('__edit__', '__contrast__')):
-            # We want to edit the color
-            color = self.color.to_string(**GENERIC)
-            if href.startswith('__edit__'):
-                edit_style = href.split(":")[1]
         else:
             # Process we need to update the current color
             color = href
@@ -405,7 +426,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 call = self.on_cancel.get('command', 'color_helper')
                 args = self.on_cancel.get('args', {})
                 self.view.run_command(call, args)
-        elif href.startswith(('__edit__', '__contrast__')):
+        elif href == '__tools__':
+            self.show_tools()
+        elif href.startswith('__tool__'):
             # Edit color in edit panel
             mdpopups.hide_popup(self.view)
 
@@ -426,9 +449,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 }
             }
 
-            if href.startswith('__contrast__'):
+            if tool == '__contrast__':
                 cmd = 'color_helper_contrast_ratio'
-            elif edit_style == "st-colormod":
+            elif tool == "__colormod__":
                 cmd = 'color_helper_sublime_color_mod'
             else:
                 cmd = 'color_helper_edit'
@@ -488,16 +511,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.template_vars['hires_color'] = hirespick
             self.get_hires_color_channel(hirespick)
         else:
-            s = sublime.load_settings('color_helper.sublime-settings')
-            rules = util.get_rules(self.view)
-            if rules is None:
-                rules = s.get("generic", {})
-            edit_style = rules.get("edit_mode", "default")
-            if edit_style not in ("default", "st-colormod"):
-                edit_style = "default"
-
             # Show the normal color picker of the specified space
-            self.template_vars['edit_mode'] = edit_style
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = '__cancel__'
             self.get_color_map_square()
