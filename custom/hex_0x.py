@@ -1,5 +1,5 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from coloraide.css.colors import Color, SRGB
+from coloraide.colors import Color, SRGB
 from coloraide.colors import _parse as parse
 from coloraide import util
 import copy
@@ -9,16 +9,16 @@ import re
 def norm_hex_channel(string):
     """Normalize the hex string to a form we can handle."""
 
-    if string.startswith('#'):
-        return int(string[1:], 16) * parse.RGB_CHANNEL_SCALE
+    if string.startswith('0x'):
+        return int(string[2:], 16) * parse.RGB_CHANNEL_SCALE
     else:
-        raise ValueError("String format of a hex channel must be in the form of '#XX'")
+        raise ValueError("String format of a hex channel must be in the form of '0xXX'")
 
 
-class ASRGB(SRGB):
+class HexSRGB(SRGB):
     """SRGB that looks for alpha first in hex format."""
 
-    MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**parse.COLOR_PARTS))
+    MATCH = re.compile(r"\b0x(?:[0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):
@@ -33,6 +33,7 @@ class ASRGB(SRGB):
     def _tx_channel(cls, channel, value):
         """Translate channel string."""
 
+        # Unless it explicitly starts with `0x` we will assume it is a int/float.
         if -1 <= channel <= 2:
             return norm_hex_channel(value)
 
@@ -40,20 +41,12 @@ class ASRGB(SRGB):
     def split_channels(cls, color):
         """Split channels."""
 
-        if len(color) == 9:
-            return (
-                cls._tx_channel(0, "#" + color[3:5]),
-                cls._tx_channel(1, "#" + color[5:7]),
-                cls._tx_channel(2, "#" + color[7:]),
-                cls._tx_channel(-1, "#" + color[1:3]),
-            )
-        else:
-            return (
-                cls._tx_channel(0, "#" + color[1:3]),
-                cls._tx_channel(1, "#" + color[3:5]),
-                cls._tx_channel(2, "#" + color[5:]),
-                1.0
-            )
+        return [
+            cls._tx_channel(0, '0x' + color[2:4]),
+            cls._tx_channel(1, '0x' + color[4:6]),
+            cls._tx_channel(2, '0x' + color[6:8]),
+            cls._tx_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
+        ]
 
     def to_string(
         self, *, options=None, alpha=None, precision=util.DEF_PREC, fit=util.DEF_FIT, **kwargs
@@ -65,17 +58,17 @@ class ASRGB(SRGB):
 
         show_alpha = alpha is not False and (alpha is True or self._alpha < 1.0)
 
-        template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
+        template = "0x{:02x}{:02x}{:02x}{:02x}" if show_alpha else "0x{:02x}{:02x}{:02x}"
         if options.get("hex_upper"):
             template = template.upper()
 
         coords = self.fit_coords(method=fit) if fit else self.coords()
         if show_alpha:
             value = template.format(
-                int(util.round_half_up(self._alpha * 255.0)),
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
-                int(util.round_half_up(coords[2] * 255.0))
+                int(util.round_half_up(coords[2] * 255.0)),
+                int(util.round_half_up(self._alpha * 255.0))
             )
         else:
             value = template.format(
@@ -86,8 +79,8 @@ class ASRGB(SRGB):
         return value
 
 
-class ColorAlphaHex(Color):
+class ColorHex(Color):
     """Color object whose sRGB color space looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 
     CS_MAP = copy.copy(Color.CS_MAP)
-    CS_MAP["srgb"] = ASRGB
+    CS_MAP["srgb"] = HexSRGB
