@@ -167,7 +167,6 @@
     //                     rest, are still available under tools menu item on the popups.
     "color_classes": {
         "css-level-4": {
-            "class": "coloraide.css.Color",
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true, "precision": 3}},
@@ -183,7 +182,6 @@
             ]
         },
         "css-level-3": {
-            "class": "coloraide.css.Color",
             "filters": ["srgb", "hsl"],
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
@@ -199,6 +197,13 @@
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true, "precision": 3}},
                 {"space": "hsl", "format": {"comma": true, "precision": 3}}
+            ]
+        },
+        "tmtheme": {
+            "class": "ColorHelper.custom.tmtheme.ColorSRGBX11",
+            "filters": ["srgb"],
+            "output": [
+                {"space": "srgb", "format": {"names": true}}
             ]
         },
         "argb": {
@@ -290,6 +295,7 @@
                 "PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme",
                 "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
+            "color_trigger": "(?i)(?:\\b(?:color|hsla?|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
             "scanning": [
                 {
                     "scopes": [
@@ -372,8 +378,21 @@
             ]
         },
         {
+            "name": "tmTheme",
+            "color_trigger": "(?i)(?:\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
+            "extensions": [".tmTheme"],
+            "base_scopes": ["text.xml"],
+            "scanning": [
+                {
+                    "scopes": [
+                        "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
+                    ],
+                    "class": "tmtheme"
+                }
+            ]
+        },
+        {
             "name": "XML",
-            "syntax_files": [],
             "base_scopes": ["text.xml"],
             "scanning": [
                 {
@@ -386,7 +405,6 @@
         },
         {
             "name": "Stylus",
-            "syntax_files": [],
             "base_scopes": ["source.stylus"],
             "scanning": {
                 "scopes": [
@@ -400,7 +418,6 @@
         },
         {
             "name": "Less",
-            "syntax_files": [],
             "base_scopes": ["source.less"],
             "scanning": [
                 {

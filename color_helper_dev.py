@@ -20,8 +20,9 @@ class ColorHelperReloadColorClassCommand(sublime_plugin.ApplicationCommand):
         """Run command."""
 
         color_classes = util.get_settings_colors()
+
         for k, v in color_classes.items():
-            color_class = v.get("class")
+            color_class = v.get("class", "coloraide.css.Color")
             # Don't reload the built-in module.
             if not color_class.startswith('coloraide.'):
                 module = color_class.rsplit('.', 1)[0]
