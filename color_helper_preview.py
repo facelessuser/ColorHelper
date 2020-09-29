@@ -90,6 +90,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         self.last_view = -1
         self.previous_region = sublime.Region(0, 0)
         self.previews = {}
+        self.color_classes = {}
         view.erase_phantoms("color_helper")
 
     def on_navigate(self, href):
@@ -200,7 +201,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
     def get_color_class(self, pt, scopes):
         """Get color class based on selection scope."""
 
-        if self.view.settings().get('color_helper.refresh', True):
+        if not self.color_classes or self.view.settings().get('color_helper.refresh', True):
             util.debug("Clear color class stash")
             self.view.settings().set('color_helper.refresh', False)
             self.color_classes = util.get_settings_colors()
