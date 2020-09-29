@@ -404,6 +404,7 @@ class ColorMod:
 
         is_dark = lum2 < 0.5
         orig = color1.clone().convert("hwb")
+        achromatic = orig.is_achromatic()
         min_mix = 0.0
         max_mix = 200.0
         last_ratio = 0
@@ -413,7 +414,13 @@ class ColorMod:
             mid_mix = (max_mix + min_mix) / 2
 
             mix = orig.new("hwb", [orig.hue, mid_mix, 0.0] if is_dark else [orig.hue, 0.0, mid_mix])
-            ratio = orig.mix(mix, space="hwb").contrast_ratio(color2)
+            temp = orig.mix(mix, space="hwb")
+            if achromatic:
+                if is_dark:
+                    temp.blackness = 100.0 - temp.whiteness
+                else:
+                    temp.whiteness = 100.0 - temp.blackness
+            ratio = temp.contrast_ratio(color2)
 
             if ratio < target:
                 min_mix = mid_mix
@@ -433,6 +440,11 @@ class ColorMod:
             # Use the best, last values
             mix = orig.new("hwb", [orig.hue, last_mix, 0.0] if is_dark else [orig.hue, 0.0, last_mix])
             final = orig.mix(mix, space="hwb")
+            if achromatic:
+                if is_dark:
+                    final.blackness = 100.0 - temp.whiteness
+                else:
+                    final.whiteness = 100.0 - temp.blackness
         color1.update(final)
 
     def blend(self, color, percent, alpha=False, space="srgb"):
