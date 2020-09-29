@@ -6,7 +6,6 @@ from .color_helper_util import HEX, HEX_NA
 from .multiconf import get as qualify_settings
 from coloraide.css import Color
 from collections import namedtuple
-import re
 
 SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
 
@@ -53,29 +52,65 @@ class _ColorMixin:
             filters=util.SRGB_SPACES
         ).to_string(**HEX)
 
+    def get_color_options(self, pt, rule):
+        """Get color class based on selection scope."""
+
+        self.color_classes = util.get_settings_colors()
+        scopes = rule.get("scanning", [])
+
+        # Check if the first point within the color matches our scope rules
+        # and load up the appropriate color class
+        color_class = None
+        filters = []
+        output = []
+        edit_mode = "default"
+        for scope in scopes:
+            try:
+                value = self.view.score_selector(pt, scope["scopes"])
+                if not value:
+                    continue
+                else:
+                    class_options = self.color_classes.get(scope["class"])
+                    if class_options is None:
+                        continue
+                    module = class_options.get("class", "coloraide.css.colors.Color")
+                    if isinstance(module, str):
+                        # Initialize the color module and cache it for this view
+                        color_class = util.import_color(module)
+                        class_options["class"] = color_class
+                    else:
+                        color_class = module
+                    filters = class_options.get("filters", [])
+                    output = class_options.get("output", [])
+                    edit_mode = class_options.get('edit_mode', 'default')
+                    if edit_mode not in ('default', 'st-colormod'):
+                        edit_mode = 'default'
+                    break
+            except Exception:
+                color_class = Color
+                filters = []
+                output = []
+                edit_mode = 'default'
+        return color_class, filters, output, edit_mode
+
     def setup_color_class(self):
         """Get the color class for the view."""
 
-        rules = util.get_rules(self.view)
-        if rules is None:
-            ch_settings = sublime.load_settings('color_helper.sublime-settings')
-            generic = ch_settings.get('generic', {})
-            module = generic.get("color_class", "coloraide.css.colors.Color")
-            self.filters = generic.get("filters", [])
-            self.output_options = generic.get('output_options', util.DEF_OUTPUT)
-            self.color_trigger = re.compile(generic.get('color_trigger', util.RE_COLOR_START))
-        else:
-            module = rules.get("color_class", "coloraide.css.colors.Color")
-            self.filters = rules.get("filters", [])
-            self.output_options = rules.get('output_options', util.DEF_OUTPUT)
-            self.color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
+        sels = self.view.sel()
+        pt = 0
+        if len(sels) >= 1:
+            pt = sels[0].begin()
+        rule = util.get_rules(self.view)
+        color_class, filters, output, edit_mode = self.get_color_options(pt, rule)
+        self.edit_mode = edit_mode
+        self.custom_color_class = color_class
+        self.filters = filters
+        self.output_options = output
         self.color_class = Color
         try:
-            self.custom_color_class = util.import_color(module)
+            self.color_trigger = rule.get("color_trigger", util.RE_COLOR_START)
         except Exception:
-            import traceback
-            print(traceback.format_exc())
-            self.custom_color_class = self.color_class
+            self.color_trigger = util.RE_COLOR_START
 
     def get_spacer(self, width=1, height=1):
         """Get a spacer."""

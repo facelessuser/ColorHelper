@@ -87,6 +87,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         """Setup."""
 
         super().__init__(view)
+        self.last_view = -1
         self.previous_region = sublime.Region(0, 0)
         self.previews = {}
         view.erase_phantoms("color_helper")
@@ -196,6 +197,50 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         if last_start is not None:
             yield sublime.Region(last_start, last_end)
 
+    def get_color_class(self, pt, scopes):
+        """Get color class based on selection scope."""
+
+        if self.view.settings().get('color_helper.refresh', True):
+            util.debug("Clear color class stash")
+            self.view.settings().set('color_helper.refresh', False)
+            self.color_classes = util.get_settings_colors()
+
+        # Check if the first point within the color matches our scope rules
+        # and load up the appropriate color class
+        color_class = None
+        filters = []
+        for scope in scopes:
+            try:
+                value = self.view.score_selector(pt, scope["scopes"])
+                if not value:
+                    continue
+                else:
+                    class_options = self.color_classes.get(scope["class"])
+                    if class_options is None:
+                        continue
+                    module = class_options.get("class", "coloraide.css.colors.Color")
+                    if isinstance(module, str):
+                        # Initialize the color module and cache it for this view
+                        color_class = util.import_color(module)
+                        class_options["class"] = color_class
+                    else:
+                        color_class = module
+                    filters = class_options.get("filters", [])
+                    break
+            except Exception:
+                pass
+        return color_class, filters
+
+    def setup_gamut_options(self):
+        """Setup gamut options."""
+
+        self.out_of_gamut = Color("transparent").to_string(**util.HEX)
+        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
+        self.preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
+        if self.preferred_gamut_mapping not in ("lch-chroma", "clip"):
+            self.preferred_gamut_mapping = "lch-chroma"
+        self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
+
     def do_search(self, force=False):
         """
         Perform the search for the highlighted word.
@@ -207,6 +252,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # Since the plugin has been reloaded, force update.
         global reload_flag
         settings = self.view.settings()
+        colors = []
 
         # Allow per view scan override
         option = settings.get("color_helper.scan_override", None)
@@ -267,27 +313,13 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             sel = self.view.sel()[0]
 
         # Get the scan scopes
-        scope = util.get_scope(self.view, rules, skip_sel_check=True)
-
-        if show_preview and visible_region.size() and scope:
+        scopes = rules.get("scanning", [])
+        if show_preview and visible_region.size() and scopes:
             # Get out of gamut related options
-            out_of_gamut = Color("transparent").to_string(**util.HEX)
-            out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
-            preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
-            if preferred_gamut_mapping not in ("lch-chroma", "clip"):
-                preferred_gamut_mapping = "lch-chroma"
-            show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
+            self.setup_gamut_options()
 
             # Get triggers that identify where colors are likely
             color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
-
-            # Get custom color class
-            module = rules.get("color_class", "coloraide.css.colors.Color")
-            filters = rules.get("filters", [])
-            color_class = util.import_color(module)
-
-            # Find the colors
-            colors = []
 
             # Find source content in the visible region.
             # We will return consecutive content, but if the lines are too wide
@@ -300,10 +332,17 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                 for m in color_trigger.finditer(source):
                     # Test if we have found a valid color
                     start = m.start()
+                    src_start = src_region.begin() + start
+
+                    # Check if the first point within the color matches our scope rules
+                    # and load up the appropriate color class
+                    color_class, filters = self.get_color_class(src_start, scopes)
+                    if color_class is None:
+                        continue
+
                     obj = color_class.match(source, start=start, filters=filters)
                     if obj is not None:
                         # Calculate true start and end of the color source
-                        src_start = src_region.begin() + obj.start
                         src_end = src_region.begin() + obj.end
                         region = sublime.Region(src_start, src_end)
 
@@ -314,11 +353,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                             not(sel.empty() and sel.begin() == region.begin()) and
                             not region.intersects(sel)
                         ):
-                            continue
-
-                        # Check if the first point within the color matches our scope rules
-                        value = self.view.score_selector(src_start, scope)
-                        if not value:
                             continue
                     else:
                         continue
@@ -336,20 +370,20 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                         filters=util.SRGB_SPACES
                     ).convert("hsl")
                     hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
-                    preview_border = hsl.convert("srgb", fit=preferred_gamut_mapping).to_string(**util.HEX)
+                    preview_border = hsl.convert("srgb", fit=self.preferred_gamut_mapping).to_string(**util.HEX)
 
                     color = Color(obj.color)
                     title = ''
                     if not color.in_gamut("srgb"):
                         title = ' title="Out of gamut"'
-                        if show_out_of_gamut_preview:
-                            srgb = color.convert("srgb", fit=preferred_gamut_mapping)
+                        if self.show_out_of_gamut_preview:
+                            srgb = color.convert("srgb", fit=self.preferred_gamut_mapping)
                             preview1 = srgb.to_string(**util.HEX_NA)
                             preview2 = srgb.to_string(**util.HEX)
                         else:
-                            preview1 = out_of_gamut
-                            preview2 = out_of_gamut
-                            preview_border = out_of_gamut_border
+                            preview1 = self.out_of_gamut
+                            preview2 = self.out_of_gamut
+                            preview_border = self.out_of_gamut_border
                     else:
                         srgb = color.convert("srgb")
                         preview1 = srgb.to_string(**util.HEX_NA)
@@ -444,7 +478,7 @@ class ChPreviewThread(threading.Thread):
         self.ignore_all = False
         self.abort = False
         self.scroll = False
-        self.last_view = (-1, -1)
+        self.last_view = -1
         self.scroll_view = None
 
     def scroll_check(self):
@@ -452,11 +486,7 @@ class ChPreviewThread(threading.Thread):
 
         view = sublime.active_window().active_view()
         vid = view.id()
-        wid = -1
-        w = view.window()
-        if w is not None:
-            wid = w.id()
-        this_scroll = (wid, vid)
+        this_scroll = vid
         if self.last_view != this_scroll:
             self.last_view = this_scroll
             self.scroll = True
@@ -600,26 +630,25 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 continue
 
             # Gather options if rule matches
-            scan_scopes = rule.get("scan_scopes", [])
-            allow_scanning = bool(rule.get("allow_scanning", True) and scan_scopes)
-            outputs = rule.get("output_options", util.DEF_OUTPUT)
-            colorclass = rule.get("color_class", "coloraide.css.Color")
+            scanning = rule.get("scanning", [])
+            for scan in scanning:
+                scan["scopes"] = ','.join(scan.get("scopes", []))
+            allow_scanning = bool(rule.get("allow_scanning", True) and scanning)
             color_trigger = rule.get("color_trigger", RE_COLOR_START)
-            filters = rule.get("filters", [])
-            edit_mode = rule.get("edit_mode", "default")
             matched = True
             break
 
         # Couldn't find any explicit options, so associate a generic  option set to allow basic functionality..
         if not matched:
             generic = s.get("generic", {})
-            scan_scopes = generic.get("scan_scopes", [])
-            allow_scanning = bool(generic.get("allow_scanning", True) and scan_scopes)
-            outputs = generic.get("output_options", util.DEF_OUTPUT)
-            colorclass = generic.get("color_class", "coloraide.css.Color")
+            scanning = [
+                {
+                    "scopes": ",".join(generic.get("scopes", [])),
+                    "class": generic.get("class", "coloraide.css.Color")
+                }
+            ]
+            allow_scanning = bool(generic.get("allow_scanning", True) and scanning)
             color_trigger = generic.get("color_trigger", RE_COLOR_START)
-            filters = rule.get("filters", [])
-            edit_mode = rule.get("edit_mode", "default")
             matched = True
 
         # Add user configuration
@@ -629,15 +658,11 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 {
                     "enabled": True,
                     "allow_scanning": allow_scanning,
-                    "scan_scopes": scan_scopes,
+                    "scanning": scanning,
                     "current_ext": ext,
-                    "filters": filters,
                     "current_syntax": syntax,
                     "last_updated": ch_last_updated,
-                    "output_options": outputs,
-                    "color_class": colorclass,
                     "color_trigger": color_trigger,
-                    "edit_mode": edit_mode
                 }
             )
         else:
@@ -734,6 +759,7 @@ def setup_previews():
             v.settings().clear_on_change('color_helper.reload')
             v.settings().erase('color_helper.scan')
             v.settings().erase('color_helper.scan_override')
+            v.settings().set('color_helper.refresh', True)
             v.erase_phantoms('color_helper')
     unloading = False
 

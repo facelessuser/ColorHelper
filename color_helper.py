@@ -280,8 +280,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         color = obj.color
         current = self.view.substr(sublime.Region(obj.start, obj.end))
 
-        print(tool)
-
         if tool == "__edit__":
             cmd = "color_helper_edit"
             edit_color = Color(color).to_string()
@@ -411,12 +409,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Format the selected color info."""
 
         s = sublime.load_settings('color_helper.sublime-settings')
-        rules = util.get_rules(self.view)
-        if rules is None:
-            rules = s.get("generic", {})
-        edit_style = rules.get("edit_mode", "default")
-        if edit_style not in ("default", "st-colormod"):
-            edit_style = "default"
 
         color = obj.color
         current = self.view.substr(sublime.Region(obj.start, obj.end))
@@ -424,7 +416,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Store color in normal and generic format.
         template_vars['current_color'] = util.html_encode(current)
         template_vars['generic_color'] = color.to_string(**util.GENERIC)
-        template_vars['edit'] = '__colormod__' if edit_style == "st-colormod" else '__edit__'
+        template_vars['edit'] = '__colormod__' if self.edit_mode == "st-colormod" else '__edit__'
 
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
@@ -436,7 +428,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         )
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
-        template_vars['edit_mode'] = edit_style
+        template_vars['edit_mode'] = self.edit_mode
         if click_color_box_to_pick == 'color_picker' and show_picker:
             template_vars['click_color_picker'] = True
         elif click_color_box_to_pick == 'palette_picker' and palettes_enabled:
@@ -765,7 +757,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def is_enabled(self, mode, palette_name=None, color=None, insert_raw=None):
         """Check if command is enabled."""
 
-        self.setup_color_class()
+        try:
+            # This will throw an exception if there is no rule associated with the view.
+            # Can't enable if the view has no color rules.
+            self.setup_color_class()
+        except Exception:
+            return False
+
         s = sublime.load_settings('color_helper.sublime-settings')
         return bool(
             (mode == "info" and self.get_cursor_color() is not None) or

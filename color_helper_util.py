@@ -10,7 +10,6 @@ import platform
 import mdpopups
 import base64
 import importlib
-import sys
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
@@ -61,8 +60,6 @@ def import_color(module_path):
 
     module, color_class = module_path.rsplit('.', 1)
     color_class = getattr(importlib.import_module(module), color_class)
-    if module in sys.modules and not module.startswith("coloraide."):
-        del sys.modules[module]
     return color_class
 
 
@@ -212,7 +209,21 @@ def get_settings_rules():
         name = urule.get("name")
         if name is not None and name in names:
             index = names[name]
-            rules[index] = merge_rules(urule, rules[index])
+            rules[index] = merge_rules(rules[index], urule)
         else:
             rules.append(urule)
     return rules
+
+
+def get_settings_colors():
+    """Read color classes from settings and allow overrides."""
+
+    s = sublime.load_settings('color_helper.sublime-settings')
+    classes = s.get("color_classes", {})
+    user_classes = s.get("user_color_classes", {})
+    for k, v in user_classes.items():
+        if k not in classes:
+            classes[k] = v
+        else:
+            classes[k] = merge_rules(classes[k], v)
+    return classes

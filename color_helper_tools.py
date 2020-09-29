@@ -367,10 +367,10 @@ class ColorInputHandler(_ColorInputHandler):
     def initial_text(self):
         """Initial text."""
 
-        self.setup_color_class()
         if self.color is not None:
             return self.color
         elif len(self.view.sel()) == 1:
+            self.setup_color_class()
             text = self.view.substr(self.view.sel()[0])
             if text:
                 color = None
@@ -446,10 +446,10 @@ class ColorContrastInputHandler(_ColorInputHandler):
     def initial_text(self):
         """Initial text."""
 
-        self.setup_color_class()
         if self.color is not None:
             return self.color
         elif len(self.view.sel()) == 1:
+            self.setup_color_class()
             text = self.view.substr(self.view.sel()[0])
             if text:
                 color = None
@@ -528,17 +528,15 @@ class ColorModInputHandler(_ColorInputHandler):
     def initial_text(self):
         """Initial text."""
 
-        self.setup_color_class()
         self.color_mod_class = util.import_color("ColorHelper.custom.st_colormod.Color")
         if self.color is not None:
             return self.color
         elif len(self.view.sel()) == 1:
+            self.setup_color_class()
             text = self.view.substr(self.view.sel()[0])
             if text:
                 color = None
-                name1 = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
-                name2 = '.'.join([self.color_mod_class.__module__, self.color_mod_class.__name__])
-                if name1 == name2:
+                if self.custom_color_class == self.color_mod_class:
                     # Try and handle a `color()` case if the file uses `color-mod`.
                     # Basically, if the file already supports `color-mod` input,
                     # then we want to return the text raw if it parses.
