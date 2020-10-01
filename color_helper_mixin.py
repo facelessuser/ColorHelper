@@ -56,7 +56,7 @@ class _ColorMixin:
         """Get color class based on selection scope."""
 
         self.color_classes = util.get_settings_colors()
-        scopes = rule.get("scanning", [])
+        classes = rule.get("color_class", [])
 
         # Check if the first point within the color matches our scope rules
         # and load up the appropriate color class
@@ -64,13 +64,13 @@ class _ColorMixin:
         filters = []
         output = []
         edit_mode = "default"
-        for scope in scopes:
+        for item in classes:
             try:
-                value = self.view.score_selector(pt, scope["scopes"])
+                value = self.view.score_selector(pt, item["scopes"])
                 if not value:
                     continue
                 else:
-                    class_options = self.color_classes.get(scope["class"])
+                    class_options = self.color_classes.get(item["class"])
                     if class_options is None:
                         continue
                     module = class_options.get("class", "coloraide.css.colors.Color")

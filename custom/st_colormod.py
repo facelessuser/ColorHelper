@@ -219,7 +219,7 @@ class ColorMod:
             if color is not None:
                 self._color = color
                 if not self._color.in_gamut():
-                    self._color.fit(method="clip")
+                    self._color.fit(method="clip", in_place=True)
 
                 while not done:
                     m = None
@@ -246,7 +246,7 @@ class ColorMod:
                         break
 
                     if not self._color.in_gamut():
-                        self._color.fit(method="clip")
+                        self._color.fit(method="clip", in_place=True)
             else:
                 raise ValueError('Could not calculate base color')
         except Exception:
@@ -389,7 +389,7 @@ class ColorMod:
         It ensure the color has at least the specified contrast ratio.
 
         While there seems to be slight differences with ours and Sublime, maybe due to some rounding,
-        this essentially fullfills the intention of their min-contrast.
+        this essentially fulfills the intention of their min-contrast.
         """
 
         ratio = color1.contrast_ratio(color2)
@@ -402,7 +402,6 @@ class ColorMod:
 
         is_dark = lum2 < 0.5
         orig = color1.convert("hwb")
-        achromatic = orig.is_achromatic()
         if is_dark:
             primary = "whiteness"
             secondary = "blackness"
@@ -430,10 +429,8 @@ class ColorMod:
 
             if ratio < target:
                 min_mix = mid_mix
-                max_other = mid_other
             else:
                 max_mix = mid_mix
-                min_mix = mid_other
 
             if (
                 (last_ratio < target and ratio > last_ratio) or

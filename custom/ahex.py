@@ -6,15 +6,6 @@ import copy
 import re
 
 
-def norm_hex_channel(string):
-    """Normalize the hex string to a form we can handle."""
-
-    if string.startswith('#'):
-        return int(string[1:], 16) * parse.RGB_CHANNEL_SCALE
-    else:
-        raise ValueError("String format of a hex channel must be in the form of '#XX'")
-
-
 class ASRGB(SRGB):
     """SRGB that looks for alpha first in hex format."""
 
@@ -30,11 +21,13 @@ class ASRGB(SRGB):
         return None, None
 
     @classmethod
-    def _tx_channel(cls, channel, value):
+    def translate_channel(cls, channel, value):
         """Translate channel string."""
 
         if -1 <= channel <= 2:
-            return norm_hex_channel(value)
+            return parse.norm_hex_channel(value)
+        else:
+            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):
@@ -42,16 +35,16 @@ class ASRGB(SRGB):
 
         if len(color) == 9:
             return (
-                cls._tx_channel(0, "#" + color[3:5]),
-                cls._tx_channel(1, "#" + color[5:7]),
-                cls._tx_channel(2, "#" + color[7:]),
-                cls._tx_channel(-1, "#" + color[1:3]),
+                cls.translate_channel(0, "#" + color[3:5]),
+                cls.translate_channel(1, "#" + color[5:7]),
+                cls.translate_channel(2, "#" + color[7:]),
+                cls.translate_channel(-1, "#" + color[1:3]),
             )
         else:
             return (
-                cls._tx_channel(0, "#" + color[1:3]),
-                cls._tx_channel(1, "#" + color[3:5]),
-                cls._tx_channel(2, "#" + color[5:]),
+                cls.translate_channel(0, "#" + color[1:3]),
+                cls.translate_channel(1, "#" + color[3:5]),
+                cls.translate_channel(2, "#" + color[5:]),
                 1.0
             )
 
@@ -63,7 +56,7 @@ class ASRGB(SRGB):
         if options is None:
             options = {}
 
-        show_alpha = alpha is not False and (alpha is True or self._alpha < 1.0)
+        show_alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
         if options.get("hex_upper"):
@@ -72,7 +65,7 @@ class ASRGB(SRGB):
         coords = self.fit_coords(method=fit) if fit else self.coords()
         if show_alpha:
             value = template.format(
-                int(util.round_half_up(self._alpha * 255.0)),
+                int(util.round_half_up(self.alpha * 255.0)),
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0))

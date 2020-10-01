@@ -590,8 +590,6 @@ class ColorModInputHandler(_ColorInputHandler):
                 )
             return sublime.Html(html) if html else sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
         except Exception:
-            import traceback
-            print(traceback.format_exc())
             return sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
 
     def validate(self, color):

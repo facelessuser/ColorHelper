@@ -124,10 +124,11 @@
     // Available options can be viewed in `color_rule`.
     // All `color_rule` options apply except: `sytnax_files`, `syntax_filter`, `base_scopes`, `extensions`.
     // This is because this simply applies to all views if not matched by other rules.
+    // Additionally, `color_class` only accepts a string defining a single color class.
     "generic": {
         "allow_scanning": false,
-        "scopes": ["-comment -string"],
-        "class": "css-level-4"
+        "scanning": ["-comment -string"],
+        "color_class": "css-level-4"
     },
 
     // Color classes used to translate and manipulate colors. Each color class should have a unique name.
@@ -149,7 +150,7 @@
     //                     ]
     //                     ```
     //
-    // - `color_class`:    this allows a user to specify a custom color class derived from either
+    // - `class`:          this allows a user to specify a custom color class derived from either
     //                     `coloraide.colors` or `coloraide.css.colors`. This could be used to
     //                     to create a color class that can recognize different formats when
     //                     scanning for colors. It also allows for color spaces to have different
@@ -246,14 +247,17 @@
     //
     // - `extensions`:     target a view with an extension from the provided list. Defaults to an empty list.
     //
-    // - `scanning`:       A list containing dictionaries that define what color class to use with what scopes.
+    // - `color_class`:    A string defining the name of a color class to use for the associated views. Color class
+    //                     name should be defined in `color_classes`.
     //
-    //                     - `scopes`:    A list of scopes that the `color_trigger` must match (only the first
-    //                                    character is tested).
+    //                     If needed, you can define multiple color classes with a list of dicitionaries. Each
+    //                     dictionary in the list should contain a `class` and `scopes`:
     //
-    //                     - `class`:     The import path of the color class to use. Default is `coloraide.css.Color`.
-    //                                    You can also use any in `ColorHelper.custom.<module>.<class>`. Or create
-    //                                    your own.
+    //                     - `scopes`:    A string that defines a base scope that the color class applies to.
+    //
+    //                     - `class`:     The name of the color class profile to use (defined in `color_classes`).
+    //
+    // - `scanning`:       A list containing scopes that should be scanned for colors.
     //
     // - color_trigger`.   It is slow to test the entire buffer with the color class, so do a quick search for
     //                     tokens that should trigger a color check. That way we only test in places where we
@@ -272,21 +276,17 @@
                 "source.css",
                 "text.html"
             ],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        // https://packagecontrol.io/packages/CSS3
-                        "meta.declaration-list.css -support.type.property-name.css -comment -string",
-                        // CSS, CSS in HTML etc. (based on: Sublime Default)
-                        "meta.property-value.css -comment -string",
-                        // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
-                        "meta.value.css -comment -string",
-                        // HTML attributes (based on: Sublime Default)
-                        "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
-                        "meta.tag.any.html meta.attribute-with-value.style.html"
-                    ],
-                    "class": "css-level-4"
-                }
+                // https://packagecontrol.io/packages/CSS3
+                "meta.declaration-list.css -support.type.property-name.css -comment -string",
+                // CSS, CSS in HTML etc. (based on: Sublime Default)
+                "meta.property-value.css -comment -string",
+                // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
+                "meta.value.css -comment -string",
+                // HTML attributes (based on: Sublime Default)
+                "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
+                "meta.tag.any.html meta.attribute-with-value.style.html"
             ]
         },
         {
@@ -295,15 +295,11 @@
                 "PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme",
                 "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
+            "class": "sublime-colormod",
             "color_trigger": "(?i)(?:\\b(?:color|hsla?|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
             "scanning": [
-                {
-                    "scopes": [
-                        "source.css-color -meta.function-call.var.sublime-color-scheme",
-                        "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
-                    ],
-                    "class": "sublime-colormod"
-                }
+                "source.css-color -meta.function-call.var.sublime-color-scheme",
+                "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
             ]
         },
         {
@@ -314,14 +310,10 @@
                 "source.sass",
                 "source.scss"
             ],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
-                        "source.scss meta.property-value.css -comment -string -variable.declaration.sass"
-                    ],
-                    "class": "css-level-4"
-                }
+                "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
+                "source.scss meta.property-value.css -comment -string -variable.declaration.sass"
             ]
         },
         {
@@ -331,13 +323,9 @@
             "base_scopes": [
                 "source.scss"
             ],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "source.scss -comment -string"
-                    ],
-                    "class": "css-level-4"
-                }
+                "source.scss -comment -string"
             ]
         },
         {
@@ -351,14 +339,10 @@
                 "source.scss",
                 "source.sass"
             ],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "source.scss -comment -string -support.type.property-name -variable.declaration",
-                        "source.sass -comment -string -support.type.property-name -variable.declaration"
-                    ],
-                    "class": "css-level-4"
-                }
+                "source.scss -comment -string -support.type.property-name -variable.declaration",
+                "source.sass -comment -string -support.type.property-name -variable.declaration"
             ]
         },
         {
@@ -368,13 +352,9 @@
             "base_scopes": [
                 "source.postcss"
             ],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "source.postcss meta.property-list.css.postcss -comment -string"
-                    ],
-                    "class": "css-level-4"
-                }
+                "source.postcss meta.property-list.css.postcss -comment -string"
             ]
         },
         {
@@ -382,52 +362,38 @@
             "color_trigger": "(?i)(?:\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
             "extensions": [".tmTheme"],
             "base_scopes": ["text.xml"],
+            "color_class": "tmtheme",
             "scanning": [
-                {
-                    "scopes": [
-                        "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
-                    ],
-                    "class": "tmtheme"
-                }
+                "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
             ]
         },
         {
             "name": "XML",
             "base_scopes": ["text.xml"],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
-                    ],
-                    "class": "css-level-4"
-                }
+                "text.xml -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
             ]
         },
         {
             "name": "Stylus",
             "base_scopes": ["source.stylus"],
-            "scanning": {
-                "scopes": [
-                    // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
-                   "constant.other.color.rgb-value.stylus",
-                   "constant.color.w3c-standard-color-name.stylus",
-                   "meta.property-value.stylus"
-                ],
-                "class": "css-level-4"
-            }
+            "color_class": "css-level-4",
+            "scanning": [
+                // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
+               "constant.other.color.rgb-value.stylus",
+               "constant.color.w3c-standard-color-name.stylus",
+               "meta.property-value.stylus"
+            ]
         },
         {
             "name": "Less",
             "base_scopes": ["source.less"],
+            "color_class": "css-level-4",
             "scanning": [
-                {
-                    "scopes": [
-                        "constant.other.color.rgb-value.css",
-                        "constant.color.w3c-standard-color-name.css",
-                        "meta.property-value.css"
-                    ],
-                    "class": "css-level-4"
-                }
+                "constant.other.color.rgb-value.css",
+                "constant.color.w3c-standard-color-name.css",
+                "meta.property-value.css"
             ]
         }
     ],

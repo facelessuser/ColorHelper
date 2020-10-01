@@ -198,7 +198,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         if last_start is not None:
             yield sublime.Region(last_start, last_end)
 
-    def get_color_class(self, pt, scopes):
+    def get_color_class(self, pt, classes):
         """Get color class based on selection scope."""
 
         if not self.color_classes or self.view.settings().get('color_helper.refresh', True):
@@ -210,13 +210,13 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # and load up the appropriate color class
         color_class = None
         filters = []
-        for scope in scopes:
+        for item in classes:
             try:
-                value = self.view.score_selector(pt, scope["scopes"])
+                value = self.view.score_selector(pt, item["scopes"])
                 if not value:
                     continue
                 else:
-                    class_options = self.color_classes.get(scope["class"])
+                    class_options = self.color_classes.get(item["class"])
                     if class_options is None:
                         continue
                     module = class_options.get("class", "coloraide.css.colors.Color")
@@ -314,8 +314,9 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             sel = self.view.sel()[0]
 
         # Get the scan scopes
-        scopes = rules.get("scanning", [])
-        if show_preview and visible_region.size() and scopes:
+        scanning = rules.get("scanning")
+        classes = rules.get("color_class", "css-level-4")
+        if show_preview and visible_region.size() and scanning and classes:
             # Get out of gamut related options
             self.setup_gamut_options()
 
@@ -337,8 +338,17 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
                     # Check if the first point within the color matches our scope rules
                     # and load up the appropriate color class
-                    color_class, filters = self.get_color_class(src_start, scopes)
+                    color_class, filters = self.get_color_class(src_start, classes)
                     if color_class is None:
+                        print('Come on!')
+                        continue
+
+                    # Check if scope matches for scaning
+                    try:
+                        value = self.view.score_selector(src_start, scanning)
+                        if not value:
+                            continue
+                    except Exception as e:
                         continue
 
                     obj = color_class.match(source, start=start, filters=filters)
@@ -631,9 +641,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
                 continue
 
             # Gather options if rule matches
-            scanning = rule.get("scanning", [])
-            for scan in scanning:
-                scan["scopes"] = ','.join(scan.get("scopes", []))
+            scanning = ','.join(rule.get("scanning", []))
+            classes = rule.get("color_class", "css-level-4")
+            if isinstance(classes, str):
+                classes = [{"class": classes, "scopes": ""}]
             allow_scanning = bool(rule.get("allow_scanning", True) and scanning)
             color_trigger = rule.get("color_trigger", RE_COLOR_START)
             matched = True
@@ -642,12 +653,12 @@ class ColorHelperListener(sublime_plugin.EventListener):
         # Couldn't find any explicit options, so associate a generic  option set to allow basic functionality..
         if not matched:
             generic = s.get("generic", {})
-            scanning = [
-                {
-                    "scopes": ",".join(generic.get("scopes", [])),
-                    "class": generic.get("class", "coloraide.css.Color")
-                }
-            ]
+            scanning = ",".join(generic.get("scanning", []))
+            classes = generic.get("color_class", "css-level-4")
+            if not isinstance(classes, str):
+                classes = []
+            else:
+                classes = [{"class": classes, "scopes": ""}]
             allow_scanning = bool(generic.get("allow_scanning", True) and scanning)
             color_trigger = generic.get("color_trigger", RE_COLOR_START)
             matched = True
@@ -664,6 +675,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
                     "current_syntax": syntax,
                     "last_updated": ch_last_updated,
                     "color_trigger": color_trigger,
+                    "color_class": classes
                 }
             )
         else:

@@ -30,22 +30,24 @@ class HexSRGB(SRGB):
         return None, None
 
     @classmethod
-    def _tx_channel(cls, channel, value):
+    def translate_channel(cls, channel, value):
         """Translate channel string."""
 
         # Unless it explicitly starts with `0x` we will assume it is a int/float.
         if -1 <= channel <= 2:
             return norm_hex_channel(value)
+        else:
+            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):
         """Split channels."""
 
         return [
-            cls._tx_channel(0, '0x' + color[2:4]),
-            cls._tx_channel(1, '0x' + color[4:6]),
-            cls._tx_channel(2, '0x' + color[6:8]),
-            cls._tx_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
+            cls.translate_channel(0, '0x' + color[2:4]),
+            cls.translate_channel(1, '0x' + color[4:6]),
+            cls.translate_channel(2, '0x' + color[6:8]),
+            cls.translate_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
         ]
 
     def to_string(
@@ -56,7 +58,7 @@ class HexSRGB(SRGB):
         if options is None:
             options = {}
 
-        show_alpha = alpha is not False and (alpha is True or self._alpha < 1.0)
+        show_alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
 
         template = "0x{:02x}{:02x}{:02x}{:02x}" if show_alpha else "0x{:02x}{:02x}{:02x}"
         if options.get("hex_upper"):
@@ -68,7 +70,7 @@ class HexSRGB(SRGB):
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0)),
-                int(util.round_half_up(self._alpha * 255.0))
+                int(util.round_half_up(self.alpha * 255.0))
             )
         else:
             value = template.format(

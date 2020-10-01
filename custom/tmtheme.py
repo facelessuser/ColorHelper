@@ -678,15 +678,6 @@ def name2hex(name):
     return name2hex_map.get(name.lower(), None)
 
 
-def norm_hex_channel(string):
-    """Normalize the hex string to a form we can handle."""
-
-    if string.startswith('#'):
-        return int(string[1:], 16) * parse.RGB_CHANNEL_SCALE
-    else:
-        raise ValueError("String format of a hex channel must be in the form of '#XX'")
-
-
 class SRGBX11(SRGB):
     """SRGB class."""
 
@@ -709,7 +700,7 @@ class SRGBX11(SRGB):
         options = kwargs
 
         value = ''
-        if alpha is not False and (alpha is True or self._alpha < 1.0):
+        if alpha is not False and (alpha is True or self.alpha < 1.0):
             h = self._get_hexa(options, precision=precision, fit=fit)
         else:
             h = self._get_hex(options, precision=precision, fit=fit)
@@ -742,7 +733,7 @@ class SRGBX11(SRGB):
             int(util.round_half_up(coords[0] * 255.0)),
             int(util.round_half_up(coords[1] * 255.0)),
             int(util.round_half_up(coords[2] * 255.0)),
-            int(util.round_half_up(self._alpha * 255.0))
+            int(util.round_half_up(self.alpha * 255.0))
         )
 
         return value
@@ -769,21 +760,23 @@ class SRGBX11(SRGB):
         return value
 
     @classmethod
-    def _tx_channel(cls, channel, value):
+    def translate_channel(cls, channel, value):
         """Translate channel string."""
 
         if channel in (-1, 0, 1, 2):
-            return norm_hex_channel(value)
+            return parse.norm_hex_channel(value)
+        else:
+            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):
         """Split channels."""
 
         return (
-            cls._tx_channel(0, "#" + color[1:3]),
-            cls._tx_channel(1, "#" + color[3:5]),
-            cls._tx_channel(2, "#" + color[5:7]),
-            cls._tx_channel(-1, "#" + color[7:]) if len(color) == 9 else 1.0
+            cls.translate_channel(0, "#" + color[1:3]),
+            cls.translate_channel(1, "#" + color[3:5]),
+            cls.translate_channel(2, "#" + color[5:7]),
+            cls.translate_channel(-1, "#" + color[7:]) if len(color) == 9 else 1.0
         )
 
     @classmethod
