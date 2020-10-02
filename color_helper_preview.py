@@ -290,7 +290,8 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         current_color_scheme = settings.get('color_scheme')
         if (
             force or old_box_height != box_height or
-            current_color_scheme != settings.get('color_helper.color_scheme', '')
+            current_color_scheme != settings.get('color_helper.color_scheme', '') or
+            settings.get('color_helper.refresh')
         ):
             self.erase_phantoms()
             settings.set('color_helper.color_scheme', current_color_scheme)
@@ -340,7 +341,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     # and load up the appropriate color class
                     color_class, filters = self.get_color_class(src_start, classes)
                     if color_class is None:
-                        print('Come on!')
                         continue
 
                     # Check if scope matches for scaning
