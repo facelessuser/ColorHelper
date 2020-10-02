@@ -295,7 +295,7 @@
                 "PackageDev/Package/Sublime Text Color Scheme/Sublime Text Color Scheme",
                 "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
-            "class": "sublime-colormod",
+            "color_class": "sublime-colormod",
             "color_trigger": "(?i)(?:\\b(?:color|hsla?|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
             "scanning": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme",

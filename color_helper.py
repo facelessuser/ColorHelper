@@ -57,7 +57,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif href.startswith('__tools__'):
             self.show_tools()
         elif href.startswith('__tool__'):
-            self.show_tool(href.split(':', 1)[1])
+            values = href.split(':', 2)
+            color = util.decode_color(values[2]) if len(values) > 2 else None
+            self.show_tool(values[1], color)
         elif href.startswith('__edit__'):
             self.edit_color(*(href.split(':', 2)[1:]))
         elif href.startswith('__contrast__'):
@@ -249,7 +251,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 sublime.set_timeout(
                     lambda c=Color(new_color).to_string(**util.GENERIC): self.view.run_command(
                         "color_helper",
-                        {"color": c, 'mode': 'color_picker_result'}
+                        {"color": c, 'mode': 'result', 'result_type': '__color_picker__'}
                     ),
                     200
                 )
@@ -265,31 +267,44 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 'color_helper_picker', {
                     'color': color,
-                    'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
+                    'on_done': {
+                        'command': 'color_helper',
+                        'args': {'mode': "result", 'result_type': '__color_picker__'}
+                    },
                     'on_cancel': on_cancel
                 }
             )
 
-    def show_tool(self, tool):
+    def show_tool(self, tool, raw=None):
         """Show color tool."""
 
         obj = self.get_cursor_color()
         if obj is None:
             return
 
-        color = obj.color
-        current = self.view.substr(sublime.Region(obj.start, obj.end))
+        mod_name = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
+        is_color_mod = mod_name == "ColorHelper.custom.st_colormod.Color"
+
+        if raw is None:
+            color = Color(obj.color).to_string()
+            current = self.view.substr(sublime.Region(obj.start, obj.end))
+        elif tool == '__colormod__':
+            # We need this unaltered
+            color = raw
+            current = color
+        else:
+            color = Color(raw).to_string()
+            current = color
 
         if tool == "__edit__":
             cmd = "color_helper_edit"
-            edit_color = Color(color).to_string()
+            edit_color = color
         elif tool == "__contrast__":
             cmd = "color_helper_contrast_ratio"
-            edit_color = Color(color).to_string()
+            edit_color = color
         elif tool == "__colormod__":
             cmd = "color_helper_sublime_color_mod"
-            name = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
-            edit_color = current if name == "ColorHelper.custom.st_colormod.Color" else Color(color).to_string()
+            edit_color = current if is_color_mod else color
         else:
             return
 
@@ -302,7 +317,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             cmd,
             {
                 'initial': edit_color,
-                'on_done': {'command': 'color_helper', 'args': {'mode': "color_picker_result"}},
+                'on_done': {
+                    'command': 'color_helper',
+                    'args': {'mode': "result", 'result_type': '__tool__:{}'.format(tool)}
+                },
                 'on_cancel': on_cancel
             }
         )
@@ -485,7 +503,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                 "dialog_type": dialog_type,
                 "palette_name": palette_name,
                 "current_color": original,
-                "color": color.to_string(**util.GENERIC)
+                "tool_color": util.encode_color(raw if raw else color.to_string(**util.GENERIC))
             }
             template_vars['outputs'] = outputs
 
@@ -721,7 +739,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif update:
             self.view.hide_popup()
 
-    def run(self, edit, mode, palette_name=None, color=None, insert_raw=None):
+    def run(self, edit, mode, palette_name=None, color=None, insert_raw=None, result_type=None):
         """Run the specified tooltip."""
 
         self.setup_image_border()
@@ -747,14 +765,14 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 color = obj.color.to_string(**util.GENERIC)
             self.color_picker(color)
-        elif mode == "color_picker_result":
-            self.show_insert(color, '__color_picker__', raw=insert_raw)
+        elif mode == "result":
+            self.show_insert(color, result_type, raw=insert_raw)
         elif mode == "info":
             self.no_info = False
             self.no_palette = False
             self.show_color_info()
 
-    def is_enabled(self, mode, palette_name=None, color=None, insert_raw=None):
+    def is_enabled(self, mode, **kwargs):
         """Check if command is enabled."""
 
         try:

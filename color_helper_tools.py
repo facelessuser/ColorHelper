@@ -375,6 +375,8 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
             call = self.on_cancel.get('command', 'color_helper')
             args = self.on_cancel.get('args', {})
             self.view.run_command(call, args)
+        else:
+            self.view.run_command('color_helper', {'mode': 'info'})
 
     def get_html_style(self):
         """Get HTML style."""
@@ -672,7 +674,10 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if color is not None:
             if on_done is None:
-                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result"}}
+                on_done = {
+                    'command': 'color_helper',
+                    'args': {'mode': "result", "result_type": "__tool__:__edit__"}
+                }
             call = on_done.get('command')
             if call is None:
                 return
@@ -701,7 +706,10 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if color is not None:
             if on_done is None:
-                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result"}}
+                on_done = {
+                    'command': 'color_helper',
+                    'args': {'mode': "result", "result_type": "__tool__:__contrast__"}
+                }
             call = on_done.get('command')
             if call is None:
                 return
@@ -729,7 +737,10 @@ class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand)
 
         if color is not None:
             if on_done is None:
-                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result", "insert_raw": text}}
+                on_done = {
+                    'command': 'color_helper',
+                    'args': {'mode': "result", "insert_raw": text, "result_type": "__tool__:__colormod__"}
+                }
             call = on_done.get('command')
             if call is None:
                 return

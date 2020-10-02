@@ -371,7 +371,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Show tools."""
 
         template_vars = {}
-        template_vars["back_target"] = self.color
+        template_vars["back_target"] = self.color.to_string(**GENERIC)
         template_vars['tools'] = [
             ('Edit and Mix', '__tool__:__edit__'),
             ('Contrast', '__tool__:__contrast__'),
@@ -469,7 +469,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Call back to ColorHelper to insert the color.
             mdpopups.hide_popup(self.view)
             if self.on_done is None:
-                on_done = {'command': 'color_helper', 'args': {'mode': "color_picker_result"}}
+                on_done = {
+                    'command': 'color_helper',
+                    'args': {'mode': "result", "result_type": "__color_picker__"}
+                }
             else:
                 on_done = self.on_done
             call = on_done.get('command')
