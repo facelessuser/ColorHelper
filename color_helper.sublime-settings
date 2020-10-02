@@ -381,9 +381,9 @@
             "color_class": "css-level-4",
             "scanning": [
                 // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
-               "constant.other.color.rgb-value.stylus",
-               "constant.color.w3c-standard-color-name.stylus",
-               "meta.property-value.stylus"
+                "constant.other.color.rgb-value.stylus",
+                "constant.color.w3c-standard-color-name.stylus",
+                "meta.property-value.stylus"
             ]
         },
         {

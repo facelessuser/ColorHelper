@@ -13,22 +13,14 @@ PREVIEW_IMG = '''\
 <p>{}</p>
 '''
 
-CONTRAST_DEMO = """\
-<style>
-div {{
-    display: block;
-    color: {};
-    background-color: {};
-    padding: 2em;
-}}
-</style>
-<div>
+CONTRAST_DEMO = """
+<div style="display: block; color: {}; background-color: {}; padding: 1em;">
 <h2>Color Contrast</h2>
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna
-aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis
-aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing<br>
+elit, sed do eiusmod tempor incididunt ut labore et<br>
+dolore magna aliqua. Ut enim ad minim veniam, quis<br>
+nostrud exercitation ullamco laboris nisi ut aliquip<br>
+ex ea commodo consequat.</p>
 </div>
 """
 
@@ -38,6 +30,35 @@ RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
 RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 
+STYLE = """
+<style>
+html {{
+  font-family: {font};
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  color: {fg};
+}}
+body {{
+  background-color: {bg};
+  padding: 0.5em;
+}}
+br {{
+  display: block;
+}}
+code {{
+  background-color: {code};
+  padding: 0 0.25em;
+}}
+div {{
+    display: block;
+}}
+a {{
+    color: inherit;
+}}
+</style>
+"""
+
 DEF_COLORMOD = """---
 markdown_extensions:
 - markdown.extensions.attr_list
@@ -46,18 +67,16 @@ markdown_extensions:
 - pymdownx.extrarawhtml
 ...
 
-<style>
-a {
-    color: inherit;
-}
-</style>
+{}
 
 ## Format
 
-**`color_syntax | color(color_syntax adjuster*)`**
+`color_syntax | color(color_syntax adjuster*)`
 
-Supported adjusters are **alpha()**, **a()**, **lightness**, **l()**, **saturation()**, **s()**, **blend()**,
-**blenda()**.
+## Instructions
+
+Supported adjusters are `alpha()`, `a()`, `lightness()`, `l()`,<br>
+`saturation()`, `s()`, `blend()`, `blenda()`.
 
 Please see [Sublime Text Documentation](https://www.sublimetext.com/docs/color_schemes.html#colors) for more info.
 """
@@ -70,15 +89,19 @@ markdown_extensions:
 - pymdownx.extrarawhtml
 ...
 
+{}
+
 ## Format
 
 `Color( / Color)?( ratio)?`
 
 ## Instructions
 
-Colors should be either an **sRGB**, **HSL**, or **HWB** color. All others will be convert to sRGB.
+Colors should be either an **sRGB**, **HSL**, or **HWB** color.<br>
+All others will be converted to **sRGB**.
 
-If only one color is provided, the default background of either **black** or **white** will be used.
+If only one color is provided, a default background<br>
+of either **black** or **white** will be used.
 """
 
 DEF_EDIT = """---
@@ -89,21 +112,25 @@ markdown_extensions:
 - pymdownx.extrarawhtml
 ...
 
+{}
+
 ## Format
 
-**`Color(( percent)? + Color( percent)?( @colorspace)?)`**
+`Color(( percent)? + Color( percent)?( @colorspace)?)?`
 
 ## Instructions
 
 Colors can be specified in any supported color space.
 
-If two colors are provided, joined with **`+`**, the colors will be mixed.
+If two colors are provided, joined with `+`, the colors will<br>
+be mixed.
 
-If mixing with **`+`** colors will be mixed in the color space of the first color unless a
-different one is specified with **`@colorspace`**.
+If mixing, colors will be mixed in the color space of the first<br>
+color unless a different color space is specified with `@colorspace`.
 
-If percents are defined, they must add up to 100%, if they do not, they will be scaled. If
-only a single percent is defined, the other color will use **`1 - percent`**.
+If percents are defined, they must add up to 100%, if they do not,<br>
+they will be scaled. If only a single percent is defined, the other<br>
+color will use `1 - percent`.
 """
 
 
@@ -349,6 +376,19 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
             args = self.on_cancel.get('args', {})
             self.view.run_command(call, args)
 
+    def get_html_style(self):
+        """Get HTML style."""
+
+        styles = self.view.style()
+        fg = styles['foreground']
+        bg = styles['background']
+        temp = Color(bg).convert("srgb")
+        is_dark = temp.luminance() < 0.5
+        bg = temp.mix("white" if is_dark else "black", 0.05).to_string(hex=True)
+        code = temp.mix("white" if is_dark else "black", 0.15).to_string(hex=True)
+        font = sublime.load_settings("Preferences.sublime-settings").get('font_face', 'Courier')
+        return STYLE.format(fg=fg, bg=bg, code=code, font=font)
+
 
 class ColorInputHandler(_ColorInputHandler):
     """Handle color inputs."""
@@ -386,6 +426,8 @@ class ColorInputHandler(_ColorInputHandler):
     def preview(self, text):
         """Preview."""
 
+        style = self.get_html_style()
+
         try:
             colors = evaluate(text)
 
@@ -415,9 +457,12 @@ class ColorInputHandler(_ColorInputHandler):
                     message,
                     color.to_string()
                 )
-            return sublime.Html(html) if html else sublime.Html(mdpopups.md2html(self.view, DEF_EDIT))
+            if html:
+                return sublime.Html(style + html)
+            else:
+                return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
         except Exception:
-            return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT))
+            return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
 
     def validate(self, color):
         """Validate."""
@@ -467,10 +512,11 @@ class ColorContrastInputHandler(_ColorInputHandler):
     def preview(self, text):
         """Preview."""
 
+        style = self.get_html_style()
+
         try:
             colors = evaluate_contrast(text)
-
-            html = mdpopups.md2html(self.view, DEF_RATIO)
+            html = mdpopups.md2html(self.view, DEF_RATIO.format(style))
             if len(colors) >= 3:
                 lum2 = colors[1].luminance()
                 lum3 = colors[2].luminance()
@@ -485,21 +531,25 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 else:
                     min_max = ""
                 html = (
-                    "<br><br><p><strong>Fg</strong>: {}</p>"
+                    "<p><strong>Fg</strong>: {}</p>"
                     "<p><strong>Bg</strong>: {}</p>"
                     "<p><strong>Relative Luminance (fg)</strong>: {}</p>{}"
                     "<p><strong>Relative Luminance (bg)</strong>: {}</p>"
                 ).format(
-                    colors[2].to_string(), colors[1].to_string(), lum3, min_max, lum2
+                    colors[2].to_string(),
+                    colors[1].to_string(),
+                    lum3,
+                    min_max,
+                    lum2
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
                 html += CONTRAST_DEMO.format(
                     colors[2].to_string(comma=True),
                     colors[1].to_string(comma=True)
                 )
-            return sublime.Html(html)
+            return sublime.Html(style + html)
         except Exception:
-            return sublime.Html(mdpopups.md2html(self.view, DEF_RATIO))
+            return sublime.Html(mdpopups.md2html(self.view, DEF_RATIO.format(style)))
 
     def validate(self, color):
         """Validate."""
@@ -561,6 +611,8 @@ class ColorModInputHandler(_ColorInputHandler):
     def preview(self, text):
         """Preview."""
 
+        style = self.get_html_style()
+
         try:
             color = self.color_mod_class(text.strip())
             if color is not None:
@@ -588,9 +640,12 @@ class ColorModInputHandler(_ColorInputHandler):
                     message,
                     color.to_string()
                 )
-            return sublime.Html(html) if html else sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
+            if html:
+                return sublime.Html(style + html)
+            else:
+                return sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD.format(style)))
         except Exception:
-            return sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD))
+            return sublime.Html(mdpopups.md2html(self.view, DEF_COLORMOD.format(style)))
 
     def validate(self, color):
         """Validate."""

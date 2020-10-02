@@ -343,12 +343,12 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     if color_class is None:
                         continue
 
-                    # Check if scope matches for scaning
+                    # Check if scope matches for scanning
                     try:
                         value = self.view.score_selector(src_start, scanning)
                         if not value:
                             continue
-                    except Exception as e:
+                    except Exception:
                         continue
 
                     obj = color_class.match(source, start=start, filters=filters)
