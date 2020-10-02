@@ -26,7 +26,10 @@
 [{{plugin.color_preview}}](__palettes__)
 {%- else %}
 {{plugin.color_preview}}
-{% endif %}
+{%- endif %}
+{%- if plugin.color_preview_message %}
+{{plugin.color_preview_message}}
+{%- endif %}
 
 ---
 

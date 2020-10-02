@@ -451,14 +451,14 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         message = ''
         if preview.message:
             message = '<p class="small">* {}</p>'.format(preview.message)
-        template_vars['color_preview'] = '{}{}'.format(
+        template_vars['color_preview'] = (
             mdpopups.color_box(
                 [preview.preview1, preview.preview2], preview.border,
                 height=self.height * PREVIEW_SCALE, width=self.width * PREVIEW_SCALE,
                 border_size=BORDER_SIZE, check_size=self.check_size(self.height * PREVIEW_SCALE, scale=8)
-            ),
-            message
+            )
         )
+        template_vars['color_preview_message'] = message
 
     def show_insert(self, color, dialog_type, palette_name=None, update=False, raw=None):
         """Show insert panel."""
