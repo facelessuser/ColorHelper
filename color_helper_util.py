@@ -17,6 +17,7 @@ COLOR = {"color": True, "fit": False}
 HEX = {"hex": True}
 HEX_NA = {"hex": True, "alpha": False}
 DEFAULT = {"fit": False}
+COMMA = {"fit": False, "comma": True}
 FULL_PREC = {"fit": False, "precision": -1}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb")
