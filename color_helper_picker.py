@@ -12,7 +12,7 @@ from coloraide.css import Color
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorMixin
-from .color_helper_util import GENERIC, HEX, HEX_NA
+from .color_helper_util import DEFAULT, COLOR_NOPREC, HEX, HEX_NA
 import copy
 
 color_map = None
@@ -35,8 +35,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.on_cancel = on_cancel
         self.template_vars = {}
         color = Color(color)
-        self.setup_image_border()
         self.setup_gamut_style()
+        self.setup_image_border()
         self.setup_sizes()
         self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
@@ -120,8 +120,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     kwargs["border_map"] = border_map
 
                     html_colors[-1].append(
-                        '<a href="%s">%s</a>' % (
-                            color.to_string(**GENERIC),
+                        '<a href="{}">{}</a>'.format(
+                            color.to_string(**COLOR_NOPREC),
                             mdpopups.color_box(
                                 [value], self.default_border,
                                 **kwargs
@@ -151,8 +151,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 kwargs["border_map"] = border_map
 
                 html_colors[y].append(
-                    '<a href="%s">%s</a>' % (
-                        color.to_string(**GENERIC),
+                    '<a href="{}">{}</a>'.format(
+                        color.to_string(**COLOR_NOPREC),
                         mdpopups.color_box(
                             [value], self.default_border,
                             **kwargs
@@ -161,7 +161,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 )
                 color.lightness = color.lightness - lfac
 
-            color_map = ''.join(['<span>%s</span><br>' % ''.join([y1 for y1 in x1]) for x1 in html_colors]) + '\n\n'
+            color_map = (
+                ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors]) + '\n\n'
+            )
         self.template_vars['color_picker'] = color_map
 
     def get_current_color(self):
@@ -192,13 +194,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             color = Color(name, filters=util.SRGB_SPACES)
 
             html.append(
-                '[%s](%s) %s<br>' % (
+                '[{}]({}) {}<br>'.format(
                     mdpopups.color_box(
                         [color.to_string(**HEX)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
-                    color.to_string(**GENERIC),
+                    color.to_string(**COLOR_NOPREC),
                     name
                 )
             )
@@ -253,13 +255,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 label = "{:d}%".format(x)
 
             html.append(
-                '[%s](%s) %s<br>' % (
+                '[{}]({}) {}<br>'.format(
                     mdpopups.color_box(
                         [color.convert("srgb").to_string(**HEX)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
-                    color.to_string(**GENERIC),
+                    color.to_string(**COLOR_NOPREC),
                     label
                 )
             )
@@ -269,7 +271,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Get color channel."""
 
         html = []
-        html.append('<span class="channel"><a href="__hirespick__:%s">%s:</a>' % (color_filter, label))
+        html.append('<span class="channel"><a href="__hirespick__:{}">{}:</a>'.format(color_filter, label))
         temp = []
         count = 12
         check_size = self.check_size(self.height)
@@ -302,12 +304,12 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 }
 
                 temp.append(
-                    '[%s](%s)' % (
+                    '[{}]({})'.format(
                         mdpopups.color_box(
                             [clone.convert("srgb").to_string(**HEX)], self.default_border,
                             **kwargs
                         ),
-                        clone.to_string(**GENERIC)
+                        clone.to_string(**COLOR_NOPREC)
                     )
                 )
             clone.update(self.color)
@@ -315,12 +317,12 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             count -= 1
         html += reversed(temp)
         html.append(
-            '[%s](%s)' % (
+            '[{}]({})'.format(
                 mdpopups.color_box(
                     [self.color.convert("srgb").to_string(**HEX)], self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 ),
-                self.color.to_string(**GENERIC)
+                self.color.to_string(**COLOR_NOPREC)
             )
         )
         first = True
@@ -353,12 +355,12 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 }
 
                 html.append(
-                    '[%s](%s)' % (
+                    '[{}]({})'.format(
                         mdpopups.color_box(
                             [clone.convert("srgb").to_string(**HEX)], self.default_border,
                             **kwargs
                         ),
-                        clone.to_string(**GENERIC)
+                        clone.to_string(**COLOR_NOPREC)
                     )
                 )
             clone.update(self.color)
@@ -371,7 +373,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Show tools."""
 
         template_vars = {}
-        template_vars["back_target"] = self.color.to_string(**GENERIC)
+        template_vars["back_target"] = self.color.to_string(**COLOR_NOPREC)
         template_vars['tools'] = [
             ('Edit and Mix', '__tool__:__edit__'),
             ('Contrast', '__tool__:__contrast__'),
@@ -398,7 +400,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         if href.startswith('__space__'):
             # If we received a color space switch to that picker.
             space = href.split(':')[1]
-            color = self.color.convert(space).to_string(**GENERIC)
+            color = self.color.convert(space).to_string(**COLOR_NOPREC)
             mode = space
         elif href.startswith('__insert__'):
             # We will need to call the insert dialog
@@ -406,15 +408,15 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif href.startswith('__hirespick__'):
             # We need to open a high resolution channel picker
             hires = href.split(':')[1]
-            color = self.color.to_string(**GENERIC)
+            color = self.color.to_string(**COLOR_NOPREC)
         elif href.startswith('__tools__'):
-            color = self.color.to_string(**GENERIC)
+            color = self.color.to_string(**COLOR_NOPREC)
         elif href.startswith('__tool__'):
             tool = href.split(':')[1]
-            color = self.color.to_string()
+            color = self.color.to_string(**DEFAULT)
         elif href == "__colornames__":
             # We need to open the color name picker
-            color = self.color.to_string(**GENERIC)
+            color = self.color.to_string(**COLOR_NOPREC)
             colornames = True
         else:
             # Process we need to update the current color
@@ -445,7 +447,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 "command": "color_helper_picker",
                 "args": {
                     "mode": self.mode,
-                    "color": self.color.to_string(**GENERIC)
+                    "color": self.color.to_string(**COLOR_NOPREC)
                 }
             }
 
@@ -460,7 +462,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 cmd,
                 {
-                    "initial": Color(color, filters=util.SRGB_SPACES).to_string(),
+                    "initial": Color(color, filters=util.SRGB_SPACES).to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel
                 }
             )
@@ -539,7 +541,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 switch = 'hwb'
             else:
                 switch = 'srgb'
-            self.template_vars['color_value'] = self.color.to_string()
+            self.template_vars['color_value'] = self.color.to_string(**DEFAULT)
             self.template_vars['color_switch'] = switch
 
         # Display picker

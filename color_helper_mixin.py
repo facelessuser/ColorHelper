@@ -34,6 +34,7 @@ class _ColorMixin:
         if border_color is not None:
             try:
                 border_color = Color(border_color, filters=util.SRGB_SPACES)
+                border_color.fit("srgb", in_place=True, method=self.preferred_gamut_mapping)
             except Exception:
                 border_color = None
 

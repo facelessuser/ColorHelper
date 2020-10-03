@@ -496,6 +496,8 @@ class ChPreviewThread(threading.Thread):
         """Check if we should issue a scroll event."""
 
         view = sublime.active_window().active_view()
+        if view is None:
+            return
         vid = view.id()
         this_scroll = vid
         if self.last_view != this_scroll:
@@ -509,6 +511,10 @@ class ChPreviewThread(threading.Thread):
     def payload(self):
         """Code to run."""
 
+        view = sublime.active_window().active_view()
+        if view is None:
+            return
+
         if not self.ignore_all:
             clear = False
             force = False
@@ -521,7 +527,6 @@ class ChPreviewThread(threading.Thread):
 
             # Ignore selection and edit events inside the routine
             try:
-                view = sublime.active_window().active_view()
                 args = {"clear": clear, "force": force}
                 view.run_command('color_helper_preview', args)
             except Exception:

@@ -335,8 +335,8 @@ def evaluate_contrast(string):
                 colormod = util.import_color("ColorHelper.custom.st_colormod.Color")
                 color = colormod(
                     "color({} min-contrast({} {}))".format(
-                        first.to_string(),
-                        second.to_string(),
+                        first.to_string(**util.FULL_PREC),
+                        second.to_string(**util.FULL_PREC),
                         ratio
                     )
                 )
@@ -364,8 +364,8 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
 
         self.view = view
         self.on_cancel = on_cancel
-        self.setup_image_border()
         self.setup_gamut_style()
+        self.setup_image_border()
         self.setup_sizes()
 
     def cancel(self):
@@ -386,8 +386,8 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
         bg = styles['background']
         temp = Color(bg).convert("srgb")
         is_dark = temp.luminance() < 0.5
-        bg = temp.mix("white" if is_dark else "black", 0.05).to_string(hex=True)
-        code = temp.mix("white" if is_dark else "black", 0.15).to_string(hex=True)
+        bg = temp.mix("white" if is_dark else "black", 0.05).to_string(**util.HEX)
+        code = temp.mix("white" if is_dark else "black", 0.15).to_string(**util.HEX)
         font = sublime.load_settings("Preferences.sublime-settings").get('font_face', 'Courier')
         return STYLE.format(fg=fg, bg=bg, code=code, font=font)
 
@@ -422,7 +422,7 @@ class ColorInputHandler(_ColorInputHandler):
                     pass
                 if color is not None:
                     color = Color(color)
-                    return color.to_string()
+                    return color.to_string(**util.DEFAULT)
         return ''
 
     def preview(self, text):
@@ -457,7 +457,7 @@ class ColorInputHandler(_ColorInputHandler):
                         ], preview_border, border_size=1, height=height, width=width, check_size=check_size
                     ),
                     message,
-                    color.to_string()
+                    color.to_string(**util.DEFAULT)
                 )
             if html:
                 return sublime.Html(style + html)
@@ -508,7 +508,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
                     color = Color(color)
                     if color.space() not in util.SRGB_SPACES:
                         color = color.convert("srgb", fit=self.preferred_gamut_mapping)
-                    return color.to_string()
+                    return color.to_string(**util.DEFAULT)
         return ''
 
     def preview(self, text):
@@ -538,16 +538,16 @@ class ColorContrastInputHandler(_ColorInputHandler):
                     "<p><strong>Relative Luminance (fg)</strong>: {}</p>{}"
                     "<p><strong>Relative Luminance (bg)</strong>: {}</p>"
                 ).format(
-                    colors[2].to_string(),
-                    colors[1].to_string(),
+                    colors[2].to_string(**util.DEFAULT),
+                    colors[1].to_string(**util.DEFAULT),
                     lum3,
                     min_max,
                     lum2
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
                 html += CONTRAST_DEMO.format(
-                    colors[2].to_string(comma=True),
-                    colors[1].to_string(comma=True)
+                    colors[2].to_string(**util.DEFAULT),
+                    colors[1].to_string(**util.DEFAULT)
                 )
             return sublime.Html(style + html)
         except Exception:
@@ -605,7 +605,7 @@ class ColorModInputHandler(_ColorInputHandler):
                         pass
                     if color is not None:
                         # convert to a `color-mod` instance.
-                        return self.color_mod_class(color).to_string()
+                        return self.color_mod_class(color).to_string(**util.DEFAULT)
                 else:
                     return text
         return ''
@@ -640,7 +640,7 @@ class ColorModInputHandler(_ColorInputHandler):
                         ], preview_border, border_size=1, height=height, width=width, check_size=check_size
                     ),
                     message,
-                    color.to_string()
+                    color.to_string(**util.DEFAULT)
                 )
             if html:
                 return sublime.Html(style + html)
@@ -682,7 +682,7 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
             if call is None:
                 return
             args = copy.deepcopy(on_done.get('args', {}))
-            args['color'] = color.to_string(**util.GENERIC)
+            args['color'] = color.to_string(**util.COLOR_FULL_PREC)
             self.view.run_command(call, args)
 
     def input(self, kwargs):  # noqa: A003
@@ -714,7 +714,7 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
             if call is None:
                 return
             args = copy.deepcopy(on_done.get('args', {}))
-            args['color'] = color.to_string(**util.GENERIC)
+            args['color'] = color.to_string(**util.COLOR_FULL_PREC)
             self.view.run_command(call, args)
 
     def input(self, kwargs):  # noqa: A003
@@ -745,7 +745,7 @@ class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand)
             if call is None:
                 return
             args = copy.deepcopy(on_done.get('args', {}))
-            args['color'] = color.to_string(**util.GENERIC)
+            args['color'] = color.to_string(**util.COLOR_FULL_PREC)
             args['insert_raw'] = text
             self.view.run_command(call, args)
 

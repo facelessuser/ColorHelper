@@ -45,10 +45,15 @@
     // Gamut
     //////////////////
 
-    // In some cases, a color will be forced to be within gamut. Some of the
-    // tools may require a color in a certain space. Additionally, previews
-    // must be in the sRGB space, and if it is desired to visually show those
-    // colors, they must also be mapped.
+    // In some cases, a color will be forced to be within gamut. For instance,
+    // Some of the tools may require a color in a certain space. Additionally,
+    // previews must be in the sRGB space, and if it is desired to visually
+    // show those colors, they must also be mapped.
+    //
+    // Also, output options, as defined in `color_classes`, fit colors by default.
+    // If the "fit" parameter is not already defined, only then will it fit with
+    // this setting. Otherwise, the configured outputs will use the mapping algorithm
+    // defined per the output parameters.
     //
     // This controls the mapping algorithm to use: (lch-chroma|clip).
     //
@@ -170,15 +175,15 @@
         "css-level-4": {
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
-                {"space": "srgb", "format": {"comma": true, "precision": 3}},
-                {"space": "hsl", "format": {"comma": true, "precision": 3}},
-                {"space": "hwb", "format": {"comma": false, "precision": 3}},
-                {"space": "lch", "format": {"comma": false, "precision": 3}},
-                {"space": "lab", "format": {"comma": false, "precision": 3}},
-                {"space": "display-p3", "format": {"precision": 3}},
-                {"space": "rec-2020", "format": {"precision": 3}},
-                {"space": "prophoto-rgb", "format": {"precision": 3}},
-                {"space": "a98-rgb", "format": {"precision": 3}},
+                {"space": "srgb", "format": {"comma": true}},
+                {"space": "hsl", "format": {"comma": true}},
+                {"space": "hwb", "format": {"comma": false}},
+                {"space": "lch", "format": {"comma": false}},
+                {"space": "lab", "format": {"comma": false}},
+                {"space": "display-p3", "format": {}},
+                {"space": "rec-2020", "format": {}},
+                {"space": "prophoto-rgb", "format": {}},
+                {"space": "a98-rgb", "format": {}},
                 {"space": "xyz", "format": {}}
             ]
         },

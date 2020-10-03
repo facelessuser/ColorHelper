@@ -13,9 +13,12 @@ import importlib
 
 RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
 
-GENERIC = {"color": True}
+COLOR = {"color": True, "fit": False}
 HEX = {"hex": True}
 HEX_NA = {"hex": True, "alpha": False}
+DEFAULT = {"fit": False}
+FULL_PREC = {"fit": False, "precision": -1}
+COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb")
 
 FRONTMATTER = mdpopups.format_frontmatter(

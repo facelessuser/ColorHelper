@@ -10,15 +10,17 @@ docs_dir: docs/src/markdown
 theme:
   name: material
   custom_dir: docs/theme
+  icon:
+    logo: material/book-open-page-variant
   palette:
     scheme: dracula
     primary: deep purple
     accent: deep purple
-  icon:
-    logo: material/book-open-page-variant
   font:
     text: Roboto
     code: Roboto Mono
+  features:
+    - navigation.tabs
 
 nav:
   - About Markdown Popups: index.md
