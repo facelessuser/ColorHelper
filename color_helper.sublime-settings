@@ -164,7 +164,7 @@
     //
     // - `filters`:        A list that restricts color recognition to only the specified color spaces.
     //                     Default is an empty list. Allowed color spaces are `srgb`, `hsl`, `hwb`, `hsv`,
-    //                     `lch`, `lab`, `xyz`, `display-p3`, `rec-2020`, `a98-rgb`, and `prophoto-rgb`.
+    //                     `lch`, `lab`, `xyz`, `display-p3`, `rec2020`, `a98-rgb`, and `prophoto-rgb`.
     //
     // - `edit_mode`:      Optional parameter that controls the "edit" tool that is used in the info
     //                     panel when you click the large color preview. The default value is `default`,
@@ -181,7 +181,7 @@
                 {"space": "lch", "format": {"comma": false}},
                 {"space": "lab", "format": {"comma": false}},
                 {"space": "display-p3", "format": {}},
-                {"space": "rec-2020", "format": {}},
+                {"space": "rec2020", "format": {}},
                 {"space": "prophoto-rgb", "format": {}},
                 {"space": "a98-rgb", "format": {}},
                 {"space": "xyz", "format": {}}
