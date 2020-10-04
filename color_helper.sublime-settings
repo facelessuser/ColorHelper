@@ -269,7 +269,7 @@
     //                     think we might have a valid color. For instance, the color class can translate colors
     //                     in the form `rgb(1 1 1 / 1)`, so we can specify `rgb(` as a color trigger. If we find `rgb(`,
     //                     we will test that spot's scope and attempt to read in a color at that location.
-    //                     Defaults to "(?i)(?:\\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)"
+    //                     Defaults to "(?i)(?:\b(?<![-#&])(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
     //
     // - `allow_scanning`: This is an easy way to disable just scanning within a certain ruleset. Defaults to `true`.
     //
@@ -301,7 +301,7 @@
                 "PackageDev/Package/Sublime Text Theme/Sublime Text Theme"
             ],
             "color_class": "sublime-colormod",
-            "color_trigger": "(?i)(?:\\b(?:color|hsla?|hwb|rgba?)\\(|\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
+            "color_trigger": "(?i)(?:\\b(?<![-#&])(?:color|hsla?|hwb|rgba?)\\(|\\b(?<![-#&])[\\w]{3,}(?!\\()\\b|(?!<&)\\#)",
             "scanning": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
@@ -364,7 +364,7 @@
         },
         {
             "name": "tmTheme",
-            "color_trigger": "(?i)(?:\\b(?<!\\#)[\\w]{3,}(?!\\()\\b|\\#)",
+            "color_trigger": "(?i)(?:\\b(?<![-#&])[\\w]{3,}(?!\\()\\b|(?!<&)\\#)",
             "extensions": [".tmTheme"],
             "base_scopes": ["text.xml"],
             "color_class": "tmtheme",

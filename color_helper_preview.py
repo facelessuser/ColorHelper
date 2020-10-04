@@ -26,8 +26,6 @@ PREVIEW_IMG = (
 
 PREVIEW_BORDER_SIZE = 1
 
-RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
-
 reload_flag = False
 ch_last_updated = None
 ch_settings = None
@@ -322,7 +320,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
             self.setup_gamut_options()
 
             # Get triggers that identify where colors are likely
-            color_trigger = re.compile(rules.get("color_trigger", RE_COLOR_START))
+            color_trigger = re.compile(rules.get("color_trigger", util.RE_COLOR_START))
 
             # Find source content in the visible region.
             # We will return consecutive content, but if the lines are too wide
@@ -651,7 +649,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             if isinstance(classes, str):
                 classes = [{"class": classes, "scopes": ""}]
             allow_scanning = bool(rule.get("allow_scanning", True) and scanning)
-            color_trigger = rule.get("color_trigger", RE_COLOR_START)
+            color_trigger = rule.get("color_trigger", util.RE_COLOR_START)
             matched = True
             break
 
@@ -665,7 +663,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             else:
                 classes = [{"class": classes, "scopes": ""}]
             allow_scanning = bool(generic.get("allow_scanning", True) and scanning)
-            color_trigger = generic.get("color_trigger", RE_COLOR_START)
+            color_trigger = generic.get("color_trigger", util.RE_COLOR_START)
             matched = True
 
         # Add user configuration

@@ -12,9 +12,6 @@ from . import color_helper_util as util
 from html.parser import HTMLParser
 from .color_helper_mixin import _ColorMixin
 
-
-RE_COLOR_START = r"(?i)(?:\b(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<!\#)[\w]{3,}(?!\()\b|\#)"
-
 __pc_name__ = "ColorHelper"
 
 PREVIEW_SCALE = 8
