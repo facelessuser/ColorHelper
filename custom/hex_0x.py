@@ -51,7 +51,7 @@ class HexSRGB(SRGB):
         ]
 
     def to_string(
-        self, *, options=None, alpha=None, precision=util.DEF_PREC, fit=util.DEF_FIT, **kwargs
+        self, *, options=None, alpha=None, precision=util.DEF_PREC, fit=True, **kwargs
     ):
         """Convert to Hex format."""
 
@@ -64,7 +64,7 @@ class HexSRGB(SRGB):
         if options.get("hex_upper"):
             template = template.upper()
 
-        coords = self.fit_coords(method=fit) if fit else self.coords()
+        coords = self.fit_coords()
         if show_alpha:
             value = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),

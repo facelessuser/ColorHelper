@@ -693,7 +693,7 @@ class SRGBX11(SRGB):
     )
 
     def to_string(
-        self, *, alpha=None, precision=util.DEF_PREC, fit=util.DEF_FIT, **kwargs
+        self, *, alpha=None, precision=util.DEF_PREC, fit=True, **kwargs
     ):
         """Convert to CSS."""
 
@@ -701,9 +701,9 @@ class SRGBX11(SRGB):
 
         value = ''
         if alpha is not False and (alpha is True or self.alpha < 1.0):
-            h = self._get_hexa(options, precision=precision, fit=fit)
+            h = self._get_hexa(options, precision=precision)
         else:
-            h = self._get_hex(options, precision=precision, fit=fit)
+            h = self._get_hex(options, precision=precision)
         value = h
         if options.get("names"):
             length = len(h) - 1
@@ -716,19 +716,16 @@ class SRGBX11(SRGB):
 
         return value
 
-    def _get_hexa(self, options, *, precision=util.DEF_PREC, fit="clip"):
+    def _get_hexa(self, options, *, precision=util.DEF_PREC):
         """Get the RGB color with the alpha channel."""
 
         hex_upper = options.get("hex_upper", False)
-
-        if not fit:
-            fit == "clip"
 
         template = "#{:02x}{:02x}{:02x}{:02x}"
         if hex_upper:
             template = template.upper()
 
-        coords = self.fit_coords(method=fit) if fit else self.coords()
+        coords = self.fit_coords()
         value = template.format(
             int(util.round_half_up(coords[0] * 255.0)),
             int(util.round_half_up(coords[1] * 255.0)),
@@ -738,19 +735,16 @@ class SRGBX11(SRGB):
 
         return value
 
-    def _get_hex(self, options, *, precision=util.DEF_PREC, fit="clip"):
+    def _get_hex(self, options, *, precision=util.DEF_PREC):
         """Get the `RGB` value."""
 
         hex_upper = options.get("hex_upper", False)
-
-        if not fit:
-            fit == "clip"
 
         template = "#{:02x}{:02x}{:02x}"
         if hex_upper:
             template = template.upper()
 
-        coords = self.fit_coords(method=fit) if fit else self.coords()
+        coords = self.fit_coords()
         value = template.format(
             int(util.round_half_up(coords[0] * 255.0)),
             int(util.round_half_up(coords[1] * 255.0)),

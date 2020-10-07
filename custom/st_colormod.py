@@ -268,7 +268,7 @@ class ColorMod:
         """Adjust base."""
 
         self._color = base
-        pattern = "color({} {})".format(self._color.to_string(fit="clip", precision=-1), string)
+        pattern = "color({} {})".format(self._color.fit(method="clip").to_string(precision=-1), string)
         color, start = self._adjust(pattern)
         if color is not None:
             self._color.update(color)
