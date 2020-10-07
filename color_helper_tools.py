@@ -438,9 +438,12 @@ class ColorInputHandler(_ColorInputHandler):
                 srgb = Color(color).convert("srgb")
                 preview_border = self.default_border
                 message = ""
+                color_string = ""
                 if not srgb.in_gamut():
                     srgb.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
+                    color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(srgb.to_string())
+                color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
                 preview_border = self.default_border
@@ -457,7 +460,7 @@ class ColorInputHandler(_ColorInputHandler):
                         ], preview_border, border_size=1, height=height, width=width, check_size=check_size
                     ),
                     message,
-                    color.to_string(**util.DEFAULT)
+                    color_string
                 )
             if html:
                 return sublime.Html(style + html)
