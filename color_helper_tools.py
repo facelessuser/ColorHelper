@@ -439,7 +439,7 @@ class ColorInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 message = ""
                 if not srgb.in_gamut():
-                    srgb.fit("srgb", method=self.preferred_gamut_mapping)
+                    srgb.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
@@ -507,7 +507,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
                 if color is not None:
                     color = Color(color)
                     if color.space() not in util.SRGB_SPACES:
-                        color = color.convert("srgb", fit=self.preferred_gamut_mapping)
+                        color = color.convert("srgb", fit=True)
                     return color.to_string(**util.DEFAULT)
         return ''
 
@@ -622,7 +622,7 @@ class ColorModInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 message = ""
                 if not srgb.in_gamut():
-                    srgb.fit("srgb", method=self.preferred_gamut_mapping)
+                    srgb.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)

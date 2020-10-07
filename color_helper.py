@@ -236,7 +236,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.color_picker_package:
             self.view.hide_popup()
-            old_color = Color(color).convert("srgb", fit=self.preferred_gamut_mapping).to_string(**util.HEX)
+            old_color = Color(color).convert("srgb", fit=True).to_string(**util.HEX)
             s = sublime.load_settings('color_helper_share.sublime-settings')
             s.set('color_pick_return', None)
             self.view.window().run_command(
@@ -493,8 +493,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             custom = self.custom_color_class(color)
             for output in self.output_options:
                 params = output.get("format", {})
-                if "fit" not in params:
-                    params["fit"] = self.preferred_gamut_mapping
                 value = custom.convert(output["space"]).to_string(**params)
                 outputs.append(
                     (

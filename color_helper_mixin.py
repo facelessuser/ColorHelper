@@ -21,9 +21,6 @@ class _ColorMixin:
         """Setup the gamut style."""
 
         ch_settings = sublime.load_settings('color_helper.sublime-settings')
-        self.preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
-        if self.preferred_gamut_mapping not in ("lch-chroma", "clip"):
-            self.preferred_gamut_mapping = "lch-chroma"
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
 
     def setup_image_border(self):
@@ -34,7 +31,7 @@ class _ColorMixin:
         if border_color is not None:
             try:
                 border_color = Color(border_color, filters=util.SRGB_SPACES)
-                border_color.fit("srgb", in_place=True, method=self.preferred_gamut_mapping)
+                border_color.fit("srgb", in_place=True)
             except Exception:
                 border_color = None
 
@@ -176,7 +173,7 @@ class _ColorMixin:
         if not color.in_gamut("srgb"):
             message = 'preview out of gamut'
             if self.show_out_of_gamut_preview:
-                srgb = color.convert("srgb", fit=self.preferred_gamut_mapping)
+                srgb = color.convert("srgb", fit=True)
                 preview1 = srgb.to_string(**HEX_NA)
                 preview2 = srgb.to_string(**HEX)
             else:

@@ -235,9 +235,6 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
         self.out_of_gamut = Color("transparent").to_string(**util.HEX)
         self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
-        self.preferred_gamut_mapping = ch_settings.get("preferred_gamut_mapping", "lch-chroma")
-        if self.preferred_gamut_mapping not in ("lch-chroma", "clip"):
-            self.preferred_gamut_mapping = "lch-chroma"
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
 
     def do_search(self, force=False):
@@ -379,14 +376,14 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                         filters=util.SRGB_SPACES
                     ).convert("hsl")
                     hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
-                    preview_border = hsl.convert("srgb", fit=self.preferred_gamut_mapping).to_string(**util.HEX)
+                    preview_border = hsl.convert("srgb", fit=True).to_string(**util.HEX)
 
                     color = Color(obj.color)
                     title = ''
                     if not color.in_gamut("srgb"):
                         title = ' title="Out of gamut"'
                         if self.show_out_of_gamut_preview:
-                            srgb = color.convert("srgb", fit=self.preferred_gamut_mapping)
+                            srgb = color.convert("srgb", fit=True)
                             preview1 = srgb.to_string(**util.HEX_NA)
                             preview2 = srgb.to_string(**util.HEX)
                         else:

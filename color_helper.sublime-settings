@@ -45,28 +45,6 @@
     // Gamut
     //////////////////
 
-    // In some cases, a color will be forced to be within gamut. For instance,
-    // Some of the tools may require a color in a certain space. Additionally,
-    // previews must be in the sRGB space, and if it is desired to visually
-    // show those colors, they must also be mapped.
-    //
-    // Also, output options, as defined in `color_classes`, fit colors by default.
-    // If the "fit" parameter is not already defined, only then will it fit with
-    // this setting. Otherwise, the configured outputs will use the mapping algorithm
-    // defined per the output parameters.
-    //
-    // This controls the mapping algorithm to use: (lch-chroma|clip).
-    //
-    // - `lch-chroma`: while holding everything constant, chroma is reduced
-    //                 until the color is in gamut. Each step of the way,
-    //                 the color is clipped and compared to see if it is
-    //                 close enough. This will probably give overall better
-    //                 results.
-    //
-    //.- `clip`:       Ranges are just cut to the minimum or maximum if they
-    //.                exceed the color spaces limits.
-    "preferred_gamut_mapping": "lch-chroma",
-
     // Controls whether previews will try to visually show an out of gamut
     // color by using gamut mapping.
     "show_out_of_gamut_preview": true,

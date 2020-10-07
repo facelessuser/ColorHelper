@@ -40,7 +40,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_sizes()
         self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
-        self.color = color.convert(self.mode, fit=self.preferred_gamut_mapping)
+        self.color = color.convert(self.mode, fit=True)
 
     def setup_mode(self, color, mode):
         """Setup mode."""

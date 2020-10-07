@@ -268,7 +268,7 @@ class ColorMod:
         """Adjust base."""
 
         self._color = base
-        pattern = "color({} {})".format(self._color.to_string(fit="clip"), string)
+        pattern = "color({} {})".format(self._color.to_string(fit="clip", precision=-1), string)
         color, start = self._adjust(pattern)
         if color is not None:
             self._color.update(color)
@@ -503,13 +503,13 @@ class ColorMod:
 class Color(ColorCSS):
     """Color modify class."""
 
-    def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None):
+    def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Initialize."""
 
-        self._attach(self._parse(color, data, alpha, filters=filters, variables=variables))
+        super().__init__(color, data, alpha, filters=None, variables=variables, **kwargs)
 
     @classmethod
-    def _parse(cls, color, data=None, alpha=util.DEF_ALPHA, filters=None, variables=None):
+    def _parse(cls, color, data=None, alpha=util.DEF_ALPHA, filters=None, variables=None, **kwargs):
         """Parse the color."""
 
         obj = None
@@ -589,20 +589,20 @@ class Color(ColorCSS):
         return obj
 
     @classmethod
-    def new(cls, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None):
+    def new(cls, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Create new color object."""
 
-        return cls(color, data, alpha, filters=filters, variables=variables)
+        return cls(color, data, alpha, filters=filters, variables=variables, **kwargs)
 
-    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None):
+    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Update the existing color space with the provided color."""
 
-        obj = self._parse(color, data, alpha, filters=filters, variables=variables)
+        obj = self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs)
         self._color.update(obj)
         return self
 
-    def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None):
+    def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Mutate the current color to a new color."""
 
-        self._attach(self._parse(color, data, alpha, filters=filters, variables=variables))
+        self._attach(self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs))
         return self
