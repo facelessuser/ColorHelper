@@ -286,7 +286,7 @@ def evaluate(string):
             colors.append(first.color)
         if second:
             colors.append(second.color)
-            colors.append(first.color.mix(second.color, percent, alpha=True, space=space))
+            colors.append(first.color.mix(second.color, percent, space=space))
     except Exception:
         colors = []
     return colors
@@ -330,7 +330,7 @@ def evaluate_contrast(string):
             colors.append(second)
             if ratio:
                 if first.alpha < 1.0:
-                    first = first.alpha_composite(second, space="srgb")
+                    first = first.overlay(second, space="srgb")
 
                 colormod = util.import_color("ColorHelper.custom.st_colormod.Color")
                 color = colormod(
@@ -345,10 +345,10 @@ def evaluate_contrast(string):
 
             if first.alpha < 1.0:
                 # Contrasted with current color
-                colors.append(first.alpha_composite(second, space="srgb"))
+                colors.append(first.overlay(second, space="srgb"))
                 # Contrasted with the two extremes min and max
-                colors.append(first.alpha_composite("white", space="srgb"))
-                colors.append(first.alpha_composite("black", space="srgb"))
+                colors.append(first.overlay("white", space="srgb"))
+                colors.append(first.overlay("black", space="srgb"))
             else:
                 colors.append(first.clone())
     except Exception:

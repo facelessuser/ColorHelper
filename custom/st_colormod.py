@@ -317,7 +317,7 @@ class ColorMod:
         """Process blend."""
 
         start = m.end(0)
-        alpha = m.group(0).startswith('blenda')
+        alpha = m.group(0).strip().startswith('blenda')
         m = RE_COLOR_START.match(string, start)
         if m:
             color2, start = self._adjust(string, start=start)
@@ -343,6 +343,7 @@ class ColorMod:
         else:
             raise ValueError("Found unterminated or invalid 'blend('")
 
+        value = util.clamp(value, 0.0, 1.0)
         self.blend(color2, 1.0 - value, alpha, space=space)
         if not self._color.is_achromatic():
             hue = convert.srgb_to_hsv(*self._color._color.coords())[0]
@@ -465,7 +466,10 @@ class ColorMod:
             color = color.convert(space)
             color.hue = hue
 
-        self._color.update(this.mix(color, percent, alpha=False, space=space))
+        new_color = this.mix(color, percent, space=space)
+        if not alpha:
+            new_color.alpha = color.alpha
+        self._color.update(new_color)
 
     def alpha(self, value, op=""):
         """Alpha."""
