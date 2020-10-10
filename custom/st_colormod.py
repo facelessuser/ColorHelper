@@ -204,16 +204,16 @@ class ColorMod:
                         if color2 is None:
                             raise ValueError("Found unterminated or invalid 'color('")
                         color = color2.convert("srgb")
-                        if not color.is_achromatic():
-                            hue = convert.srgb_to_hsv(*color._color.coords())[0]
+                        if not color.is_hue_null("hsl"):
+                            hue = color.get("hsl.hue")
                 if color is None:
                     obj = Color.match(string, start=start, fullmatch=False)
                     if obj is not None:
                         color = obj.color
                         if color.space != "srgb":
                             color = color.convert("srgb")
-                        if not color.is_achromatic():
-                            hue = convert.srgb_to_hsv(*color._color.coords())[0]
+                        if not color.is_hue_null("hsl"):
+                            hue = color.get("hsl.hue")
                         start = obj.end
 
             if color is not None:
@@ -309,8 +309,8 @@ class ColorMod:
         value = float(value.strip('%'))
         op = m.group(1).strip() if m.group(1) else ""
         getattr(self, name)(value, op=op, hue=hue)
-        if not self._color.is_achromatic():
-            hue = convert.srgb_to_hsv(*self._color._color.coords())[0]
+        if not self._color.is_hue_null("hsl"):
+            hue = self._color.get("hsl.hue")
         return m.end(0), hue
 
     def process_blend(self, m, string, hue):
@@ -345,8 +345,8 @@ class ColorMod:
 
         value = util.clamp(value, 0.0, 1.0)
         self.blend(color2, 1.0 - value, alpha, space=space)
-        if not self._color.is_achromatic():
-            hue = convert.srgb_to_hsv(*self._color._color.coords())[0]
+        if not self._color.is_hue_null("hsl"):
+            hue = self._color.get("hsl.hue")
         return start, hue
 
     def process_min_contrast(self, m, string, hue):
@@ -378,8 +378,8 @@ class ColorMod:
 
         self.min_contrast(this, color2, value)
         self._color.update(this)
-        if not self._color.is_achromatic():
-            hue = convert.srgb_to_hsv(*self._color._color.coords())[0]
+        if not self._color.is_hue_null("hsl"):
+            hue = self._color.get("hsl.hue")
         return start, hue
 
     def min_contrast(self, color1, color2, target):
@@ -483,7 +483,7 @@ class ColorMod:
         """Lightness."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        if this.is_achromatic() and hue is not None:
+        if this.is_hue_null() and hue is not None:
             this.hue = hue
         op = self.OP_MAP.get(op, self._op_null)
         this.lightness = op(this.lightness, value)
@@ -493,7 +493,7 @@ class ColorMod:
         """Saturation."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        if this.is_achromatic() and hue is not None:
+        if this.is_hue_null() and hue is not None:
             this.hue = hue
         op = self.OP_MAP.get(op, self._op_null)
         this.saturation = op(this.saturation, value)

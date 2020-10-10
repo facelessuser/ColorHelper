@@ -700,11 +700,30 @@ class SRGBX11(SRGB):
         options = kwargs
 
         value = ''
-        if alpha is not False and (alpha is True or self.alpha < 1.0):
-            h = self._get_hexa(options, precision=precision)
+        alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
+        coords = self.fit_coords()
+        hex_upper = options.get("hex_upper", False)
+
+        if alpha:
+            template = "#{:02x}{:02x}{:02x}{:02x}"
+            if hex_upper:
+                template = template.upper()
+            value = template.format(
+                int(util.round_half_up(coords[0] * 255.0)),
+                int(util.round_half_up(coords[1] * 255.0)),
+                int(util.round_half_up(coords[2] * 255.0)),
+                int(util.round_half_up(self.alpha * 255.0))
+            )
         else:
-            h = self._get_hex(options, precision=precision)
-        value = h
+            template = "#{:02x}{:02x}{:02x}"
+            if hex_upper:
+                template = template.upper()
+            value = template.format(
+                int(util.round_half_up(coords[0] * 255.0)),
+                int(util.round_half_up(coords[1] * 255.0)),
+                int(util.round_half_up(coords[2] * 255.0))
+            )
+
         if options.get("names"):
             length = len(h) - 1
             index = int(length / 4)
@@ -713,43 +732,6 @@ class SRGBX11(SRGB):
             n = hex2name(h)
             if n is not None:
                 value = n
-
-        return value
-
-    def _get_hexa(self, options, *, precision=util.DEF_PREC):
-        """Get the RGB color with the alpha channel."""
-
-        hex_upper = options.get("hex_upper", False)
-
-        template = "#{:02x}{:02x}{:02x}{:02x}"
-        if hex_upper:
-            template = template.upper()
-
-        coords = self.fit_coords()
-        value = template.format(
-            int(util.round_half_up(coords[0] * 255.0)),
-            int(util.round_half_up(coords[1] * 255.0)),
-            int(util.round_half_up(coords[2] * 255.0)),
-            int(util.round_half_up(self.alpha * 255.0))
-        )
-
-        return value
-
-    def _get_hex(self, options, *, precision=util.DEF_PREC):
-        """Get the `RGB` value."""
-
-        hex_upper = options.get("hex_upper", False)
-
-        template = "#{:02x}{:02x}{:02x}"
-        if hex_upper:
-            template = template.upper()
-
-        coords = self.fit_coords()
-        value = template.format(
-            int(util.round_half_up(coords[0] * 255.0)),
-            int(util.round_half_up(coords[1] * 255.0)),
-            int(util.round_half_up(coords[2] * 255.0))
-        )
 
         return value
 
