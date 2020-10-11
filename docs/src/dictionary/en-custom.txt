@@ -51,6 +51,7 @@ plugins
 popup
 popups
 pre
+prerelease
 requesters
 sRGB
 scrollable

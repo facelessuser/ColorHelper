@@ -16,6 +16,33 @@ The recommended way to install ColorHelper is via [Package Control](https://pack
 
 5. Enjoy!
 
+## Install 3.0 Beta {: #install-3.0-beta}
+
+To install the 3.0 Beta, you will need to add the following to your `Packages/User/Package Control.sublime-settings`
+file.
+
+```js
+    // A list of URLs that contain a packages JSON file. These repositories
+    // are placed in order before repositories from the "channels"
+    // setting
+    "repositories":
+    [
+        "https://raw.githubusercontent.com/facelessuser/sublime-channel/master/repositories.json"
+    ],
+    // A list of packages to install pre-release versions for. Versions
+    // under 1.0.0 are not considered pre-release, only those using the SemVer
+    // -prerelease suffixes will be ignored if the package is not in this
+    // list.
+    "install_prereleases": ["ColorHelper"]
+```
+
+The `repositories` change is only required until `coloraide` is available in Package Control:
+https://github.com/wbond/package_control_channel/pull/8059.
+
+The second enables prerelease packages for ColorHelper so that you can get the 3.0 beta.
+
+Feedback can be provided in the beta thread in project's issues: #159.
+
 ## Manual Installation
 
 !!! warning "Warning"
