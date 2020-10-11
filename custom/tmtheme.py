@@ -725,11 +725,11 @@ class SRGBX11(SRGB):
             )
 
         if options.get("names"):
-            length = len(h) - 1
+            length = len(value) - 1
             index = int(length / 4)
-            if length in (8, 4) and h[-index:].lower() == ("f" * index):
-                h = h[:-index]
-            n = hex2name(h)
+            if length in (8, 4) and value[-index:].lower() == ("f" * index):
+                value = value[:-index]
+            n = hex2name(value)
             if n is not None:
                 value = n
 

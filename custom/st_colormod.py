@@ -2,7 +2,6 @@
 import re
 from coloraide.css import Color as ColorCSS
 from coloraide.colors import ColorMatch
-from coloraide.colors import _convert as convert
 from coloraide.colors import _parse as parse
 from coloraide import util
 import functools
