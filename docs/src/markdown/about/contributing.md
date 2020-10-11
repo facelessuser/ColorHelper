@@ -5,6 +5,7 @@
 Sublime\ Versions | Description
 ----------------- |------------
 ST3               | Fully supported and actively maintained.
+ST4               | Fully supports the early development releases.
 
 Contribution from the community is encouraged and can be done in a variety of ways:
 

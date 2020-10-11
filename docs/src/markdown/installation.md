@@ -34,6 +34,7 @@ For those who want to install ColorHelper without package control, here are the 
     - https://github.com/packagecontrol/pygments -> `pygments`
     - https://github.com/facelessuser/sublime-markdown-popups -> `mdpopups`
     - https://github.com/facelessuser/sublime-markdown -> `python-markdown`
+    - https://github.com/facelessuser/sublime-coloraide -> `coloraide`
 
 2. Download and unpack or git clone the latest ColorHelper release and unpack as `ColorHelper`:
 
@@ -43,7 +44,7 @@ For those who want to install ColorHelper without package control, here are the 
 
     Copy the following code to `00-dependencies.py` (this code was taken from Package Control):
 
-    ``` python
+    ```{.py3 .md-max-height}
     import sys
     import os
     from os.path import dirname
@@ -197,6 +198,7 @@ For those who want to install ColorHelper without package control, here are the 
     add_dependency('python-markdown')
     add_dependency('python-jinja2')
     add_dependency('mdpopups')
+    add_dependency('coloraide')
     ```
 
 4. Restart and enjoy.

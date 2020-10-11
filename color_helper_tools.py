@@ -71,12 +71,16 @@ markdown_extensions:
 
 ## Format
 
-`color_syntax | color(color_syntax adjuster*)`
+`color(color_syntax adjuster*)`
+
+Also accepts normal CSS color syntax. Color functions can be nested.
 
 ## Instructions
 
+Colors must be in the **sRGB**, **HSL**, or **HSB** color space.
+
 Supported adjusters are `alpha()`, `a()`, `lightness()`, `l()`,<br>
-`saturation()`, `s()`, `blend()`, `blenda()`.
+`saturation()`, `s()`, `blend()`, and `blenda()`.
 
 Please see [Sublime Text Documentation](https://www.sublimetext.com/docs/color_schemes.html#colors) for more info.
 """

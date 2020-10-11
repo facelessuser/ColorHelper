@@ -2,7 +2,6 @@
     // Show debug logging
     "debug": false,
 
-
     //////////////////
     // Graphic Rendering
     //////////////////
@@ -31,7 +30,7 @@
     "image_border_color": null,
 
     //////////////////
-    // Color Picker
+    // Tools
     //////////////////
 
     // Color picker and palette picker by default
@@ -93,6 +92,9 @@
     // will also show.
     "preview_on_select": false ,
 
+    // Controls whether previews will try to visually show an out of gamut
+    // color by using gamut mapping.
+    "show_out_of_gamut_preview": true,
 
     //////////////////
     // Color Rules

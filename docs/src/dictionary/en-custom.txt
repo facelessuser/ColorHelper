@@ -2,6 +2,7 @@ ASE
 CSS
 Changelog
 ColorHelper
+ColorMod
 ColorPicker
 Control's
 EmojiOne
@@ -12,6 +13,7 @@ HWB
 HiDPI
 Inline
 JSON
+LCH
 MERCHANTABILITY
 MkDocs
 Multiconf
@@ -33,6 +35,7 @@ boolean
 changelog
 clickable
 cmd
+coloraide
 ctrl
 emoji
 grayscale
@@ -52,6 +55,7 @@ requesters
 sRGB
 scrollable
 stylesheet
+subclassing
 sublicense
 tooltip
 tooltips

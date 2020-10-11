@@ -32,13 +32,6 @@
                                     "url": "http://facelessuser.github.io/ColorHelper/"
                                 }
                             },
-                            {
-                                "caption": "Quick Start Guide",
-                                "command": "color_helper_doc",
-                                "args": {
-                                    "page": "${packages}/ColorHelper/quickstart.md"
-                                }
-                            },
                             { "caption": "-" },
                             {
                                 "caption": "Support Info",

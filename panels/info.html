@@ -1,10 +1,10 @@
-{% if plugin.show_palette_menu -%} 
-[palettes](__palettes__){: .small} 
-{% endif -%}
 {% if plugin.show_picker_menu -%}
 [picker](__color_picker__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
 [tools](__tools__:{{plugin.edit_color}}){: .small} 
+{% if plugin.show_palette_menu -%} 
+[palettes](__palettes__){: .small} 
+{% endif -%}
 {% if plugin.show_global_palette_menu -%} 
 [add](__add_color__:{{plugin.generic_color}}){: .small} 
 {% endif -%}

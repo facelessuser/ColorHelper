@@ -7,8 +7,8 @@
 - **NEW**: `rgb`, `hsl`, and `hwb` all support the new CSS format `rgb(r g b / a)`.
 - **NEW**: All instances of `blacklist` and `whitelist` are now known as `blocklist`  
   and `allowlist` respectively.
-- **NEW**: Outputs when inserting or converting can be controlled in settings file.
-- **NEW**: Color triggers (what color helper searches for before testing if the text  
+- **NEW**: Outputs, when inserting or converting, can be controlled in settings file.
+- **NEW**: Color triggers (what ColorHelper searches for before testing if the text  
   is a color) can be configured in settings file. This can allow a user to not trigger  
   on certain formats.
 - **NEW**: If desired, users can provided a custom color class object to use for certain  
@@ -27,18 +27,16 @@
   see a visual representation of how the two colors contrast. The resulting foreground  
   color can be inserted back into the file, or will be handed back to the color picker  
   if called from there.
+- **NEW**: New Sublime ColorMod tool which allows a user to see a `color-mod` expression
+  update a live color preview on the fly.
 - **NEW**: Only one color rule (defined in the settings file) will apply to a given view.
 - **NEW**: Renamed `color_scan` option to `color_rule`.
-- **NEW**: Colors that our out of gamut will be gamut mapped. On over of the preivew  
+- **NEW**: Massive overhaul of color scanning and color scanning options.
+- **NEW**: Colors that are out of gamut will be gamut mapped. On hover of the preivew  
   (on ST4) it will indicate that it has been gamut mapped. This can be disabled via  
   `show_out_of_gamut_preview`, and instead a fully transparent color swatch with a  
   "red-ish" border will be shown (color may vary based on color scheme). On mouse over  
   it will indicate that it is out of gamut (on ST4).
-- **NEW**: Sometimes when dealing with an out of gamut color, due to needing to work in  
-  a certain color space (contrast tool and color picker only apply spaces easily  
-  translated to sRGB), ColorHelper will have to gamut map a color. Two forms of gamut  
-  mapping are provided `lch-chroma` and `clip`. `preferred_gamut_mapping` controlls  
-  which method is preferred with `lch-chroma` being the default.
 - **NEW**: ColorHelper will now gamut map colors in some scenarios, either due to  
   necessity, or by user setting.
 - **NEW**: New `generic` option is defined which provides a default input and output for  
@@ -56,7 +54,6 @@
   entire rule set. If a rule uses the same `name` as one of the existing default rules,  
   a shallow merge will be done so the values of the top level keys will be overridden  
   with the user keys and/or any additional keys will be added.
-- **NEW**: Smoother behavior of color previews when editing code.
 - **REMOVED**: Color completion. It mainly got in the way. The palette can be called any  
   time the user needs it already.
 - **REMOVED**: Hex shaped color picker option has been removed.
