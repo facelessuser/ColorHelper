@@ -271,3 +271,5 @@ class will override the values in the default color class.
     // the values of top level keys to be overridden and new keys to be added.
     "user_color_classes": {}
 ```
+
+--8<-- "refs.md"

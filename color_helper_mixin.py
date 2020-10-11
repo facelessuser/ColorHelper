@@ -4,7 +4,7 @@ import mdpopups
 from . import color_helper_util as util
 from .color_helper_util import HEX, HEX_NA
 from .multiconf import get as qualify_settings
-from coloraide.css import Color
+from coloraide import Color
 from collections import namedtuple
 
 SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
@@ -71,7 +71,7 @@ class _ColorMixin:
                     class_options = self.color_classes.get(item["class"])
                     if class_options is None:
                         continue
-                    module = class_options.get("class", "coloraide.css.colors.Color")
+                    module = class_options.get("class", "coloraide.Color")
                     if isinstance(module, str):
                         # Initialize the color module and cache it for this view
                         color_class = util.import_color(module)

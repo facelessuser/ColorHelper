@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide.css import Color
+from coloraide import Color
 import mdpopups
 from . import color_helper_util as util
 from html.parser import HTMLParser
