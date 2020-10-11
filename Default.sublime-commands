@@ -1,27 +1,43 @@
 [
     {
-        "caption": "Color Helper: Index Colors in File",
-        "command": "color_helper_file_index"
-    },
-    {
-        "caption": "Color Helper: Show Palettes",
+        "caption": "Color Helper: Palettes",
         "command": "color_helper",
         "args": {
             "mode": "palette"
         }
     },
     {
-        "caption": "Color Helper: Show Color Info",
+        "caption": "Color Helper: Info",
         "command": "color_helper",
         "args": {
             "mode": "info"
         }
     },
     {
-        "caption": "Color Helper: Show Color Picker",
+        "caption": "Color Helper: Picker",
         "command": "color_helper",
         "args": {
             "mode": "color_picker"
         }
+    },
+    {
+        "caption": "Color Helper: Edit",
+        "command": "color_helper_edit"
+    },
+    {
+        "caption": "Color Helper: Contrast",
+        "command": "color_helper_contrast_ratio"
+    },
+    {
+        "caption": "Color Helper: Override View's Scanning",
+        "command": "color_helper_preview_override"
+    },
+    {
+        "caption": "Color Helper: ST ColorMod",
+        "command": "color_helper_sublime_color_mod"
+    },
+    {
+        "caption": "Color Helper: Reload Custom Color Classes (Dev)",
+        "command": "color_helper_reload_color_class"
     }
 ]

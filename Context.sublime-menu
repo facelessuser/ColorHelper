@@ -18,6 +18,18 @@
                 "caption": "Color Picker",
                 "command": "color_helper",
                 "args": { "mode": "color_picker" }
+            },
+            {
+                "caption": "Color Helper: Edit",
+                "command": "color_helper_edit"
+            },
+            {
+                "caption": "Color Helper: Contrast",
+                "command": "color_helper_contrast_ratio"
+            },
+            {
+                "caption": "Color Helper: ST ColorMod",
+                "command": "color_helper_sublime_color_mod"
             }
         ]
     },

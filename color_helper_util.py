@@ -5,16 +5,22 @@ Copyright (c) 2015 - 2017 Isaac Muse <isaacmuse@gmail.com>
 License: MIT
 """
 import sublime
-import re
-import decimal
-from .lib import csscolors
-from .lib.rgba import RGBA, round_int, clamp
 from textwrap import dedent
 import platform
-import math
 import mdpopups
+import base64
+import importlib
 
-RE_CHAN_SPLIT = re.compile(r'(?:\s*[,/]\s*|\s+)')
+RE_COLOR_START = r"(?i)(?:\b(?<![-#&])(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
+
+COLOR = {"color": True, "fit": False}
+HEX = {"hex": True}
+HEX_NA = {"hex": True, "alpha": False}
+DEFAULT = {"fit": False}
+COMMA = {"fit": False, "comma": True}
+FULL_PREC = {"fit": False, "precision": -1}
+COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
+SRGB_SPACES = ("srgb", "hsl", "hwb")
 
 FRONTMATTER = mdpopups.format_frontmatter(
     {
@@ -30,118 +36,7 @@ FRONTMATTER = mdpopups.format_frontmatter(
     }
 )
 
-CONVERT_TURN = 360
-CONVERT_GRAD = 90 / 100
-
 LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
-FLOAT_TRIM_RE = re.compile(r'^(?P<keep>\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
-
-COLOR_PARTS = {
-    "percent": r"[+\-]?(?:(?:\d*\.\d+)|\d+)%",
-    "float": r"[+\-]?(?:(?:\d*\.\d+)|\d+)",
-    "angle": r"[+\-]?(?:(?:\d*\.\d+)|\d+)(deg|rad|turn|grad)?"
-}
-
-COMPLETE = r'''
-    (?P<hexa>\#(?P<hexa_content>[\dA-Fa-f]{8}))\b |
-    (?P<hex>\#(?P<hex_content>[\dA-Fa-f]{6}))\b |
-    (?P<hexa_compressed>\#(?P<hexa_compressed_content>[\dA-Fa-f]{4}))\b |
-    (?P<hex_compressed>\#(?P<hex_compressed_content>[\dA-Fa-f]{3}))\b |
-    \b(?P<rgb>rgba?\(\s*(?P<rgb_content>
-        (?:
-            (?:%(float)s\s+){2}%(float)s | (?:%(percent)s\s+){2}%(percent)s
-        ) |
-        (?:
-            (?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s
-        )
-    )\s*\)) |
-    \b(?P<rgba>rgba?\(\s*(?P<rgba_content>
-        (?:
-            (?:%(float)s\s+){2}%(float)s | (?:%(percent)s\s+){2}%(percent)s
-        )\s*/\s*(?:%(percent)s|%(float)s) |
-        (?:
-            (?:%(float)s\s*,\s*){2}%(float)s | (?:%(percent)s\s*,\s*){2}%(percent)s
-        )\s*,\s*(?:%(percent)s|%(float)s)
-    )\s*\)) |
-    \b(?P<hsl>hsla?\(\s*(?P<hsl_content>
-        (?:
-            %(angle)s\s+%(percent)s\s+%(percent)s
-        ) |
-        (?:
-           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
-        )
-    )\s*\)) |
-    \b(?P<hsla>hsla?\(\s*(?P<hsla_content>
-        (?:
-            %(angle)s\s+%(percent)s\s+%(percent)s
-        )\s*/\s*(?:%(percent)s|%(float)s) |
-        (?:
-           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
-        )\s*,\s*(?:%(percent)s|%(float)s)
-    )\s*\)) |
-    \b(?P<hwb>hwb\(\s*(?P<hwb_content>
-        (?:
-            %(angle)s\s+%(percent)s\s+%(percent)s
-        ) |
-        (?:
-           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
-        )
-    )\s*\)) |
-    \b(?P<hwba>hwb\(\s*(?P<hwba_content>
-        (?:
-            %(angle)s\s+%(percent)s\s+%(percent)s
-        )\s*/\s*(?:%(percent)s|%(float)s) |
-        (?:
-           %(angle)s\s*,\s*%(percent)s\s*,\s*%(percent)s
-        )\s*,\s*(?:%(percent)s|%(float)s)
-    )\s*\)) |
-    \b(?P<gray>gray\(\s*(?P<gray_content>%(float)s|%(percent)s)\s*\)) |
-    \b(?P<graya>gray\(\s*(?P<graya_content>(?:%(float)s|%(percent)s)\s*,\s*(?:%(percent)s|%(float)s))\s*\))
-''' % COLOR_PARTS
-
-INCOMPLETE = r'''
-    (?P<hash>\#) |
-    \b(?P<rgb_open>rgb\() |
-    \b(?P<rgba_open>rgba\() |
-    \b(?P<hsl_open>hsl\() |
-    \b(?P<hsla_open>hsla\() |
-    \b(?P<hwb_open>hwb\() |
-    \b(?P<gray_open>hwb\()
-    '''
-
-COLOR_NAMES = r'\b(?P<webcolors>%s)\b(?!\()' % '|'.join([name for name in csscolors.name2hex_map.keys()])
-
-TAG_HTML_RE = re.compile(
-    br'''(?x)(?i)
-    (?:
-        (?P<comments>(\r?\n?\s*)<!--[\s\S]*?-->(\s*)(?=\r?\n)|<!--[\s\S]*?-->)|
-        (?P<style><style((?:\s+[\w\-:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^>\s]+))?)*)\s*>(?P<css>.*?)<\/style[^>]*>) |
-        (?P<open><[\w\:\.\-]+)
-        (?P<attr>(?:\s+[\w\-:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*)
-        (?P<close>\s*(?:\/?)>)
-    )
-    ''',
-    re.DOTALL
-)
-
-TAG_STYLE_ATTR_RE = re.compile(
-    br'''(?x)
-    (?P<attr>
-        (?:
-            \s+style
-            (?:\s*=\s*(?P<content>"[^"]*"|'[^']*'))
-        )
-    )
-    ''',
-    re.DOTALL
-)
-
-HEX_IS_GRAY_RE = re.compile(r'(?i)^#([0-9a-f]{2})\1\1')
-HEX_COMPRESS_RE = re.compile(r'(?i)^#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?$')
-
-COLOR_RE = re.compile(r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES))
-COLOR_ALL_RE = re.compile(r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES, INCOMPLETE))
-INDEX_ALL_RE = re.compile((r'(?x)(?i)(?<![@#$.\-_])(?:%s|%s)(?![@#$.\-_])' % (COMPLETE, COLOR_NAMES)).encode('utf-8'))
 
 ADD_CSS = dedent(
     '''
@@ -153,27 +48,44 @@ ADD_CSS = dedent(
 
 WRAPPER_CLASS = "color-helper content"
 
-LEVEL4 = (
-    "webcolors", "hex", "hex_compressed", "rgb", "rgba", "hsl", "hsla",
-    "hwb", "hwba", "gray", "graya", "hexa", "hexa_compressed"
-)
-ALL = LEVEL4
+DEF_OUTPUT = [
+    {"space": "srgb", "format": {"hex": True}},
+    {"space": "srgb", "format": {"comma": True, "precision": 3}},
+    {"space": "hsl", "format": {"comma": True, "precision": 3}},
+    {"space": "hwb", "format": {"comma": False, "precision": 3}},
+    {"space": "lch", "format": {"comma": False, "precision": 3}},
+    {"space": "lab", "format": {"comma": False, "precision": 3}},
+    {"space": "xyz", "format": {}}
+]
 
 
-def norm_angle(angle):
-    """Normalize angle units."""
+def import_color(module_path):
+    """Import color module."""
 
-    if angle.endswith('turn'):
-        value = float(angle[:-4]) * CONVERT_TURN
-    elif angle.endswith('grad'):
-        value = float(angle[:-4]) * CONVERT_GRAD
-    elif angle.endswith('rad'):
-        value = math.degrees(float(angle[:-3]))
-    elif angle.endswith('deg'):
-        value = float(angle[:-3])
-    else:
-        value = float(angle)
-    return value
+    module, color_class = module_path.rsplit('.', 1)
+    color_class = getattr(importlib.import_module(module), color_class)
+    return color_class
+
+
+def encode_color(color):
+    """Encode color into base64 for URL links."""
+
+    return base64.b64encode(color.encode('utf-8')).decode('utf-8')
+
+
+def decode_color(color):
+    """Decode color from base64 for URL links."""
+
+    return base64.b64decode(color.encode('utf-8')).decode('utf-8')
+
+
+def html_encode(txt):
+    """HTML encode."""
+
+    txt = txt.replace('&', '&amp;')
+    txt = txt.replace('<', '&lt;')
+    txt = txt.replace('>', '&gt;')
+    return txt
 
 
 def log(*args):
@@ -211,21 +123,6 @@ def color_picker_available():
     return s.get('color_pick_return', None)
 
 
-def fmt_float(f, p=0):
-    """Set float precision and trim precision zeros."""
-
-    string = str(
-        decimal.Decimal(f).quantize(decimal.Decimal('0.' + ('0' * p) if p > 0 else '0'), decimal.ROUND_HALF_UP)
-    )
-
-    m = FLOAT_TRIM_RE.match(string)
-    if m:
-        string = m.group('keep')
-        if m.group('keep2'):
-            string += m.group('keep2')
-    return string
-
-
 def get_rules(view):
     """Get auto-popup scope rule."""
 
@@ -240,19 +137,6 @@ def get_scope(view, rules, skip_sel_check=False):
     scopes = None
     if rules is not None:
         scopes = ','.join(rules.get('scan_scopes', []))
-        sels = view.sel()
-        if not skip_sel_check:
-            if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
-                scopes = None
-    return scopes
-
-
-def get_scope_completion(view, rules, skip_sel_check=False):
-    """Get additional auto-popup scope rules for incomplete colors only."""
-
-    scopes = None
-    if rules is not None:
-        scopes = ','.join(rules.get('scan_completion_scopes', []))
         sels = view.sel()
         if not skip_sel_check:
             if len(sels) == 0 or not scopes or view.score_selector(sels[0].begin(), scopes) == 0:
@@ -311,218 +195,39 @@ def get_project_folders(window):
     return data.get('folders', [])
 
 
-def is_gray(color):
-    """Check if color is gray (all channels the same)."""
-
-    m = HEX_IS_GRAY_RE.match(color)
-    return m is not None
-
-
-def compress_hex(color):
-    """Compress hex."""
-
-    m = HEX_COMPRESS_RE.match(color)
-    if m:
-        color = '#' + m.group(1) + m.group(2) + m.group(3)
-        if m.group(4):
-            color += m.group(4)
-    return color
+def merge_rules(a, b):
+    """Merge two rules."""
+    c = a.copy()
+    c.update(b)
+    return c
 
 
-def alpha_dec_normalize(dec):
-    """Normalize a decimal alpha value."""
+def get_settings_rules():
+    """Read rules from settings and allow overrides."""
 
-    temp = float(dec)
-    if temp < 0.0 or temp > 1.0:
-        dec = fmt_float(clamp(float(temp), 0.0, 1.0), 3)
-    alpha_dec = dec
-    alpha = "%02X" % round_int(float(alpha_dec) * 255.0)
-    return alpha, alpha_dec
-
-
-def alpha_percent_normalize(perc):
-    """Normalize a percent alpha value."""
-
-    alpha_float = clamp(float(perc.strip('%')), 0.0, 100.0) / 100.0
-    alpha_dec = fmt_float(alpha_float, 3)
-    alpha = "%02X" % round_int(alpha_float * 255.0)
-    return alpha, alpha_dec
+    s = sublime.load_settings('color_helper.sublime-settings')
+    rules = s.get("color_rules", [])
+    user_rules = s.get("user_color_rules", [])
+    names = {rule["name"]: i for i, rule in enumerate(rules) if "name" in rule}
+    for urule in user_rules:
+        name = urule.get("name")
+        if name is not None and name in names:
+            index = names[name]
+            rules[index] = merge_rules(rules[index], urule)
+        else:
+            rules.append(urule)
+    return rules
 
 
-def translate_color(m, use_hex_argb=False, decode=False):
-    """Translate the match object to a color w/ alpha."""
+def get_settings_colors():
+    """Read color classes from settings and allow overrides."""
 
-    color = None
-    alpha = None
-    alpha_dec = None
-    if m.group('hex_compressed'):
-        if decode:
-            content = m.group('hex_compressed_content').decode('utf-8')
+    s = sublime.load_settings('color_helper.sublime-settings')
+    classes = s.get("color_classes", {})
+    user_classes = s.get("user_color_classes", {})
+    for k, v in user_classes.items():
+        if k not in classes:
+            classes[k] = v
         else:
-            content = m.group('hex_compressed_content')
-        color = "#%02x%02x%02x" % (
-            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-        )
-    elif m.group('hexa_compressed') and use_hex_argb:
-        if decode:
-            content = m.group('hexa_compressed_content').decode('utf-8')
-        else:
-            content = m.group('hexa_compressed_content')
-        color = "#%02x%02x%02x" % (
-            int(content[1:2] * 2, 16), int(content[2:3] * 2, 16), int(content[3:] * 2, 16)
-        )
-        alpha = content[0:1] * 2
-        alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-    elif m.group('hexa_compressed'):
-        if decode:
-            content = m.group('hexa_compressed_content').decode('utf-8')
-        else:
-            content = m.group('hexa_compressed_content')
-        color = "#%02x%02x%02x" % (
-            int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-        )
-        alpha = content[3:] * 2
-        alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-    elif m.group('hex'):
-        if decode:
-            content = m.group('hex_content').decode('utf-8')
-        else:
-            content = m.group('hex_content')
-        if len(content) == 6:
-            color = "#%02x%02x%02x" % (
-                int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-            )
-        else:
-            color = "#%02x%02x%02x" % (
-                int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-            )
-    elif m.group('hexa') and use_hex_argb:
-        if decode:
-            content = m.group('hexa_content').decode('utf-8')
-        else:
-            content = m.group('hexa_content')
-        if len(content) == 8:
-            color = "#%02x%02x%02x" % (
-                int(content[2:4], 16), int(content[4:6], 16), int(content[6:], 16)
-            )
-            alpha = content[0:2]
-            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-        else:
-            color = "#%02x%02x%02x" % (
-                int(content[1:2] * 2, 16), int(content[2:3] * 2, 16), int(content[3:] * 2, 16)
-            )
-            alpha = content[0:1]
-            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-    elif m.group('hexa'):
-        if decode:
-            content = m.group('hexa_content').decode('utf-8')
-        else:
-            content = m.group('hexa_content')
-        if len(content) == 8:
-            color = "#%02x%02x%02x" % (
-                int(content[0:2], 16), int(content[2:4], 16), int(content[4:6], 16)
-            )
-            alpha = content[6:]
-            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-        else:
-            color = "#%02x%02x%02x" % (
-                int(content[0:1] * 2, 16), int(content[1:2] * 2, 16), int(content[2:3] * 2, 16)
-            )
-            alpha = content[3:]
-            alpha_dec = fmt_float(float(int(alpha, 16)) / 255.0, 3)
-    elif m.group('rgb') or m.group('rgba'):
-        content = m.group('rgba_content') if m.group('rgba') else m.group('rgb_content')
-        if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
-        else:
-            content = RE_CHAN_SPLIT.split(content)
-
-        if content[0].endswith('%'):
-            r = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            g = round_int(clamp(float(content[1].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            b = round_int(clamp(float(content[2].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-            color = "#%02x%02x%02x" % (r, g, b)
-        else:
-            color = "#%02x%02x%02x" % (
-                clamp(round_int(float(content[0])), 0, 255),
-                clamp(round_int(float(content[1])), 0, 255),
-                clamp(round_int(float(content[2])), 0, 255)
-            )
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
-    elif m.group('hsl') or m.group('hsla'):
-        content = m.group('hsl_content') if m.group('hsl') else m.group('hsla_content')
-        if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
-        else:
-            content = RE_CHAN_SPLIT.split(content)
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        s = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        l = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhls(h, l, s)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
-    elif m.group('hwb') or m.group('hwba'):
-        content = m.group('hwb_content') if m.group('hwb') else m.group('hwba_content')
-        if decode:
-            content = RE_CHAN_SPLIT.split(content.decode('utf-8'))
-        else:
-            content = RE_CHAN_SPLIT.split(content)
-        rgba = RGBA()
-        hue = norm_angle(content[0])
-        if hue < 0.0 or hue > 360.0:
-            hue = hue % 360.0
-        h = hue / 360.0
-        w = clamp(float(content[1].strip('%')), 0.0, 100.0) / 100.0
-        b = clamp(float(content[2].strip('%')), 0.0, 100.0) / 100.0
-        rgba.fromhwb(h, w, b)
-        color = rgba.get_rgb()
-        if len(content) == 4:
-            if content[3].endswith('%'):
-                alpha, alpha_dec = alpha_percent_normalize(content[3])
-            else:
-                alpha, alpha_dec = alpha_dec_normalize(content[3])
-    elif m.group('gray'):
-        if decode:
-            content = m.group('gray_content').decode('utf-8')
-        else:
-            content = m.group('gray_content')
-        if content.endswith('%'):
-            g = round_int(clamp(float(content.strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-        else:
-            g = clamp(round_int(float(content)), 0, 255)
-        color = "#%02x%02x%02x" % (g, g, g)
-    elif m.group('graya'):
-        if decode:
-            content = [x.strip() for x in m.group('graya_content').decode('utf-8').split(',')]
-        else:
-            content = [x.strip() for x in m.group('graya_content').split(',')]
-        if content[0].endswith('%'):
-            g = round_int(clamp(float(content[0].strip('%')), 0.0, 255.0) * (255.0 / 100.0))
-        else:
-            g = clamp(round_int(float(content[0])), 0, 255)
-        color = "#%02x%02x%02x" % (g, g, g)
-        if content[1].endswith('%'):
-            alpha, alpha_dec = alpha_percent_normalize(content[1])
-        else:
-            alpha, alpha_dec = alpha_dec_normalize(content[1])
-    elif m.group('webcolors'):
-        try:
-            if decode:
-                color = csscolors.name2hex(m.group('webcolors').decode('utf-8')).lower()
-            else:
-                color = csscolors.name2hex(m.group('webcolors')).lower()
-        except Exception:
-            pass
-    return color, alpha, alpha_dec
+            classes[k] = merge_rules(classes[k], v)
+    return classes

@@ -10,20 +10,31 @@ docs_dir: docs/src/markdown
 theme:
   name: material
   custom_dir: docs/theme
+  icon:
+    logo: material/book-open-page-variant
   palette:
     scheme: dracula
     primary: deep purple
     accent: deep purple
-  icon:
-    logo: material/book-open-page-variant
   font:
     text: Roboto
     code: Roboto Mono
+  features:
+    - navigation.tabs
 
 nav:
-  - About Markdown Popups: index.md
-  - Installation: installation.md
-  - User Guide: usage.md
+  - Getting Started:
+    - Overview: index.md
+    - Installation: installation.md
+    - User Guide: usage.md
+  - Settings:
+    - Configuring ColorHelper: settings/index.md
+    - Graphic Rendering: settings/graphics.md
+    - Previews: settings/previews.md
+    - Color Picker: settings/color_picker.md
+    - Color Palettes: settings/palettes.md
+    - Tools: settings/tools.md
+    - Rules: settings/rules.md
   - About:
     - Contributing &amp; Support: about/contributing.md
     - License: about/license.md

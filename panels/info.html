@@ -1,117 +1,36 @@
-{% if plugin.show_palette_menu -%}
+{% if plugin.show_picker_menu -%}
+[picker](__color_picker__:{{plugin.generic_color}}){: .small} 
+{% endif -%}
+[tools](__tools__:{{plugin.edit_color}}){: .small} 
+{% if plugin.show_palette_menu -%} 
 [palettes](__palettes__){: .small} 
 {% endif -%}
-{% if plugin.show_picker_menu -%}
-[picker](__color_picker__:{{plugin.color}}){: .small} 
-{% endif -%}
-{% if plugin.show_global_palette_menu -%}
-[add](__add_color__:{{plugin.color}}){: .small} 
+{% if plugin.show_global_palette_menu -%} 
+[add](__add_color__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
-[unmark](__remove_fav__:{{plugin.color_dlevel}}){: .small} 
+[unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 
 {% elif plugin.show_favorite_menu and not plugin.is_marked -%}
-[mark](__add_fav__:{{plugin.color_dlevel}}){: .small}
+[mark](__add_fav__:{{plugin.generic_color}}){: .small}
 {%- endif %}
+
+### {{plugin.current_color}}
+
 {%- if plugin.click_color_picker %}
-
-[{{plugin.color_preview}}](__color_picker__:{{plugin.color}})
+[{{plugin.color_preview}}](__color_picker__:{{plugin.generic_color}})
+{%- elif plugin.click_color_edit %}
+[{{plugin.color_preview}}](__tool__:{{plugin.edit}})
+{%- elif plugin.click_color_contrast %}
+[{{plugin.color_preview}}](__tool__:__contrast__)
 {%- elif plugin.click_palette_picker %}
-
 [{{plugin.color_preview}}](__palettes__)
 {%- else %}
-
 {{plugin.color_preview}}
-{% endif %}
-{%- if plugin.show_conversions %}
+{%- endif %}
+{%- if plugin.color_preview_message %}
+{{plugin.color_preview_message}}
+{%- endif %}
 
 ---
 
-  {%- if plugin.show_web_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:name){: .small}
- <span class="constant numeric">{{plugin.web_color}}</span>
-<br>
-  {%- endif %}
-  {%- if plugin.show_hex_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hex){: .small} 
- <span class="support type">{{plugin.hex_color}}</span>
-<br>
-  {%- endif %}
-  {%- if plugin.show_hexa_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hexa){: .small} 
- <span class="support type">{{plugin.hex_color}}</span><span class="support type alpha">{{plugin.hex_alpha}}</span>
-<br>
-  {%- endif %}
-  {%- if plugin.show_ahex_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:ahex){: .small} 
- <span class="support type">#</span><span class="support type alpha">{{plugin.hex_alpha}}</span><span class="support type">{{plugin.ahex_color}}</span>
-<br>
-  {%- endif %}
-  {%- if plugin.show_rgb_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgb){: .small}
-    {%- if plugin.rgb_comma %}
- <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
-    {%- else %}
- <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}}</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_rgba_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgba){: .small}
-    {%- if plugin.rgb_comma %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
-    {%- else %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.alpha}}</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_gray_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:gray){: .small}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}</span>)
-<br>
-  {%- endif %}
-  {%- if plugin.show_graya_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:graya){: .small}
-    {%- if plugin.gray_comma %}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.alpha}}</span>)
-    {%- else %}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}} / {{plugin.alpha}}</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hsl_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsl){: .small}
-    {%- if plugin.hsl_comma %}
- <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
-    {%- else %}
- <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}%</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hsla_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsla){: .small}
-    {%- if plugin.hsl_comma %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
-    {%- else %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.alpha}}</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hwb_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwb){: .small}
-    {%- if plugin.hwb_comma %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
-    {%- else %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}%</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hwba_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwba){: .small}
-    {%- if plugin.hwb_comma %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
-    {%- else %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.alpha}}</span>)
-    {%- endif %}
-<br>
-  {%- endif %}
-{%- endif %}
+[convert](__insert__:{{plugin.generic_color}}:__info__){: .small}

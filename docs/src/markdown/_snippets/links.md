@@ -1,4 +1,6 @@
-[color-helper]: https://packagecontrol.io/packages/ColorPicker
+[color-picker]: https://packagecontrol.io/packages/ColorPicker
+[coloraide]: https://facelessuser.github.io/coloraide/
+[coloraide-strings]: https://facelessuser.github.io/coloraide/strings/
 [mdpopups]: https://github.com/facelessuser/sublime-markdown-popups
 [mkdocs]: http://www.mkdocs.org
 [mkdocs-material]: https://github.com/squidfunk/mkdocs-material

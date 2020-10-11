@@ -1,142 +1,16 @@
-[back](__colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
+{%- if plugin.dialog_type not in ("__info__", "__color_picker__") and not plugin.dialog_type.startswith('__tool__:') %}
+[back](__colors__:{{plugin.dialog_type}}:{{plugin.palette_name}}){: .small}
+{%- elif plugin.dialog_type == "__info__" %}
+[back](__info__){: .small}
+{%- elif plugin.dialog_type == "__color_picker__" %}
+[back]({{plugin.dialog_type}}:{{plugin.current_color}}){: .small}
+{%- else %}
+[back]({{plugin.dialog_type}}:{{plugin.tool_color}}){: .small}
+{%- endif %}
 
 ## Insert Color
-{%- if plugin.show_web_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:name){: .small}
- <span class="constant numeric">{{plugin.web_color}}</span>
-<br>
-{%- endif %}
-{%- if plugin.show_hex_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hex){: .small}
- <span class="support type">{{plugin.color}}</span>
-<br>
-{%- endif %}
-{%- if plugin.show_hexa_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}:hexa){: .small}
- <span class="support type">{{plugin.color}}</span><span class="support type color-helper alpha">{{plugin.alpha_hex}}</span>
-<br>
-{%- endif %}
-{%- if plugin.show_ahex_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}:ahex){: .small}
- <span class="support type">#</span><span class="support type color-helper alpha">{{plugin.alpha_hex}}</span><span class="support type">{{plugin.color_ahex}}</span>
-<br>
-{%- endif %}
-{%- if plugin.show_rgb_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:rgb){: .small}
-  {%- if plugin.rgb_comma %}
- <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}</span>)
-  {%- else %}
- <span class="keyword">rgb</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}}</span>)
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_rgba_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:rgba){: .small}
-  {%- if plugin.rgb_comma %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.alpha}}</span>)
-  {%- else %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.alpha}}</span>)
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_gray_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:gray){: .small}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}</span>)
-<br>
-{%- endif %}
-{%- if plugin.show_graya_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:graya){: .small}
-  {%- if plugin.gray_comma %}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.alpha}}</span>)
-  {%- else %}
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_hsl_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hsl){: .small}
-  {%- if plugin.hsl_comma %}
- <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%</span>)
-  {%- else %}
- <span class="keyword">hsl</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}%</span>)
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_hsla_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:hsla){: .small}
-  {%- if plugin.hsl_comma %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.alpha}}</span>)
-  {%- else %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.alpha}}</span>)
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_hwb_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color}}:hwb){: .small}
-  {%- if plugin.hwb_comma %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%</span>)
-  {%- else %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}%</span>)
-  {%- endif %}
-<br>
-{%- endif %}
-{%- if plugin.show_hwba_color %}
-[&gt;&gt;&gt;](__convert__:{{plugin.color_alpha}}{{plugin.dlevel}}:hwba){: .small}
-  {%- if plugin.hwb_comma %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.alpha}}</span>)
-  {%- else %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}% / {{plugin.alpha}}</span>)
-  {%- endif %}
-{%- endif %}
-{%- if plugin.secondary_alpha %}
 
----
-
-## Use Selected Alpha
-
-  {%- if plugin.show_hexa_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}:hexa){: .small}
- <span class="support type">{{plugin.color}}</span>
-<span class="support type color-helper alpha">{{plugin.current_alpha_hex}}</span>
+{%- for output in plugin.outputs %}
+[&gt;&gt;&gt;](__convert__:{{output[0]}} "Convert") <span>{{output[1]}}</span>
 <br>
-  {%- endif %}
-  {%- if plugin.show_ahex_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}:ahex){: .small}
- <span class="support type">#</span><span class="support type color-helper alpha">{{plugin.current_alpha_hex}}</span><span class="support type">{{plugin.color_ahex}}</span>
-<br>
-  {%- endif %}
-  {%- if plugin.show_rgba_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:rgba){: .small}
-  {%- if plugin.rgb_comma %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.rgb_g}}, {{plugin.rgb_b}}, {{plugin.current_alpha}}</span>)
-  {%- else %}
- <span class="keyword">rgba</span>(<span class="constant numeric">{{plugin.rgb_r}} {{plugin.rgb_g}} {{plugin.rgb_b}} / {{plugin.current_alpha}}</span>)
-  {%- end %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_graya_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:graya){: .small}
-  {%- if plugin.gray_comma %}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}}, {{plugin.current_alpha}}</span>)
-  {%- else %}
- <span class="keyword">gray</span>(<span class="constant numeric">{{plugin.rgb_r}} / {{plugin.current_alpha}}</span>)
-  {%- end %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hsla_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:hsla){: .small}
-  {%- if plugin.hsl_comma %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}}, {{plugin.hsl_s}}%, {{plugin.hsl_l}}%, {{plugin.current_alpha}}</span>)
-  {%- else %}
- <span class="keyword">hsla</span>(<span class="constant numeric">{{plugin.hsl_h}} {{plugin.hsl_s}}% {{plugin.hsl_l}}% / {{plugin.current_alpha}}</span>)
-  {%- end %}
-<br>
-  {%- endif %}
-  {%- if plugin.show_hwba_color %}
-[&gt;&gt;&gt;](__convert_alpha__:{{plugin.color}}{{plugin.current_alpha_hex}}@3:hwba){: .small}
-  {%- if plugin.hwb_comma %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}}, {{plugin.hwb_w}}%, {{plugin.hwb_b}}%, {{plugin.current_alpha}}</span>)
-  {%- else %}
- <span class="keyword">hwb</span>(<span class="constant numeric">{{plugin.hwb_h}} {{plugin.hwb_w}}% {{plugin.hwb_b}}% / {{plugin.current_alpha}}</span>)
-  {%- end %}
-   {%- endif %}
-{%- endif %}
+{%- endfor %}

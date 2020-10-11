@@ -7,4 +7,6 @@ the release.
 
 ## Breaking Changes
 
-- `css3` specifier has been deprecated. If using `css3`, `css4` will be used.
+ColorHelper is a major overhaul, so existing settings are likely to break. 
+Please checkout the latest documentation to learn how to configure and use 
+the new ColorHelper: https://facelessuser.github.io/ColorHelper/.

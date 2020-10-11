@@ -1,17 +1,14 @@
 [back]({{plugin.back_target}}){: .small} 
-{% if plugin.show_picker_menu -%}
-[picker](__color_picker__:{{plugin.color}}){: .small} 
-{% endif -%}
 {% if plugin.show_delete_menu -%}
 [delete](__delete__palettes__){: .small} 
 {%- endif %}
 {%- if plugin.show_delete_ui %}
 
 ## Delete Palette
+
 Click the palette to delete.
 {%- elif plugin.show_new_ui %}
 ## New Palette
-Click the link or palette to add **{{plugin.color}}**{: .keyword}.
 
 [Create New Palette](__create_palette__:__global__:{{plugin.color}})
 
@@ -19,9 +16,6 @@ Click the link or palette to add **{{plugin.color}}**{: .keyword}.
 {%- endif %}
 {%- if plugin.show_favorite_palette %}
 {{plugin.favorite_palette}}
-{%- endif %}
-{%- if plugin.show_current_palette %}
-{{plugin.current_palette}}
 {%- endif %}
 {%- if plugin.show_separator %}
 
