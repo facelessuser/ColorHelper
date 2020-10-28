@@ -5,7 +5,7 @@
 ![License][license-image]
 # ColorHelper
 
-ColorHelper makes work with colors easier by providing inline color previews in your documents (ST3 build 3118+) and
+ColorHelper makes working with colors easier by providing inline color previews in your documents (ST3 build 3118+) and
 offers tooltips with color previews, provides color conversion, and allows the storing and accessing of favorite colors
 in color palettes.  It even provides tools for calculating color contrast, mixing, and more.
 
