@@ -199,7 +199,7 @@
             ]
         },
         "0xahex": {
-            "class": "ColorHelper.custom.ahex.ColorHex",
+            "class": "ColorHelper.custom.hex_0x.ColorHex",
             "filters": ["srgb"],
             "output": [
                 {"space": "srgb", "format": {}}
