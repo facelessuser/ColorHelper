@@ -1,4 +1,4 @@
-# About Markdown Popups
+# About ColorHelper
 
 ## ColorHelper
 
