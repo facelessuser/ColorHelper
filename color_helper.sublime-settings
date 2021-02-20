@@ -282,7 +282,7 @@
             "color_class": "sublime-colormod",
             "color_trigger": "(?i)(?:\\b(?<![-#&])(?:color|hsla?|hwb|rgba?)\\(|\\b(?<![-#&])[\\w]{3,}(?!\\()\\b|(?!<&)\\#)",
             "scanning": [
-                "source.css-color -meta.function-call.var.sublime-color-scheme",
+                "source.css-color -meta.function-call.var.sublime-color-scheme -meta.function-call.var.css",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
             ]
         },
