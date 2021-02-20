@@ -69,6 +69,12 @@ class ColorHelperSupportInfoCommand(sublime_plugin.ApplicationCommand):
             info["mdpopups_version"] = 'Version could not be acquired!'
 
         try:
+            import coloraide
+            info["coloraide_version"] = format_version(coloraide, '__version__')
+        except Exception:
+            info["coloraide_version"] = 'Version could not be acquired!'
+
+        try:
             import markdown
             info["markdown_version"] = format_version(markdown, 'version')
         except Exception:
@@ -93,6 +99,7 @@ class ColorHelperSupportInfoCommand(sublime_plugin.ApplicationCommand):
             - Arch: %(arch)s
             - Plugin ver.: %(plugin_version)s
             - Install via PC: %(pc_install)s
+            - coloraide ver: %(coloraide_version)s
             - mdpopups ver.: %(mdpopups_version)s
             - markdown ver.: %(markdown_version)s
             - pygments ver.: %(pygments_version)s
