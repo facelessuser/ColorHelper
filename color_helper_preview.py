@@ -479,6 +479,8 @@ class ChPreviewThread(threading.Thread):
     def reset(self):
         """Reset the thread variables."""
         self.wait_time = 0.12
+        self.scroll_wait_time = 0.5
+        self.sleep = 0.25
         self.time = time()
         self.modified = False
         self.ignore_all = False
@@ -540,14 +542,12 @@ class ChPreviewThread(threading.Thread):
 
         while not self.abort:
             if not self.ignore_all:
-                if (
-                    (self.modified is True or self.scroll is True is True) and
-                    (time() - self.time) > self.wait_time
-                ):
+                delta = time() - self.time
+                if delta > self.wait_time and (self.modified is True or self.scroll is True):
                     sublime.set_timeout_async(self.payload, 0)
-                else:
+                elif delta > self.scroll_wait_time:
                     sublime.set_timeout_async(self.scroll_check, 0)
-            sleep(0.5)
+            sleep(self.sleep)
 
 
 class ColorHelperListener(sublime_plugin.EventListener):
