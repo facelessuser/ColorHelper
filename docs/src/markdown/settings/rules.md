@@ -130,7 +130,7 @@ instance, the color class can translate colors in the form `rgb(1 1 1 / 1)`, so 
 trigger. If we find `rgb(`, we will test that spot's scope and attempt to read in a color at that location. Defaults to:
 
 ```js
-"(?i)(?:\b(?<![-#&])(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
+"(?i)(?:\b(?<![-#&])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
 ```
 
 ```js

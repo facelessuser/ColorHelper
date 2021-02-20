@@ -248,7 +248,7 @@
     //                     think we might have a valid color. For instance, the color class can translate colors
     //                     in the form `rgb(1 1 1 / 1)`, so we can specify `rgb(` as a color trigger. If we find `rgb(`,
     //                     we will test that spot's scope and attempt to read in a color at that location.
-    //                     Defaults to "(?i)(?:\b(?<![-#&])(?:color|hsla?|gray|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
+    //                     Defaults to "(?i)(?:\b(?<![-#&])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
     //
     // - `allow_scanning`: This is an easy way to disable just scanning within a certain ruleset. Defaults to `true`.
     //

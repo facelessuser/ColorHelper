@@ -5,6 +5,7 @@
 - **NEW**: New supported color spaces: `lch`, `lab`, `display-p3`, `rec-2020`, `xyz`,  
   `prophoto-rgb`, `a98-rgb`, and `hsv`.
 - **NEW**: `rgb`, `hsl`, and `hwb` all support the new CSS format `rgb(r g b / a)`.
+- **NEW**: `gray()` dropped as it is no longer part of the CSS level 4 specifications.
 - **NEW**: All instances of `blacklist` and `whitelist` are now known as `blocklist`  
   and `allowlist` respectively.
 - **NEW**: Outputs, when inserting or converting, can be controlled in settings file.
