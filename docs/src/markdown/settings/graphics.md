@@ -1,29 +1,5 @@
 # Graphic Rendering
 
-<!--     // If the color picker is too big or too small, try playing with this.
-    // This is a coarse control which scales image size relative to the
-    // approximate line height. small (1x), medium (1.5x), and large (2x).
-    // (small | medium | large)
-    "graphic_size": "medium",
-
-    // Fine scaling of image sizes. Overrides `graphic_size`.
-    // Use an integer or floating point value. `null` disables fine scaling.
-    "graphic_scale": null,
-
-    // For Windows 10 HiDpi setups. This is a temporary workaround
-    // to help reduce abnormally large color previews and other images.
-    // This will be removed once the issue is fixed in Sublime Text 3.
-    "line_height_workaround": false,
-
-    // Adjust the size of inline image previews by the offset given.
-    // Please use either a positive or negative number.
-    "inline_preview_offset": 0,
-
-    // Override image border color. This is mainly for schemes that use a dramatically different
-    // background for popups vs code background. Color should be either an sRGB, HSL, HWB, or named CSS color.
-    "image_border_color": null, -->
-
-
 ## `graphic_size`
 
 Coarse scaling of generated graphics sizes. Graphics in the tooltips look best large as Sublime slightly distorts

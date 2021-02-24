@@ -2,13 +2,16 @@
 
 ## Package Control
 
-The recommended way to install ColorHelper is via [Package Control](https://packagecontrol.io/).  Package Control will install the correct branch on your system and keep it up to date.
+The recommended way to install ColorHelper is via [Package Control](https://packagecontrol.io/).  Package Control will
+install the correct branch on your system and keep it up to date.
 
 ---
 
 1. Ensure Package Control is installed.  Instructions are found [here](https://packagecontrol.io/installation).
 
-2. In Sublime Text, press <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>p</kbd> (Win, Linux) or <kbd>cmd</kbd> + <kbd>shift</kbd> + <kbd>p</kbd> (Mac OS) to bring up the quick panel and start typing `Package Control: Install Package`.  Select the command and it will show a list of installable plugins.
+2. In Sublime Text, press <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>p</kbd> (Win, Linux) or <kbd>cmd</kbd> +
+<kbd>shift</kbd> + <kbd>p</kbd> (Mac OS) to bring up the quick panel and start typing
+`Package Control: Install Package`.  Select the command and it will show a list of installable plugins.
 
 3. Start typing `ColorHelper`; when you see it, select it.
 
@@ -22,13 +25,6 @@ To install the 3.0 Beta, you will need to add the following to your `Packages/Us
 file.
 
 ```js
-    // A list of URLs that contain a packages JSON file. These repositories
-    // are placed in order before repositories from the "channels"
-    // setting
-    "repositories":
-    [
-        "https://raw.githubusercontent.com/facelessuser/sublime-channel/master/repositories.json"
-    ],
     // A list of packages to install pre-release versions for. Versions
     // under 1.0.0 are not considered pre-release, only those using the SemVer
     // -prerelease suffixes will be ignored if the package is not in this
@@ -36,25 +32,27 @@ file.
     "install_prereleases": ["ColorHelper"]
 ```
 
-The `repositories` change is only required until `coloraide` is available in Package Control:
-https://github.com/wbond/package_control_channel/pull/8059.
-
-The second enables prerelease packages for ColorHelper so that you can get the 3.0 beta.
+The setting enables prerelease packages for ColorHelper so that you can get the 3.0 beta.
 
 Feedback can be provided in the beta thread in project's issues: #159.
 
 ## Manual Installation
 
 !!! warning "Warning"
-    This is not the recommended way to install ColorHelper for the average user.  Installing this way **will not** get automatically updated.
+    This is not the recommended way to install ColorHelper for the average user.  Installing this way **will not** get
+    automatically updated.
 
-    If you are forking for a pull request, you should **just** clone ColorHelper and run Package Control's `Satisfy Dependency` command to get all the dependencies.
+    If you are forking for a pull request, you should **just** clone ColorHelper and run Package Control's
+    `Satisfy Dependency` command to get all the dependencies.
 
-For those who want to install ColorHelper without package control, here are the steps.  It understood that some people for what ever reason will prefer manually and may even have legitimate reasons to do so.  When going this route, you will have to keep all the packages updated yourself.
+For those who want to install ColorHelper without package control, here are the steps.  It understood that some people
+for what ever reason will prefer manually and may even have legitimate reasons to do so.  When going this route, you
+will have to keep all the packages updated yourself.
 
 ---
 
-1. Download the latest releases of the following dependencies and unpack or git clone in the `Packages` folder as shown below:
+1. Download the latest releases of the following dependencies and unpack or git clone in the `Packages` folder as shown
+   below:
 
     - https://bitbucket.org/teddy_beer_maniac/sublime-text-dependency-markupsafe -> `markupsafe`
     - https://bitbucket.org/teddy_beer_maniac/sublime-text-dependency-jinja2 -> `python-jinja2`
@@ -67,7 +65,8 @@ For those who want to install ColorHelper without package control, here are the 
 
     - https://github.com/facelessuser/ColorHelper -> ColorHelper
 
-3. Create a folder under `Packages` called `00-dependencies` and under that folder create a file called `00-dependencies.py`:
+3. Create a folder under `Packages` called `00-dependencies` and under that folder create a file called
+   `00-dependencies.py`:
 
     Copy the following code to `00-dependencies.py` (this code was taken from Package Control):
 
@@ -234,7 +233,8 @@ For those who want to install ColorHelper without package control, here are the 
 
 1. Quit Sublime Text.
 
-2. Open a terminal and enter the following.  For dependencies replace the URL with the appropriate URL, and the appropriate folder to check it out to:
+2. Open a terminal and enter the following.  For dependencies replace the URL with the appropriate URL, and the
+   appropriate folder to check it out to:
 
     ```
     cd /path/to/Sublime Text 3/Packages

@@ -2,7 +2,8 @@
 
 ## `inline_previews`
 
-Enable/disable inline color previews. `inline_previews` generates an image previews after the identified color in your source file.  You can click the preview to bring up the ColorHelper panel.
+Enable/disable inline color previews. `inline_previews` generates an image previews after the identified color in your
+source file.  You can click the preview to bring up the ColorHelper panel.
 
 ## `inline_preview_position`
 
