@@ -480,7 +480,7 @@ class ChPreviewThread(threading.Thread):
         """Reset the thread variables."""
         self.wait_time = 0.12
         self.scroll_wait_time = 0.5
-        self.sleep = 0.25
+        self.sleep = 0.30
         self.time = time()
         self.modified = False
         self.ignore_all = False
