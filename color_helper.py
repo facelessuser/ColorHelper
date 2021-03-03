@@ -276,7 +276,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Show color tool."""
 
         obj = self.get_cursor_color()
-        if obj is None:
+        if obj is None and raw is None:
             return
 
         mod_name = '.'.join([self.custom_color_class.__module__, self.custom_color_class.__name__])
