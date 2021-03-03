@@ -548,7 +548,7 @@ class ColorContrastInputHandler(_ColorInputHandler):
                     min_max,
                     lum2
                 )
-                html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast_ratio(colors[2]))
+                html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast(colors[2]))
                 html += CONTRAST_DEMO.format(
                     colors[2].to_string(**util.COMMA),
                     colors[1].to_string(**util.COMMA)
