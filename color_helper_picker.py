@@ -41,6 +41,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
         self.color = color.convert(self.mode, fit=True)
+        # Ensure hue is between 0 - 360.
+        if self.color.space() != "srgb":
+            self.color.hue = self.color.hue % 360
 
     def setup_mode(self, color, mode):
         """Setup mode."""
@@ -84,7 +87,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             html_colors = []
 
-            # Generate the colors with each row being dark than the last.
+            # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
             color = Color("hsl(0 {}% 90%)".format(s), filters=util.SRGB_SPACES)
             hfac = 24.0
