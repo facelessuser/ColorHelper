@@ -72,30 +72,30 @@ class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
                 ch_preview_thread.time = time()
             elif option == "Force disable":
                 self.view.settings().set("color_helper.scan_override", option)
-                self.view.run_command("color_helper_preview", {"clear": True})
+                self.view.window().run_command("color_helper_preview", {"clear": True})
             else:
                 self.view.settings().erase("color_helper.scan_override")
-                self.view.run_command("color_helper_preview", {"clear": True})
+                self.view.window().run_command("color_helper_preview", {"clear": True})
 
 
-class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
+class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
     """Color Helper preview with phantoms."""
 
-    def __init__(self, view):
+    def __init__(self, window):
         """Setup."""
 
-        super().__init__(view)
-        self.last_view = -1
-        self.previous_region = sublime.Region(0, 0)
+        super().__init__(window)
+        self.previous_region = {}
         self.previews = {}
         self.color_classes = {}
-        view.erase_phantoms("color_helper")
+        for view in window.views():
+            view.erase_phantoms("color_helper")
 
     def on_navigate(self, href):
         """Handle color box click."""
 
         self.view.sel().clear()
-        for k, v in self.previews.items():
+        for k, v in self.previews[self.view.id()].items():
             if href == v.uid:
                 phantom = self.view.query_phantom(v.pid)
                 if phantom:
@@ -199,10 +199,11 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
     def get_color_class(self, pt, classes):
         """Get color class based on selection scope."""
 
-        if not self.color_classes or self.view.settings().get('color_helper.refresh', True):
+        view_id = self.view.id()
+        if not self.color_classes[view_id] or self.view.settings().get('color_helper.refresh', True):
             util.debug("Clear color class stash")
             self.view.settings().set('color_helper.refresh', False)
-            self.color_classes = util.get_settings_colors()
+            self.color_classes[view_id] = util.get_settings_colors()
 
         # Check if the first point within the color matches our scope rules
         # and load up the appropriate color class
@@ -214,7 +215,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                 if not value:
                     continue
                 else:
-                    class_options = self.color_classes.get(item["class"])
+                    class_options = self.color_classes[view_id].get(item["class"])
                     if class_options is None:
                         continue
                     module = class_options.get("class", "coloraide.Color")
@@ -249,6 +250,8 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         global reload_flag
         settings = self.view.settings()
         colors = []
+
+        view_id = self.view.id()
 
         # Allow per view scan override
         option = settings.get("color_helper.scan_override", None)
@@ -296,9 +299,9 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
         # If we don't need to force previews,
         # quit if visible region is the same as last time
         visible_region = self.view.visible_region()
-        if not force and self.previous_region == visible_region:
+        if not force and self.previous_region[view_id] == visible_region:
             return
-        self.previous_region = visible_region
+        self.previous_region[view_id] = visible_region
 
         # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
@@ -366,7 +369,7 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                     # Calculate point at which we which to insert preview
                     position_on_left = preview_is_on_left()
                     pt = src_start if position_on_left else src_end
-                    if str(region.begin()) in self.previews:
+                    if str(region.begin()) in self.previews[view_id]:
                         # Already exists
                         continue
 
@@ -421,11 +424,14 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
-            self.previous_region = sublime.Region(self.previous_region.begin(), self.view.visible_region().end())
+            self.previous_region[view_id] = (
+                sublime.Region(self.previous_region[view_id].begin(), self.view.visible_region().end())
+            )
 
     def add_phantoms(self, colors):
         """Add phantoms."""
 
+        i = self.view.id()
         for html, pt, start, end, unique_id in colors:
             pid = self.view.add_phantom(
                 'color_helper',
@@ -434,22 +440,40 @@ class ColorHelperPreviewCommand(sublime_plugin.TextCommand):
                 0,
                 on_navigate=self.on_navigate
             )
-            self.previews[str(start)] = ColorSwatch(start, end, pid, unique_id)
+            self.previews[i][str(start)] = ColorSwatch(start, end, pid, unique_id)
 
     def reset_previous(self):
         """Reset previous region."""
-        self.previous_region = sublime.Region(0)
+        self.previous_region[self.view.id()] = sublime.Region(0)
 
     def erase_phantoms(self):
         """Erase phantoms."""
 
         # Obliterate!
         self.view.erase_phantoms('color_helper')
-        self.previews.clear()
+        self.previews[self.view.id()].clear()
         self.reset_previous()
 
-    def run(self, edit, clear=False, force=False):
+    def run(self, clear=False, force=False):
         """Run."""
+
+        self.view = self.window.active_view()
+        ids = set([view.id() for view in self.window.views()])
+        keys = set(self.previews.keys())
+        diff = keys - ids
+
+        for i in diff:
+            del self.previews[i]
+            del self.previous_region[i]
+            del self.color_classes[i]
+
+        i = self.view.id()
+        if i not in self.previews:
+            self.previews[i] = {}
+        if i not in self.previous_region:
+            self.previous_region[i] = sublime.Region(0, 0)
+        if i not in self.color_classes:
+            self.color_classes[i] = {}
 
         if ch_preview_thread.ignore_all:
             return
@@ -525,7 +549,7 @@ class ChPreviewThread(threading.Thread):
             # Ignore selection and edit events inside the routine
             try:
                 args = {"clear": clear, "force": force}
-                view.run_command('color_helper_preview', args)
+                view.window().run_command('color_helper_preview', args)
             except Exception:
                 util.debug('ColorHelper: \n' + str(traceback.format_exc()))
 
@@ -592,7 +616,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.ignore_all = True
 
         view.settings().clear_on_change('color_helper.reload')
-        view.run_command("color_helper_preview", {"clear": True})
+        view.window().run_command("color_helper_preview", {"clear": True})
 
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
