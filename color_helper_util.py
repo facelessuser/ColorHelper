@@ -29,7 +29,6 @@ FRONTMATTER = mdpopups.format_frontmatter(
             "markdown.extensions.admonition",
             "markdown.extensions.attr_list",
             "markdown.extensions.def_list",
-            "markdown.extensions.md_in_html",
             "pymdownx.betterem",
             "pymdownx.magiclink"
         ]

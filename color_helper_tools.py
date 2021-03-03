@@ -63,7 +63,6 @@ DEF_COLORMOD = """---
 markdown_extensions:
 - markdown.extensions.attr_list
 - markdown.extensions.def_list
-- markdown.extensions.md_in_html
 - pymdownx.betterem
 ...
 
@@ -89,7 +88,6 @@ DEF_RATIO = """---
 markdown_extensions:
 - markdown.extensions.attr_list
 - markdown.extensions.def_list
-- markdown.extensions.md_in_html
 - pymdownx.betterem
 ...
 
@@ -112,7 +110,6 @@ DEF_EDIT = """---
 markdown_extensions:
 - markdown.extensions.attr_list
 - markdown.extensions.def_list
-- markdown.extensions.md_in_html
 - pymdownx.betterem
 ...
 
