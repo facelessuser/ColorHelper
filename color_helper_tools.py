@@ -24,9 +24,9 @@ ex ea commodo consequat.</p>
 </div>
 """
 
-RE_PLUS = re.compile(r'\s*\+\s*')
+RE_PLUS = re.compile(r'\s*\+\s*(?!\d)')
 RE_SLASH = re.compile(r'\s*/\s*')
-RE_PERCENT = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
+RE_PERCENT = re.compile(r'\s+([-+]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
 RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 
@@ -160,7 +160,7 @@ def parse_color(string, start=0, second=False):
             if m:
                 start = m.end(0)
                 text = m.group(1)
-                percent = float(text.rstrip('%')) / 100.0
+                percent = float(text.rstrip('%'))
 
             # Is the first color in the input or the second?
             if not second:
@@ -251,43 +251,50 @@ def evaluate(string):
                     first = None
                     second = None
 
-            # - Percents less than zero should be clamped to zero
-            # - If a percent for only one color is provided, assume
-            #   the other is 1 - p.
-            # - Two percents are provided and they do not equal 100%
-            #   scale them until they do.
-            # - If no percents are provided, assume they are both 50%.
+            # If no percents are provided, assume they are both 50%.
             if percent1 is None and percent2 is None:
-                percent1 = 0.5
-                percent2 = 0.5
+                percent1 = 50
+                percent2 = 50
+
+            # If a percent for only one color is provided, assume the other is `1 - p`.
             elif percent1 is not None and percent2 is None:
-                percent1 = max(min(percent1, 1.0), 0.0)
-                percent2 = 1.0 - percent1
+                percent2 = 100 - percent1
             elif percent2 is not None and percent1 is None:
-                percent2 = max(min(percent2, 1.0), 0.0)
-                percent1 = 1.0 - percent2
-            else:
-                percent1 = max(percent1, 0.0)
-                percent2 = max(percent2, 0.0)
-                total = (percent1 + percent2)
-                if total == 0.0:
-                    percent1 = 0.5
-                    percent2 = 0.5
-                elif total != 1.0:
-                    factor = 1.0 / total
-                    percent1 *= factor
-                    percent2 *= factor
+                percent1 = 100 - percent2
+
+            # One color was specified as 0, so just return the other color
+            # If both are zero, just return each at 50%
+            if percent1 == 0 and percent2 != 0:
+                percent2 = 100
+            elif percent2 == 0 and percent1 != 0:
+                percent1 = 100
+            elif percent1 == 0 and percent2 == 0:
+                percent1 = 50
+                percent2 = 50
+
+            # One color was specified as
+            total = (percent1 + percent2)
+            if percent1 == 0 and percent2 != 0:
+                percent2 == 100
+            elif percent2 == 0 and percent1 != 0:
+                percent1 == 100
+
+            # If total does not add up to 1 (100%), each should equal `p / p + p2`.
+            # If the current value is already zero, then it remains zero.
+            elif total != 100:
+                percent1 = percent1 / percent1 + percent2
+                percent2 = percent2 / percent1 + percent2
 
             # We only need the seconds as the mix function's percent
             # controls how much of the second color gets mixed in.
-            percent = percent2
+            percent = percent2 / 100.0
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
             colors.append(first.color)
         if second:
             colors.append(second.color)
-            colors.append(first.color.mix(second.color, percent, space=space))
+            colors.append(first.color.mix(second.color, percent, space=space, out_space=space))
     except Exception:
         colors = []
     return colors
