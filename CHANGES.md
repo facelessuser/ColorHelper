@@ -71,6 +71,10 @@
   will prevent HSL and HWB from losing their hue angle if saturation is reduced to zero  
   and then back up again.
 
+## 2.7.1
+
+- **FIX**: Fix issues with 2.7.X release and latest mdpopups.
+
 ## 2.7.0
 
 - **NEW**: HSL can support alpha channels as `hsl` or `hsla` (per the CSS spec).
