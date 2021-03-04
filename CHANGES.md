@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 2.7.1
+
+- **FIX**: Fix issues with 2.7.X release and latest mdpopups.
+
 ## 2.7.0
 
 - **NEW**: HSL can support alpha channels as `hsl` or `hsla` (per the CSS spec).
