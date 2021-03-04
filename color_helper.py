@@ -6,6 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
+from .lib import colorbox
 from .lib.rgba import RGBA
 from .lib import csscolors
 import threading
@@ -418,7 +419,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         colors.append(
             '[%s](%s)' % (
-                mdpopups.color_box(
+                colorbox.color_box(
                     color_list, self.default_border,
                     height=self.color_h, width=self.palette_w * PALETTE_SCALE_X,
                     border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
@@ -452,7 +453,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             if delete:
                 colors.append(
                     '[%s](__delete_color__:%s:%s:%s)' % (
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [no_alpha_color, color], self.default_border,
                             height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
@@ -463,7 +464,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
             else:
                 colors.append(
                     '[%s](__insert__:%s:%s:%s)' % (
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [no_alpha_color, color], self.default_border,
                             height=self.color_h, width=self.color_w, border_size=BORDER_SIZE,
                             check_size=check_size
@@ -551,7 +552,7 @@ class ColorHelperCommand(sublime_plugin.TextCommand):
 
         no_alpha_color = color[:-2] if len(color) > 7 else color
         template_vars['color_preview'] = (
-            mdpopups.color_box(
+            colorbox.color_box(
                 [no_alpha_color, color], self.default_border,
                 height=self.color_h * PREVIEW_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
                 border_size=BORDER_SIZE, check_size=self.check_size(self.color_h)
@@ -1232,7 +1233,7 @@ class ChPreview(object):
                         '<a href="%s">%s</a>'
                     ) % (
                         preview_id,
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [no_alpha_color, color], rgba.get_rgb(),
                             height=box_height, width=box_height,
                             border_size=PREVIEW_BORDER_SIZE, check_size=check_size

@@ -1,3 +1,13 @@
+---
+allow_code_wrap: false
+markdown_extensions:
+- markdown.extensions.attr_list
+- pymdownx.betterem
+- pymdownx.keys
+-   pymdownx.escapeall:
+        hardbreak: true
+        nbsp: false
+---
 {%- if plugin.delete %}
 [back]({{plugin.back}}:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
 

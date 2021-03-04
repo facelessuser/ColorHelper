@@ -9,6 +9,7 @@ from mdpopups import colorbox
 import sublime
 import sublime_plugin
 from .lib import csscolors
+from .lib import colorbox
 from . import color_helper_util as util
 import copy
 from .multiconf import get as qualify_settings
@@ -81,7 +82,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             for y in range(0, 11):
                 html_colors.append(
                     [
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [SPACER], border_size=0,
                             height=self.height, width=(self.width * (6 if self.hex_map else 5)),
                             check_size=check_size, alpha=True
@@ -118,7 +119,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                     html_colors[-1].append(
                         '<a href="%s">%s</a>' % (
-                            color, mdpopups.color_box(
+                            color, colorbox.color_box(
                                 [color], self.default_border,
                                 **kwargs
                             )
@@ -152,7 +153,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                 html_colors[y].append(
                     '<a href="%s">%s</a>' % (
-                        color, mdpopups.color_box(
+                        color, colorbox.color_box(
                             [color], self.default_border,
                             **kwargs
                         )
@@ -196,7 +197,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             for y, row in enumerate(color_map_data):
                 html_colors.append('<span class="color-map-row">')
                 if padding:
-                    pad = mdpopups.color_box(
+                    pad = colorbox.color_box(
                         [SPACER],
                         height=self.height, width=padding, check_size=check_size, alpha=True
                     )
@@ -233,7 +234,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
                     html_colors.append(
                         '<a href="%s">%s</a>' % (
-                            color, mdpopups.color_box(
+                            color, colorbox.color_box(
                                 [color], self.default_border,
                                 **kwargs
                             )
@@ -257,12 +258,12 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = (
             '<span class="current-color">%s</span>' % (
-                mdpopups.color_box(
+                colorbox.color_box(
                     [SPACER], border_size=0,
                     height=self.height, width=(self.width * (6 if self.hex_map else 5)),
                     check_size=check_size, alpha=True
                 ) +
-                mdpopups.color_box(
+                colorbox.color_box(
                     [self.color], self.default_border,
                     border_size=BORDER_SIZE, height=self.height, width=self.width * (13 if self.hex_map else 16),
                     check_size=check_size
@@ -281,7 +282,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
             html.append(
                 '[%s](%s) %s<br>' % (
-                    mdpopups.color_box(
+                    colorbox.color_box(
                         [color], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
@@ -338,7 +339,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
             color = rgba.get_rgba()
             html.append(
                 '[%s](%s) %s<br>' % (
-                    mdpopups.color_box(
+                    colorbox.color_box(
                         [color], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.box_height * 8,
                         check_size=check_size
@@ -374,7 +375,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
             temp.append(
                 '[%s](%s)' % (
-                    mdpopups.color_box(
+                    colorbox.color_box(
                         [rgba1.get_rgba()], self.default_border,
                         **kwargs
                     ),
@@ -385,7 +386,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
         html += reversed(temp)
         html.append(
             '[%s](%s)' % (
-                mdpopups.color_box(
+                colorbox.color_box(
                     [self.color], self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 ),
@@ -407,7 +408,7 @@ class ColorHelperPickerCommand(sublime_plugin.TextCommand):
 
             html.append(
                 '[%s](%s)' % (
-                    mdpopups.color_box(
+                    colorbox.color_box(
                         [rgba2.get_rgba()], self.default_border,
                         **kwargs
                     ),

@@ -1,3 +1,13 @@
+---
+allow_code_wrap: false
+markdown_extensions:
+- markdown.extensions.attr_list
+- pymdownx.betterem
+- pymdownx.keys
+-   pymdownx.escapeall:
+        hardbreak: true
+        nbsp: false
+---
 {% if plugin.show_palette_menu -%}
 [palettes](__palettes__){: .small} 
 {% endif -%}

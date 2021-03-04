@@ -1,3 +1,13 @@
+---
+allow_code_wrap: false
+markdown_extensions:
+- markdown.extensions.attr_list
+- pymdownx.betterem
+- pymdownx.keys
+-   pymdownx.escapeall:
+        hardbreak: true
+        nbsp: false
+---
 [back]({{plugin.back_target}}){: .small} 
 {% if plugin.show_picker_menu -%}
 [picker](__color_picker__:{{plugin.color}}){: .small} 
