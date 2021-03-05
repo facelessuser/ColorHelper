@@ -117,7 +117,7 @@ markdown_extensions:
 
 ## Format
 
-`Color(( percent)? + Color( percent)?( @colorspace)?)?`
+`Color(( percent)? + Color( percent)?)?( @colorspace)?`
 
 ## Instructions
 
@@ -128,6 +128,8 @@ be mixed.
 
 If mixing, colors will be mixed in the color space of the first<br>
 color unless a different color space is specified with `@colorspace`.
+
+`@colorspace` controls output space and mixing space when mixing.
 
 If percents are defined, they must add up to 100%, if they do not,<br>
 they will be scaled. If only a single percent is defined, the other<br>
@@ -171,6 +173,14 @@ def parse_color(string, start=0, second=False):
                     more = start != length
                 else:
                     more = False
+
+                    m = RE_SPACE.match(string, start)
+                    if m:
+                        text = m.group(1).lower()
+                        if text in color.color.CS_MAP:
+                            space = text
+                            start = m.end(0)
+                    more = None if start == length else False
             else:
                 # Color space indicator
                 m = RE_SPACE.match(string, start)
@@ -240,7 +250,7 @@ def evaluate(string):
         space = None
 
         # Try to capture the color or the two colors to mix
-        first, percent1, more = parse_color(color)[:3]
+        first, percent1, more, space = parse_color(color)
         if first and more is not None:
             percent2 = None
             if more is False:
@@ -292,6 +302,8 @@ def evaluate(string):
         # Package up the color, or the two reference colors along with the mixed.
         if first:
             colors.append(first.color)
+            if second is None and space is not None and space != first.color.space():
+                colors[0] = first.color.convert(space)
         if second:
             colors.append(second.color)
             colors.append(first.color.mix(second.color, percent, space=space, out_space=space))

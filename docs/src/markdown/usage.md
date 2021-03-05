@@ -63,8 +63,12 @@ When done, simply select the `select` link to insert the color back into the doc
 
 ![Edit Tool](images/edit_tool.gif)
 
-The edit tool allows for editing of colors and mix with other colors. While editing, the panel will display a live
-preview. The tool will mix colors in the color space of the first color unless one is specified.
+The edit tool allows for editing of colors and mixing with other colors. While editing, the panel will display a live
+preview.
+
+When `@space` is specified, the output of the color will be in the given space. Additionally, if mixing, the tool will
+also mix colors in the provided space. If no space is specified, the color space of the first color is used for mixing
+and output.
 
 If percents are defined, they must add up to 100%, if they do not, they will be scaled. If only a single percent is
 defined, the other color will use 1 - percent.
