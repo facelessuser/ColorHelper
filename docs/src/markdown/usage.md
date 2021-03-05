@@ -68,10 +68,9 @@ When done, simply select the `select` link to insert the color back into the doc
     There are still some unclear points, and until they are addressed, we are only guessing at the appropriate behavior:
 
     1. Are negative percentages allowed? And how are they handled? Currently we clip them.
-    2. How do we handle two percentages that are less than 100%? This has not be decided and written up in the
-       specification.
-    3. Are percentages greater than 100% allowed? Currently we do allow them, but they will be scaled as percentages
-       that add up to be greater than 100% get scaled.
+    3. Are input percentages greater than 100% allowed? Currently we clip them.
+    2. How do we handle two percentages that sum to less than 100%? This has not be decided and written up in the
+       specification. Currently, we scale them to sum to 100%.
 
 The edit tool allows for editing of colors and mixing with other colors. While editing, the panel will display a live
 preview.

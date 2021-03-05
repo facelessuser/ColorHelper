@@ -260,11 +260,11 @@ def evaluate(string):
                     second = None
 
             # TODO: It has not been decided by the CSS working group how
-            #       negative values are to be handled.
+            #       negative values are to be handled. Nor inputs over 100%.
             if percent1 is not None:
-                percent1 = max(percent1, 0)
+                percent1 = min(max(percent1, 0), 100)
             if percent2 is not None:
-                percent2 = max(percent2, 0)
+                percent2 = min(max(percent2, 0), 100)
 
             # If no percents are provided, assume they are both 50%.
             if percent1 is None and percent2 is None:
