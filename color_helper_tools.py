@@ -121,18 +121,16 @@ markdown_extensions:
 
 ## Instructions
 
-Colors can be specified in any supported color space.
+Colors can be specified in any supported color space. They can<br>
+be converted and output to another color space with `@colorspace`.
 
 If two colors are provided, joined with `+`, the colors will<br>
-be mixed.
+be mixed. When mixing, if `@colorspace` is defined at the end,<br>
+colors will be mixed in that color space.
 
-If mixing, colors will be mixed in the color space of the first<br>
-color unless a different color space is specified with `@colorspace`.
-
-`@colorspace` controls output space and mixing space when mixing.
-
-If percents are defined, they must add up to 100%, if they do not,<br>
-they will be scaled. If only a single percent is defined, the other<br>
+Colors are mixed at 50% unless percents are defined. If percents<br>
+are defined, they must add up to 100%, if they do not, they are<br>
+scaled. If only a single percent is defined, the other<br>
 color will use `1 - percent`.
 """
 
@@ -261,39 +259,31 @@ def evaluate(string):
                     first = None
                     second = None
 
+            # TODO: It has not been decided by the CSS working group how
+            #       negative values are to be handled.
+            if percent1 is not None:
+                percent1 = max(percent1, 0)
+            if percent2 is not None:
+                percent2 = max(percent2, 0)
+
             # If no percents are provided, assume they are both 50%.
             if percent1 is None and percent2 is None:
-                percent1 = 50
-                percent2 = 50
+                percent1 = percent2 = 50
 
             # If a percent for only one color is provided, assume the other is `1 - p`.
             elif percent1 is not None and percent2 is None:
-                percent2 = 100 - percent1
+                percent2 = 100 - min(percent1, 100)
             elif percent2 is not None and percent1 is None:
-                percent1 = 100 - percent2
+                percent1 = 100 - min(percent2, 100)
 
-            # One color was specified as 0, so just return the other color
-            # If both are zero, just return each at 50%
-            if percent1 == 0 and percent2 != 0:
-                percent2 = 100
-            elif percent2 == 0 and percent1 != 0:
-                percent1 = 100
-            elif percent1 == 0 and percent2 == 0:
-                percent1 = 50
-                percent2 = 50
-
-            # One color was specified as
+            # TODO: It has not been decided by the CSS working group how
+            #       sums less than 100 are to be dealt with.
             total = (percent1 + percent2)
-            if percent1 == 0 and percent2 != 0:
-                percent2 == 100
-            elif percent2 == 0 and percent1 != 0:
-                percent1 == 100
-
-            # If total does not add up to 1 (100%), each should equal `p / p + p2`.
-            # If the current value is already zero, then it remains zero.
-            elif total != 100:
-                percent1 = percent1 / percent1 + percent2
-                percent2 = percent2 / percent1 + percent2
+            if total != 100:
+                # Scale so both colors add up to 100%
+                factor = 100.0 / total
+                percent1 *= factor
+                percent2 *= factor
 
             # We only need the seconds as the mix function's percent
             # controls how much of the second color gets mixed in.
@@ -306,7 +296,7 @@ def evaluate(string):
                 colors[0] = first.color.convert(space)
         if second:
             colors.append(second.color)
-            colors.append(first.color.mix(second.color, percent, space=space, out_space=space))
+            colors.append(first.color.mix(second.color, percent, space=space, out_space=space, premultiplied=True))
     except Exception:
         colors = []
     return colors
