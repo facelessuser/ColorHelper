@@ -392,7 +392,7 @@ class ColorMod:
         this essentially fulfills the intention of their min-contrast.
         """
 
-        ratio = color1.contrast_ratio(color2)
+        ratio = color1.contrast(color2)
 
         # Already meet the minimum contrast or the request is impossible
         if ratio > target or target < 1:
@@ -425,7 +425,7 @@ class ColorMod:
             )
             temp.set(primary, mid_mix)
             temp.set(secondary, mid_other)
-            ratio = temp.contrast_ratio(color2)
+            ratio = temp.contrast(color2)
 
             if ratio < target:
                 min_mix = mid_mix
