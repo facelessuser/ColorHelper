@@ -65,12 +65,11 @@ When done, simply select the `select` link to insert the color back into the doc
 
 !!! warning "Experimental Mixing"
     The current logic for mixing is based on the [CSS Level 5 Specification][css-5], particularly the later drafts.
-    There are still some unclear points, and until they are addressed, we are only guessing at the appropriate behavior:
+    There are still some unclear points, and things could change as the specification is still in development.
 
-    1. Are negative percentages allowed? And how are they handled? Currently we clip them.
-    3. Are input percentages greater than 100% allowed? Currently we clip them.
-    2. How do we handle two percentages that sum to less than 100%? This has not be decided and written up in the
-       specification. Currently, we scale them to sum to 100%.
+    The one glaring issue is that if a percentage is applied to each color, and the sums of those percentages add up to
+    zero, it is unclear what to do as this behavior is currently undefined in the specification. We currently perform
+    no mixing and return the first color in this case.
 
 The edit tool allows for editing of colors and mixing with other colors. While editing, the panel will display a live
 preview.
@@ -79,7 +78,7 @@ When `@space` is specified, the output of the color will be in the given space. 
 also mix colors in the provided space. If no space is specified, the color space of the first color is used for mixing
 and output.
 
-If percents are defined, they must add up to 100%, if they do not, they will be scaled. If only a single percent is
+If percents are defined, they must add up to 100%, if they do not, they will be normalized. If only a single percent is
 defined, the other color will use 1 - percent.
 
 The tool can be launched from the quick panel (if a color is selected), from the info panel, or even the color picker.

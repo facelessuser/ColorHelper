@@ -130,7 +130,7 @@ colors will be mixed in that color space.
 
 Colors are mixed at 50% unless percents are defined. If percents<br>
 are defined, they must add up to 100%, if they do not, they are<br>
-scaled. If only a single percent is defined, the other<br>
+normalized. If only a single percent is defined, the other<br>
 color will use `1 - percent`.
 """
 
@@ -169,9 +169,9 @@ def parse_color(string, start=0, second=False):
                 if m:
                     start = m.end(0)
                     more = start != length
-                else:
+                elif percent is not None:
                     more = False
-
+                else:
                     m = RE_SPACE.match(string, start)
                     if m:
                         text = m.group(1).lower()
@@ -259,35 +259,40 @@ def evaluate(string):
                     first = None
                     second = None
 
-            # TODO: It has not been decided by the CSS working group how
-            #       negative values are to be handled. Nor inputs over 100%.
-            if percent1 is not None:
-                percent1 = min(max(percent1, 0), 100)
-            if percent2 is not None:
-                percent2 = min(max(percent2, 0), 100)
-
             # If no percents are provided, assume they are both 50%.
             if percent1 is None and percent2 is None:
-                percent1 = percent2 = 50
+                percent1 = percent2 = 0.5
 
             # If a percent for only one color is provided, assume the other is `1 - p`.
             elif percent1 is not None and percent2 is None:
-                percent2 = 100 - min(percent1, 100)
+                percent2 = (100.0 - percent1) / 100.0
+                percent1 /= 100.0
             elif percent2 is not None and percent1 is None:
-                percent1 = 100 - min(percent2, 100)
+                percent1 = (100.0 - percent2) / 100.0
+                percent2 /= 100.0
+            else:
+                # Normalize percentages if they do not sum to 100%.
+                # Take care to handle when `p1 + p2 = 0`.
+                # TODO: Currently, we assume that no mixing takes place
+                #       when `p1 + p2 = 0` and we return the first color.
+                #       Is this right?
+                total = (percent1 + percent2)
+                if total != 100 and total != 0:
+                    # Scale so both colors add up to 100%()
+                    p1 = percent1 / (percent1 + percent2)
+                    p2 = percent2 / (percent1 + percent2)
+                    percent1 = p1
+                    percent2 = p2
+                elif total == 0:
+                    percent1 = 1.0
+                    percent2 = 0.0
+                else:
+                    percent1 /= 100.0
+                    percent2 /= 100.0
 
-            # TODO: It has not been decided by the CSS working group how
-            #       sums less than 100 are to be dealt with.
-            total = (percent1 + percent2)
-            if total != 100:
-                # Scale so both colors add up to 100%
-                factor = 100.0 / total
-                percent1 *= factor
-                percent2 *= factor
-
-            # We only need the seconds as the mix function's percent
+            # We only need the second as the mix function's percent
             # controls how much of the second color gets mixed in.
-            percent = percent2 / 100.0
+            percent = percent2
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
