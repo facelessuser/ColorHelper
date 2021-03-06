@@ -284,8 +284,7 @@ def evaluate(string):
                     percent1 = p1
                     percent2 = p2
                 elif total == 0:
-                    percent1 = 1.0
-                    percent2 = 0.0
+                    raise ValueError("Undefined behavior for {} + {} = 0".format(percent1, percent2))
                 else:
                     percent1 /= 100.0
                     percent2 /= 100.0

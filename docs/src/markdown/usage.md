@@ -64,12 +64,12 @@ When done, simply select the `select` link to insert the color back into the doc
 ![Edit Tool](images/edit_tool.gif)
 
 !!! warning "Experimental Mixing"
-    The current logic for mixing is based on the [CSS Level 5 Specification][css-5], particularly the later drafts.
+    The current logic for mixing is based on the [CSS Level 5 Specification][css-5], particularly the recent drafts.
     There are still some unclear points, and things could change as the specification is still in development.
 
-    The one glaring issue is that if a percentage is applied to each color, and the sums of those percentages add up to
-    zero, it is unclear what to do as this behavior is currently undefined in the specification. We currently perform
-    no mixing and return the first color in this case.
+    The one glaring issue is that if a percentage is applied to both colors, and the sums of those percentages add up to
+    zero, it is unclear what to do as this behavior is currently undefined in the specification and causes a divide by
+    zero in the algorithm. We currently perform no mixing and return nothing for this case.
 
 The edit tool allows for editing of colors and mixing with other colors. While editing, the panel will display a live
 preview.
