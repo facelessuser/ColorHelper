@@ -273,17 +273,17 @@ def evaluate(string):
             else:
                 # Normalize percentages if they do not sum to 100%.
                 # Take care to handle when `p1 + p2 = 0`.
-                # TODO: Currently, we assume that no mixing takes place
-                #       when `p1 + p2 = 0` and we return the first color.
-                #       Is this right?
                 total = (percent1 + percent2)
                 if total != 100 and total != 0:
-                    # Scale so both colors add up to 100%()
+                    # Scale so both colors add up to 100%.
+                    # Divide each percent by the sum total
                     p1 = percent1 / (percent1 + percent2)
                     p2 = percent2 / (percent1 + percent2)
                     percent1 = p1
                     percent2 = p2
                 elif total == 0:
+                    # TODO: Currently, we assume that no mixing takes place
+                    #       when `p1 + p2 = 0`. What should we do?
                     raise ValueError("Undefined behavior for {} + {} = 0".format(percent1, percent2))
                 else:
                     percent1 /= 100.0
