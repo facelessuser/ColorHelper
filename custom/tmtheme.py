@@ -693,15 +693,16 @@ class SRGBX11(SRGB):
     )
 
     def to_string(
-        self, *, alpha=None, precision=util.DEF_PREC, fit=True, **kwargs
+        self, *, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to CSS."""
 
         options = kwargs
 
         value = ''
-        alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
-        coords = self.fit_coords()
+        a = util.no_nan(self.alpha)
+        alpha = alpha is not False and (alpha is True or a < 1.0)
+        coords = util.no_nan(self.fit_coords())
         hex_upper = options.get("hex_upper", False)
 
         if alpha:
@@ -712,7 +713,7 @@ class SRGBX11(SRGB):
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0)),
-                int(util.round_half_up(self.alpha * 255.0))
+                int(util.round_half_up(a * 255.0))
             )
         else:
             template = "#{:02x}{:02x}{:02x}"
@@ -748,11 +749,13 @@ class SRGBX11(SRGB):
     def split_channels(cls, color):
         """Split channels."""
 
-        return (
-            cls.translate_channel(0, "#" + color[1:3]),
-            cls.translate_channel(1, "#" + color[3:5]),
-            cls.translate_channel(2, "#" + color[5:7]),
-            cls.translate_channel(-1, "#" + color[7:]) if len(color) == 9 else 1.0
+        return cls.null_adjust(
+            (
+                cls.translate_channel(0, "#" + color[1:3]),
+                cls.translate_channel(1, "#" + color[3:5]),
+                cls.translate_channel(2, "#" + color[5:7]),
+                cls.translate_channel(-1, "#" + color[7:]) if len(color) == 9 else 1.0
+            )
         )
 
     @classmethod

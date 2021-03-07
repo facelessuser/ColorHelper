@@ -34,39 +34,42 @@ class ASRGB(SRGB):
         """Split channels."""
 
         if len(color) == 9:
-            return (
-                cls.translate_channel(0, "#" + color[3:5]),
-                cls.translate_channel(1, "#" + color[5:7]),
-                cls.translate_channel(2, "#" + color[7:]),
-                cls.translate_channel(-1, "#" + color[1:3]),
+            return cls.null_adjust(
+                (
+                    cls.translate_channel(0, "#" + color[3:5]),
+                    cls.translate_channel(1, "#" + color[5:7]),
+                    cls.translate_channel(2, "#" + color[7:]),
+                    cls.translate_channel(-1, "#" + color[1:3]),
+                )
             )
         else:
-            return (
-                cls.translate_channel(0, "#" + color[1:3]),
-                cls.translate_channel(1, "#" + color[3:5]),
-                cls.translate_channel(2, "#" + color[5:]),
-                1.0
+            return cls.null_adjust(
+                (
+                    cls.translate_channel(0, "#" + color[1:3]),
+                    cls.translate_channel(1, "#" + color[3:5]),
+                    cls.translate_channel(2, "#" + color[5:]),
+                    1.0
+                )
             )
 
     def to_string(
-        self, *, options=None, alpha=None, precision=util.DEF_PREC, fit=True, **kwargs
+        self, *, options=None, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to Hex format."""
 
-        if options is None:
-            options = {}
-
-        show_alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
+        options = kwargs
+        a = util.no_nan(self.alpha)
+        show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
         if options.get("hex_upper"):
             template = template.upper()
 
         # Always fit hex
-        coords = self.fit_coords()
+        coords = util.no_nan(self.fit_coords())
         if show_alpha:
             value = template.format(
-                int(util.round_half_up(self.alpha * 255.0)),
+                int(util.round_half_up(a * 255.0)),
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0))

@@ -9,6 +9,7 @@ import sublime_plugin
 import mdpopups
 from mdpopups import colorbox
 from coloraide import Color
+from coloraide import util as cutil
 from coloraide.css.colors import css_names
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorMixin
@@ -42,7 +43,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_mode(color, mode)
         self.color = color.convert(self.mode, fit=True)
         # Ensure hue is between 0 - 360.
-        if self.color.space() != "srgb":
+        if self.color.space() != "srgb" and not self.color.is_nan("hue"):
             self.color.hue = self.color.hue % 360
 
     def setup_mode(self, color, mode):
@@ -90,6 +91,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
             color = Color("hsl(0 {}% 90%)".format(s), filters=util.SRGB_SPACES)
+            if color.is_nan("hue"):
+                color.hue = 0.0
             hfac = 24.0
             lfac = 8.0
             check_size = self.check_size(self.height)
@@ -138,6 +141,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Generate a grayscale bar.
             lfac = 10.0
             color = Color('hsl(0 0% 100%)', filters=util.SRGB_SPACES)
+            if color.is_nan("hue"):
+                color.hue = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 11):
                 value = color.convert("srgb").to_string(**HEX)
@@ -283,7 +288,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         mn = minimum
         first = True
         while count:
-            coord = getattr(clone, color_filter) + mn
+            coord = cutil.no_nan(getattr(clone, color_filter)) + mn
             setattr(clone, color_filter, coord)
 
             if not clone.in_gamut():
@@ -334,7 +339,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         clone.update(self.color)
         while count:
-            coord = getattr(clone, color_filter) + mx
+            coord = cutil.no_nan(getattr(clone, color_filter)) + mx
             setattr(clone, color_filter, coord)
 
             if not clone.in_gamut():

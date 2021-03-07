@@ -449,14 +449,17 @@ class ColorInputHandler(_ColorInputHandler):
 
             html = ""
             for color in colors:
-                srgb = Color(color).convert("srgb")
+                orig = Color(color)
                 preview_border = self.default_border
                 message = ""
                 color_string = ""
-                if not srgb.in_gamut():
-                    srgb.fit("srgb")
+                if not orig.in_gamut('srgb'):
+                    orig = orig.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
-                    color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(srgb.to_string())
+                    color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
+                    srgb = orig.convert('srgb')
+                else:
+                    srgb = orig.convert('srgb')
                 color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)

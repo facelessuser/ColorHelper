@@ -203,7 +203,7 @@ class ColorMod:
                         if color2 is None:
                             raise ValueError("Found unterminated or invalid 'color('")
                         color = color2.convert("srgb")
-                        if not color.is_hue_null("hsl"):
+                        if not color.is_nan("hsl.hue"):
                             hue = color.get("hsl.hue")
                 if color is None:
                     obj = Color.match(string, start=start, fullmatch=False)
@@ -211,7 +211,7 @@ class ColorMod:
                         color = obj.color
                         if color.space != "srgb":
                             color = color.convert("srgb")
-                        if not color.is_hue_null("hsl"):
+                        if not color.is_nan("hsl.hue"):
                             hue = color.get("hsl.hue")
                         start = obj.end
 
@@ -308,7 +308,7 @@ class ColorMod:
         value = float(value.strip('%'))
         op = m.group(1).strip() if m.group(1) else ""
         getattr(self, name)(value, op=op, hue=hue)
-        if not self._color.is_hue_null("hsl"):
+        if not self._color.is_nan("hsl.hue"):
             hue = self._color.get("hsl.hue")
         return m.end(0), hue
 
@@ -344,7 +344,7 @@ class ColorMod:
 
         value = util.clamp(value, 0.0, 1.0)
         self.blend(color2, 1.0 - value, alpha, space=space)
-        if not self._color.is_hue_null("hsl"):
+        if not self._color.is_nan("hsl.hue"):
             hue = self._color.get("hsl.hue")
         return start, hue
 
@@ -377,7 +377,7 @@ class ColorMod:
 
         self.min_contrast(this, color2, value)
         self._color.update(this)
-        if not self._color.is_hue_null("hsl"):
+        if not self._color.is_nan("hsl.hue"):
             hue = self._color.get("hsl.hue")
         return start, hue
 
@@ -412,6 +412,7 @@ class ColorMod:
             secondary = "whiteness"
             min_mix = orig.blackness
             max_mix = 100.0
+        orig_ratio = ratio
         last_ratio = 0
         last_mix = 0
         last_other = 0
@@ -439,6 +440,10 @@ class ColorMod:
                 last_ratio = ratio
                 last_mix = mid_mix
                 last_other = mid_other
+
+        # Can't find a better color
+        if last_ratio < ratio and orig_ratio > last_ratio:
+            return
 
         # Use the best, last values
         final = orig.new("hwb", [orig.hue, last_mix, last_other] if is_dark else [orig.hue, last_other, last_mix])
@@ -482,20 +487,20 @@ class ColorMod:
         """Lightness."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        if this.is_hue_null() and hue is not None:
-            this.hue = hue
         op = self.OP_MAP.get(op, self._op_null)
         this.lightness = op(this.lightness, value)
+        if this.is_nan('hue') and hue is not None:
+            this.hue = hue
         self._color.update(this)
 
     def saturation(self, value, op="", hue=None):
         """Saturation."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        if this.is_hue_null() and hue is not None:
-            this.hue = hue
         op = self.OP_MAP.get(op, self._op_null)
         this.saturation = op(this.saturation, value)
+        if this.is_nan("hue") and hue is not None:
+            this.hue = hue
         self._color.update(this)
 
 

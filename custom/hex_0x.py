@@ -43,34 +43,35 @@ class HexSRGB(SRGB):
     def split_channels(cls, color):
         """Split channels."""
 
-        return [
-            cls.translate_channel(0, '0x' + color[2:4]),
-            cls.translate_channel(1, '0x' + color[4:6]),
-            cls.translate_channel(2, '0x' + color[6:8]),
-            cls.translate_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
-        ]
+        return cls.null_adjust(
+            [
+                cls.translate_channel(0, '0x' + color[2:4]),
+                cls.translate_channel(1, '0x' + color[4:6]),
+                cls.translate_channel(2, '0x' + color[6:8]),
+                cls.translate_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
+            ]
+        )
 
     def to_string(
-        self, *, options=None, alpha=None, precision=util.DEF_PREC, fit=True, **kwargs
+        self, *, options=None, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to Hex format."""
 
-        if options is None:
-            options = {}
-
-        show_alpha = alpha is not False and (alpha is True or self.alpha < 1.0)
+        options = kwargs
+        a = util.no_nan(self.alpha)
+        show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "0x{:02x}{:02x}{:02x}{:02x}" if show_alpha else "0x{:02x}{:02x}{:02x}"
         if options.get("hex_upper"):
             template = template.upper()
 
-        coords = self.fit_coords()
+        coords = util.no_nan(self.fit_coords())
         if show_alpha:
             value = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0)),
-                int(util.round_half_up(self.alpha * 255.0))
+                int(util.round_half_up(a * 255.0))
             )
         else:
             value = template.format(
