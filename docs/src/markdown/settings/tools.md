@@ -3,7 +3,7 @@
 ## `click_color_box_to_pick`
 
 This will make the color preview box in the [Color Info Panel](../usage.md#color-info) clickable. When the preview box
-is clicked it will open the specified tool.
+is clicked, it will open the specified tool.
 
 ```js
     // Color picker and palette picker by default

@@ -24,20 +24,20 @@
   they alter the coordinates, and allows the user to mix it with one other color. The  
   result can be inserted back into the file, or will be handed back to the color picker  
   if called from there.
-- **NEW**: New color contrast tool which allows a user to see the contrast ration and  
+- **NEW**: New color contrast tool which allows a user to see the contrast ratio and  
   see a visual representation of how the two colors contrast. The resulting foreground  
   color can be inserted back into the file, or will be handed back to the color picker  
   if called from there.
-- **NEW**: New Sublime ColorMod tool which allows a user to see a `color-mod` expression
+- **NEW**: New Sublime ColorMod tool which allows a user to see a `color-mod` expression  
   update a live color preview on the fly.
 - **NEW**: Only one color rule (defined in the settings file) will apply to a given view.
 - **NEW**: Renamed `color_scan` option to `color_rule`.
 - **NEW**: Massive overhaul of color scanning and color scanning options.
 - **NEW**: Colors that are out of gamut will be gamut mapped. On hover of the preivew  
-  (on ST4) it will indicate that it has been gamut mapped. This can be disabled via  
-  `show_out_of_gamut_preview`, and instead a fully transparent color swatch with a  
-  "red-ish" border will be shown (color may vary based on color scheme). On mouse over  
-  it will indicate that it is out of gamut (on ST4).
+  (on ST4), it will indicate that it has been gamut mapped. This can be changed via  
+  `show_out_of_gamut_preview`, and additionally a fully transparent color swatch with a  
+  "red-ish" border will be shown (color may vary based on color scheme). On mouse over,  
+  it will also indicate that it is out of gamut on ST4.
 - **NEW**: ColorHelper will now gamut map colors in some scenarios, either due to  
   necessity, or by user setting.
 - **NEW**: New `generic` option is defined which provides a default input and output for  
@@ -47,29 +47,28 @@
 - **NEW**: New command added to force scanning in a file that may have scanning disabled.  
   Also can force a file with scanning enabled to be disabled.
 - **NEW**: Color helper will now recognize `transparent`.
-- **NEW**: Color picker rainbow box will adjust based on the saturation of the currently,  
+- **NEW**: Color picker rainbow box will adjust based on the saturation of the current  
   selected color.
 - **NEW**: Color picker will give a clear indication when you are at the end of a color  
-  channel.
-- **NEW**: Provide `user_color_rules` where user can append rules without overwriting the  
+  channel by showing no more boxes.
+- **NEW**: Provide `user_color_rules` where a user can append rules without overwriting the  
   entire rule set. If a rule uses the same `name` as one of the existing default rules,  
   a shallow merge will be done so the values of the top level keys will be overridden  
   with the user keys and/or any additional keys will be added.
 - **REMOVED**: Color completion. It mainly got in the way. The palette can be called any  
-  time the user needs it already.
+  time the user needs it.
 - **REMOVED**: Hex shaped color picker option has been removed.
 - **REMOVED**: Removed "current file palette". ColorHelper will no longer scan the entire  
   current file and generate a palette. This only worked in a limited number of files and  
   added much more complexity.
 - **REMOVED**: Various options from rules sets. These are now controlled by the color  
   class object that is being used. For instance, input and output format of colors in the  
-  form `#AARRGGBB` instead of the default `#RRGGBBAA` would need need to use the new  
-  example `ColorHelper.custom.ahex.ColorAhex` custom color object to read in and output  
-  hex colors with leading alpha channels.
+  form `#AARRGGBB` instead of the default `#RRGGBBAA` would need to use the new example  
+  `ColorHelper.custom.ahex.ColorAhex` custom color object to read in and output hex colors  
+  with leading alpha channels.
 - **FIX**: Insert logic issues.
 - **FIX**: ColorPicker now will always work in the color space of the current mode. This  
-  will prevent HSL and HWB from losing their hue angle if saturation is reduced to zero  
-  and then back up again.
+  fixes some conversion issues.
 
 ## 2.7.1
 

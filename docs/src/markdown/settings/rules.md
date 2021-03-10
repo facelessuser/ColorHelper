@@ -3,7 +3,7 @@
 ## `color_rules`
 
 The `color_rules` option configures how ColorHelper interacts with a given file. In order for ColorHelper to inject
-color previews, translate colors, and various other tasks it needs context, and rules provide that context.
+color previews, translate colors, and various other tasks, it needs context, and rules provide that context.
 
 ```js
     "color_rules": [

@@ -2,16 +2,17 @@
 
 ## Overview
 
-ColorHelper is a tool for generating color previews and useful tools and tooltips. It also provides a couple of useful
-tools. ColorHelper provides support for a number of color spaces: sRGB, HSL, HWB, LCH, LAB, and more.
+ColorHelper is a plugin for generating color previews. It also provides a couple of useful tools. ColorHelper provides
+support for a number of color spaces: sRGB, HSL, HWB, LCH, LAB, and more.
 
 !!! note "Note"
     Popups are provided by the [`mdpopups`][mdpopups] dependency.
 
 ## Color Previews
 
-When color previews are enabled, when ColorHelper detects a color in the visible viewport, it will create a preview
-right next to it. When if the image is clicked, a tooltip will appear which gives access to tools and other features.
+When color previews are enabled, ColorHelper detects colors in the visible viewport, it will create a previews right
+next to every color it finds. When the preview is clicked, a tooltip will appear which gives access to tools and other
+features.
 
 ![Preview](images/example.png)
 
@@ -19,8 +20,9 @@ If desired, previews can be configured to only show when a color is selected.
 
 ![Preview Select](images/preview_select.png)
 
-Colors that are out of preview gamut space (sRGB) will be gamut mapped. If on ST4, on hover, the color will mention that
-it was out of gamut.
+Colors that are out of the preview gamut space (sRGB) will be gamut mapped. If on ST4, hovering over the color previews
+will show a tooltip mentioning that the color is out of gamut. This is to remind the user that the color they see has
+been "fit" to the preview color space (sRGB).
 
 ![Preview Select](images/gamut_mapped.png)
 
@@ -46,9 +48,9 @@ toggle between altering the color in the sRGB, HSL, or HWB color space.
 ![color picker](images/color_picker.png)
 
 The color channels are coarse, but can generally allow you to get close to a color that you like.  As you select colors
-in the channel the selections will shift revealing more selections until the bounds of the color channel are reached. If
-you need finer selections, you can click the label to the left and a scrollable tooltip with much finer selections will
-appear so that you can select the best suited value.
+in the channels the selections will shift revealing more selections until the bounds of the color channel are reached.
+If you need finer selections, you can click the label to the left and a scrollable tooltip with much finer selections
+will appear so that you can select the best suited value.
 
 ![fine channel picker](images/fine_channel_picker.png)
 
@@ -71,19 +73,21 @@ When done, simply select the `select` link to insert the color back into the doc
     zero, it is unclear what to do as this behavior is currently undefined in the specification and causes a divide by
     zero in the algorithm. We currently perform no mixing and return nothing for this case.
 
-The edit tool allows for editing of colors and mixing with other colors. While editing, the panel will display a live
-preview.
+The edit tool allows for the editing and mixing of colors. While editing, the panel will display a live preview.
 
-When `@space` is specified, the output of the color will be in the given space. Additionally, if mixing, the tool will
-also mix colors in the provided space. If no space is specified, the color space of the first color is used for mixing
-and output.
+When `@colorspace` is specified, the output of the color will be in the given space. Additionally, if mixing, the tool
+will also mix colors in the provided space. If no space is specified, the color space of the first color is used for
+any mixing and will be the output color space.
 
-If percents are defined, they must add up to 100%, if they do not, they will be normalized. If only a single percent is
-defined, the other color will use 1 - percent.
+The default mixing percentage is 50%, but percents can manually be added to a color to specify a mix percentage other
+than the default. If a percentage is only specified on one color, the other color is assumed to be mixed at `100 - p`,
+where `p` is the specified percent.
+
+If percentages are specified on both colors, they must must add up to 100%, and if they do not, they will be normalized.
 
 The tool can be launched from the quick panel (if a color is selected), from the info panel, or even the color picker.
-When editing is complete, simply press enter and the color will be handed returned to the document for inserting, or
-to the color picker if launched from there.
+When editing is complete, simply press enter and the color will be returned to the document for inserting, or to the
+color picker if launched from there.
 
 ## Color Contrast Tool
 
@@ -101,7 +105,6 @@ The tool can be launched from the quick panel (if a color is selected), from the
 When editing is complete, simply press enter and the color will be handed returned to the document for inserting, or
 to the color picker if launched from there.
 
-
 ## Sublime ColorMod Tool
 
 ![ColorMod Tool](images/colormod_tool.gif)
@@ -115,7 +118,7 @@ to the color picker if launched from there.
 
 ## Color Palettes
 
-ColorHelper allows for saving colors in color palettes. These are either saved globally or in project settings. 
+ColorHelper allows for saving colors in color palettes. These are either saved globally or in project specific settings.
 
 ![Color Palettes](images/color_palettes.png)
 

@@ -37,6 +37,7 @@ nav:
     - Rules: settings/rules.md
   - About:
     - Contributing &amp; Support: about/contributing.md
+    - Changelog: https://github.com/facelessuser/ColorHelper/blob/master/CHANGES.md
     - License: about/license.md
 
 markdown_extensions:

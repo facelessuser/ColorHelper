@@ -25,7 +25,7 @@ Fine scaling of the size of generated graphics. This overrides `graphic_size`.
     // Fine scaling of image sizes. Overrides `graphic_size`.
     // Use an integer or floating point value. `null` disables fine scaling.
     "graphic_scale": 1.5,
-````
+```
 
 If you need to set this per OS or per host, you can via [`multiconf`](./index.md#multiconf).
 

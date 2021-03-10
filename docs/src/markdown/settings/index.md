@@ -3,18 +3,18 @@
 ## Overview
 
 Settings for Color Helper are contained within the `color_helper.sublime-settings` file. There are a number of options
-that control the ColorHelper experiences. This ranges from tweaking how colors are previewed, what colors are scanned
-in what files, what features are enabled, etc.sublime-settings
+that control the ColorHelper experience. This ranges from tweaking how colors are previewed, what colors are scanned
+in what files, what features are enabled, etc.
 
 ## Multiconf
 
-Certain settings that are likely to be useful being configured per OS or per host will be configured to use `multiconf`.
+Certain settings, which are likely to be useful as per OS settings or per host, will be configured to use `multiconf`.
 `multiconf` is a library that will parse a setting as a normal setting or a per OS and/or per host setting (if
 configured properly). For the settings that have this enabled, you can optionally use the format below to specify the
 setting per OS or per host.
 
 The optional `multiconf` format requires a dictionary with a special identifier `#multiconf#`  and a list of
-dictionaries identified by a qualifier of the form:
+dictionaries identified by a qualifier in the form:
 
 ```js
     "<qualifier name>:<qualifier value>[;<qualifier name>:<qualifier value>]..."
@@ -39,7 +39,7 @@ be replaced with
     }
 ```
 
-Now the same configuration file will provide different values depending on the machine it's on. On an MS Windows machine
+Now, the same configuration file will provide different values depending on the machine it's on. On an MS Windows machine
 the value returned by `get` will be "C:\\Users", and on a Linux machine with the host name `his_pc` the value will be
 "/home", etc.
 
