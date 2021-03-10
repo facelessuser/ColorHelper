@@ -466,9 +466,7 @@ class ColorMod:
         this = self._color.convert(space) if self._color.space() != space else self._color
 
         if color.space() != space:
-            hue = color.hue
-            color = color.convert(space)
-            color.hue = hue
+            color.convert(space, in_place=True)
 
         new_color = this.mix(color, percent, space=space)
         if not alpha:
