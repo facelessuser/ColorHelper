@@ -1,4 +1,4 @@
-"""Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
+"""Custom color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 from coloraide.css.colors import Color, SRGB
 from coloraide.colors import _parse as parse
 from coloraide import util
@@ -679,7 +679,7 @@ def name2hex(name):
 
 
 class SRGBX11(SRGB):
-    """SRGB class."""
+    """sRGB class."""
 
     MATCH = re.compile(
         r"""(?xi)
