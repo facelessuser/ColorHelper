@@ -65,23 +65,29 @@ When done, simply select the `select` link to insert the color back into the doc
 
 ![Edit Tool](images/edit_tool.gif)
 
-!!! warning "Experimental Interpolation"
+!!! warning "Experimental Color Interpolation"
+    This is an experimental feature, and syntax and behavior is subject to change.
+
     The current logic for interpolating is based on the [CSS Level 5 Specification][css-5], particularly the recent
-    drafts. There are still some unclear points, and things could change as the specification is still in development.
+    drafts. While the syntax does not follow the specification, the basic logic does.
 
-    The one glaring issue is that if a percentage is applied to both colors, and the sum of those percentages add up to
-    zero, it is unclear what to do as this behavior is currently undefined in the specification and causes a divide by
-    zero in the algorithm. We currently perform no interpolation and return nothing for this case.
+    The only logical issue is that if a percentage is applied to both colors, and the sum of those percentages add up to
+    zero, it is unclear what to do as this behavior is currently undefined in the specification and will causes a divide
+    by zero in the percent normalization algorithm. If this case occurs, we currently perform no interpolation and
+    return nothing for this case. In all honestly, it should be rare for someone to try do this as it can only be
+    achieved by either setting both percentages to zero, or to use two opposing percentages, such as 50% and -50%.
+    Neither of these cases are practical.
 
-The edit tool allows for the editing and interpolation of colors. While editing, the panel will display a live preview.
+The edit tool allows for the editing and mixing (by interpolation) of colors. While editing, the panel will display a
+live preview.
 
-When `@colorspace` is specified, the output of the color will be in the given space. Additionally, if interpolating, the
-tool will also interpolate colors in the provided space. If no space is specified, the color space of the first color is
+When `@colorspace` is specified, the output of the color will be in the given space. Additionally, if mixing, the tool
+will also interpolate colors in the provided space. If no space is specified, the color space of the first color is
 used for any interpolations and will be the output color space.
 
-The default interpolation percentage is 50%, but percents can manually be added to a color to specify a percentage other
-than the default. If a percentage is only specified on one color, the other color is assumed to be interpolated at
-`100 - p`, where `p` is the specified percent.
+The default mixing percentage is 50%, but percents can manually be added to a color to specify a percentage other than
+the default. If a percentage is only specified on one color, the other color is assumed to be interpolated at `100 - p`,
+where `p` is the specified percent.
 
 If percentages are specified on both colors, they must must add up to 100%, and if they do not, they will be normalized.
 

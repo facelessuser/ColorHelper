@@ -125,8 +125,8 @@ Colors can be specified in any supported color space. They can<br>
 be converted and output to another color space with `@colorspace`.
 
 If two colors are provided, joined with `+`, the colors will<br>
-be mixed. When mixing, if `@colorspace` is defined at the end,<br>
-colors will be mixed in that color space.
+be mixed by interpolation. When mixing, if `@colorspace` is defined<br>
+at the end, colors will be mixed in that color space.
 
 Colors are mixed at 50% unless percents are defined. If percents<br>
 are defined, they must add up to 100%, if they do not, they are<br>
