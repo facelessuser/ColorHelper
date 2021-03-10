@@ -6,8 +6,8 @@
 # ColorHelper
 
 ColorHelper makes working with colors easier by providing inline color previews in your documents (ST3 build 3118+) and
-offers tooltips with color previews, provides color conversion, and allows the storing and accessing of favorite colors
-in color palettes.  It even provides tools for calculating color contrast, mixing, and more.
+offers popups with color previews, color conversion, and allows the storing and accessing of favorite colors in color
+palettes. It even provides tools for calculating color contrast, interpolating between colors, and more.
 
 ![Screenshot1](docs/src/markdown/images/example.png)
 
@@ -19,7 +19,7 @@ in color palettes.  It even provides tools for calculating color contrast, mixin
 - Allow saving, accessing, and managing colors in named color palettes all from the tooltip.
 - Select and insert colors from the color palettes via the tooltip.
 - Translate an existing color form to a new form the tooltip.  Supports `rgb`, `hsl`, `hwb`, `lch`, `lab`, and more!
-- Color picker, color mixing, color contrast tool, and more!
+- Color picker, color interpolating, color contrast tool, and more!
 
 # Documentation
 
@@ -31,11 +31,18 @@ ColorHelper is released under the MIT license.
 
 Copyright (c) 2015 - 2021 Isaac Muse <isaacmuse@gmail.com>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 [github-ci-image]: https://github.com/facelessuser/ColorHelper/workflows/build/badge.svg?branch=master&event=push
 [github-ci-link]: https://github.com/facelessuser/ColorHelper/actions?query=workflow%3Abuild+branch%3Amaster
