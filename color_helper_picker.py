@@ -515,12 +515,12 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         if colornames:
             # Show color name picker
             self.template_vars['color_names'] = True
-            self.template_vars['cancel'] = self.color
+            self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
             self.get_css_color_names()
         elif hirespick:
             # Show high resolution channel picker
             self.template_vars['hires'] = True
-            self.template_vars['cancel'] = self.color
+            self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
             self.template_vars['hires_color'] = hirespick
             self.get_hires_color_channel(hirespick)
         else:
