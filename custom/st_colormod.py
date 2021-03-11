@@ -485,20 +485,20 @@ class ColorMod:
         """Lightness."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        op = self.OP_MAP.get(op, self._op_null)
-        this.lightness = op(this.lightness, value)
         if this.is_nan('hue') and hue is not None:
             this.hue = hue
+        op = self.OP_MAP.get(op, self._op_null)
+        this.lightness = op(this.lightness, value)
         self._color.update(this)
 
     def saturation(self, value, op="", hue=None):
         """Saturation."""
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
-        op = self.OP_MAP.get(op, self._op_null)
-        this.saturation = op(this.saturation, value)
         if this.is_nan("hue") and hue is not None:
             this.hue = hue
+        op = self.OP_MAP.get(op, self._op_null)
+        this.saturation = op(this.saturation, value)
         self._color.update(this)
 
 
