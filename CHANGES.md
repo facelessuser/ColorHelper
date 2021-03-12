@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.0.1
+
+- **FIX**: Ignore color keywords when they are preceeded by `$` (SCSS).
+
 ## 3.0.0
 
 - **NEW**: New supported color spaces: `lch`, `lab`, `display-p3`, `rec-2020`, `xyz`,  

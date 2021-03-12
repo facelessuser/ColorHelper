@@ -11,7 +11,7 @@ import mdpopups
 import base64
 import importlib
 
-RE_COLOR_START = r"(?i)(?:\b(?<![-#&])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&])[\w]{3,}(?!\()\b|(?<![&])#)"
+RE_COLOR_START = r"(?i)(?:\b(?<![-#&])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&$])[\w]{3,}(?!\()\b|(?<![&])#)"
 
 COLOR = {"color": True, "fit": False}
 HEX = {"hex": True}
