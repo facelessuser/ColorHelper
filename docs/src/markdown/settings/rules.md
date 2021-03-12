@@ -40,7 +40,7 @@ given view at a time.
 
 ### `name`
 
-Optional name. If a user creates a rule in `user_color_rules`, and it it shares the same `name` as a rule under 
+Optional name. If a user creates a rule in `user_color_rules`, and it it shares the same `name` as a rule under
 `color_rules`, a shallow merge of the two rules will be made which will allow the user rule to override the values
 of top level keys.
 
