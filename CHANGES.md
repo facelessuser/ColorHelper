@@ -2,7 +2,8 @@
 
 ## 3.0.1
 
-- **FIX**: Ignore color keywords when they are preceeded by `$` (SCSS).
+- **FIX**: Ignore color keywords when they are preceded by `$` (SCSS). Also fix issue  
+  with `-` trailing a keyword.
 
 ## 3.0.0
 
