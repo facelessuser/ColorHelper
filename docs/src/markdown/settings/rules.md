@@ -48,7 +48,7 @@ of top level keys.
     "name": "HTML/CSS",
 ```
 
-### `sytnax_files`
+### `syntax_files`
 
 Target a view using a syntax file from the given list. Defaults to an empty list.
 
