@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.0.2
+
+- **FIX**: Fix typo in color trigger pattern in 3.0.1 fix.
+
 ## 3.0.1
 
 - **FIX**: Ignore color keywords when they are preceded by `$` (SCSS). Also fix issue  
