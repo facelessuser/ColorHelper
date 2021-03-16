@@ -70,8 +70,8 @@
     // package is installed.
     "enable_color_picker": true,
 
-    // Use https://github.com/weslly/ColorPicker for the color picker if installed.
-    "use_color_picker_package": false,
+    // Use native, OS specific color pickers. Linux requires `kcolorchooser`.
+    "use_os_color_picker": false,
 
     //////////////////
     // Preview

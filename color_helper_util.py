@@ -113,15 +113,6 @@ def get_line_height(view):
     return int((height / 2.0) if LINE_HEIGHT_WORKAROUND and settings.get('line_height_workaround', False) else height)
 
 
-def color_picker_available():
-    """Check if color picker is available."""
-
-    s = sublime.load_settings('color_helper_share.sublime-settings')
-    s.set('color_pick_return', None)
-    sublime.run_command('color_pick_api_is_available', {'settings': 'color_helper_share.sublime-settings'})
-    return s.get('color_pick_return', None)
-
-
 def get_rules(view):
     """Get auto-popup scope rule."""
 
