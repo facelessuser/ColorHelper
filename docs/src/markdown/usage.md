@@ -40,6 +40,10 @@ in other [palettes](#palette-panel) than can be accessed later.
 
 ## Color Picker
 
+!!! tip "Native Color Picker?"
+    Some people prefer native color pickers, if you'd like to use your operating systems built-in color picker,
+    see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
+
 The internal color picker can be launched from the view's context menu, the command palette, or from the
 [Color Info Panel](#color_info).  When launched it will use the current selected color. The internal color picker is
 contained inside a tooltip.  It has a color map section at the top where different colors can be selected. You can
