@@ -13,8 +13,10 @@ HWB
 HiDPI
 Inline
 JSON
+KDE
 LCH
 MERCHANTABILITY
+MacOS
 MkDocs
 Multiconf
 NONINFRINGEMENT
@@ -43,6 +45,7 @@ inline
 installable
 lowercased
 luminance
+macOS
 matthjes
 multiconf
 overlayed
