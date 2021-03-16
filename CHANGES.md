@@ -3,7 +3,7 @@
 ## 3.1.0
 
 - **NEW**: Drop support for ColorPicker package and instead implement OS color pickers  
-  directly in ColorHelper. Linux users will need to install [`kcolorchooser`](https://apps.kde.org/en/kcolorchooser).  
+  directly in ColorHelper. Linux users will need to install [`kcolorchooser`](https://apps.kde.org/en/kcolorchooser),  
   and it must be in the path on the command line
 
 ## 3.0.2
