@@ -73,7 +73,11 @@ class MacPick(_ColorPicker):
 
 
 class WinPick(_ColorPicker):
-    """Windows color picker."""
+    """
+    Windows color picker.
+
+    https://docs.microsoft.com/en-us/windows/win32/api/commdlg/ns-commdlg-choosecolorw-r1
+    """
 
     def pick(self):
         """Pick the color."""
@@ -99,7 +103,11 @@ class WinPick(_ColorPicker):
 
 
 class LinuxPick(_ColorPicker):
-    """Linux color picker."""
+    """
+    Linux color picker.
+
+    https://apps.kde.org/en/kcolorchooser
+    """
 
     def pick(self):
         """Pick the color."""
