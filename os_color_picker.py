@@ -13,6 +13,8 @@ if sublime.platform() == "windows":
     import ctypes
 
     class CHOOSECOLOR(ctypes.Structure):
+        """Structure for `CHOOSECOLOR`."""
+
         _fields_ = [('lStructSize', ctypes.c_uint32),
                     ('hwndOwner', ctypes.c_void_p),
                     ('hInstance', ctypes.c_void_p),
@@ -42,7 +44,7 @@ class _ColorPicker:
     def pick(self):
         """Pick the color."""
 
-        return color
+        return self.color
 
 
 class MacPick(_ColorPicker):
@@ -88,7 +90,7 @@ class WinPick(_ColorPicker):
 
         picker = CHOOSECOLOR()
         picker.lStructSize = ctypes.sizeof(picker)
-        CustomColors = ctypes.c_uint32 * 16
+        CustomColors = ctypes.c_uint32 * 16  # noqa: N806
         picker.lpCustColors = CustomColors()
         picker.Flags = CC_SOLIDCOLOR | CC_FULLOPEN | CC_RGBINIT
         picker.rgbResult = ctypes.c_uint32(bgr)
