@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 3.1.1
+
+- **FIX**: Fix Windows color picker not processing color properly.
+- **FIX**: Make sure Windows color picker stores and retrieves custom colors.
+
 ## 3.1.0
 
 - **NEW**: Drop support for ColorPicker package and instead implement OS color pickers  
