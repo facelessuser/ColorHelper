@@ -124,7 +124,6 @@ class WinPick(_ColorPicker):
 
         picker = CHOOSECOLOR()
         picker.lStructSize = ctypes.sizeof(picker)
-        CustomColors = ctypes.c_uint32 * 16  # noqa: N806
         picker.lpCustColors = self.get_win_pick_colors()
         picker.Flags = CC_SOLIDCOLOR | CC_FULLOPEN | CC_RGBINIT
         picker.rgbResult = ctypes.c_uint32(bgr)
