@@ -2,6 +2,7 @@
 [coloraide]: https://facelessuser.github.io/coloraide/
 [coloraide-strings]: https://facelessuser.github.io/coloraide/strings/
 [css-5]: https://drafts.csswg.org/css-color-5/#color-mix
+[kcolorchooser]: https://apps.kde.org/en/kcolorchooser
 [mdpopups]: https://github.com/facelessuser/sublime-markdown-popups
 [mkdocs]: http://www.mkdocs.org
 [mkdocs-material]: https://github.com/squidfunk/mkdocs-material
@@ -9,4 +10,3 @@
 [package-control-install]: https://packagecontrol.io/installation
 [pymdown-extensions]: https://github.com/facelessuser/pymdown-extensions
 [template]: https://github.com/facelessuser/BracketHighlighter/blob/master/.github/ISSUE_TEMPLATE.md
-[weslly]: https://github.com/weslly

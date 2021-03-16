@@ -7,6 +7,7 @@ License: MIT
 import sublime
 import sublime_plugin
 from coloraide import Color
+from . import os_color_picker
 import mdpopups
 from . import color_helper_util as util
 from html.parser import HTMLParser
@@ -234,19 +235,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def color_picker(self, color):
         """Get color with color picker."""
 
-        if self.color_picker_package:
+        if self.os_color_picker:
             self.view.hide_popup()
-            old_color = Color(color).convert("srgb", fit=True).to_string(**util.HEX)
-            s = sublime.load_settings('color_helper_share.sublime-settings')
-            s.set('color_pick_return', None)
-            self.view.window().run_command(
-                'color_pick_api_get_color',
-                {'settings': 'color_helper_share.sublime-settings', "default_color": old_color}
-            )
-            new_color = s.get('color_pick_return', None)
-            if new_color is not None and new_color != old_color:
+            old_color = Color(color).convert("srgb", fit=True)
+            new_color = os_color_picker.pick(old_color)
+            if new_color.to_string(**util.HEX_NA) != old_color.to_string(**util.HEX_NA):
                 sublime.set_timeout(
-                    lambda c=Color(new_color).to_string(**util.COLOR_FULL_PREC): self.view.run_command(
+                    lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(
                         "color_helper",
                         {"color": c, 'mode': 'result', 'result_type': '__color_picker__'}
                     ),
@@ -750,7 +745,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_color_class()
         self.palette_w = self.width * 2
         s = sublime.load_settings('color_helper.sublime-settings')
-        self.color_picker_package = s.get('use_color_picker_package', False) and util.color_picker_available()
+        self.os_color_picker = s.get('use_os_color_picker', False)
         self.no_info = True
         self.no_palette = True
         if mode == "palette":
