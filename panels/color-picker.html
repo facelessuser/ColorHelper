@@ -1,6 +1,5 @@
 <div class="menu" markdown="1">
 
-[Cancel]({{plugin.cancel}}){: .color-helper .small}
 {%- if plugin.picker %}
  [CSS color names](__colornames__){: .color-helper .small}
  [Tools](__tools__){: .color-helper .small}
@@ -16,11 +15,20 @@
 
 {{plugin.channel_names}}
 
+---
+
+[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
+
 {%- elif plugin.hires %}
 
 ## {{plugin.hires_color}}
 
 {{plugin.channel_hires}}
+
+---
+
+[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
+
 {%- else %}
 
 {{plugin.color_picker}}
@@ -28,7 +36,7 @@
 
 ---
 
-### {{plugin.color_value}} { .center}
+### {{plugin.color_display}} { .center}
 
 {{plugin.channel_1}}
 
@@ -45,6 +53,7 @@
 ---
 
 [Select](__insert__:{{plugin.color_value}}){: .small .button}
+[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
 
 {%- endif %}
 

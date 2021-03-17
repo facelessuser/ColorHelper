@@ -1,0 +1,42 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+file_extensions:
+  - color-helper-colors
+hidden: true
+scope: source.colors
+contexts:
+  main:
+    # Strings begin and end with quotes, and use backslashes as an escape
+    # character
+    - match: '([a-zA-Z][a-zA-Z\d]*)(\()(?:\s*)'
+      captures:
+        1: support.function.colors
+        2: punctuation.section.group.begin.colors
+
+    - match: '[\[({]'
+      scope: punctuation.section.group.begin.colors
+
+    - match: '(\#)([a-fA-F0-9]{8}|[a-fA-F0-9]{6}|[a-fA-F0-9]{3,4})\b'
+      captures:
+        1: punctuation.definition.constant.colors
+        2: constant.other.color.rgb-value.colors
+
+    - match: '[a-zA-Z][-a-zA-Z0-9_]+(?!\()'
+      scope: support.constant.names.colors
+
+    - match: '([+\-])?(?:(?:([0-9]*)(\.)([0-9]+))|([0-9]+))(?:(e[-+]?[0-9]*))?(%|deg|rad|turn|grad)?'
+      captures:
+        1: keyword.operator.arithmetic.colors
+        2: constant.numeric.value.colors
+        3: punctuation.separator.decimal.colors
+        4: constant.numeric.value.colors
+        5: constant.numeric.value.colors
+        6: constant.numeric.value.colors
+        7: constant.numeric.suffix.colors
+
+    - match: '[,/]'
+      scope: punctuation.separator.sequence.colors
+
+    - match: '[\])}]'
+      scope: punctuation.section.group.end.colors

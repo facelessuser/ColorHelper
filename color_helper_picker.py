@@ -553,6 +553,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 switch = 'hwb'
             else:
                 switch = 'srgb'
+
+            self.template_vars['color_display'] = "`#!color-helper {}`".format(self.color.to_string(**DEFAULT))
             self.template_vars['color_value'] = self.color.to_string(**DEFAULT)
             self.template_vars['color_switch'] = switch
 

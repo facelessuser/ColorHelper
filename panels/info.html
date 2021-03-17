@@ -1,19 +1,19 @@
 <div class="menu" markdown="1">
 
 {% if plugin.show_picker_menu -%}
-[Picker](__color_picker__:{{plugin.generic_color}}){: .small} 
+[Picker](__color_picker__:{{plugin.generic_color}}){: .small}
 {% endif -%}
-[Tools](__tools__:{{plugin.edit_color}}){: .small} 
-{% if plugin.show_palette_menu -%} 
-[Palettes](__palettes__){: .small} 
+[Tools](__tools__:{{plugin.edit_color}}){: .small}
+{% if plugin.show_palette_menu -%}
+[Palettes](__palettes__){: .small}
 {% endif -%}
-{% if plugin.show_global_palette_menu -%} 
-[Add](__add_color__:{{plugin.generic_color}}){: .small} 
+{% if plugin.show_global_palette_menu -%}
+[Save](__add_color__:{{plugin.generic_color}}){: .small}
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
-[Unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 
+[&#9829;](__remove_fav__:{{plugin.generic_color}} "Remove from Favorites")
 {% elif plugin.show_favorite_menu and not plugin.is_marked -%}
-[Mark](__add_fav__:{{plugin.generic_color}}){: .small}
+[&#9825;](__add_fav__:{{plugin.generic_color}} "Save to Favorites")
 {%- endif %}
 
 </div>
@@ -37,5 +37,8 @@
 {{plugin.color_preview_message}}
 {%- endif %}
 
+---
+
 [Convert](__insert__:{{plugin.generic_color}}:__info__){: .small .button}
+[Cancel](__close__){: .small .button}
 </div>

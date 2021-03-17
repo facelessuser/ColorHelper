@@ -22,14 +22,21 @@ FULL_PREC = {"fit": False, "precision": -1}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb")
 
+lang_map = {
+    # `'name': (('mapping_alias',), ('tmLanguage_or_sublime-syntax file',))`
+    'color-helper': (('color-helper',), ('ColorHelper/color-helper-colors',))
+}
+
 FRONTMATTER = mdpopups.format_frontmatter(
     {
         "allow_code_wrap": False,
+        "language_map": lang_map,
         "markdown_extensions": [
             "markdown.extensions.admonition",
             "markdown.extensions.attr_list",
             "markdown.extensions.def_list",
             "markdown.extensions.md_in_html",
+            "pymdownx.inlinehilite",
             "pymdownx.betterem",
             "pymdownx.magiclink"
         ]
@@ -65,6 +72,10 @@ ADD_CSS = dedent(
     }
     .color-helper div.panel {
         padding: 0.5rem;
+    }
+
+    .color-helper code.highlight {
+        font-size: inherit;
     }
 
     .color-helper a.button {

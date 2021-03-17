@@ -481,7 +481,9 @@ class ColorInputHandler(_ColorInputHandler):
             if html:
                 return sublime.Html('<html><body>{}</body></html>'.format(style + html))
             else:
-                return sublime.Html('<html><body>{}</body></html>'.format(mdpopups.md2html(self.view, DEF_EDIT.format(style))))
+                return sublime.Html(
+                    '<html><body>{}</body></html>'.format(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
+                )
         except Exception:
             return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
 
