@@ -2,8 +2,10 @@
 
 ## 3.1.2
 
-- **NEW**: Improved visuals for popups and `TextInputHandlers`. Improve consistency in how things are presented.
-- **FIX**: In color picker, values in the hue channel should clamp at 359 not 360 as 360 wraps to 0.
+- **FIX**: Improved visuals for popups and `TextInputHandlers`. Improve consistency  
+  in how things are presented.
+- **FIX**: In color picker, values in the hue channel should clamp at 359 not 360 as  
+  360 wraps to 0.
 - **FIX**: Fix a few transitions between different popups.
 
 ## 3.1.1
