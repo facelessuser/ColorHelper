@@ -29,6 +29,7 @@ FRONTMATTER = mdpopups.format_frontmatter(
             "markdown.extensions.admonition",
             "markdown.extensions.attr_list",
             "markdown.extensions.def_list",
+            "markdown.extensions.md_in_html",
             "pymdownx.betterem",
             "pymdownx.magiclink"
         ]
@@ -39,9 +40,49 @@ LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
 
 ADD_CSS = dedent(
     '''
-    div.color-helper { margin: 0; padding: 0.5rem; }
+    html.light {
+      --ch-button-color: color(var(--mdpopups-bg) blend(black 85%));
+    }
+    html.dark {
+      --ch-button-color: color(var(--mdpopups-bg) blend(white 85%));
+    }
+    div.color-helper { margin: 0; padding: 0rem; }
+
     .color-helper .small { font-size: 0.8rem; }
     .color-helper .alpha { text-decoration: underline; }
+
+    .color-helper div.menu a {
+        color: var(--foreground);
+        text-decoration: none;
+    }
+    .color-helper div.menu {
+        padding: 0.5rem 0.5rem 0 0.5rem;
+        margin: 0;
+        background-color:  var(--ch-button-color);
+    }
+    .color-helper div.menu a {
+        padding: 0.25rem;
+    }
+    .color-helper div.panel {
+        padding: 0.5rem;
+    }
+
+    .color-helper a.button {
+        display: inline-block;
+        padding: 0.25rem;
+        color:  var(--foreground);
+        background-color: var(--ch-button-color);
+        border-radius: 0.25rem;
+        text-decoration: none;
+    }
+
+    .color-helper hr {
+        border-color: var(--ch-button-color);
+    }
+
+    .color-helper .center {
+        text-align: center;
+    }
     '''
 )
 

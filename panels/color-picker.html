@@ -1,13 +1,21 @@
-[cancel]({{plugin.cancel}}){: .color-helper .small}
+<div class="menu" markdown="1">
+
+[Cancel]({{plugin.cancel}}){: .color-helper .small}
 {%- if plugin.picker %}
  [CSS color names](__colornames__){: .color-helper .small}
- [tools](__tools__){: .color-helper .small}
+ [Tools](__tools__){: .color-helper .small}
 {%- endif %}
+
+</div>
+
+<div class="panel" markdown="1">
+
 {%- if plugin.color_names %}
 
 ## CSS Color Names
 
 {{plugin.channel_names}}
+
 {%- elif plugin.hires %}
 
 ## {{plugin.hires_color}}
@@ -20,7 +28,7 @@
 
 ---
 
-### {{plugin.color_value}}
+### {{plugin.color_value}} { .center}
 
 {{plugin.channel_1}}
 
@@ -30,12 +38,14 @@
 
 {{plugin.channel_alpha}}
 
-[sRGB](__space__:srgb){: .color-helper .small} 
-[HSL](__space__:hsl){: .color-helper .small} 
-[HWB](__space__:hwb){: .color-helper .small} 
+[sRGB](__space__:srgb){: .color-helper .small .button} 
+[HSL](__space__:hsl){: .color-helper .small .button} 
+[HWB](__space__:hwb){: .color-helper .small .button} 
 
 ---
 
-[select](__insert__:{{plugin.color_value}}){: .small}
+[Select](__insert__:{{plugin.color_value}}){: .small .button}
 
 {%- endif %}
+
+</div>

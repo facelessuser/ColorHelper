@@ -342,7 +342,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
         """Format color palette previews."""
 
-        colors = ['\n## {}\n'.format(label)]
+        colors = ['\n### {}\n'.format(label)]
         if caption:
             colors.append('{}\n'.format(caption))
         if delete:

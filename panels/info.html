@@ -1,18 +1,24 @@
+<div class="menu" markdown="1">
+
 {% if plugin.show_picker_menu -%}
-[picker](__color_picker__:{{plugin.generic_color}}){: .small} 
+[Picker](__color_picker__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
-[tools](__tools__:{{plugin.edit_color}}){: .small} 
+[Tools](__tools__:{{plugin.edit_color}}){: .small} 
 {% if plugin.show_palette_menu -%} 
-[palettes](__palettes__){: .small} 
+[Palettes](__palettes__){: .small} 
 {% endif -%}
 {% if plugin.show_global_palette_menu -%} 
-[add](__add_color__:{{plugin.generic_color}}){: .small} 
+[Add](__add_color__:{{plugin.generic_color}}){: .small} 
 {% endif -%}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
-[unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 
+[Unmark](__remove_fav__:{{plugin.generic_color}}){: .small} 
 {% elif plugin.show_favorite_menu and not plugin.is_marked -%}
-[mark](__add_fav__:{{plugin.generic_color}}){: .small}
+[Mark](__add_fav__:{{plugin.generic_color}}){: .small}
 {%- endif %}
+
+</div>
+
+<div class="panel" markdown="1">
 
 ### {{plugin.current_color}}
 
@@ -31,6 +37,5 @@
 {{plugin.color_preview_message}}
 {%- endif %}
 
----
-
-[convert](__insert__:{{plugin.generic_color}}:__info__){: .small}
+[Convert](__insert__:{{plugin.generic_color}}:__info__){: .small .button}
+</div>

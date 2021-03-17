@@ -33,28 +33,24 @@ RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 STYLE = """
 <style>
 html {{
-  font-family: {font};
   margin: 0;
   padding: 0;
-  background-color: transparent;
-  color: {fg};
 }}
 body {{
-  background-color: {bg};
   padding: 0.5em;
 }}
 br {{
   display: block;
 }}
 code {{
-  background-color: {code};
+  font-style: italic;
+  font-weight: bold;
+  font-family: {font};
   padding: 0 0.25em;
 }}
 div {{
-    display: block;
-}}
-a {{
-    color: inherit;
+  font-family: {font};
+  display: block;
 }}
 </style>
 """
@@ -70,7 +66,7 @@ markdown_extensions:
 
 ## Format
 
-`color(color_syntax adjuster*)`
+<code>color(color_syntax adjuster*)</code>
 
 Also accepts normal CSS color syntax. Color functions can be nested.
 
@@ -78,8 +74,8 @@ Also accepts normal CSS color syntax. Color functions can be nested.
 
 Colors must be in the **sRGB**, **HSL**, or **HSB** color space.
 
-Supported adjusters are `alpha()`, `a()`, `lightness()`, `l()`,<br>
-`saturation()`, `s()`, `blend()`, and `blenda()`.
+Supported adjusters are <code>alpha()</code>, <code>a()</code>, <code>lightness()</code>, <code>l()</code>,<br>
+<code>saturation()</code>, <code>s()</code>, <code>blend()</code>, and <code>blenda()</code>.
 
 Please see [Sublime Text Documentation](https://www.sublimetext.com/docs/color_schemes.html#colors) for more info.
 """
@@ -95,7 +91,7 @@ markdown_extensions:
 
 ## Format
 
-`Color( / Color)?( ratio)?`
+<code>Color( / Color)?( ratio)?</code>
 
 ## Instructions
 
@@ -117,21 +113,21 @@ markdown_extensions:
 
 ## Format
 
-`Color(( percent)? + Color( percent)?)?( @colorspace)?`
+<code>Color(( percent)? + Color( percent)?)?( @colorspace)?</code>
 
 ## Instructions
 
 Colors can be specified in any supported color space. They can<br>
-be converted and output to another color space with `@colorspace`.
+be converted and output to another color space with <code>@colorspace</code>.
 
-If two colors are provided, joined with `+`, the colors will<br>
-be mixed by interpolation. When mixing, if `@colorspace` is defined<br>
+If two colors are provided, joined with <code>+</code>, the colors will<br>
+be mixed by interpolation. When mixing, if <code>@colorspace</code> is defined<br>
 at the end, colors will be mixed in that color space.
 
 Colors are mixed at 50% unless percents are defined. If percents<br>
 are defined, they must add up to 100%, if they do not, they are<br>
 normalized. If only a single percent is defined, the other<br>
-color will use `1 - percent`.
+color will use <code>1 - percent</code>.
 """
 
 
@@ -450,7 +446,6 @@ class ColorInputHandler(_ColorInputHandler):
             html = ""
             for color in colors:
                 orig = Color(color)
-                preview_border = self.default_border
                 message = ""
                 color_string = ""
                 if not orig.in_gamut('srgb'):
@@ -464,6 +459,11 @@ class ColorInputHandler(_ColorInputHandler):
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
                 preview_border = self.default_border
+                temp = Color(preview_border)
+                if temp.luminance() < 0.5:
+                    second_border = temp.mix('white', 0.25).to_string(**util.HEX_NA)
+                else:
+                    second_border = temp.mix('black', 0.25).to_string(**util.HEX_NA)
 
                 height = self.height * 3
                 width = self.width * 3
@@ -471,18 +471,17 @@ class ColorInputHandler(_ColorInputHandler):
 
                 html += PREVIEW_IMG.format(
                     mdpopups.color_box(
-                        [
-                            preview,
-                            preview_alpha
-                        ], preview_border, border_size=1, height=height, width=width, check_size=check_size
+                        [preview, preview_alpha],
+                        preview_border, second_border,
+                        border_size=2, height=height, width=width, check_size=check_size
                     ),
                     message,
                     color_string
                 )
             if html:
-                return sublime.Html(style + html)
+                return sublime.Html('<html><body>{}</body></html>'.format(style + html))
             else:
-                return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
+                return sublime.Html('<html><body>{}</body></html>'.format(mdpopups.md2html(self.view, DEF_EDIT.format(style))))
         except Exception:
             return sublime.Html(mdpopups.md2html(self.view, DEF_EDIT.format(style)))
 
@@ -647,6 +646,11 @@ class ColorModInputHandler(_ColorInputHandler):
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
                 preview_border = self.default_border
+                temp = Color(preview_border)
+                if temp.luminance() < 0.5:
+                    second_border = temp.mix('white', 0.25).to_string(**util.HEX_NA)
+                else:
+                    second_border = temp.mix('black', 0.25).to_string(**util.HEX_NA)
 
                 height = self.height * 3
                 width = self.width * 3
@@ -654,10 +658,9 @@ class ColorModInputHandler(_ColorInputHandler):
 
                 html = PREVIEW_IMG.format(
                     mdpopups.color_box(
-                        [
-                            preview,
-                            preview_alpha
-                        ], preview_border, border_size=1, height=height, width=width, check_size=check_size
+                        [preview, preview_alpha],
+                        preview_border, second_border,
+                        border_size=1, height=height, width=width, check_size=check_size
                     ),
                     message,
                     color.to_string(**util.DEFAULT)

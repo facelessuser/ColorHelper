@@ -1,6 +1,14 @@
-[back]({{plugin.back_target}}){: .small}
+<div class="menu" markdown="1">
+
+[Back]({{plugin.back_target}}){: .small}
+
+</div>
+
+<div class="panel" markdown="1">
 
 {% for name, tool in plugin.tools %}
-{{name}} [open]({{tool}}){: .small}
+[&gt;]({{tool}}){: .small .button} {{name}} 
 
 {% endfor %}
+
+</div>

@@ -1,7 +1,14 @@
-[back]({{plugin.back_target}}){: .small} 
+<div class="menu" markdown="1">
+
+[Back]({{plugin.back_target}}){: .small} 
 {% if plugin.show_delete_menu -%}
-[delete](__delete__palettes__){: .small} 
+[Delete](__delete__palettes__){: .small} 
 {%- endif %}
+
+</div>
+
+<div class="panel" markdown="1">
+
 {%- if plugin.show_delete_ui %}
 
 ## Delete Palette
@@ -10,26 +17,30 @@ Click the palette to delete.
 {%- elif plugin.show_new_ui %}
 ## New Palette
 
-[Create New Palette](__create_palette__:__global__:{{plugin.color}})
+[&gt;](__create_palette__:__global__:{{plugin.color}}){ .small .button} Create New Palette
 
-[Create New Project Palette](__create_palette__:__project__:{{plugin.color}})
+[&gt;](__create_palette__:__project__:{{plugin.color}}){ .small .button} Create New Project Palette
+
 {%- endif %}
 {%- if plugin.show_favorite_palette %}
+  {%- if plugin.show_delete_ui or plugin.show_new_ui%}
+
+---
+  {% endif %}
+
 {{plugin.favorite_palette}}
 {%- endif %}
-{%- if plugin.show_separator %}
 
----
-
-{% endif -%}
 {% for palette in plugin.global_palettes %}
-{{palette}}
-{% endfor %}
-{%- if plugin.show_project_separator %}
-
 ---
 
-{% endif -%}
-{% for palette in plugin.project_palettes %}
 {{palette}}
+
+{% endfor %}
+
+{% for palette in plugin.project_palettes %}
+---
+
+{{palette}}
+
 {% endfor %}
