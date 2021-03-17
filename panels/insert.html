@@ -1,16 +1,24 @@
-{%- if plugin.dialog_type not in ("__info__", "__color_picker__") and not plugin.dialog_type.startswith('__tool__:') %}
-[back](__colors__:{{plugin.dialog_type}}:{{plugin.palette_name}}){: .small}
-{%- elif plugin.dialog_type == "__info__" %}
-[back](__info__){: .small}
-{%- elif plugin.dialog_type == "__color_picker__" %}
-[back]({{plugin.dialog_type}}:{{plugin.current_color}}){: .small}
-{%- else %}
-[back]({{plugin.dialog_type}}:{{plugin.tool_color}}){: .small}
-{%- endif %}
+<div class="menu" markdown="1">
+<br>
+</div>
 
-## Insert Color
+<div class="panel" markdown="1">
 
 {%- for output in plugin.outputs %}
-[&gt;&gt;&gt;](__convert__:{{output[0]}} "Convert") <span>{{output[1]}}</span>
-<br>
-{%- endfor %}
+[&gt;](__convert__:{{output[0]}} "Insert"){: .small .button} {{output[1]}} 
+
+{% endfor %}
+
+---
+
+{%- if plugin.dialog_type not in ("__info__", "__color_picker__") and not plugin.dialog_type.startswith('__tool__:') %}
+[Cancel](__colors__:{{plugin.dialog_type}}:{{plugin.palette_name}}){: .small .button}
+{%- elif plugin.dialog_type == "__info__" %}
+[Cancel](__info__){: .small .button}
+{%- elif plugin.dialog_type == "__color_picker__" %}
+[Cancel]({{plugin.dialog_type}}:{{plugin.current_color}}){: .small .button}
+{%- else %}
+[Cancel]({{plugin.dialog_type}}:{{plugin.tool_color}}){: .small .button}
+{%- endif %}
+
+</div>

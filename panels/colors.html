@@ -1,13 +1,31 @@
-{%- if plugin.delete %}
-[back]({{plugin.back}}:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
+<div class="menu" markdown="1">
 
+{% if plugin.show_delete_menu -%}
+[Delete](__delete_colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
+{%- else %}
+<br>
+{%- endif %}
+
+</div>
+
+<div class="panel" markdown="1">
+
+{%- if plugin.delete %}
 ## Delete Color
 Click the color to delete.
-{%- else %}
-[back]({{plugin.back}}){: .small} 
-  {% if plugin.show_delete_menu -%}
-[delete](__delete_colors__:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small}
-  {%- endif %}
+
+---
+
 {%- endif %}
 
 {{plugin.colors}}
+
+---
+
+{%- if plugin.delete %}
+[Cancel]({{plugin.back}}:{{plugin.palette_type}}:{{plugin.palette_name}}){: .small .button}
+{%- else %}
+[Cancel]({{plugin.back}}){: .small .button}
+{%- endif %}
+
+</div>

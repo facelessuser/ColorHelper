@@ -93,6 +93,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif href.startswith('__convert__'):
             parts = href.split(':', 1)
             self.insert_color(util.decode_color(parts[1]))
+        elif href == '__close__':
+            self.view.hide_popup()
+            return
 
     def repop(self):
         """Setup thread to re-popup tooltip."""
@@ -342,7 +345,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def format_palettes(self, color_list, label, palette_type, caption=None, color=None, delete=False):
         """Format color palette previews."""
 
-        colors = ['\n## {}\n'.format(label)]
+        colors = ['\n### {}\n'.format(label)]
         if caption:
             colors.append('{}\n'.format(caption))
         if delete:
@@ -427,7 +430,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         current = self.view.substr(sublime.Region(obj.start, obj.end))
 
         # Store color in normal and generic format.
-        template_vars['current_color'] = util.html_encode(current)
+        template_vars['current_color'] = "`#!color-helper {}`".format(current)
         template_vars['generic_color'] = color.to_string(**util.COLOR_FULL_PREC)
         template_vars['mark_color'] = color.to_string(**util.COLOR)
         template_vars['edit'] = '__colormod__' if self.edit_mode == "st-colormod" else '__edit__'
@@ -489,10 +492,11 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             for output in self.output_options:
                 params = output.get("format", {})
                 value = custom.convert(output["space"]).to_string(**params)
+                code = "`#!color-helper {}`".format(value)
                 outputs.append(
                     (
                         util.encode_color(value),
-                        util.html_encode(value)
+                        code
                     )
                 )
 
@@ -564,12 +568,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
             ),
-            "back_target": "__info__" if (not self.no_info and not delete) or color else "__palettes__",
+            "back_target": "__info__" if not delete or color else "__close__",
             "show_delete_ui": delete,
             "show_new_ui": bool(color),
             "show_favorite_palette": show_favorite_palette,
-            "show_global_palettes": show_global_palettes and len(palettes),
-            "show_project_palettes": show_project_palettes and len(project_palettes)
+            "show_global_palettes": show_global_palettes,
+            "show_project_palettes": show_project_palettes
         }
 
         if show_favorite_palette:

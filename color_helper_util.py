@@ -22,13 +22,21 @@ FULL_PREC = {"fit": False, "precision": -1}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb")
 
+lang_map = {
+    # `'name': (('mapping_alias',), ('tmLanguage_or_sublime-syntax file',))`
+    'color-helper': (('color-helper',), ('ColorHelper/color-helper-colors',))
+}
+
 FRONTMATTER = mdpopups.format_frontmatter(
     {
         "allow_code_wrap": False,
+        "language_map": lang_map,
         "markdown_extensions": [
             "markdown.extensions.admonition",
             "markdown.extensions.attr_list",
             "markdown.extensions.def_list",
+            "markdown.extensions.md_in_html",
+            "pymdownx.inlinehilite",
             "pymdownx.betterem",
             "pymdownx.magiclink"
         ]
@@ -39,9 +47,53 @@ LINE_HEIGHT_WORKAROUND = platform.system() == "Windows"
 
 ADD_CSS = dedent(
     '''
-    div.color-helper { margin: 0; padding: 0.5rem; }
+    html.light {
+      --ch-button-color: color(var(--mdpopups-bg) blend(black 85%));
+    }
+    html.dark {
+      --ch-button-color: color(var(--mdpopups-bg) blend(white 85%));
+    }
+    div.color-helper { margin: 0; padding: 0rem; }
+
     .color-helper .small { font-size: 0.8rem; }
     .color-helper .alpha { text-decoration: underline; }
+
+    .color-helper div.menu a {
+        color: var(--foreground);
+        text-decoration: none;
+    }
+    .color-helper div.menu {
+        padding: 0.5rem 0.5rem 0 0.5rem;
+        margin: 0;
+        background-color:  var(--ch-button-color);
+    }
+    .color-helper div.menu a {
+        padding: 0.25rem;
+    }
+    .color-helper div.panel {
+        padding: 0.5rem;
+    }
+
+    .color-helper code.highlight {
+        font-size: inherit;
+    }
+
+    .color-helper a.button {
+        display: inline-block;
+        padding: 0.25rem;
+        color:  var(--foreground);
+        background-color: var(--ch-button-color);
+        border-radius: 0.25rem;
+        text-decoration: none;
+    }
+
+    .color-helper hr {
+        border-color: var(--ch-button-color);
+    }
+
+    .color-helper .center {
+        text-align: center;
+    }
     '''
 )
 
