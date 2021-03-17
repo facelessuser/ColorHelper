@@ -2,6 +2,7 @@
 import sublime
 import subprocess
 from coloraide import Color
+import time
 
 MAC_CHOOSE_COLOR = '''\
 tell current application to choose color default color {{{}, {}, {}}}
@@ -127,6 +128,9 @@ class WinPick(_ColorPicker):
         picker.lpCustColors = self.get_win_pick_colors()
         picker.Flags = CC_SOLIDCOLOR | CC_FULLOPEN | CC_RGBINIT
         picker.rgbResult = ctypes.c_uint32(bgr)
+
+        # Try to avoid focus conflicts
+        time.sleep(0.2)
 
         if ChooseColorW(ctypes.byref(picker)):
             hx = '{:06x}'.format(picker.rgbResult)
