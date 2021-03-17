@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.1.2
+
+- **FIX**: In color picker, values in the hue channel should clamp at 359 not 360 as 360 wraps to 0.
+
 ## 3.1.1
 
 - **FIX**: Fix Windows color picker not processing color properly.

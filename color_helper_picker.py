@@ -222,7 +222,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             "green": (0, 255),
             "blue": (0, 255),
             "alpha": (0, 100),
-            "hue": (0, 360),
+            "hue": (0, 359),
             "saturation": (0, 100),
             "lightness": (0, 100),
             "whiteness": (0, 100),
