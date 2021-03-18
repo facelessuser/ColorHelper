@@ -48,6 +48,9 @@ code {{
   font-family: {font};
   padding: 0 0.25em;
 }}
+a {{
+    color: inherit;
+}}
 div {{
   font-family: {font};
   display: block;

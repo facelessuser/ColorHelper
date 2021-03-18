@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.1.3
+
+- **FIX**: A few fixes to new style.
+
 ## 3.1.2
 
 - **FIX**: Improved visuals for popups and `TextInputHandlers`. Improve consistency  
