@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.1.4
+
+- **FIX** Fix `tmTheme` handling of compressed hex colors.
+
 ## 3.1.3
 
 - **FIX**: A few fixes to new style.

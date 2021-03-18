@@ -5,6 +5,8 @@ from coloraide import util
 import copy
 import re
 
+RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**parse.COLOR_PARTS))
+
 name2hex_map = {
     "black": "#000000",
     "aliceblue": "#f0f8ff",
@@ -685,7 +687,7 @@ class SRGBX11(SRGB):
         r"""(?xi)
         (?:
             # Hex syntax
-            \#(?:{hex}{{6}}(?:{hex}{{2}})?)\b |
+            \#(?:{hex}{{6}}(?:{hex}{{2}})?|{hex}{{3}}(?:{hex})?)\b |
             # Names
             \b(?<!\#)[a-z]{{3,}}(?!\()\b
         )
@@ -702,35 +704,40 @@ class SRGBX11(SRGB):
         value = ''
         a = util.no_nan(self.alpha)
         alpha = alpha is not False and (alpha is True or a < 1.0)
-        coords = util.no_nan(self.fit_coords())
         hex_upper = options.get("hex_upper", False)
+        compress = options.get("compress", False)
+        coords = util.no_nan(self.fit_coords())
+
+        template = "#{:02x}{:02x}{:02x}{:02x}" if alpha else "#{:02x}{:02x}{:02x}"
+        if hex_upper:
+            template = template.upper()
 
         if alpha:
-            template = "#{:02x}{:02x}{:02x}{:02x}"
-            if hex_upper:
-                template = template.upper()
-            value = template.format(
+            h = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0)),
-                int(util.round_half_up(a * 255.0))
+                int(util.round_half_up(util.no_nan(self.alpha) * 255.0))
             )
         else:
-            template = "#{:02x}{:02x}{:02x}"
-            if hex_upper:
-                template = template.upper()
-            value = template.format(
+            h = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),
                 int(util.round_half_up(coords[1] * 255.0)),
                 int(util.round_half_up(coords[2] * 255.0))
             )
 
+        value = h
+        if compress:
+            m = RE_COMPRESS.match(value)
+            if m:
+                value = m.expand(r"#\1\2\3\4") if alpha else m.expand(r"#\1\2\3")
+
         if options.get("names"):
-            length = len(value) - 1
+            length = len(h) - 1
             index = int(length / 4)
-            if length in (8, 4) and value[-index:].lower() == ("f" * index):
-                value = value[:-index]
-            n = hex2name(value)
+            if length in (8, 4) and h[-index:].lower() == ("f" * index):
+                h = h[:-index]
+            n = hex2name(h)
             if n is not None:
                 value = n
 
@@ -749,14 +756,26 @@ class SRGBX11(SRGB):
     def split_channels(cls, color):
         """Split channels."""
 
-        return cls.null_adjust(
-            (
-                cls.translate_channel(0, "#" + color[1:3]),
-                cls.translate_channel(1, "#" + color[3:5]),
-                cls.translate_channel(2, "#" + color[5:7]),
-                cls.translate_channel(-1, "#" + color[7:]) if len(color) == 9 else 1.0
+        m = cls.HEX_MATCH.match(color)
+        assert(m is not None)
+        if m.group(1):
+            return cls.null_adjust(
+                (
+                    cls.translate_channel(0, "#" + color[1:3]),
+                    cls.translate_channel(1, "#" + color[3:5]),
+                    cls.translate_channel(2, "#" + color[5:7]),
+                    cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
+                )
             )
-        )
+        else:
+            return cls.null_adjust(
+                (
+                    cls.translate_channel(0, "#" + color[1] * 2),
+                    cls.translate_channel(1, "#" + color[2] * 2),
+                    cls.translate_channel(2, "#" + color[3] * 2),
+                    cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
+                )
+            )
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):
