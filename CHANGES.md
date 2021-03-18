@@ -2,7 +2,7 @@
 
 ## 3.1.4
 
-- **FIX** Fix `tmTheme` handling of compressed hex colors.
+- **FIX**: Fix `tmTheme` handling of compressed hex colors.
 
 ## 3.1.3
 
