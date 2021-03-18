@@ -93,6 +93,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif href.startswith('__convert__'):
             parts = href.split(':', 1)
             self.insert_color(util.decode_color(parts[1]))
+        elif href.startswith('__copy__'):
+            parts = href.split(':', 1)
+            sublime.set_clipboard(util.decode_color(parts[1]))
+            self.view.hide_popup()
         elif href == '__close__':
             self.view.hide_popup()
             return
@@ -568,7 +572,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
             ),
-            "back_target": "__info__" if not delete or color else "__close__",
+            "back_target": "__info__" if not delete or color else "__palettes__",
             "show_delete_ui": delete,
             "show_new_ui": bool(color),
             "show_favorite_palette": show_favorite_palette,

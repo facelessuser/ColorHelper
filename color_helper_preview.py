@@ -384,7 +384,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     color = Color(obj.color)
                     title = ''
                     if not color.in_gamut("srgb"):
-                        title = ' title="Out of gamut"'
+                        title = ' title="Preview out of gamut"'
                         if self.show_out_of_gamut_preview:
                             srgb = color.convert("srgb", fit=True)
                             preview1 = srgb.to_string(**util.HEX_NA)

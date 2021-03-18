@@ -56,16 +56,17 @@ ADD_CSS = dedent(
     div.color-helper { margin: 0; padding: 0rem; }
 
     .color-helper .small { font-size: 0.8rem; }
-    .color-helper .alpha { text-decoration: underline; }
+    .color-helper a { text-decoration: none; }
 
     .color-helper div.menu a {
-        color: var(--foreground);
-        text-decoration: none;
+        line-height: 0.8rem;
+        font-size: 0.8rem;
+        color: var(--mdpopups-fg);
     }
     .color-helper div.menu {
         padding: 0.5rem 0.5rem 0 0.5rem;
         margin: 0;
-        background-color:  var(--ch-button-color);
+        background-color: var(--ch-button-color);
     }
     .color-helper div.menu a {
         padding: 0.25rem;
@@ -78,13 +79,21 @@ ADD_CSS = dedent(
         font-size: inherit;
     }
 
+    .color-helper .color-value {
+        line-height: 1.5rem;
+        font-size: 1.5rem;
+    }
+
+    .color-helper img {
+        position: relative;
+        top: 2rem;
+    }
+
     .color-helper a.button {
-        display: inline-block;
-        padding: 0.25rem;
-        color:  var(--foreground);
+        padding: 0.15rem 0.25rem;
+        color:  var(--mdpopups-fg);
         background-color: var(--ch-button-color);
         border-radius: 0.25rem;
-        text-decoration: none;
     }
 
     .color-helper hr {
@@ -93,6 +102,17 @@ ADD_CSS = dedent(
 
     .color-helper .center {
         text-align: center;
+    }
+
+    .color-helper a.transparent {
+        background-color: transparent;
+    }
+
+    .color-helper div.menu a.close {
+        background-color: var(--mdpopups-fg);
+        padding: 0.05rem 0.25rem;
+        color: var(--mdpopups-bg);
+        border-radius: 0.5rem;
     }
     '''
 )

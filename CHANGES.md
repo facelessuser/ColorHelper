@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 3.2.0
+
+- **NEW**: Convert popup now lets you copy a color or insert a color.
+- **NEW**: More tweaks to popup styles.
+- **FIX**: Make "Out of gamut" tooltip more clear that it is referring to the preview gamut.
+
 ## 3.1.4
 
 - **FIX**: Fix `tmTheme` handling of compressed hex colors.
