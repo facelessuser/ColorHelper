@@ -90,6 +90,8 @@ ADD_CSS = dedent(
     }
 
     .color-helper a.button {
+        font-size: 0.8rem;
+        line-height: 0.8rem;
         padding: 0.15rem 0.25rem;
         color:  var(--mdpopups-fg);
         background-color: var(--ch-button-color);

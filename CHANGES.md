@@ -4,6 +4,7 @@
 
 - **NEW**: Convert popup now lets you copy a color or insert a color.
 - **NEW**: More tweaks to popup styles.
+- **NEW**: Show current channel value in color picker's high resolution selector.
 - **FIX**: Make "Out of gamut" tooltip more clear that it is referring to the preview  
   gamut.
 - **FIX**: Don't save color in super high precision when adding to palettes.

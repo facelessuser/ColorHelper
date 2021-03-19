@@ -242,34 +242,37 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         color = self.color.clone()
+        current = color.get(color_filter)
+        if color_filter in ('red', 'green', 'blue'):
+            estimate = int(cutil.fmt_float(current * 255, 0))
+            current = '{}'.format(cutil.fmt_float(current * 255, 5))
+        elif color_filter in ('alpha',):
+            estimate = int(cutil.fmt_float(current * 100, 0))
+            current = '{}%'.format(cutil.fmt_float(current * 100, 5))
+        elif color_filter in ('whiteness', 'blackness', 'saturation', 'lightness'):
+            estimate = int(cutil.fmt_float(current, 0))
+            current = '{}%'.format(cutil.fmt_float(current, 5))
+        elif color_filter in ('hue',):
+            estimate = int(cutil.fmt_float(current, 0))
+            current = '{}\xb0'.format(cutil.fmt_float(current, 5))
+
         for x in range(minimum, maximum + 1):
-            if color_filter == 'red':
-                color.red = x / 255.0
-                label = str(x)
-            elif color_filter == 'green':
-                color.green = x / 255.0
-                label = str(x)
-            elif color_filter == 'blue':
-                color.blue = x / 255.0
-                label = str(x)
+            if x == estimate:
+                label = '{} <'
+            else:
+                label = '{}'
+            if color_filter in ('red', 'green', 'blue'):
+                color.set(color_filter, x / 255.0)
+                label = label.format(str(x))
             elif color_filter == 'alpha':
                 color.alpha = x / 100.0
-                label = "{:d}%".format(x)
+                label = label.format("{:d}%".format(x))
             elif color_filter == 'hue':
                 color.hue = x
-                label = "{:d}deg".format(x)
-            elif color_filter == 'saturation':
-                color.saturation = x
-                label = "{:d}%".format(x)
-            elif color_filter == 'lightness':
-                color.lightness = x
-                label = "{:d}%".format(x)
-            elif color_filter == "whiteness":
-                color.whiteness = x
-                label = "{:d}%".format(x)
-            elif color_filter == "blackness":
-                color.blackness = x
-                label = "{:d}%".format(x)
+                label = label.format("{:d}\xb0".format(x))
+            elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness'):
+                color.set(color_filter, x)
+                label = label.format("{:d}%".format(x))
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -282,6 +285,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     label
                 )
             )
+        self.template_vars['hires_color'] = '{} ({})'.format(color_filter, current)
         self.template_vars['channel_hires'] = ''.join(html)
 
     def get_channel(self, channel, label, minimum, maximum, color_filter):
@@ -534,7 +538,6 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Show high resolution channel picker
             self.template_vars['hires'] = True
             self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
-            self.template_vars['hires_color'] = hirespick
             self.get_hires_color_channel(hirespick)
         else:
             # Show the normal color picker of the specified space
