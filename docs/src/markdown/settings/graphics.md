@@ -5,12 +5,12 @@
 Coarse scaling of generated graphics sizes. Graphics in the tooltips look best large as Sublime slightly distorts
 images, but on different screens, some of the tooltips (especially the internal color picker) may be too large or too
 small. `graphic_size` can be used to control the size of these generated images.  Scaling is based off line height, and
-valid settings are `small` (1X), `medium` (1.5X), and `large` (2X). `medium` is the default.
+valid settings are `small` (0.75X), `medium` (1X), and `large` (1.25X). `medium` is the default.
 
 ```js
     // If the color picker is too big or too small, try playing with this.
     // This is a coarse control which scales image size relative to the
-    // approximate line height. small (1x), medium (1.5x), and large (2x).
+    // approximate line height. small (0.75x), medium (1x), and large (1.25x).
     // (small | medium | large)
     "graphic_size": "medium",
 ```

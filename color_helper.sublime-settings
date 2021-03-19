@@ -8,7 +8,7 @@
 
     // If the color picker is too big or too small, try playing with this.
     // This is a coarse control which scales image size relative to the
-    // approximate line height. small (1x), medium (1.5x), and large (2x).
+    // approximate line height. small (0.75x), medium (1x), and large (1.25x).
     // (small | medium | large)
     "graphic_size": "medium",
 
