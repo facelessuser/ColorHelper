@@ -104,8 +104,14 @@ ADD_CSS = dedent(
         text-align: center;
     }
 
-    .color-helper a.transparent {
-        background-color: transparent;
+    .color-helper a.fav {
+        padding: 0.15rem 0.25rem;
+        color:  var(--mdpopups-fg);
+    }
+
+    .color-helper a.fav-unselected {
+        padding: 0.15rem 0.25rem;
+        color:  color(var(--mdpopups-fg) a(25%));
     }
 
     .color-helper div.menu a.close {
