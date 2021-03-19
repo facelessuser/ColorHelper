@@ -10,8 +10,10 @@
 - **FIX**: Don't save color in super high precision when adding to palettes.
 - **FIX**: Palettes, especially favorites, are saved in too high a precision. This  
   causes favorits to match once you mark them.
-- **FIX**: Adjust scaling of images in popups. Medium should be a scale of 1, small a scale of 0.75, large a scale of
-  1.25. For greater control, use `graphic_scale`.
+- **FIX**: Adjust scaling of images in popups. Medium should be a scale of 1, small  
+  a scale of 0.75, large a scale of 1.25. For greater control, use `graphic_scale`.
+- **FIX**: Windows color picker should use `ctypes.pointer` not `ctypes.byref`. Fixes  
+  Windows color picker not working on ST4.
 
 ## 3.1.4
 

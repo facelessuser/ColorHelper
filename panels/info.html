@@ -29,7 +29,6 @@
 {%- endif %}
 
 ---
-
 [Convert](__insert__:{{plugin.generic_color}}:__info__){ .button}
 {{plugin.current_color}}
 {%- if plugin.show_favorite_menu and plugin.is_marked %}
@@ -37,5 +36,4 @@
 {%- elif plugin.show_favorite_menu and not plugin.is_marked %}
 [&#9829;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav .unselected}
 {%- endif %}
-
 </div>
