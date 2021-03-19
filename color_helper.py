@@ -555,7 +555,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def show_palettes(self, delete=False, color=None, update=False):
         """Show preview of all palettes."""
 
-        show_div = False
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
@@ -583,18 +582,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         if show_favorite_palette:
             favs = util.get_favs()
             if len(favs['colors']) or color:
-                show_div = True
                 template_vars['favorite_palette'] = (
                     self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
                 )
 
         if show_global_palettes and len(palettes):
-            if show_div:
-                template_vars['show_separator'] = True
-                show_div = False
             global_palettes = []
             for palette in palettes:
-                show_div = True
                 name = palette.get("name")
                 global_palettes.append(
                     self.format_palettes(
@@ -606,9 +600,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             template_vars['global_palettes'] = global_palettes
 
         if show_project_palettes and len(project_palettes):
-            if show_div:
-                show_div = False
-                template_vars['show_project_separator'] = True
             proj_palettes = []
             for palette in project_palettes:
                 name = palette.get("name")
