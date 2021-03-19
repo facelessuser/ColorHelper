@@ -24,6 +24,11 @@
 {%- else %}
 {{plugin.color_preview}}
 {%- endif %}
+{%- if plugin.show_favorite_menu and plugin.is_marked %}
+[&#9733;](__remove_fav__:{{plugin.mark_color}} "Remove from Favorites"){ .fav}
+{%- elif plugin.show_favorite_menu and not plugin.is_marked %}
+[&#9733;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav .unselected}
+{%- endif %}
 {%- if plugin.color_preview_message %}
 {{plugin.color_preview_message}}
 {%- endif %}
@@ -31,9 +36,4 @@
 ---
 [Convert](__insert__:{{plugin.generic_color}}:__info__){ .button}
 {{plugin.current_color}}
-{%- if plugin.show_favorite_menu and plugin.is_marked %}
-[&#9829;](__remove_fav__:{{plugin.mark_color}} "Remove from Favorites"){ .fav}
-{%- elif plugin.show_favorite_menu and not plugin.is_marked %}
-[&#9829;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav .unselected}
-{%- endif %}
 </div>
