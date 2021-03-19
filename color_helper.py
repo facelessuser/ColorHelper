@@ -471,7 +471,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         preview = self.get_preview(color)
         message = ''
         if preview.message:
-            message = '<p class="small">* {}</p>'.format(preview.message)
+            message = '<p class="comment">* {}</p>'.format(preview.message)
         template_vars['color_preview'] = (
             mdpopups.color_box(
                 [preview.preview1, preview.preview2], preview.border,

@@ -57,6 +57,11 @@ ADD_CSS = dedent(
 
     .color-helper .small { font-size: 0.8rem; }
     .color-helper a { text-decoration: none; }
+    .color-helper .comment {
+        font-size: 0.8rem;
+        font-style: italic;
+        color: color(var(--mdpopups-fg) a(50%));
+    }
 
     .color-helper div.menu a {
         line-height: 0.8rem;

@@ -4,14 +4,17 @@
 
 - **NEW**: Convert popup now lets you copy a color or insert a color.
 - **NEW**: More tweaks to popup styles.
+- **NEW**: Palette features, such as inserting a color from a palette and saving  
+  a color to a palette, are all available under the `palette` menu option from  
+  the main toolip. This consolidates options and makes the panel a bit more compact.
 - **NEW**: Show current channel value in color picker's high resolution selector.
 - **FIX**: Make "Out of gamut" tooltip more clear that it is referring to the preview  
   gamut.
-- **FIX**: Don't save color in super high precision when adding to palettes.
-- **FIX**: Palettes, especially favorites, are saved in too high a precision. This  
-  causes favorits to match once you mark them.
-- **FIX**: Adjust scaling of images in popups. Medium should be a scale of 1, small  
-  a scale of 0.75, large a scale of 1.25. For greater control, use `graphic_scale`.
+- **FIX**: Palettes, especially favorites, were saved in too high a precision. This  
+  caused the stored favorites to sometimes not match the original.
+- **FIX**: Adjust scaling of images in regards to the `graphic_size` option. Medium  
+  should be a scale of 1, small a scale of 0.75, large a scale of 1.25. For greater  
+  control, use `graphic_scale`.
 - **FIX**: Windows color picker should use `ctypes.pointer` not `ctypes.byref`. Fixes  
   Windows color picker not working on ST4.
 
