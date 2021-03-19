@@ -10,7 +10,7 @@
 [Palettes](__palettes__)
 {% endif -%}
 {% if plugin.show_global_palette_menu -%}
-[Save](__add_color__:{{plugin.generic_color}})
+[Save](__add_color__:{{plugin.mark_color}})
 {% endif -%}
 
 </div>
@@ -21,9 +21,9 @@
 
 {{plugin.current_color}}
 {% if plugin.show_favorite_menu and plugin.is_marked -%}
-[&#9829;](__remove_fav__:{{plugin.generic_color}} "Remove from Favorites"){ .button .right .transparent}
+[&#9829;](__remove_fav__:{{plugin.mark_color}} "Remove from Favorites"){ .fav}
 {% elif plugin.show_favorite_menu and not plugin.is_marked -%}
-[&#9825;](__add_fav__:{{plugin.generic_color}} "Save to Favorites"){ .button .right .transparent}
+[&#9829;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav-unselected}
 {%- endif %}
 </div>
 {% if plugin.click_color_picker %}
