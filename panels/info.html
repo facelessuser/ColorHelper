@@ -4,23 +4,14 @@
 {% if plugin.show_picker_menu -%}
 [Picker](__color_picker__:{{plugin.generic_color}})
 {% endif -%}
-[Tools](__tools__:{{plugin.edit_color}})
 {% if plugin.show_palette_menu -%}
 [Palettes](__palettes__)
 {% endif -%}
+[Tools](__tools__:{{plugin.edit_color}})
 
 </div>
 
 <div class="panel" markdown="1">
-
-<div class="color-value" markdown="1">
-
-{{plugin.current_color}}
-{% if plugin.show_favorite_menu and plugin.is_marked -%}
-[&#9829;](__remove_fav__:{{plugin.mark_color}} "Remove from Favorites"){ .fav}
-{% elif plugin.show_favorite_menu and not plugin.is_marked -%}
-[&#9829;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav .unselected}
-{%- endif %}
 
 {% if plugin.click_color_picker %}
 [{{plugin.color_preview}}](__color_picker__:{{plugin.generic_color}})
@@ -36,8 +27,15 @@
 {%- if plugin.color_preview_message %}
 {{plugin.color_preview_message}}
 {%- endif %}
-</div>
 
 ---
-[Convert](__insert__:{{plugin.generic_color}}:__info__){.button}
+
+[Convert](__insert__:{{plugin.generic_color}}:__info__){ .button}
+{{plugin.current_color}}
+{%- if plugin.show_favorite_menu and plugin.is_marked %}
+[&#9829;](__remove_fav__:{{plugin.mark_color}} "Remove from Favorites"){ .fav}
+{%- elif plugin.show_favorite_menu and not plugin.is_marked %}
+[&#9829;](__add_fav__:{{plugin.mark_color}} "Save to Favorites"){ .fav .unselected}
+{%- endif %}
+
 </div>

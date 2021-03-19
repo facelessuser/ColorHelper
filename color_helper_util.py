@@ -79,16 +79,6 @@ ADD_CSS = dedent(
         font-size: inherit;
     }
 
-    .color-helper .color-value {
-        line-height: 1.5rem;
-        font-size: 1.5rem;
-    }
-
-    .color-helper img {
-        position: relative;
-        top: 2rem;
-    }
-
     .color-helper a.button {
         font-size: 0.8rem;
         line-height: 0.8rem;
@@ -107,8 +97,6 @@ ADD_CSS = dedent(
     }
 
     .color-helper a.fav {
-        font-size: 1.5rem;
-        line-height: 1.5rem;
         padding: 0.15rem 0.25rem;
         color:  var(--mdpopups-fg);
     }

@@ -27,12 +27,18 @@ Click the palette to delete.
 
 Click to add to a palette.
 
+{%- else %}
+
+Click to view a palette.
+
 {%- endif %}
 {%- if plugin.show_favorite_palette %}
-  {%- if plugin.show_delete_ui or plugin.show_new_ui%}
+
+  {%- if plugin.favorite_palette %}
 
 ---
-  {% endif %}
+
+  {%- endif %}
 
 {{plugin.favorite_palette}}
 {%- endif %}
