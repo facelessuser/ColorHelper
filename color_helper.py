@@ -15,7 +15,7 @@ from .color_helper_mixin import _ColorMixin
 
 __pc_name__ = "ColorHelper"
 
-PREVIEW_SCALE = 8
+PREVIEW_SCALE = 3
 PALETTE_SCALE_X = 6
 PALETTE_SCALE_Y = 2
 BORDER_SIZE = 1
@@ -555,6 +555,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def show_palettes(self, delete=False, color=None, update=False):
         """Show preview of all palettes."""
 
+        cursor_color = self.get_cursor_color()
+
         s = sublime.load_settings('color_helper.sublime-settings')
         show_global_palettes = s.get('enable_global_user_palettes', True)
         show_project_palettes = s.get('enable_project_user_palettes', True)
@@ -567,11 +569,13 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         template_vars = {
             "color": (Color(color if color else '#ffffffff').to_string(**util.DEFAULT)),
+            "show_add_option": cursor_color is not None,
+            "mark_color": cursor_color.color.to_string(**util.COLOR) if cursor_color is not None else '',
             "show_picker_menu": show_picker,
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
             ),
-            "back_target": "__info__" if not delete or color else "__palettes__",
+            "back_target": "__info__" if not delete and color is None else "__palettes__",
             "show_delete_ui": delete,
             "show_new_ui": bool(color),
             "show_favorite_palette": show_favorite_palette,

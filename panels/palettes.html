@@ -2,7 +2,11 @@
 [&#215;]({{plugin.back_target}}){.close}
 {%- if plugin.show_delete_menu %}
 [Delete](__delete__palettes__)
-{%- elif plugin.show_new_ui and (plugin.show_project_palettes or plugin.show_global_palettes) %}
+{%- endif %}
+{%- if plugin.show_add_option and not plugin.show_new_ui %}
+[Save Current Color](__add_color__:{{plugin.mark_color}})
+{%- endif %}
+{%- if plugin.show_new_ui and (plugin.show_project_palettes or plugin.show_global_palettes) %}
   {%- if plugin.show_global_palettes %}
 [New Palette](__create_palette__:__global__:{{plugin.color}})
   {%- endif %}

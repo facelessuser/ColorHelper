@@ -107,20 +107,21 @@ ADD_CSS = dedent(
     }
 
     .color-helper a.fav {
+        font-size: 1.5rem;
+        line-height: 1.5rem;
         padding: 0.15rem 0.25rem;
         color:  var(--mdpopups-fg);
     }
 
-    .color-helper a.fav-unselected {
-        padding: 0.15rem 0.25rem;
+    .color-helper a.fav.unselected {
         color:  color(var(--mdpopups-fg) a(25%));
     }
 
     .color-helper div.menu a.close {
         background-color: var(--mdpopups-fg);
-        padding: 0.05rem 0.25rem;
+        padding: 0.15rem 0.25rem;
         color: var(--mdpopups-bg);
-        border-radius: 0.5rem;
+        border-radius: 0.25rem;
     }
     '''
 )
