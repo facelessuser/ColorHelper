@@ -436,7 +436,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Store color in normal and generic format.
         template_vars['current_color'] = "`#!color-helper {}`".format(current)
         template_vars['generic_color'] = color.to_string(**util.COLOR_FULL_PREC)
-        template_vars['mark_color'] = color.to_string(**util.COLOR)
         template_vars['edit'] = '__colormod__' if self.edit_mode == "st-colormod" else '__edit__'
 
         show_global_palettes = s.get('enable_global_user_palettes', True)
@@ -466,7 +465,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             template_vars['show_global_palette_menu'] = True
         if show_favorite_palette:
             template_vars['show_favorite_menu'] = True
-            template_vars['is_marked'] = color.to_string(**util.COLOR) in util.get_favs()['colors']
+            template_vars['is_marked'] = color.to_string(**util.COLOR_FULL_PREC) in util.get_favs()['colors']
 
         preview = self.get_preview(color)
         message = ''
@@ -570,7 +569,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         template_vars = {
             "color": (Color(color if color else '#ffffffff').to_string(**util.DEFAULT)),
             "show_add_option": cursor_color is not None,
-            "mark_color": cursor_color.color.to_string(**util.COLOR) if cursor_color is not None else '',
+            "mark_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
             "show_picker_menu": show_picker,
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)

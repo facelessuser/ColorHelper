@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.2.2
+
+- **FIX**: Increase precision of palettes to properly match and store any colors.
+
 ## 3.2.1
 
 - **FIX**: Ensure adding a color to a palette isn't shown when deleting palettes.
