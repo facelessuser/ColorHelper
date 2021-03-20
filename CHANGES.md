@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.2.1
+
+- **FIX**: Ensure adding a color to a palette isn't shown when deleting palettes.
+
 ## 3.2.0
 
 - **NEW**: Convert popup now lets you copy a color or insert a color.
