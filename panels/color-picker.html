@@ -1,10 +1,8 @@
 <div class="menu" markdown="1">
-
+[&#215;]({{plugin.cancel}}){.close}
 {%- if plugin.picker %}
- [CSS color names](__colornames__){: .color-helper .small}
- [Tools](__tools__){: .color-helper .small}
-{%- else %}
-<br>
+ [CSS Color Names](__colornames__)
+ [Tools](__tools__)
 {%- endif %}
 
 </div>
@@ -17,28 +15,30 @@
 
 {{plugin.channel_names}}
 
----
-
-[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
-
 {%- elif plugin.hires %}
 
-## {{plugin.hires_color}}
+{{plugin.hires_color}}
 
 {{plugin.channel_hires}}
 
----
+{% else %}
 
-[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
-
-{%- else %}
+<div class="center" markdown="1">
 
 {{plugin.color_picker}}
 {{plugin.current_color}}
 
 ---
 
-### {{plugin.color_display}} { .center}
+</div>
+
+<div class="color-value center" markdown="1">
+
+{{plugin.color_display}}
+
+</div>
+
+<div class="center" markdown="1">
 
 {{plugin.channel_1}}
 
@@ -48,14 +48,15 @@
 
 {{plugin.channel_alpha}}
 
-[sRGB](__space__:srgb){: .color-helper .small .button} 
-[HSL](__space__:hsl){: .color-helper .small .button} 
-[HWB](__space__:hwb){: .color-helper .small .button} 
+[sRGB](__space__:srgb){: .button} 
+[HSL](__space__:hsl){: .button} 
+[HWB](__space__:hwb){: .button}
+
+</div>
 
 ---
 
-[Select](__insert__:{{plugin.color_value}}){: .small .button}
-[Cancel]({{plugin.cancel}}){: .color-helper .small .button}
+[Select](__insert__:{{plugin.color_value}}){: .button}
 
 {%- endif %}
 

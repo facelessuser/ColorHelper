@@ -1,17 +1,18 @@
 <div class="menu" markdown="1">
-
-{% if plugin.show_delete_menu -%}
-[Delete](__delete__palettes__){: .small}
-
-{% elif plugin.show_new_ui and (plugin.show_project_palettes or plugin.show_global_palettes) %}
+[&#215;]({{plugin.back_target}}){.close}
+{%- if plugin.show_delete_menu %}
+[Delete](__delete__palettes__)
+{%- endif %}
+{%- if plugin.show_add_option and not plugin.show_new_ui %}
+[Save Current Color](__add_color__:{{plugin.mark_color}})
+{%- endif %}
+{%- if plugin.show_new_ui and (plugin.show_project_palettes or plugin.show_global_palettes) %}
   {%- if plugin.show_global_palettes %}
-[New Palette](__create_palette__:__global__:{{plugin.color}}){ .small}
+[New Palette](__create_palette__:__global__:{{plugin.color}})
   {%- endif %}
   {%- if plugin.show_project_palettes %}
-[New Project Palette](__create_palette__:__project__:{{plugin.color}}){ .small}
+[New Project Palette](__create_palette__:__project__:{{plugin.color}})
   {%- endif %}
-{% else %}
-<br>
 {% endif %}
 
 </div>
@@ -26,12 +27,18 @@ Click the palette to delete.
 
 Click to add to a palette.
 
+{%- else %}
+
+Click to view a palette.
+
 {%- endif %}
 {%- if plugin.show_favorite_palette %}
-  {%- if plugin.show_delete_ui or plugin.show_new_ui%}
+
+  {%- if plugin.favorite_palette %}
 
 ---
-  {% endif %}
+
+  {%- endif %}
 
 {{plugin.favorite_palette}}
 {%- endif %}
@@ -49,9 +56,5 @@ Click to add to a palette.
 {{palette}}
 
 {% endfor %}
-
----
-
-[Cancel]({{plugin.back_target}}){: .small .button}
 
 </div> 

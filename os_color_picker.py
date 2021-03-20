@@ -129,10 +129,8 @@ class WinPick(_ColorPicker):
         picker.Flags = CC_SOLIDCOLOR | CC_FULLOPEN | CC_RGBINIT
         picker.rgbResult = ctypes.c_uint32(bgr)
 
-        # Try to avoid focus conflicts
-        time.sleep(0.2)
-
-        if ChooseColorW(ctypes.byref(picker)):
+        time.sleep(1)
+        if ChooseColorW(ctypes.pointer(picker)):
             hx = '{:06x}'.format(picker.rgbResult)
             color = Color('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16)))
             self.color = color

@@ -56,16 +56,22 @@ ADD_CSS = dedent(
     div.color-helper { margin: 0; padding: 0rem; }
 
     .color-helper .small { font-size: 0.8rem; }
-    .color-helper .alpha { text-decoration: underline; }
+    .color-helper a { text-decoration: none; }
+    .color-helper .comment {
+        font-size: 0.8rem;
+        font-style: italic;
+        color: color(var(--mdpopups-fg) a(50%));
+    }
 
     .color-helper div.menu a {
-        color: var(--foreground);
-        text-decoration: none;
+        line-height: 0.8rem;
+        font-size: 0.8rem;
+        color: var(--mdpopups-fg);
     }
     .color-helper div.menu {
         padding: 0.5rem 0.5rem 0 0.5rem;
         margin: 0;
-        background-color:  var(--ch-button-color);
+        background-color: var(--ch-button-color);
     }
     .color-helper div.menu a {
         padding: 0.25rem;
@@ -79,12 +85,12 @@ ADD_CSS = dedent(
     }
 
     .color-helper a.button {
-        display: inline-block;
-        padding: 0.25rem;
-        color:  var(--foreground);
+        font-size: 0.8rem;
+        line-height: 0.8rem;
+        padding: 0.15rem 0.25rem;
+        color:  var(--mdpopups-fg);
         background-color: var(--ch-button-color);
         border-radius: 0.25rem;
-        text-decoration: none;
     }
 
     .color-helper hr {
@@ -93,6 +99,24 @@ ADD_CSS = dedent(
 
     .color-helper .center {
         text-align: center;
+    }
+
+    .color-helper a.fav {
+        font-size: 2rem;
+        line-height: 2rem;
+        padding: 0.15rem 0.25rem;
+        color:  var(--mdpopups-fg);
+    }
+
+    .color-helper a.fav.unselected {
+        color:  color(var(--mdpopups-fg) a(25%));
+    }
+
+    .color-helper div.menu a.close {
+        background-color: var(--mdpopups-fg);
+        padding: 0.1rem 0.25rem;
+        color: var(--mdpopups-bg);
+        border-radius: 0.25rem;
     }
     '''
 )

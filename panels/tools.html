@@ -1,18 +1,14 @@
 <div class="menu" markdown="1">
 
-<br>
+[&#215;]({{plugin.back_target}}){.close}
 
 </div>
 
 <div class="panel" markdown="1">
 
 {% for name, tool in plugin.tools %}
-[&gt;]({{tool}}){: .small .button} {{name}} 
+[Open]({{tool}}){ .button} {{name}} 
 
 {% endfor %}
-
----
-
-[Cancel]({{plugin.back_target}}){: .small .button}
 
 </div>

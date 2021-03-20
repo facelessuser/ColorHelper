@@ -16,6 +16,8 @@ from .color_helper_mixin import _ColorMixin
 from .color_helper_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA
 import copy
 
+SUBLIME_CENTER = int(sublime.version()) >= 4085
+
 color_map = None
 color_map_size = False
 line_height = None
@@ -97,7 +99,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             lfac = 8.0
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                html_colors.append([self.get_spacer(width=5)])
+                if not SUBLIME_CENTER:
+                    html_colors.append([self.get_spacer(width=5)])
+                else:
+                    html_colors.append([])
                 for x in range(0, 15):
                     value = color.convert("srgb").to_string(**HEX)
                     kwargs = {
@@ -180,9 +185,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Show a preview of the current color.
         check_size = self.check_size(self.height * 2)
         preview = self.color.convert("srgb")
+        if not SUBLIME_CENTER:
+            spacer = self.get_spacer(width=5)
+        else:
+            spacer = ''
         html = (
             '<span class="current-color">{}</span>'.format(
-                self.get_spacer(width=5) +
+                spacer +
                 mdpopups.color_box(
                     [preview.to_string(**HEX_NA), preview.to_string(**HEX)],
                     self.default_border,
@@ -233,34 +242,37 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         color = self.color.clone()
+        current = color.get(color_filter)
+        if color_filter in ('red', 'green', 'blue'):
+            estimate = int(cutil.fmt_float(current * 255, 0))
+            current = '{}'.format(cutil.fmt_float(current * 255, 5))
+        elif color_filter in ('alpha',):
+            estimate = int(cutil.fmt_float(current * 100, 0))
+            current = '{}%'.format(cutil.fmt_float(current * 100, 5))
+        elif color_filter in ('whiteness', 'blackness', 'saturation', 'lightness'):
+            estimate = int(cutil.fmt_float(current, 0))
+            current = '{}%'.format(cutil.fmt_float(current, 5))
+        elif color_filter in ('hue',):
+            estimate = int(cutil.fmt_float(current, 0))
+            current = '{}\xb0'.format(cutil.fmt_float(current, 5))
+
         for x in range(minimum, maximum + 1):
-            if color_filter == 'red':
-                color.red = x / 255.0
-                label = str(x)
-            elif color_filter == 'green':
-                color.green = x / 255.0
-                label = str(x)
-            elif color_filter == 'blue':
-                color.blue = x / 255.0
-                label = str(x)
+            if x == estimate:
+                label = '{} <'
+            else:
+                label = '{}'
+            if color_filter in ('red', 'green', 'blue'):
+                color.set(color_filter, x / 255.0)
+                label = label.format(str(x))
             elif color_filter == 'alpha':
                 color.alpha = x / 100.0
-                label = "{:d}%".format(x)
+                label = label.format("{:d}%".format(x))
             elif color_filter == 'hue':
                 color.hue = x
-                label = "{:d}deg".format(x)
-            elif color_filter == 'saturation':
-                color.saturation = x
-                label = "{:d}%".format(x)
-            elif color_filter == 'lightness':
-                color.lightness = x
-                label = "{:d}%".format(x)
-            elif color_filter == "whiteness":
-                color.whiteness = x
-                label = "{:d}%".format(x)
-            elif color_filter == "blackness":
-                color.blackness = x
-                label = "{:d}%".format(x)
+                label = label.format("{:d}\xb0".format(x))
+            elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness'):
+                color.set(color_filter, x)
+                label = label.format("{:d}%".format(x))
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -273,6 +285,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     label
                 )
             )
+        self.template_vars['hires_color'] = '{} ({})'.format(color_filter, current)
         self.template_vars['channel_hires'] = ''.join(html)
 
     def get_channel(self, channel, label, minimum, maximum, color_filter):
@@ -525,7 +538,6 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Show high resolution channel picker
             self.template_vars['hires'] = True
             self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
-            self.template_vars['hires_color'] = hirespick
             self.get_hires_color_channel(hirespick)
         else:
             # Show the normal color picker of the specified space
@@ -554,6 +566,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 switch = 'srgb'
 
+            self.template_vars['color_full'] = self.color.to_string(**COLOR_FULL_PREC)
             self.template_vars['color_display'] = "`#!color-helper {}`".format(self.color.to_string(**DEFAULT))
             self.template_vars['color_value'] = self.color.to_string(**DEFAULT)
             self.template_vars['color_switch'] = switch

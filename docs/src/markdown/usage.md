@@ -33,7 +33,7 @@ If gamut mapping is disabled, the color will be displayed in such a way as to in
 ## Color Info
 
 The Color Info Panel is the main panel. It shows a large color preview and gives access to various tools, such as
-conversions, access to a color picker, etc. You can "mark" colors and add them to your favorites, or save them away
+conversions, access to a color picker, etc. You can :star: colors and add them to your favorites, or save them away
 in other [palettes](#palette-panel) than can be accessed later.
 
 ![color info](images/color_info.png)
@@ -41,7 +41,7 @@ in other [palettes](#palette-panel) than can be accessed later.
 ## Color Picker
 
 !!! tip "Native Color Picker?"
-    Some people prefer native color pickers, if you'd like to use your operating systems built-in color picker,
+    Some people prefer native color pickers, if you'd like to use your operating system's built-in color picker,
     see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
 
 The internal color picker can be launched from the view's context menu, the command palette, or from the
@@ -53,7 +53,7 @@ toggle between altering the color in the sRGB, HSL, or HWB color space.
 
 The color channels are coarse, but can generally allow you to get close to a color that you like.  As you select colors
 in the channels the selections will shift revealing more selections until the bounds of the color channel are reached.
-If you need finer selections, you can click the label to the left and a scrollable tooltip with much finer selections
+If you need finer selections, you can click the button to the left and a scrollable tooltip with much finer selections
 will appear so that you can select the best suited value.
 
 ![fine channel picker](images/fine_channel_picker.png)
@@ -136,8 +136,11 @@ When clicking a palette, all the colors within it will be displayed.
 
 ![Colors](images/colors.png)
 
-Colors can also be quickly saved away or removed from the global "Favorites" palette by selecting `mark` or `unmark`
-from the main panel.
+You can add the current color to any palette you choose, or insert a color from one of your palettes into the active
+file.
+
+While you can manually save or delete colors from "Favorites", colors can also be quickly saved away or removed from the
+global "Favorites" palette by staring or un-staring a color from the main panel.
 
 Creation and deletion of palettes and colors can be managed directly from the ColorHelper tooltip panels.
 
