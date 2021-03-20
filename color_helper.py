@@ -569,7 +569,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         template_vars = {
             "color": (Color(color if color else '#ffffffff').to_string(**util.DEFAULT)),
             "show_add_option": cursor_color is not None,
-            "mark_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
+            "generic_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
             "show_picker_menu": show_picker,
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
