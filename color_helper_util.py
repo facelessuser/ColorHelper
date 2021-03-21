@@ -78,6 +78,12 @@ ADD_CSS = dedent(
     }
     .color-helper div.panel {
         padding: 0.5rem;
+        margin: 0;
+    }
+
+    .color-helper div.buttons {
+        padding: 0 0.5rem;
+        padding-top: 0;
     }
 
     .color-helper code.highlight {

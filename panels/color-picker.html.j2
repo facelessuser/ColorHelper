@@ -5,13 +5,9 @@
 </div>
 
 <div class="panel center" markdown="1">
+{% if plugin.box_control %}
 {{plugin.color_picker}}
-{{plugin.current_color}}
-
----
-
-{{plugin.color_display}}
-
+{% else %}
 {{plugin.channel_1}}
 
 {{plugin.channel_2}}
@@ -19,10 +15,21 @@
 {{plugin.channel_3}}
 
 {{plugin.channel_alpha}}
+{% endif %}
+
+[Box](__controls__:box){.button} [Sliders](__controls__:sliders){.button}
+
+---
+
+{{plugin.current_color}}
+
+{{plugin.color_display}}
 
 [sRGB](__space__:srgb){: .button} [HSL](__space__:hsl){: .button} [HWB](__space__:hwb){: .button}
 
 ---
+</div>
 
-[Select](__insert__:{{plugin.color_value}}){: .button}
+<div class="panel buttons" markdown="1">
+[Select](__insert__:{{plugin.color_value}}){: .button .left}
 </div>

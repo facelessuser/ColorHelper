@@ -1,5 +1,19 @@
 # ColorHelper
 
+## 3.3.0
+
+- **NEW**: Color picker channels only show 10 steps back or forward at a given  
+  time instead of 12 and are always perfectly scaled between 0% - 100%.
+- **NEW**: Color box now shows hue on x-axis and saturation on y-axis. It also  
+  replaces the gray scale bar with a lightness bar.
+- **NEW**: Color picker now is more compact and hides the sliders unless the  
+  user switches to slider mode. In that case, the color box will be hidden.
+- **NEW**: Only the color picker's alpha channel will show a representation of  
+  transparency. This allows the user to clearly see the color when adjusting  
+  other channels.
+- **NEW**: Color box in the color picker now shows an approximate indicator of  
+  where the current color falls on the color box.
+
 ## 3.2.2
 
 - **FIX**: Increase precision of palettes to properly match and store any colors.
