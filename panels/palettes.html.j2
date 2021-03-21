@@ -13,12 +13,10 @@
   {%- if plugin.show_project_palettes %}
 [New Project Palette](__create_palette__:__project__:{{plugin.color}})
   {%- endif %}
-{% endif %}
-
+{%- endif %}
 </div>
 
 <div class="panel" markdown="1">
-
 {%- if plugin.show_delete_ui %}
 
 Click the palette to delete.
@@ -32,6 +30,7 @@ Click to add to a palette.
 Click to view a palette.
 
 {%- endif %}
+
 {%- if plugin.show_favorite_palette %}
 
   {%- if plugin.favorite_palette %}
@@ -56,5 +55,4 @@ Click to view a palette.
 {{palette}}
 
 {% endfor %}
-
-</div> 
+</div>

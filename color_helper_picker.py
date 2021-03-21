@@ -407,7 +407,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         mdpopups.show_popup(
             self.view,
-            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html'),
+            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html.j2'),
             wrapper_class="color-helper content",
             css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
             on_navigate=self.handle_href,
@@ -530,16 +530,19 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         # Show the appropriate dialog
         if colornames:
+            template = 'Packages/ColorHelper/panels/color-picker-names.html.j2'
             # Show color name picker
             self.template_vars['color_names'] = True
             self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
             self.get_css_color_names()
         elif hirespick:
+            template = 'Packages/ColorHelper/panels/color-picker-channel.html.j2'
             # Show high resolution channel picker
             self.template_vars['hires'] = True
             self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
             self.get_hires_color_channel(hirespick)
         else:
+            template = 'Packages/ColorHelper/panels/color-picker.html.j2'
             # Show the normal color picker of the specified space
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = '__cancel__'
@@ -574,7 +577,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Display picker
         mdpopups.show_popup(
             self.view,
-            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/color-picker.html'),
+            util.FRONTMATTER + sublime.load_resource(template),
             css=util.ADD_CSS,
             wrapper_class="color-helper content",
             max_width=1024, max_height=(500 if hirespick or colornames else 725),
