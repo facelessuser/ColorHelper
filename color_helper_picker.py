@@ -16,8 +16,6 @@ from .color_helper_mixin import _ColorMixin
 from .color_helper_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA
 import copy
 
-SUBLIME_CENTER = int(sublime.version()) >= 4085
-
 color_map = None
 color_map_size = False
 line_height = None
@@ -100,10 +98,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 11):
-                if not SUBLIME_CENTER:
-                    html_colors.append([self.get_spacer(width=5)])
-                else:
-                    html_colors.append([])
+                html_colors.append([])
                 for x in range(0, 17):
                     this_hue = False
                     this_sat = color.saturation == r_sat
@@ -203,13 +198,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Show a preview of the current color.
         check_size = self.check_size(self.height * 2)
         preview = self.color.convert("srgb")
-        if not SUBLIME_CENTER:
-            spacer = self.get_spacer(width=5)
-        else:
-            spacer = ''
         html = (
             '<span class="current-color">{}</span>'.format(
-                spacer +
                 mdpopups.color_box(
                     [preview.to_string(**HEX_NA), preview.to_string(**HEX)],
                     self.default_border,
