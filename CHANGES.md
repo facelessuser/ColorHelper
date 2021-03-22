@@ -13,6 +13,7 @@
   other channels.
 - **NEW**: Color box in the color picker now shows an approximate indicator of  
   where the current color falls on the color box.
+- **NEW**: Add indication of which button is selected in the color picker.
 
 ## 3.2.2
 

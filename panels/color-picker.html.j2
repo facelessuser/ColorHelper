@@ -17,7 +17,8 @@
 {{plugin.channel_alpha}}
 {% endif %}
 
-[Box](__controls__:box){.button} [Sliders](__controls__:sliders){.button}
+[Box](__controls__:box){.button {% if plugin.box_control %}.selected{% endif %}}
+[Sliders](__controls__:sliders){.button {% if not plugin.box_control %}.selected{% endif %}}
 
 ---
 
@@ -25,7 +26,9 @@
 
 {{plugin.color_display}}
 
-[sRGB](__space__:srgb){: .button} [HSL](__space__:hsl){: .button} [HWB](__space__:hwb){: .button}
+[sRGB](__space__:srgb){: .button {% if plugin.mode == 'srgb' %}.selected{% endif %}} 
+[HSL](__space__:hsl){: .button {% if plugin.mode == 'hsl' %}.selected{% endif %}}
+[HWB](__space__:hwb){: .button {% if plugin.mode == 'hwb' %}.selected{% endif %}}
 
 ---
 </div>

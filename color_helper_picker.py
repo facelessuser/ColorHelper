@@ -592,18 +592,11 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     self.get_channel('channel_3', 'B', 'blue')
                 self.get_channel('channel_alpha', 'A', 'alpha')
 
-            if mode == 'srgb':
-                switch = 'hsl'
-            elif mode == 'hsl':
-                switch = 'hwb'
-            else:
-                switch = 'srgb'
-
+            self.template_vars['mode'] = self.mode
             self.template_vars['box_control'] = self.controls == 'box'
             self.template_vars['color_full'] = self.color.to_string(**COLOR_FULL_PREC)
             self.template_vars['color_display'] = "`#!color-helper {}`".format(self.color.to_string(**DEFAULT))
             self.template_vars['color_value'] = self.color.to_string(**DEFAULT)
-            self.template_vars['color_switch'] = switch
 
         # Display picker
         mdpopups.show_popup(

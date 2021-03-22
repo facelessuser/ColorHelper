@@ -99,6 +99,10 @@ ADD_CSS = dedent(
         border-radius: 0.25rem;
     }
 
+    .color-helper a.button.selected {
+        border: 1px solid color(var(--mdpopups-fg) a(75%));
+    }
+
     .color-helper hr {
         border-color: var(--ch-button-color);
     }
