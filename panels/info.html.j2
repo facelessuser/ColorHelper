@@ -10,7 +10,7 @@
 </div>
 
 <div class="panel" markdown="1">
-{% if plugin.click_color_picker %}
+{%- if plugin.click_color_picker %}
 [{{plugin.color_preview}}](__color_picker__:{{plugin.generic_color}})
 {%- elif plugin.click_color_edit %}
 [{{plugin.color_preview}}](__tool__:{{plugin.edit}})
