@@ -379,7 +379,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def format_colors(self, color_list, label, palette_type, delete=None):
         """Format colors under palette."""
 
-        colors = ['\n## {}\n'.format(label)]
+        colors = ['\n## {} {{.center}}\n'.format(label)]
         count = 0
 
         height = self.height * 2
@@ -583,10 +583,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if show_favorite_palette:
             favs = util.get_favs()
-            if len(favs['colors']) or color:
-                template_vars['favorite_palette'] = (
-                    self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
-                )
+            template_vars['favorite_palette'] = (
+                self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
+            )
 
         if show_global_palettes and len(palettes):
             global_palettes = []

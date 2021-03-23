@@ -19,25 +19,22 @@
 <div class="panel" markdown="1">
 {%- if plugin.show_delete_ui %}
 
-Click the palette to delete.
+## Delete Palete {.center}
 
 {%- elif plugin.show_new_ui %}
 
-Click to add to a palette.
+## Save to palette {.center}
 
 {%- else %}
 
-Click to view a palette.
+## View palette {.center}
 
 {%- endif %}
+</div>
 
+<div class="panel center palettes" markdown="1">
 {%- if plugin.show_favorite_palette %}
-
-  {%- if plugin.favorite_palette %}
-
 ---
-
-  {%- endif %}
 
 {{plugin.favorite_palette}}
 {%- endif %}

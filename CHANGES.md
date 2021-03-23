@@ -16,10 +16,11 @@
   where the current color falls on the color box.
 - **NEW**: Add indication of which button is selected in the color picker.
 - **NEW**: Vendor `coloraide` as ColorHelper is tightly coupled to it. Vendoring  
-  will ensure a better upgrade process.
+  will ensure a better upgrade process. The default color classe is now referenced  
+  via `ColorHelper.lib.coloraide` opposed to the old `coloraide`.
 - **FIX**: Fix issues related to detecting when colors are in the visible viewport.
-- **FIX**: Ensure that when the color picker is called with no color, that if the  
-  default color is picked, it will insert instead of ignore.
+- **FIX**: Ensure that when a native color picker is called with no color, that if  
+  the default color is picked, it will insert instead of ignore.
 
 ## 3.2.2
 
