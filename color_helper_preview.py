@@ -134,7 +134,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         """Check if region is in selections."""
 
         for s in sels:
-            if region.intersects(s) or s.begin() == region.begin():
+            if region.intersects(s) or s.a == region.a:
                 return True
         return False
 
@@ -143,23 +143,20 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
         selections = []
         for s in self.view.sel():
-            b = Dimensions(*self.view.text_to_layout(s.end()))
-            if b.y < bounds.y.start:
+            b = Dimensions(*self.view.text_to_layout(s.b))
+            if b.y <= bounds.y.start:
                 # We are pass the viewport
                 continue
-            a = Dimensions(*self.view.text_to_layout(s.begin()))
-            if a.y > bounds.y.end:
+            a = Dimensions(*self.view.text_to_layout(s.a))
+            if a.y >= bounds.y.end:
                 # We haven't reached the view port yet
                 break
             if (
-                (
-                    bounds.x.start <= a.x <= bounds.x.end or
-                    bounds.x.start <= b.x <= bounds.x.end or
-                    (a.x < bounds.x.start and b.x > bounds.x.end)
-                ) and (
-                    bounds.y.start <= a.y <= bounds.y.end or
-                    bounds.y.start <= b.y <= bounds.y.end or
-                    (a.y < bounds.y.start and b.y > bounds.y.end)
+                (bounds.x.start <= a.x <= bounds.x.end or bounds.x.start <= b.x <= bounds.x.end) or
+                not (
+                    (a.x >= bounds.x.end and b.x >= a.x and a.y == b.y) or
+                    (b.x <= bounds.x.start and a.x <= b.x and a.y == b.y) or
+                    (a.x >= bounds.x.end and b.x <= bounds.x.start and a.y + 1 == b.y)
                 )
             ):
                 selections.append(s)
@@ -342,9 +339,9 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
         # If we don't need to force previews,
         # quit if visible region is the same as last time
-        if not force and self.previous_region[view_id] == visible_region:
+        if not force and self.previous_region[view_id] == bounds:
             return
-        self.previous_region[view_id] = visible_region
+        self.previous_region[view_id] = bounds
 
         # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
@@ -464,9 +461,14 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
-            self.previous_region[view_id] = (
-                sublime.Region(self.previous_region[view_id].begin(), self.view.visible_region().end())
+            visible_region = self.view.visible_region()
+            position = self.view.viewport_position()
+            dimensions = self.view.viewport_extent()
+            bounds = Dimensions(
+                Extent(position[0], position[0] + dimensions[0] - 1),
+                Extent(position[1], position[1] + dimensions[1] - 1)
             )
+            self.previous_region[view_id] = bounds
 
     def add_phantoms(self, colors):
         """Add phantoms."""
@@ -564,10 +566,12 @@ class ChPreviewThread(threading.Thread):
         if self.last_view != this_scroll:
             self.last_view = this_scroll
             self.scroll = True
-        elif view.visible_region() != self.scroll_view:
-            self.scroll = True
-            self.scroll_view = view.visible_region()
-            self.time = time()
+        else:
+            scroll_view = view.viewport_position(), view.viewport_extent()
+            if scroll_view != self.scroll_view:
+                self.scroll = True
+                self.scroll_view = scroll_view
+                self.time = time()
 
     def payload(self):
         """Code to run."""
@@ -589,9 +593,11 @@ class ChPreviewThread(threading.Thread):
             # Ignore selection and edit events inside the routine
             try:
                 args = {"clear": clear, "force": force}
-                view.window().run_command('color_helper_preview', args)
+                window = view.window()
+                if window is not None:
+                    window.run_command('color_helper_preview', args)
             except Exception:
-                util.debug('ColorHelper: \n' + str(traceback.format_exc()))
+                util.debug(str(traceback.format_exc()))
 
     def kill(self):
         """Kill thread."""

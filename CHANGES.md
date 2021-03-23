@@ -15,9 +15,7 @@
 - **NEW**: Color box in the color picker now shows an approximate indicator of  
   where the current color falls on the color box.
 - **NEW**: Add indication of which button is selected in the color picker.
-- **FIX**: Fix an issue where previews may not show if the viewport starts at  
-  `(0, 0)` and one of the subsequent lines is clipped to the right, and that  
-  region contained colors.
+- **FIX**: Fix issues related to detecting when colors are in the visible viewport.
 
 ## 3.2.2
 
