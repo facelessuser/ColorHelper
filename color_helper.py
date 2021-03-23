@@ -7,7 +7,7 @@ License: MIT
 import sublime
 import sublime_plugin
 from .lib.coloraide import Color
-from . import color_helper_native_picker as os_color_picker
+from .color_helper_native_picker import pick as native_picker
 import mdpopups
 from . import color_helper_util as util
 from html.parser import HTMLParser
@@ -244,9 +244,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.os_color_picker:
             self.view.hide_popup()
-            old_color = Color(color).convert("srgb", fit=True)
-            new_color = os_color_picker.pick(old_color)
-            if new_color.to_string(**util.HEX_NA) != old_color.to_string(**util.HEX_NA):
+            new_color = native_picker(Color(color).convert("srgb", fit=True))
+            if new_color is not None:
                 sublime.set_timeout(
                     lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(
                         "color_helper",

@@ -65,12 +65,12 @@ class MacPick(_ColorPicker):
             out = p.communicate()
             returncode = p.returncode
             if returncode:
-                color = self.color
+                color = None
             else:
                 color = Color("srgb", [int(x) / UINT for x in out[0].split(b', ')])
                 self.color = color
         except Exception:
-            color = self.color
+            color = None
 
         return color
 
@@ -135,7 +135,7 @@ class WinPick(_ColorPicker):
             color = Color('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16)))
             self.color = color
         else:
-            color = self.color
+            color = None
         self.set_win_pick_colors(picker.lpCustColors)
         return color
 
@@ -161,12 +161,12 @@ class LinuxPick(_ColorPicker):
             out = p.communicate()
             returncode = p.returncode
             if returncode:
-                color = self.color
+                color = None
             else:
                 color = Color(out[0].decode('utf-8').strip())
                 self.color = color
         except Exception:
-            color = self.color
+            color = None
 
         return color
 

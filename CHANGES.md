@@ -18,6 +18,8 @@
 - **NEW**: Vendor `coloraide` as ColorHelper is tightly coupled to it. Vendoring  
   will ensure a better upgrade process.
 - **FIX**: Fix issues related to detecting when colors are in the visible viewport.
+- **FIX**: Ensure that when the color picker is called with no color, that if the  
+  default color is picked, it will insert instead of ignore.
 
 ## 3.2.2
 
