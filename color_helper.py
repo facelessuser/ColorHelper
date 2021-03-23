@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide import Color
+from .lib.coloraide import Color
 from . import os_color_picker
 import mdpopups
 from . import color_helper_util as util

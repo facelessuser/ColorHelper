@@ -1,7 +1,7 @@
 """Custom color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from coloraide.css.colors import Color, SRGB
-from coloraide.colors import _parse as parse
-from coloraide import util
+from ..lib.coloraide.css.colors import Color, SRGB
+from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import util
 import copy
 import re
 
@@ -704,7 +704,7 @@ class SRGBX11(SRGB):
         value = ''
         a = util.no_nan(self.alpha)
         alpha = alpha is not False and (alpha is True or a < 1.0)
-        hex_upper = options.get("hex_upper", False)
+        hex_upper = options.get("upper", False)
         compress = options.get("compress", False)
         coords = util.no_nan(self.fit_coords())
 

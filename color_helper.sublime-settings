@@ -135,10 +135,10 @@
     //                     ```
     //
     // - `class`:          this allows a user to specify a custom color class derived from
-    //                     `coloraide.Color`. This could be used to to create a color class that
-    //                     can recognize different formats when scanning for colors. It also allows
-    //                     for color spaces to have different output formats that can be configured
-    //                     via `output_options`. Defaults to `coloraide.Color`.
+    //                     `ColorHelper.lib.coloraide.Color`. This could be used to to create a color class
+    //                     that can recognize different formats when scanning for colors. It also allows
+    //                     for color spaces to have different output formats that can be configured via
+    //                     `output_options`. Defaults to `ColorHelper.lib.coloraide.Color`.
     //
     // - `filters`:        A list that restricts color recognition to only the specified color spaces.
     //                     Default is an empty list. Allowed color spaces are `srgb`, `hsl`, `hwb`, `hsv`,

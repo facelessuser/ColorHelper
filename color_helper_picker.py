@@ -8,9 +8,9 @@ import sublime
 import sublime_plugin
 import mdpopups
 from mdpopups import colorbox
-from coloraide import Color
-from coloraide import util as cutil
-from coloraide.css.colors import css_names
+from .lib.coloraide import Color
+from .lib.coloraide import util as cutil
+from .lib.coloraide.css.colors import css_names
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorMixin
 from .color_helper_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA

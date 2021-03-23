@@ -15,6 +15,8 @@
 - **NEW**: Color box in the color picker now shows an approximate indicator of  
   where the current color falls on the color box.
 - **NEW**: Add indication of which button is selected in the color picker.
+- **NEW**: Vendor `coloraide` as ColorHelper is tightly coupled to it. Vendoring  
+  will ensure a better upgrade process.
 - **FIX**: Fix issues related to detecting when colors are in the visible viewport.
 
 ## 3.2.2

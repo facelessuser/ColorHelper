@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide import Color
+from .lib.coloraide import Color
 import threading
 from time import time, sleep
 import re
@@ -250,7 +250,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     class_options = self.color_classes[view_id].get(item["class"])
                     if class_options is None:
                         continue
-                    module = class_options.get("class", "coloraide.Color")
+                    module = class_options.get("class", "ColorHelper.lib.coloraide.Color")
                     if isinstance(module, str):
                         # Initialize the color module and cache it for this view
                         color_class = util.import_color(module)

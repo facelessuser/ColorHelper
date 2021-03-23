@@ -1,7 +1,7 @@
 """OS specific color pickers."""
 import sublime
 import subprocess
-from coloraide import Color
+from .lib.coloraide import Color
 import time
 
 MAC_CHOOSE_COLOR = '''\
