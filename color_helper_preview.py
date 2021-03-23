@@ -6,7 +6,7 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide import Color
+from .lib.coloraide import Color
 import threading
 from time import time, sleep
 import re
@@ -42,6 +42,14 @@ def preview_is_on_left():
 
 class ColorSwatch(namedtuple('ColorSwatch', ['start', 'end', 'pid', 'uid'])):
     """Color swatch."""
+
+
+class Extent(namedtuple('Extent', ['start', 'end'])):
+    """Range of dimension."""
+
+
+class Dimensions(namedtuple('Dimensions', ['x', 'y'])):
+    """Dimensions."""
 
 
 class ColorHelperPreviewOverrideCommand(sublime_plugin.TextCommand):
@@ -122,7 +130,39 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         box_height = util.get_line_height(self.view) - int(top_pad + bottom_pad) + size_offset
         return box_height
 
-    def source_iter(self, visible_region):
+    def is_selected(self, region, sels):
+        """Check if region is in selections."""
+
+        for s in sels:
+            if region.intersects(s) or s.a == region.a:
+                return True
+        return False
+
+    def get_selections(self, bounds):
+        """Get selections that intersect viewport."""
+
+        selections = []
+        for s in self.view.sel():
+            b = Dimensions(*self.view.text_to_layout(s.b))
+            if b.y <= bounds.y.start:
+                # We are pass the viewport
+                continue
+            a = Dimensions(*self.view.text_to_layout(s.a))
+            if a.y >= bounds.y.end:
+                # We haven't reached the view port yet
+                break
+            if (
+                (bounds.x.start <= a.x <= bounds.x.end or bounds.x.start <= b.x <= bounds.x.end) or
+                not (
+                    (a.x >= bounds.x.end and b.x >= a.x and a.y == b.y) or
+                    (b.x <= bounds.x.start and a.x <= b.x and a.y == b.y) or
+                    (a.x >= bounds.x.end and b.x <= bounds.x.start and a.y + 1 == b.y)
+                )
+            ):
+                selections.append(s)
+        return selections
+
+    def source_iter(self, visible_region, bounds):
         """
         Iterate through source in the viewport.
 
@@ -131,14 +171,6 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
         Return content in consecutive chunks.
         """
-
-        # Get viewable bounds so we can constrain both vertically and horizontally.
-        position = self.view.viewport_position()
-        dimensions = self.view.viewport_extent()
-        bounds = [
-            (position[0], position[0] + dimensions[0] - 1),
-            (position[1], position[1] + dimensions[1] - 1)
-        ]
 
         # Get all the lines
         lines = self.view.split_by_newlines(visible_region)
@@ -149,9 +181,9 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         for line in lines:
             # Line start
             start_clipped = False
-            start_vector = self.view.text_to_layout(line.begin())
-            if start_vector[0] < bounds[0][0]:
-                start_pt = self.view.layout_to_text((bounds[0][0], start_vector[1]))
+            start_vector = Dimensions(*self.view.text_to_layout(line.begin()))
+            if start_vector.x < bounds.x.start:
+                start_pt = self.view.layout_to_text((bounds.x.start, start_vector.y))
                 if start_pt == line.begin():
                     if last_start is not None:
                         yield sublime.Region(last_start, last_end)
@@ -164,9 +196,9 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
             # Line end
             end_clipped = False
-            end_vector = self.view.text_to_layout(line.end())
-            if end_vector[0] > bounds[0][1]:
-                end_pt = self.view.layout_to_text((bounds[0][1], end_vector[1]))
+            end_vector = Dimensions(*self.view.text_to_layout(line.end()))
+            if end_vector.x > bounds.x.end:
+                end_pt = self.view.layout_to_text((bounds.x.end, end_vector.y))
                 end_clipped = True
             else:
                 end_pt = line.end()
@@ -181,7 +213,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
             # This content has been clipped and will have a gap between
             # this and the next region, so just send it now.
             if end_clipped:
-                yield sublime.Region(last_start if last_start else start_pt, end_pt)
+                yield sublime.Region(last_start if last_start is not None else start_pt, end_pt)
                 last_start = None
                 last_end = None
                 continue
@@ -218,7 +250,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     class_options = self.color_classes[view_id].get(item["class"])
                     if class_options is None:
                         continue
-                    module = class_options.get("class", "coloraide.Color")
+                    module = class_options.get("class", "ColorHelper.lib.coloraide.Color")
                     if isinstance(module, str):
                         # Initialize the color module and cache it for this view
                         color_class = util.import_color(module)
@@ -296,21 +328,30 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
             settings.set('color_helper.box_height', box_height)
             force = True
 
+        # Get viewable bounds so we can constrain both vertically and horizontally.
+        visible_region = self.view.visible_region()
+        position = self.view.viewport_position()
+        dimensions = self.view.viewport_extent()
+        bounds = Dimensions(
+            Extent(position[0], position[0] + dimensions[0] - 1),
+            Extent(position[1], position[1] + dimensions[1] - 1)
+        )
+
         # If we don't need to force previews,
         # quit if visible region is the same as last time
-        visible_region = self.view.visible_region()
-        if not force and self.previous_region[view_id] == visible_region:
+        if not force and self.previous_region[view_id] == bounds:
             return
-        self.previous_region[view_id] = visible_region
+        self.previous_region[view_id] = bounds
 
         # Setup "preview on select"
         preview_on_select = ch_settings.get("preview_on_select", False)
         show_preview = True
-        sel = None
-        if preview_on_select and len(self.view.sel()) != 1:
+        sels = []
+        if preview_on_select:
             show_preview = False
-        elif preview_on_select:
-            sel = self.view.sel()[0]
+            sels = self.get_selections(bounds)
+            if sels:
+                show_preview = True
 
         # Get the scan scopes
         scanning = rules.get("scanning")
@@ -325,7 +366,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
             # Find source content in the visible region.
             # We will return consecutive content, but if the lines are too wide
             # horizontally, they will be clipped and returned as separate chunks.
-            for src_region in self.source_iter(visible_region):
+            for src_region in self.source_iter(visible_region, bounds):
                 source = self.view.substr(src_region)
                 start = 0
 
@@ -357,11 +398,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
                         # If "preview on select" is enabled, only show preview if within a selection
                         # or if the selection as no width and the color comes right after.
-                        if (
-                            preview_on_select and
-                            not(sel.empty() and sel.begin() == region.begin()) and
-                            not region.intersects(sel)
-                        ):
+                        if preview_on_select and not self.is_selected(region, sels):
                             continue
                     else:
                         continue
@@ -424,9 +461,14 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
             # The phantoms may have altered the viewable region,
             # so set previous region to the current viewable region
-            self.previous_region[view_id] = (
-                sublime.Region(self.previous_region[view_id].begin(), self.view.visible_region().end())
+            visible_region = self.view.visible_region()
+            position = self.view.viewport_position()
+            dimensions = self.view.viewport_extent()
+            bounds = Dimensions(
+                Extent(position[0], position[0] + dimensions[0] - 1),
+                Extent(position[1], position[1] + dimensions[1] - 1)
             )
+            self.previous_region[view_id] = bounds
 
     def add_phantoms(self, colors):
         """Add phantoms."""
@@ -524,10 +566,12 @@ class ChPreviewThread(threading.Thread):
         if self.last_view != this_scroll:
             self.last_view = this_scroll
             self.scroll = True
-        elif view.visible_region() != self.scroll_view:
-            self.scroll = True
-            self.scroll_view = view.visible_region()
-            self.time = time()
+        else:
+            scroll_view = view.viewport_position(), view.viewport_extent()
+            if scroll_view != self.scroll_view:
+                self.scroll = True
+                self.scroll_view = scroll_view
+                self.time = time()
 
     def payload(self):
         """Code to run."""
@@ -549,9 +593,11 @@ class ChPreviewThread(threading.Thread):
             # Ignore selection and edit events inside the routine
             try:
                 args = {"clear": clear, "force": force}
-                view.window().run_command('color_helper_preview', args)
+                window = view.window()
+                if window is not None:
+                    window.run_command('color_helper_preview', args)
             except Exception:
-                util.debug('ColorHelper: \n' + str(traceback.format_exc()))
+                util.debug(str(traceback.format_exc()))
 
     def kill(self):
         """Kill thread."""

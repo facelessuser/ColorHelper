@@ -78,6 +78,12 @@ ADD_CSS = dedent(
     }
     .color-helper div.panel {
         padding: 0.5rem;
+        margin: 0;
+    }
+
+    .color-helper div.buttons {
+        padding: 0 0.5rem;
+        padding-top: 0;
     }
 
     .color-helper code.highlight {
@@ -91,6 +97,10 @@ ADD_CSS = dedent(
         color:  var(--mdpopups-fg);
         background-color: var(--ch-button-color);
         border-radius: 0.25rem;
+    }
+
+    .color-helper a.button.selected {
+        border: 1px solid color(var(--mdpopups-fg) a(75%));
     }
 
     .color-helper hr {

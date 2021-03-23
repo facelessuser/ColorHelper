@@ -1,7 +1,7 @@
 """Color Helper tools."""
 import sublime
 import sublime_plugin
-from coloraide import Color
+from .lib.coloraide import Color
 import mdpopups
 from . import color_helper_util as util
 from .color_helper_mixin import _ColorMixin

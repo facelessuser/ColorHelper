@@ -59,7 +59,6 @@ will have to keep all the packages updated yourself.
     - https://github.com/packagecontrol/pygments -> `pygments`
     - https://github.com/facelessuser/sublime-markdown-popups -> `mdpopups`
     - https://github.com/facelessuser/sublime-markdown -> `python-markdown`
-    - https://github.com/facelessuser/sublime-coloraide -> `coloraide`
 
 2. Download and unpack or git clone the latest ColorHelper release and unpack as `ColorHelper`:
 
@@ -224,7 +223,6 @@ will have to keep all the packages updated yourself.
     add_dependency('python-markdown')
     add_dependency('python-jinja2')
     add_dependency('mdpopups')
-    add_dependency('coloraide')
     ```
 
 4. Restart and enjoy.

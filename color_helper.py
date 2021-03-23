@@ -6,8 +6,8 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from coloraide import Color
-from . import os_color_picker
+from .lib.coloraide import Color
+from .color_helper_native_picker import pick as native_picker
 import mdpopups
 from . import color_helper_util as util
 from html.parser import HTMLParser
@@ -244,9 +244,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.os_color_picker:
             self.view.hide_popup()
-            old_color = Color(color).convert("srgb", fit=True)
-            new_color = os_color_picker.pick(old_color)
-            if new_color.to_string(**util.HEX_NA) != old_color.to_string(**util.HEX_NA):
+            new_color = native_picker(Color(color).convert("srgb", fit=True))
+            if new_color is not None:
                 sublime.set_timeout(
                     lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(
                         "color_helper",
@@ -380,7 +379,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def format_colors(self, color_list, label, palette_type, delete=None):
         """Format colors under palette."""
 
-        colors = ['\n## {}\n'.format(label)]
+        colors = ['\n## {} {{.center}}\n'.format(label)]
         count = 0
 
         height = self.height * 2
@@ -514,7 +513,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
                     template_vars=template_vars
@@ -522,7 +521,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 mdpopups.show_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/insert.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
@@ -543,7 +542,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         mdpopups.show_popup(
             self.view,
-            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html'),
+            util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/tools.html.j2'),
             wrapper_class="color-helper content",
             css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
             on_navigate=self.on_navigate,
@@ -569,7 +568,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         template_vars = {
             "color": (Color(color if color else '#ffffffff').to_string(**util.DEFAULT)),
             "show_add_option": cursor_color is not None,
-            "mark_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
+            "generic_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
             "show_picker_menu": show_picker,
             "show_delete_menu": (
                 not delete and not color and (show_favorite_palette or show_global_palettes or show_project_palettes)
@@ -584,10 +583,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if show_favorite_palette:
             favs = util.get_favs()
-            if len(favs['colors']) or color:
-                template_vars['favorite_palette'] = (
-                    self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
-                )
+            template_vars['favorite_palette'] = (
+                self.format_palettes(favs['colors'], favs['name'], '__special__', delete=delete, color=color)
+            )
 
         if show_global_palettes and len(palettes):
             global_palettes = []
@@ -618,7 +616,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         if update:
             mdpopups.update_popup(
                 self.view,
-                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html.j2'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS,
                 template_vars=template_vars
@@ -626,7 +624,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         else:
             mdpopups.show_popup(
                 self.view,
-                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html'),
+                util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/palettes.html.j2'),
                 wrapper_class="color-helper content",
                 css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                 on_navigate=self.on_navigate,
@@ -670,7 +668,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
                     template_vars=template_vars
@@ -678,7 +676,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 mdpopups.show_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/colors.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS, location=-1, max_width=1024, max_height=512,
                     on_navigate=self.on_navigate,
@@ -717,7 +715,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             if update:
                 mdpopups.update_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
                     template_vars=template_vars
@@ -725,7 +723,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 mdpopups.show_popup(
                     self.view,
-                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html'),
+                    util.FRONTMATTER + sublime.load_resource('Packages/ColorHelper/panels/info.html.j2'),
                     wrapper_class="color-helper content",
                     css=util.ADD_CSS,
                     location=-1,

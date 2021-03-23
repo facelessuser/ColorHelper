@@ -7,8 +7,7 @@
             "python-jinja2",
             "markupsafe",
             "pyyaml",
-            "pymdownx",
-            "coloraide"
+            "pymdownx"
         ]
     }
 }

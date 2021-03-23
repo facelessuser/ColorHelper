@@ -1,7 +1,7 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from coloraide.css.colors import Color, SRGB
-from coloraide.colors import _parse as parse
-from coloraide import util
+from ..lib.coloraide.css.colors import Color, SRGB
+from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import util
 import copy
 import re
 
@@ -62,7 +62,7 @@ class ASRGB(SRGB):
         show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
-        if options.get("hex_upper"):
+        if options.get("upper"):
             template = template.upper()
 
         # Always fit hex

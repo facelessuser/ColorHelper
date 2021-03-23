@@ -4,7 +4,7 @@
 [Delete](__delete__palettes__)
 {%- endif %}
 {%- if plugin.show_add_option and not plugin.show_new_ui and not plugin.show_delete_ui %}
-[Save Current Color](__add_color__:{{plugin.mark_color}})
+[Save Current Color](__add_color__:{{plugin.generic_color}})
 {%- endif %}
 {%- if plugin.show_new_ui and (plugin.show_project_palettes or plugin.show_global_palettes) %}
   {%- if plugin.show_global_palettes %}
@@ -13,32 +13,28 @@
   {%- if plugin.show_project_palettes %}
 [New Project Palette](__create_palette__:__project__:{{plugin.color}})
   {%- endif %}
-{% endif %}
-
+{%- endif %}
 </div>
 
 <div class="panel" markdown="1">
-
 {%- if plugin.show_delete_ui %}
 
-Click the palette to delete.
+## Delete Palete {.center}
 
 {%- elif plugin.show_new_ui %}
 
-Click to add to a palette.
+## Save to palette {.center}
 
 {%- else %}
 
-Click to view a palette.
+## View palette {.center}
 
 {%- endif %}
+</div>
+
+<div class="panel center palettes" markdown="1">
 {%- if plugin.show_favorite_palette %}
-
-  {%- if plugin.favorite_palette %}
-
 ---
-
-  {%- endif %}
 
 {{plugin.favorite_palette}}
 {%- endif %}
@@ -56,5 +52,4 @@ Click to view a palette.
 {{palette}}
 
 {% endfor %}
-
-</div> 
+</div>

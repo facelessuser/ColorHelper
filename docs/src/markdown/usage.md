@@ -10,8 +10,8 @@ support for a number of color spaces: sRGB, HSL, HWB, LCH, LAB, and more.
 
 ## Color Previews
 
-When color previews are enabled, ColorHelper detects colors in the visible viewport, it will create a previews right
-next to every color it finds. When the preview is clicked, a tooltip will appear which gives access to tools and other
+When color previews are enabled, ColorHelper detects colors in the visible viewport, it will create previews right next
+to every color it finds. When the preview is clicked, a popup will appear which gives access to tools and other
 features.
 
 ![Preview](images/example.png)
@@ -45,11 +45,12 @@ in other [palettes](#palette-panel) than can be accessed later.
     see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
 
 The internal color picker can be launched from the view's context menu, the command palette, or from the
-[Color Info Panel](#color_info).  When launched it will use the current selected color. The internal color picker is
-contained inside a tooltip.  It has a color map section at the top where different colors can be selected. You can
-toggle between altering the color in the sRGB, HSL, or HWB color space.
+[Color Info Panel](#color_info).  When launched, it will use the current selected color. The internal color picker is
+contained inside a popup.  It has a color map box at the top where different colors can be selected. You can
+toggle between altering the color in the sRGB, HSL, or HWB color space. You can also switch between the color map box
+and sliders.
 
-![color picker](images/color_picker.png)
+![color picker](images/color_picker.gif)
 
 The color channels are coarse, but can generally allow you to get close to a color that you like.  As you select colors
 in the channels the selections will shift revealing more selections until the bounds of the color channel are reached.

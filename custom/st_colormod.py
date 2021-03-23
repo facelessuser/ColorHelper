@@ -1,9 +1,9 @@
 """Color-mod."""
 import re
-from coloraide.css import Color as ColorCSS
-from coloraide.colors import ColorMatch
-from coloraide.colors import _parse as parse
-from coloraide import util
+from ..lib.coloraide.css import Color as ColorCSS
+from ..lib.coloraide.colors import ColorMatch
+from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import util
 import functools
 import math
 
