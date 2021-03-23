@@ -7,7 +7,7 @@ License: MIT
 import sublime
 import sublime_plugin
 from .lib.coloraide import Color
-from . import os_color_picker
+from . import color_helper_native_picker as os_color_picker
 import mdpopups
 from . import color_helper_util as util
 from html.parser import HTMLParser
