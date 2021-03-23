@@ -2,6 +2,7 @@
 
 ## 3.3.0
 
+- **NEW**: `preview_on_select` now supports multi-select.
 - **NEW**: Color picker channels only show 10 steps back or forward at a given  
   time instead of 12 and are always perfectly scaled between 0% - 100%.
 - **NEW**: Color box now shows hue on x-axis and saturation on y-axis. It also  
@@ -14,6 +15,9 @@
 - **NEW**: Color box in the color picker now shows an approximate indicator of  
   where the current color falls on the color box.
 - **NEW**: Add indication of which button is selected in the color picker.
+- **FIX**: Fix an issue where previews may not show if the viewport starts at  
+  `(0, 0)` and one of the subsequent lines is clipped to the right, and that  
+  region contained colors.
 
 ## 3.2.2
 

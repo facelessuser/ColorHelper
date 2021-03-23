@@ -21,10 +21,9 @@ Enables/disables previews only showing when they are selected.
 
 ```js
     // Only show color previews next to a color when the color region
-    // intersects the current selection. Currently only supported with
-    // single selections. If selection is empty (just a caret),
-    // If the caret is at the start or within the color region, a preview
-    // will also show.
+    // intersects the current selection(s). If a selection is empty
+    // (just a caret), if the caret is at the start or within the color
+    // region, a preview will also show.
     "preview_on_select": false ,
 ```
 

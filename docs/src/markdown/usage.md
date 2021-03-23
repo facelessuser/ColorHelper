@@ -10,8 +10,8 @@ support for a number of color spaces: sRGB, HSL, HWB, LCH, LAB, and more.
 
 ## Color Previews
 
-When color previews are enabled, ColorHelper detects colors in the visible viewport, it will create a previews right
-next to every color it finds. When the preview is clicked, a tooltip will appear which gives access to tools and other
+When color previews are enabled, ColorHelper detects colors in the visible viewport, it will create previews right next
+to every color it finds. When the preview is clicked, a popup will appear which gives access to tools and other
 features.
 
 ![Preview](images/example.png)
