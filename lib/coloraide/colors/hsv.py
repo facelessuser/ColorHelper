@@ -5,7 +5,6 @@ from .hsl import HSL
 from ._cylindrical import Cylindrical
 from ._gamut import GamutBound
 from . _range import Angle, Percent
-from . import _parse as parse
 from . import _convert as convert
 from .. import util
 import re
@@ -59,7 +58,7 @@ class HSV(Cylindrical, Space):
 
     SPACE = "hsv"
     DEF_VALUE = "color(hsv 0 0 0 / 1)"
-    CHANNEL_NAMES = frozenset(["hue", "saturation", "value", "alpha"])
+    CHANNEL_NAMES = ("hue", "saturation", "value", "alpha")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     GAMUT_CHECK = "hsl"
     WHITE = convert.WHITES["D65"]
@@ -69,29 +68,6 @@ class HSV(Cylindrical, Space):
         GamutBound([Percent(0.0), Percent(100.0)]),
         GamutBound([Percent(0.0), Percent(100.0)])
     )
-
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
-        if isinstance(color, Space):
-            self.hue, self.saturation, self.value = color.convert(self.space()).coords()
-            self.alpha = color.alpha
-        elif isinstance(color, str):
-            values = self.match(color)[0]
-            if values is None:
-                raise ValueError("'{}' does not appear to be a valid color".format(color))
-            self.hue, self.saturation, self.value, self.alpha = values
-        elif isinstance(color, (list, tuple)):
-            if not (3 <= len(color) <= 4):
-                raise ValueError("A list of channel values should be of length 3 or 4.")
-            self.hue = color[0]
-            self.saturation = color[1]
-            self.value = color[2]
-            self.alpha = 1.0 if len(color) == 3 else color[3]
-        else:
-            raise TypeError("Unexpected type '{}' received".format(type(color)))
 
     @property
     def hue(self):
@@ -130,25 +106,12 @@ class HSV(Cylindrical, Space):
         self._coords[2] = self._handle_input(value)
 
     @classmethod
-    def null_adjust(cls, coords):
+    def null_adjust(cls, coords, alpha):
         """On color update."""
 
         if coords[1] == 0:
             coords[0] = util.NaN
-        return coords
-
-    @classmethod
-    def translate_channel(cls, channel, value):
-        """Translate channel string."""
-
-        if channel == 0:
-            return parse.norm_deg_channel(value)
-        elif channel in (1, 2):
-            return parse.norm_float(value)
-        elif channel == -1:
-            return parse.norm_alpha_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
+        return coords, alpha
 
     @classmethod
     def _to_xyz(cls, hsv):

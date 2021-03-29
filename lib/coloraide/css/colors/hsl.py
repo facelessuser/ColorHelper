@@ -23,18 +23,12 @@ class HSL(generic.HSL):
         """.format(**parse.COLOR_PARTS)
     )
 
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
     def to_string(
         self, *, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to CSS."""
 
         options = kwargs
-        alpha = options.get("alpha")
         if precision is None:
             precision = self.parent.PRECISION
 
@@ -43,7 +37,8 @@ class HSL(generic.HSL):
 
         a = util.no_nan(self.alpha)
         alpha = alpha is not False and (alpha is True or a < 1.0)
-        coords = util.no_nan(self.fit_coords() if fit else self.coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(self.fit_coords(method=method) if fit else self.coords())
 
         if alpha:
             template = "hsla({}, {}%, {}%, {})" if options.get("comma") else "hsl({} {}% {}% / {})"
@@ -80,14 +75,13 @@ class HSL(generic.HSL):
 
         start = 5 if color[:4].lower() == 'hsla' else 4
         channels = []
+        alpha = 1.0
         for i, c in enumerate(parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
             if i <= 2:
                 channels.append(cls.translate_channel(i, c))
-            else:
-                channels.append(cls.translate_channel(-1, c))
-        if len(channels) == 3:
-            channels.append(1.0)
-        return cls.null_adjust(channels)
+            elif i == 3:
+                alpha = cls.translate_channel(-1, c)
+        return cls.null_adjust(channels, alpha)
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):

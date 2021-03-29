@@ -38,18 +38,18 @@ class ASRGB(SRGB):
                 (
                     cls.translate_channel(0, "#" + color[3:5]),
                     cls.translate_channel(1, "#" + color[5:7]),
-                    cls.translate_channel(2, "#" + color[7:]),
-                    cls.translate_channel(-1, "#" + color[1:3]),
-                )
+                    cls.translate_channel(2, "#" + color[7:])
+                ),
+                cls.translate_channel(-1, "#" + color[1:3]),
             )
         else:
             return cls.null_adjust(
                 (
                     cls.translate_channel(0, "#" + color[1:3]),
                     cls.translate_channel(1, "#" + color[3:5]),
-                    cls.translate_channel(2, "#" + color[5:]),
-                    1.0
-                )
+                    cls.translate_channel(2, "#" + color[5:])
+                ),
+                1.0
             )
 
     def to_string(

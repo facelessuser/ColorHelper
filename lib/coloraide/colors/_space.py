@@ -1,4 +1,5 @@
 """Color base."""
+from abc import ABCMeta
 from .. import util
 from . import _parse as parse
 from . import _convert as convert
@@ -30,7 +31,7 @@ def split_channels(cls, color):
     channels = []
     color = color.strip()
     split = parse.RE_SLASH_SPLIT.split(color, maxsplit=1)
-    alpha = None
+    alpha = 1.0
     if len(split) > 1:
         alpha = parse.norm_alpha_channel(split[-1])
     for i, c in enumerate(parse.RE_CHAN_SPLIT.split(split[0]), 0):
@@ -40,11 +41,17 @@ def split_channels(cls, color):
     if len(channels) < cls.NUM_COLOR_CHANNELS:
         diff = cls.NUM_COLOR_CHANNELS - len(channels)
         channels.extend([0.0] * diff)
-    channels.append(alpha if alpha is not None else 1.0)
-    return cls.null_adjust(channels)
+    return cls.null_adjust(channels, alpha)
 
 
-class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut.Gamut, convert.Convert):
+class Space(
+    contrast.Contrast,
+    interpolate.Interpolate,
+    distance.Distance,
+    gamut.Gamut,
+    convert.Convert,
+    metaclass=ABCMeta
+):
     """Base color space object."""
 
     # Default color value (black)
@@ -54,7 +61,7 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
     # Number of channels
     NUM_COLOR_CHANNELS = 3
     # Channel names
-    CHANNEL_NAMES = frozenset(["alpha"])
+    CHANNEL_NAMES = ("alpha",)
     # For matching the default form of `color(space coords+ / alpha)`.
     # Classes should define this if they want to use the default match.
     DEFAULT_MATCH = ""
@@ -73,14 +80,32 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
     # White point
     WHITE = convert.WHITES["D50"]
 
-    def __init__(self, color=None):
+    def __init__(self, color=None, alpha=None):
         """Initialize."""
 
+        if color is None:
+            color = self.DEF_VALUE
+
         self.parent = None
-        self._alpha = 0.0
-        self._coords = [0.0] * self.NUM_COLOR_CHANNELS
+        self._alpha = util.NaN
+        self._coords = [util.NaN] * self.NUM_COLOR_CHANNELS
         if isinstance(color, Space):
             self.parent = color.parent
+
+        if isinstance(color, Space):
+            for index, channel in enumerate(color.convert(self.space()).coords()):
+                self.set(self.CHANNEL_NAMES[index], channel)
+            self.alpha = color.alpha
+        elif isinstance(color, (list, tuple)):
+            if len(color) != self.NUM_COLOR_CHANNELS:
+                raise ValueError(
+                    "A list of channel values should be at a minimum of {}.".format(self.NUM_COLOR_CHANNELS)
+                )
+            for index in range(self.NUM_COLOR_CHANNELS):
+                self.set(self.CHANNEL_NAMES[index], color[index])
+            self.alpha = 1.0 if alpha is None else alpha
+        else:
+            raise TypeError("Unexpected type '{}' received".format(type(color)))
 
     def __repr__(self):
         """Representation."""
@@ -110,10 +135,10 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
 
         return self.new(self)
 
-    def new(self, value):
+    def new(self, value=None, alpha=None):
         """Create new color in color space."""
 
-        color = type(self)(value)
+        color = type(self)(value, alpha)
         color.parent = self.parent
         return color
 
@@ -141,7 +166,7 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
 
         self._alpha = util.clamp(self._handle_input(value), 0.0, 1.0)
 
-    def is_nan(self, name):
+    def is_nan(self, name):  # pragma: no cover
         """Check if the channel is NaN."""
 
         return util.is_nan(self.get(name))
@@ -173,7 +198,8 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
         a = util.no_nan(self.alpha)
         alpha = alpha is not False and (alpha is True or a < 1.0)
 
-        coords = util.no_nan(self.fit_coords() if fit else self.coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(self.fit_coords(method=method) if fit else self.coords())
         template = "color({} {} {} {} / {})" if alpha else "color({} {} {} {})"
         values = [
             util.fmt_float(coords[0], precision),
@@ -186,22 +212,10 @@ class Space(contrast.Contrast, interpolate.Interpolate, distance.Distance, gamut
         return template.format(self.space(), *values)
 
     @classmethod
-    def null_adjust(cls, coords):
+    def null_adjust(cls, coords, alpha):
         """Process coordinates and adjust any channels to null/NaN if required."""
 
-        return coords
-
-    @classmethod
-    def translate_channel(cls, channel, value):
-        """Set a non-alpha color channel."""
-
-        raise NotImplementedError("Base 'Space' does not implement 'translate_channel' directly.")
-
-    @classmethod
-    def split_channels(cls, color):
-        """Split channels."""
-
-        raise NotImplementedError("Base 'Space' class does not implement 'translate_channel' directly.")
+        return coords, alpha
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):

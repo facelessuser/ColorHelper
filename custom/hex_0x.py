@@ -44,12 +44,12 @@ class HexSRGB(SRGB):
         """Split channels."""
 
         return cls.null_adjust(
-            [
+            (
                 cls.translate_channel(0, '0x' + color[2:4]),
                 cls.translate_channel(1, '0x' + color[4:6]),
-                cls.translate_channel(2, '0x' + color[6:8]),
-                cls.translate_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
-            ]
+                cls.translate_channel(2, '0x' + color[6:8])
+            ),
+            cls.translate_channel(-1, '0x' + color[8:]) if len(color) > 8 else 1.0
         )
 
     def to_string(

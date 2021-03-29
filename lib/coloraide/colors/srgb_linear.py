@@ -6,18 +6,13 @@ from . import _convert as convert
 import re
 
 
-class SRGB_Linear(SRGB):
+class SRGBLinear(SRGB):
     """SRGB linear."""
 
     SPACE = "srgb-linear"
     DEF_VALUE = "color(srgb-linear 0 0 0 / 1)"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     WHITE = convert.WHITES["D65"]
-
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
 
     @classmethod
     def _to_srgb(cls, rgb):

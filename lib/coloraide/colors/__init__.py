@@ -1,16 +1,17 @@
 """Colors."""
 from .hsv import HSV
 from .srgb import SRGB
-from .srgb_linear import SRGB_Linear
+from .srgb_linear import SRGBLinear
 from .hsl import HSL
 from .hwb import HWB
 from .lab import LAB
 from .lch import LCH
-from .display_p3 import Display_P3
-from .a98_rgb import A98_RGB
-from .prophoto_rgb import ProPhoto_RGB
+from .display_p3 import DisplayP3
+from .a98_rgb import A98RGB
+from .prophoto_rgb import ProPhotoRGB
 from .rec2020 import Rec2020
 from .xyz import XYZ
+from .xyzd65 import XYZD65
 from .. import util
 import functools
 
@@ -18,8 +19,8 @@ DEF_FIT = "lch-chroma"
 DEF_DELTA_E = "76"
 
 SUPPORTED = (
-    HSL, HWB, LAB, LCH, SRGB, SRGB_Linear, HSV,
-    Display_P3, A98_RGB, ProPhoto_RGB, Rec2020, XYZ
+    HSL, HWB, LAB, LCH, SRGB, SRGBLinear, HSV,
+    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZ, XYZD65
 )
 
 
@@ -40,7 +41,7 @@ class ColorMatch:
         self.start = start
         self.end = end
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """String."""
 
         return "ColorMatch(color={!r}, start={}, end={})".format(self.color, self.start, self.end)
@@ -102,7 +103,9 @@ class Color:
             for space, space_class in self.CS_MAP.items():
                 s = color.lower()
                 if space == s and (not filters or s in filters):
-                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS] + [alpha])
+                    if len(data) < space_class.NUM_COLOR_CHANNELS:
+                        data = list(data) + [util.NaN] * (space_class.NUM_COLOR_CHANNELS - len(data))
+                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
                     return obj
         elif isinstance(color, Color):
             if not filters or color.space() in filters:
@@ -131,7 +134,7 @@ class Color:
                 continue
             value, match_end = space_class.match(string, start, fullmatch)
             if value is not None:
-                color = space_class(value)
+                color = space_class(*value)
                 return ColorMatch(color, start, match_end)
         return None
 
@@ -189,6 +192,19 @@ class Color:
         self._attach(self._parse(color, data, alpha, filters=filters, **kwargs))
         return self
 
+    def mask(self, *channels, invert=False, in_place=False):
+        """Mask color channels."""
+
+        clone = self.clone()
+        masks = set(channels)
+        for channel in self._color.CHANNEL_NAMES:
+            if (not invert and channel in masks) or (invert and channel not in masks):
+                clone.set(channel, util.NaN)
+        if in_place:
+            self.update(clone)
+            return self
+        return clone
+
     def to_string(self, **kwargs):
         """To string."""
 
@@ -235,14 +251,15 @@ class Color:
         return self
 
     def interpolate(
-        self, color, *, space="lab", out_space=None, progress=None, adjust=None, hue=util.DEF_HUE_ADJ,
+        self, color, *, space="lab", out_space=None, progress=None, hue=util.DEF_HUE_ADJ,
         premultiplied=False
     ):
         """Interpolate."""
 
         color = self._handle_color_input(color)
         interp = self._color.interpolate(
-            color, space=space, progress=progress, out_space=None, adjust=adjust, hue=hue, premultiplied=premultiplied
+            color, space=space, progress=progress, out_space=out_space, hue=hue,
+            premultiplied=premultiplied
         )
         return functools.partial(_interpolate, color=self.clone(), interp=interp)
 

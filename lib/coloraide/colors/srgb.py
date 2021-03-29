@@ -3,7 +3,6 @@ from ._space import Space
 from ._space import RE_DEFAULT_MATCH
 from ._gamut import GamutBound
 from .xyz import XYZ
-from . import _parse as parse
 from . import _convert as convert
 from .. import util
 import re
@@ -52,7 +51,7 @@ def lin_srgb(rgb):
         if abs_i < 0.04045:
             result.append(i / 12.92)
         else:
-            result.append(math.copysign(math.pow((abs_i + 0.055) / 1.055, 2.4), i))
+            result.append(math.copysign(((abs_i + 0.055) / 1.055) ** 2.4, i))
     return result
 
 
@@ -68,7 +67,7 @@ def gam_srgb(rgb):
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i > 0.0031308:
-            result.append(math.copysign((1.055 * math.pow(abs_i, 1 / 2.4) - 0.055), i))
+            result.append(math.copysign((1.055 * abs_i ** (1 / 2.4) - 0.055), i))
         else:
             result.append(12.92 * i)
     return result
@@ -84,7 +83,7 @@ class SRGB(Space):
     GAMUT_CHECK = "hsl"
     DEF_VALUE = "color(srgb 0 0 0 / 1)"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    CHANNEL_NAMES = frozenset(["red", "green", "blue", "alpha"])
+    CHANNEL_NAMES = ("red", "green", "blue", "alpha")
     WHITE = convert.WHITES["D65"]
 
     _range = (
@@ -92,29 +91,6 @@ class SRGB(Space):
         GamutBound([0.0, 1.0]),
         GamutBound([0.0, 1.0])
     )
-
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
-        if isinstance(color, Space):
-            self.red, self.green, self.blue = color.convert(self.space()).coords()
-            self.alpha = color.alpha
-        elif isinstance(color, str):
-            values = self.match(color)[0]
-            if values is None:
-                raise ValueError("'{}' does not appear to be a valid color".format(color))
-            self.red, self.green, self.blue, self.alpha = values
-        elif isinstance(color, (list, tuple)):
-            if not (3 <= len(color) <= 4):
-                raise ValueError("A list of channel values should be of length 3 or 4.")
-            self.red = color[0]
-            self.green = color[1]
-            self.blue = color[2]
-            self.alpha = 1.0 if len(color) == 3 else color[3]
-        else:
-            raise TypeError("Unexpected type '{}' received".format(type(color)))
 
     @property
     def red(self):
@@ -151,17 +127,6 @@ class SRGB(Space):
         """Adjust blue."""
 
         self._coords[2] = self._handle_input(value)
-
-    @classmethod
-    def translate_channel(cls, channel, value):
-        """Translate channel string."""
-
-        if 0 <= channel <= 2:
-            return parse.norm_float(value)
-        elif channel == -1:
-            return parse.norm_alpha_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def _to_xyz(cls, rgb):

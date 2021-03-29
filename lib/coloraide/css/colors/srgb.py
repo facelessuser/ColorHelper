@@ -45,11 +45,6 @@ class SRGB(generic.SRGB):
 
     HEX_MATCH = re.compile(r"(?i)#(?:({hex}{{6}})({hex}{{2}})?|({hex}{{3}})({hex})?)\b".format(**parse.COLOR_PARTS))
 
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
     def to_string(
         self, *, alpha=None, precision=None, fit=True, **kwargs
     ):
@@ -68,7 +63,7 @@ class SRGB(generic.SRGB):
         alpha = alpha is not False and (alpha is True or a < 1.0)
         compress = options.get("compress", False)
         if options.get("hex") or options.get("names"):
-            h = self._get_hex(options, alpha=alpha, precision=precision)
+            h = self._get_hex(options, alpha=alpha, precision=precision, fit=fit)
             if options.get("hex"):
                 value = h
                 if compress:
@@ -89,7 +84,8 @@ class SRGB(generic.SRGB):
             percent = options.get("percent", False)
             comma = options.get("comma", False)
             factor = 100.0 if percent else 255.0
-            coords = util.no_nan(self.fit_coords() if fit else self.coords())
+            method = None if not isinstance(fit, str) else fit
+            coords = util.no_nan(self.fit_coords(method=method) if fit else self.coords())
 
             if alpha:
                 if percent:
@@ -114,11 +110,12 @@ class SRGB(generic.SRGB):
                 )
         return value
 
-    def _get_hex(self, options, *, alpha=False, precision=None):
+    def _get_hex(self, options, *, alpha=False, precision=None, fit=None):
         """Get the hex `RGB` value."""
 
         hex_upper = options.get("upper", False)
-        coords = util.no_nan(self.fit_coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(self.fit_coords(method=method))
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if alpha else "#{:02x}{:02x}{:02x}"
         if hex_upper:
@@ -163,14 +160,13 @@ class SRGB(generic.SRGB):
         if color[:3].lower().startswith('rgb'):
             start = 5 if color[:4].lower().startswith('rgba') else 4
             channels = []
+            alpha = 1.0
             for i, c in enumerate(parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
                 if i <= 2:
                     channels.append(cls.translate_channel(i, c))
-                else:
-                    channels.append(cls.translate_channel(-1, c))
-            if len(channels) == 3:
-                channels.append(1.0)
-            return cls.null_adjust(channels)
+                elif i == 3:
+                    alpha = cls.translate_channel(-1, c)
+            return cls.null_adjust(channels, alpha)
         else:
             m = cls.HEX_MATCH.match(color)
             assert(m is not None)
@@ -179,18 +175,18 @@ class SRGB(generic.SRGB):
                     (
                         cls.translate_channel(0, "#" + color[1:3]),
                         cls.translate_channel(1, "#" + color[3:5]),
-                        cls.translate_channel(2, "#" + color[5:7]),
-                        cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
-                    )
+                        cls.translate_channel(2, "#" + color[5:7])
+                    ),
+                    cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
                 )
             else:
                 return cls.null_adjust(
                     (
                         cls.translate_channel(0, "#" + color[1] * 2),
                         cls.translate_channel(1, "#" + color[2] * 2),
-                        cls.translate_channel(2, "#" + color[3] * 2),
-                        cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
-                    )
+                        cls.translate_channel(2, "#" + color[3] * 2)
+                    ),
+                    cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
                 )
 
     @classmethod

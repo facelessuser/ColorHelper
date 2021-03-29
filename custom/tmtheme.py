@@ -763,18 +763,18 @@ class SRGBX11(SRGB):
                 (
                     cls.translate_channel(0, "#" + color[1:3]),
                     cls.translate_channel(1, "#" + color[3:5]),
-                    cls.translate_channel(2, "#" + color[5:7]),
-                    cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
-                )
+                    cls.translate_channel(2, "#" + color[5:7])
+                ),
+                cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
             )
         else:
             return cls.null_adjust(
                 (
                     cls.translate_channel(0, "#" + color[1] * 2),
                     cls.translate_channel(1, "#" + color[2] * 2),
-                    cls.translate_channel(2, "#" + color[3] * 2),
-                    cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
-                )
+                    cls.translate_channel(2, "#" + color[3] * 2)
+                ),
+                cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
             )
 
     @classmethod

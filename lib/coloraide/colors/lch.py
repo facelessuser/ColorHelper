@@ -4,7 +4,6 @@ from .lab import LAB
 from ._cylindrical import Cylindrical
 from ._gamut import GamutUnbound
 from . _range import Angle, Percent
-from . import _parse as parse
 from . import _convert as convert
 from .. import util
 import re
@@ -18,8 +17,8 @@ def lab_to_lch(lab):
 
     l, a, b = lab
 
-    c = math.sqrt(math.pow(a, 2) + math.pow(b, 2))
-    h = math.atan2(b, a) * util.RAD2DEG
+    c = math.sqrt(a ** 2 + b ** 2)
+    h = math.degrees(math.atan2(b, a))
 
     # This is not actually part of the conversion, but is a fix-up
     # for conversion getting a bit chaotic in regards to hue when
@@ -47,8 +46,8 @@ def lch_to_lab(lch):
 
     return (
         l,
-        c * math.cos(h * util.DEG2RAD),
-        c * math.sin(h * util.DEG2RAD)
+        c * math.cos(math.radians(h)),
+        c * math.sin(math.radians(h))
     )
 
 
@@ -57,7 +56,7 @@ class LCH(Cylindrical, Space):
 
     SPACE = "lch"
     DEF_VALUE = "color(lch 0 0 0 / 1)"
-    CHANNEL_NAMES = frozenset(["lightness", "chroma", "hue", "alpha"])
+    CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     WHITE = convert.WHITES["D50"]
 
@@ -70,34 +69,6 @@ class LCH(Cylindrical, Space):
         GamutUnbound([0.0, 100.0]),
         GamutUnbound([Angle(0.0), Angle(360.0)]),
     )
-
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
-        if isinstance(color, Space):
-            self.lightness, self.chroma, self.hue = color.convert(self.space()).coords()
-            self.alpha = color.alpha
-        elif isinstance(color, str):
-            values = self.match(color)[0]
-            if values is None:
-                raise ValueError("'{}' does not appear to be a valid color".format(color))
-            self.lightness, self.chroma, self.hue, self.alpha = values
-        elif isinstance(color, (list, tuple)):
-            if not (3 <= len(color) <= 4):
-                raise ValueError("A list of channel values should be of length 3 or 4.")
-            self.lightness = color[0]
-            self.chroma = color[1]
-            self.hue = color[2]
-            self.alpha = 1.0 if len(color) == 3 else color[3]
-        else:
-            raise TypeError("Unexpected type '{}' received".format(type(color)))
-
-    def hue_index(self):
-        """Get hue index."""
-
-        return 2
 
     @property
     def lightness(self):
@@ -136,25 +107,12 @@ class LCH(Cylindrical, Space):
         self._coords[2] = self._handle_input(value)
 
     @classmethod
-    def null_adjust(cls, coords):
+    def null_adjust(cls, coords, alpha):
         """On color update."""
 
         if coords[1] < ACHROMATIC_THRESHOLD:
             coords[2] = util.NaN
-        return coords
-
-    @classmethod
-    def translate_channel(cls, channel, value):
-        """Translate channel string."""
-
-        if channel in (0, 1):
-            return parse.norm_float(value)
-        elif channel == 2:
-            return parse.norm_deg_channel(value)
-        elif channel == -1:
-            return parse.norm_alpha_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
+        return coords, alpha
 
     @classmethod
     def _to_lab(cls, lch):

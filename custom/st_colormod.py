@@ -48,6 +48,28 @@ RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({float})\s*\)'.format(**parse.COLOR_P
 RE_VARS = re.compile(r'(?i)(?:(?<=^)|(?<=[\s\t\(,/]))(var\(\s*([-\w][-\w\d]*)\s*\))(?!\()(?=[\s\t\),/]|$)')
 
 
+def bracket_match(match, string, start, fullmatch):
+    """
+    Make sure we can acquire a complete `func()` before we replace variables.
+
+    We mainly do this so we can judge the real size before we alter the string with variables.
+    """
+
+    end = None
+    if match.match(string, start):
+        brackets = 1
+        for m in RE_BRACKETS.finditer(string, start + 6):
+            if m.group(2):
+                brackets -= 1
+            elif m.group(1):
+                brackets += 1
+
+            if brackets == 0:
+                end = m.end(2)
+                break
+    return end if (not fullmatch or end == len(string)) else None
+
+
 def validate_vars(var, good_vars):
     """
     Validate variables.
@@ -519,7 +541,7 @@ class Color(ColorCSS):
             for space, space_class in self.CS_MAP.items():
                 s = color.lower()
                 if space == s and (not filters or s in filters):
-                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS] + [alpha])
+                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
                     return obj
         elif isinstance(color, ColorCSS):
             if not filters or color.space() in filters:
@@ -553,7 +575,7 @@ class Color(ColorCSS):
                 string = handle_vars(string, variables)
                 variables = None
 
-        temp = parse.bracket_match(RE_COLOR_START, string, start, fullmatch)
+        temp = bracket_match(RE_COLOR_START, string, start, fullmatch)
         if end is None and temp:
             end = temp
             is_mod = True
@@ -574,7 +596,7 @@ class Color(ColorCSS):
                     continue
                 value, match_end = space_class.match(string, start, fullmatch)
                 if value is not None:
-                    color = space_class(value)
+                    color = space_class(*value)
                     obj = ColorMatch(color, start, match_end)
             if obj is not None and end:
                 obj.end = end

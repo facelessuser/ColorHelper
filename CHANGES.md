@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 3.3.1
+
+- **FIX**: Ensure that contrast related functions are using XYZ with D65 white  
+  point instead of D50 in order to match WCAG 2.1 specifications.
+- **FIX**: Fix some string output issues.
+
 ## 3.3.0
 
 - **NEW**: `preview_on_select` now supports multi-select.

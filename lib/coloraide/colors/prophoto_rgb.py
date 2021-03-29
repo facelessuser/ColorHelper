@@ -1,6 +1,7 @@
 """Pro Photo RGB color class."""
 from ._space import RE_DEFAULT_MATCH
 from .srgb import SRGB
+from .xyz import XYZ
 from . import _convert as convert
 from .. import util
 import re
@@ -53,9 +54,9 @@ def lin_prophoto(rgb):
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i < ET2:
-            result.append(i / 16)
+            result.append(i / 16.0)
         else:
-            result.append(math.copysign(math.pow(abs_i, 1.8), i))
+            result.append(math.copysign(abs_i ** 1.8, i))
     return result
 
 
@@ -73,13 +74,13 @@ def gam_prophoto(rgb):
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i < ET:
-            result.append(16 * i)
+            result.append(16.0 * i)
         else:
-            result.append(math.copysign(math.pow(abs_i, 1 / 1.8), i))
+            result.append(math.copysign(abs_i ** (1.0 / 1.8), i))
     return result
 
 
-class ProPhoto_RGB(SRGB):
+class ProPhotoRGB(SRGB):
     """Pro Photo RGB class."""
 
     SPACE = "prophoto-rgb"
@@ -87,19 +88,14 @@ class ProPhoto_RGB(SRGB):
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     WHITE = convert.WHITES["D50"]
 
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
-
     @classmethod
     def _to_xyz(cls, rgb):
         """To XYZ."""
 
-        return lin_prophoto_to_xyz(lin_prophoto(rgb))
+        return cls._chromatic_adaption(cls.white(), XYZ.white(), lin_prophoto_to_xyz(lin_prophoto(rgb)))
 
     @classmethod
     def _from_xyz(cls, xyz):
         """From XYZ."""
 
-        return gam_prophoto(xyz_to_lin_prophoto(xyz))
+        return gam_prophoto(xyz_to_lin_prophoto(cls._chromatic_adaption(XYZ.white(), cls.white(), xyz)))

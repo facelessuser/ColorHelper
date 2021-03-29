@@ -42,27 +42,22 @@ def xyz_to_lin_a98rgb(xyz):
 def lin_a98rgb(rgb):
     """Convert an array of a98-rgb values in the range 0.0 - 1.0 to linear light (un-corrected) form."""
 
-    return [math.copysign(math.pow(abs(val), 563 / 256), val) for val in rgb]
+    return [math.copysign(abs(val) ** (563 / 256), val) for val in rgb]
 
 
 def gam_a98rgb(rgb):
     """Convert an array of linear-light a98-rgb  in the range 0.0-1.0 to gamma corrected form."""
 
-    return [math.copysign(math.pow(abs(val), 256 / 563), val) for val in rgb]
+    return [math.copysign(abs(val) ** (256 / 563), val) for val in rgb]
 
 
-class A98_RGB(SRGB):
+class A98RGB(SRGB):
     """A98 RGB class."""
 
     SPACE = "a98-rgb"
     DEF_VALUE = "color(a98-rgb 0 0 0 / 1)"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     WHITE = convert.WHITES["D65"]
-
-    def __init__(self, color=DEF_VALUE):
-        """Initialize."""
-
-        super().__init__(color)
 
     @classmethod
     def _to_xyz(cls, rgb):

@@ -36,12 +36,12 @@ def overlay(c1, c2, a1, a2, a0, angle=False):
         return c0 / a0 if a0 else c0
 
 
-def interpolate(p, coords1, coords2, create, progress, outspace, premultiplied):
+def interpolate(p, channels1, channels2, create, progress, outspace, premultiplied):
     """Run through the coordinates and run the interpolation on them."""
 
-    coords = []
-    for i, c1 in enumerate(coords1):
-        c2 = coords2[i]
+    channels = []
+    for i, c1 in enumerate(channels1):
+        c2 = channels2[i]
         if util.is_nan(c1) and util.is_nan(c2):
             value = 0.0
         elif util.is_nan(c1):
@@ -50,28 +50,11 @@ def interpolate(p, coords1, coords2, create, progress, outspace, premultiplied):
             value = c1
         else:
             value = c1 + (c2 - c1) * (p if progress is None else progress(p))
-        coords.append(value)
-    color = create.new(coords).convert(outspace)
+        channels.append(value)
+    color = create.new(channels[:-1], channels[-1])
     if premultiplied:
         postdivide(color)
-    return color
-
-
-def prepare_coords(color, adjust=None):
-    """
-    Prepare the coordinates for interpolation.
-
-    If the hue is null, we need to set it to NaN.
-    If the user specified only specific channels to mix,
-    then we need to set all other channels to NaN.
-    """
-
-    if adjust:
-        to_adjust = adjust & color.CHANNEL_NAMES
-        to_avoid = color.CHANNEL_NAMES - adjust
-        if to_adjust:
-            for channel in to_avoid:
-                color.set(channel, util.NaN)
+    return color.convert(outspace) if outspace != color.space() else color
 
 
 def postdivide(color):
@@ -179,7 +162,8 @@ class Interpolate:
         """
 
         current_space = self.space()
-        if self.alpha < 1.0:
+        alpha = util.no_nan(self.alpha)
+        if alpha < 1.0:
             if space is None:
                 space = current_space
             else:
@@ -188,21 +172,14 @@ class Interpolate:
             this = self.convert(space, fit=True)
             background = background.convert(space, fit=True)
 
-            if this is None:
-                raise ValueError('Invalid colorspace value: {}'.format(space))
-
-            # Get the coordinates and indexes of valid hues
-            prepare_coords(this)
-            prepare_coords(background)
-
             # Adjust hues if we have two valid hues
             if isinstance(this, Cylindrical):
                 adjust_hues(this, background, util.DEF_HUE_ADJ)
 
             coords1 = this.coords()
             coords2 = background.coords()
-            a1 = this.alpha
-            a2 = background.alpha
+            a1 = util.no_nan(this.alpha)
+            a2 = util.no_nan(background.alpha)
             a0 = a1 + a2 * (1.0 - a1)
             gamut = this._range
             coords = []
@@ -316,15 +293,11 @@ class Interpolate:
             adjust = set([name.lower() for name in adjust])
 
         inspace = space.lower()
-        outspace = self.space() if out_space is None else out_space
+        outspace = self.space() if out_space is None else out_space.lower()
 
         # Convert to the color space and ensure the color fits inside
         color1 = self.convert(inspace, fit=True)
         color2 = color.convert(inspace, fit=True)
-
-        # Get the coordinates and indexes of valid hues
-        prepare_coords(color1)
-        prepare_coords(color2, adjust)
 
         # Adjust hues if we have two valid hues
         if isinstance(color1, Cylindrical):
@@ -334,17 +307,17 @@ class Interpolate:
             premultiply(color1)
             premultiply(color2)
 
-        coords1 = color1.coords()
-        coords2 = color2.coords()
+        channels1 = color1.coords()
+        channels2 = color2.coords()
 
         # Include alpha
-        coords1.append(color1.alpha)
-        coords2.append(color2.alpha)
+        channels1.append(color1.alpha)
+        channels2.append(color2.alpha)
 
         return functools.partial(
             interpolate,
-            coords1=coords1,
-            coords2=coords2,
+            channels1=channels1,
+            channels2=channels2,
             create=color1,
             progress=progress,
             outspace=outspace,
