@@ -749,8 +749,6 @@ class SRGBX11(SRGB):
 
         if channel in (-1, 0, 1, 2):
             return parse.norm_hex_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):

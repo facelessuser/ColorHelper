@@ -36,8 +36,6 @@ class HexSRGB(SRGB):
         # Unless it explicitly starts with `0x` we will assume it is a int/float.
         if -1 <= channel <= 2:
             return norm_hex_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):

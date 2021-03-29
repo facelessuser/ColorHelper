@@ -151,12 +151,6 @@ def handle_vars(string, variables, parents=None):
     return RE_VARS.sub(functools.partial(_var_replace, var=temp_vars, parents=parent_vars), string)
 
 
-def contrast_ratio(lum1, lum2):
-    """Get contrast ratio."""
-
-    return (lum1 + 0.05) / (lum2 + 0.05) if (lum1 > lum2) else (lum2 + 0.05) / (lum1 + 0.05)
-
-
 class ColorMod:
     """Color utilities."""
 

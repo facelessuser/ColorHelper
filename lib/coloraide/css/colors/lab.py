@@ -63,13 +63,11 @@ class LAB(generic.LAB):
         """Translate channel string."""
 
         if channel == 0:
-            return parse.norm_lab_lightness(value)
+            return parse.norm_percent_channel(value)
         elif channel in (1, 2):
             return parse.norm_float(value)
         elif channel == -1:
             return parse.norm_alpha_channel(value)
-        else:
-            raise ValueError("Unexpected channel index of '{}'".format(channel))
 
     @classmethod
     def split_channels(cls, color):
