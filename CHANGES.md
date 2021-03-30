@@ -5,6 +5,8 @@
 - **FIX**: Ensure that contrast related functions are using XYZ with D65 white  
   point instead of D50 in order to match WCAG 2.1 specifications.
 - **FIX**: Fix some string output issues.
+- **FIX**: Fix some algorithmic issues with Delta E 2000 which affects gamut  
+  mapping.
 
 ## 3.3.0
 
