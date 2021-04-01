@@ -1,6 +1,8 @@
 ASE
 CSS
 Changelog
+ColorAide
+ColorAide's
 ColorHelper
 ColorMod
 ColorPicker

@@ -27,6 +27,8 @@ nav:
     - Overview: index.md
     - Installation: installation.md
     - User Guide: usage.md
+  - FAQ:
+    - Frequently Asked Questions: faq.md
   - Settings:
     - Configuring ColorHelper: settings/index.md
     - Graphic Rendering: settings/graphics.md
