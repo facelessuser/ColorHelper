@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 3.3.2
+
+- **FIX**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
+  settings.
+
 ## 3.3.1
 
 - **FIX**: Ensure that contrast related functions are using XYZ with D65 white  
