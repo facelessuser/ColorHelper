@@ -10,7 +10,7 @@ option, but ColorHelper 3 is a bit different.
 
 In order to make ColorHelper more flexible than ever, we created a dependency called [`coloraide`][coloraide]
 which is used to handle all the conversions, CSS string parsing, and CSS string output. This library allows for each
-color space to define it's string output [options][coloraide-strings]. These options are exposed via in the settings.
+color space to define its own string output [options][coloraide-strings]. These options are exposed via the settings.
 
 Each configuration for a given file type will specify a "color class". For instance, HTML and CSS use `css-level-4` by
 default.
@@ -26,8 +26,8 @@ default.
             "color_class": "css-level-4", // <--- specified color class
 ```
 
-If one wanted make any rule that uses `css-level-4` to output hex in uppercase, they could simply override
-the output in `user_color_classes`:
+If there was a desire to make make any rule that uses `css-level-4` output hex in uppercase, the color class
+configuration options could be overridden in `user_color_classes`:
 
 ```js
     "user_color_classes": {
