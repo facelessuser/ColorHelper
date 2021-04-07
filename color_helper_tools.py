@@ -343,7 +343,7 @@ def evaluate_contrast(string):
             colors.append(second)
             if ratio:
                 if first.alpha < 1.0:
-                    first = first.overlay(second, space="srgb")
+                    first = first.compose(second, space="srgb")
 
                 colormod = util.import_color("ColorHelper.custom.st_colormod.Color")
                 color = colormod(
@@ -358,10 +358,10 @@ def evaluate_contrast(string):
 
             if first.alpha < 1.0:
                 # Contrasted with current color
-                colors.append(first.overlay(second, space="srgb"))
+                colors.append(first.compose(second, space="srgb"))
                 # Contrasted with the two extremes min and max
-                colors.append(first.overlay("white", space="srgb"))
-                colors.append(first.overlay("black", space="srgb"))
+                colors.append(first.compose("white", space="srgb"))
+                colors.append(first.compose("black", space="srgb"))
             else:
                 colors.append(first.clone())
     except Exception:
@@ -399,8 +399,8 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
         bg = styles['background']
         temp = Color(bg).convert("srgb")
         is_dark = temp.luminance() < 0.5
-        bg = temp.mix("white" if is_dark else "black", 0.05).to_string(**util.HEX)
-        code = temp.mix("white" if is_dark else "black", 0.15).to_string(**util.HEX)
+        bg = temp.mix("white" if is_dark else "black", 0.05, space="srgb").to_string(**util.HEX)
+        code = temp.mix("white" if is_dark else "black", 0.15, space="srgb").to_string(**util.HEX)
         font = sublime.load_settings("Preferences.sublime-settings").get('font_face', 'Courier')
         return STYLE.format(fg=fg, bg=bg, code=code, font=font)
 
@@ -464,9 +464,9 @@ class ColorInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 temp = Color(preview_border)
                 if temp.luminance() < 0.5:
-                    second_border = temp.mix('white', 0.25).to_string(**util.HEX_NA)
+                    second_border = temp.mix('white', 0.25, space="srgb").to_string(**util.HEX_NA)
                 else:
-                    second_border = temp.mix('black', 0.25).to_string(**util.HEX_NA)
+                    second_border = temp.mix('black', 0.25, space="srgb").to_string(**util.HEX_NA)
 
                 height = self.height * 3
                 width = self.width * 3
@@ -653,9 +653,9 @@ class ColorModInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 temp = Color(preview_border)
                 if temp.luminance() < 0.5:
-                    second_border = temp.mix('white', 0.25).to_string(**util.HEX_NA)
+                    second_border = temp.mix('white', 0.25, space="srgb").to_string(**util.HEX_NA)
                 else:
-                    second_border = temp.mix('black', 0.25).to_string(**util.HEX_NA)
+                    second_border = temp.mix('black', 0.25, space="srgb").to_string(**util.HEX_NA)
 
                 height = self.height * 3
                 width = self.width * 3
