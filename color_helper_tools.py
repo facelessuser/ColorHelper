@@ -455,7 +455,7 @@ class ColorInputHandler(_ColorInputHandler):
                     orig = orig.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
-                    srgb = orig.convert('srgb')
+                    srgb = orig.convert('srgb', fit=True)
                 else:
                     srgb = orig.convert('srgb')
                 color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
@@ -646,7 +646,7 @@ class ColorModInputHandler(_ColorInputHandler):
                 preview_border = self.default_border
                 message = ""
                 if not srgb.in_gamut():
-                    srgb.fit("srgb")
+                    srgb.fit()
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)

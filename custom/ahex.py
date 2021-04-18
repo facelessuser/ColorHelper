@@ -1,6 +1,7 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.css.colors import Color, SRGB
-from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import Color
+from ..lib.coloraide.css.spaces import SRGB
+from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
 import copy
 import re
@@ -9,7 +10,7 @@ import re
 class ASRGB(SRGB):
     """SRGB that looks for alpha first in hex format."""
 
-    MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**parse.COLOR_PARTS))
+    MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**_parse.COLOR_PARTS))
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):
@@ -25,7 +26,7 @@ class ASRGB(SRGB):
         """Translate channel string."""
 
         if -1 <= channel <= 2:
-            return parse.norm_hex_channel(value)
+            return _parse.norm_hex_channel(value)
 
     @classmethod
     def split_channels(cls, color):
@@ -51,7 +52,7 @@ class ASRGB(SRGB):
             )
 
     def to_string(
-        self, *, options=None, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, options=None, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to Hex format."""
 
@@ -64,7 +65,8 @@ class ASRGB(SRGB):
             template = template.upper()
 
         # Always fit hex
-        coords = util.no_nan(self.fit_coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(parent.fit(method=method).coords())
         if show_alpha:
             value = template.format(
                 int(util.round_half_up(a * 255.0)),

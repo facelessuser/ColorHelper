@@ -2,6 +2,9 @@
 
 ## 3.3.2
 
+- **FIX**: Upgrade `coloraide` which fixes issues related to inconsistent use of  
+  D65 white values in XYZ transforms and Bradford CAT and other lesser bug fixes  
+  as well.
 - **FIX**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
   settings.
 

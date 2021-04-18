@@ -1,6 +1,7 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.colors import Color, SRGB
-from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import Color
+from ..lib.coloraide.css.spaces import SRGB
+from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
 import copy
 import re
@@ -10,7 +11,7 @@ def norm_hex_channel(string):
     """Normalize the hex string to a form we can handle."""
 
     if string.startswith('0x'):
-        return int(string[2:], 16) * parse.RGB_CHANNEL_SCALE
+        return int(string[2:], 16) * _parse.RGB_CHANNEL_SCALE
     else:
         raise ValueError("String format of a hex channel must be in the form of '0xXX'")
 
@@ -51,7 +52,7 @@ class HexSRGB(SRGB):
         )
 
     def to_string(
-        self, *, options=None, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, options=None, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to Hex format."""
 
@@ -63,7 +64,8 @@ class HexSRGB(SRGB):
         if options.get("upper"):
             template = template.upper()
 
-        coords = util.no_nan(self.fit_coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(parent.fit(method=method).coords())
         if show_alpha:
             value = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),

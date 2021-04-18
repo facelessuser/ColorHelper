@@ -1,11 +1,12 @@
 """Custom color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.css.colors import Color, SRGB
-from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import Color
+from ..lib.coloraide.css.spaces import SRGB
+from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
 import copy
 import re
 
-RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**parse.COLOR_PARTS))
+RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**_parse.COLOR_PARTS))
 
 name2hex_map = {
     "black": "#000000",
@@ -691,11 +692,11 @@ class SRGBX11(SRGB):
             # Names
             \b(?<!\#)[a-z]{{3,}}(?!\()\b
         )
-        """.format(**parse.COLOR_PARTS)
+        """.format(**_parse.COLOR_PARTS)
     )
 
     def to_string(
-        self, *, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, alpha=None, precision=None, fit=True, **kwargs
     ):
         """Convert to CSS."""
 
@@ -706,7 +707,8 @@ class SRGBX11(SRGB):
         alpha = alpha is not False and (alpha is True or a < 1.0)
         hex_upper = options.get("upper", False)
         compress = options.get("compress", False)
-        coords = util.no_nan(self.fit_coords())
+        method = None if not isinstance(fit, str) else fit
+        coords = util.no_nan(parent.fit(method=method).coords())
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if alpha else "#{:02x}{:02x}{:02x}"
         if hex_upper:
@@ -748,7 +750,7 @@ class SRGBX11(SRGB):
         """Translate channel string."""
 
         if channel in (-1, 0, 1, 2):
-            return parse.norm_hex_channel(value)
+            return _parse.norm_hex_channel(value)
 
     @classmethod
     def split_channels(cls, color):

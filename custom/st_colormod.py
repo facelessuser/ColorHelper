@@ -1,8 +1,8 @@
 """Color-mod."""
 import re
-from ..lib.coloraide.css import Color as ColorCSS
-from ..lib.coloraide.colors import ColorMatch
-from ..lib.coloraide.colors import _parse as parse
+from ..lib.coloraide import Color as ColorCSS
+from ..lib.coloraide import ColorMatch
+from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
 import functools
 import math
@@ -21,30 +21,30 @@ TOKENS = {
             \#(?:{hex}{{6}}(?:{hex}{{2}})?|{hex}{{3}}(?:{hex})?) |
             [\w][\w\d]*
         )
-        """.format(**parse.COLOR_PARTS)
+        """.format(**_parse.COLOR_PARTS)
     ),
     "functions": re.compile(r'(?i)[\w][\w\d]*\('),
-    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**parse.COLOR_PARTS))
+    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**_parse.COLOR_PARTS))
 }
 
 RE_ADJUSTERS = {
     "alpha": re.compile(
         r'(?i)\s+a(?:lpha)?\(\s*(?:(\+\s+|\-\s+)?({percent}|{float})|(\*)?\s*({percent}|{float}))\s*\)'.format(
-            **parse.COLOR_PARTS
+            **_parse.COLOR_PARTS
         )
     ),
-    "saturation": re.compile(r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**parse.COLOR_PARTS)),
-    "lightness": re.compile(r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**parse.COLOR_PARTS)),
+    "saturation": re.compile(r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)),
+    "lightness": re.compile(r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)),
     "min-contrast_start": re.compile(r'(?i)\s+min-contrast\(\s*'),
     "blend_start": re.compile(r'(?i)\s+blenda?\(\s*'),
     "end": re.compile(r'(?i)\s*\)')
 }
 
-RE_HUE = re.compile(r'(?i){angle}'.format(**parse.COLOR_PARTS))
+RE_HUE = re.compile(r'(?i){angle}'.format(**_parse.COLOR_PARTS))
 RE_COLOR_START = re.compile(r'(?i)color\(\s*')
-RE_BLEND_END = re.compile(r'(?i)\s+({percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**parse.COLOR_PARTS))
+RE_BLEND_END = re.compile(r'(?i)\s+({percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**_parse.COLOR_PARTS))
 RE_BRACKETS = re.compile(r'(?:(\()|(\))|[^()]+)')
-RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({float})\s*\)'.format(**parse.COLOR_PARTS))
+RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({float})\s*\)'.format(**_parse.COLOR_PARTS))
 RE_VARS = re.compile(r'(?i)(?:(?<=^)|(?<=[\s\t\(,/]))(var\(\s*([-\w][-\w\d]*)\s*\))(?!\()(?=[\s\t\),/]|$)')
 
 
@@ -209,7 +209,7 @@ class ColorMod:
                 start = m.end(0)
                 m = RE_HUE.match(string, start)
                 if m:
-                    hue = parse.norm_hue_channel(m.group(0))
+                    hue = _parse.norm_angle(m.group(0))
                     color = Color("hsl", [hue, 1, 0.5]).convert("srgb")
                     start = m.end(0)
                 if color is None:
@@ -306,7 +306,7 @@ class ColorMod:
         else:
             value = m.group(4)
         if value.endswith('%'):
-            value = float(value.strip('%')) * parse.SCALE_PERCENT
+            value = float(value.strip('%')) * _parse.SCALE_PERCENT
         else:
             value = float(value)
         op = ""
@@ -348,7 +348,7 @@ class ColorMod:
                 raise ValueError("Could not find a valid color for 'blend'")
         m = RE_BLEND_END.match(string, start)
         if m:
-            value = float(m.group(1).strip('%')) * parse.SCALE_PERCENT
+            value = float(m.group(1).strip('%')) * _parse.SCALE_PERCENT
             space = "srgb"
             if m.group(2):
                 space = m.group(2).lower()
@@ -539,7 +539,7 @@ class Color(ColorCSS):
                     return obj
         elif isinstance(color, ColorCSS):
             if not filters or color.space() in filters:
-                obj = self.CS_MAP[color.space()](color._color)
+                obj = self.CS_MAP[color.space()](color._space)
         else:
             m = self._match(color, fullmatch=True, filters=filters, variables=variables)
             if m is None:
@@ -581,7 +581,7 @@ class Color(ColorCSS):
                 string = handle_vars(string, variables)
             obj, match_end = ColorMod(fullmatch).adjust(string, start)
             if obj is not None:
-                return ColorMatch(obj._color, start, end if end is not None else match_end)
+                return ColorMatch(obj._space, start, end if end is not None else match_end)
         else:
             filters = set(filters) if filters is not None else set()
             obj = None
@@ -605,17 +605,22 @@ class Color(ColorCSS):
             obj.color = cls(obj.color.space(), obj.color.coords(), obj.color.alpha)
         return obj
 
-    @classmethod
-    def new(cls, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
+    def new(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Create new color object."""
 
-        return cls(color, data, alpha, filters=filters, variables=variables, **kwargs)
+        return type(self)(color, data, alpha, filters=filters, variables=variables, **kwargs)
 
     def update(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Update the existing color space with the provided color."""
 
+        clone = self.clone()
         obj = self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs)
-        self._color.update(obj)
+        clone._attach(obj)
+
+        if clone.space() != self.space():
+            clone.convert(self.space(), in_place=True)
+
+        self._attach(clone._space)
         return self
 
     def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
