@@ -58,7 +58,7 @@ class _ColorMixin:
 
         # Check if the first point within the color matches our scope rules
         # and load up the appropriate color class
-        color_class = None
+        color_class = Color
         filters = []
         output = []
         edit_mode = "default"
@@ -98,7 +98,9 @@ class _ColorMixin:
         pt = 0
         if len(sels) >= 1:
             pt = sels[0].begin()
-        rule = util.get_rules(self.view, {})
+        rule = util.get_rules(self.view)
+        if rule is None:
+            rule = {}
         color_class, filters, output, edit_mode = self.get_color_options(pt, rule)
         self.edit_mode = edit_mode
         self.custom_color_class = color_class
