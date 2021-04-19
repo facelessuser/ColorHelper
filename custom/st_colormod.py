@@ -33,7 +33,9 @@ RE_ADJUSTERS = {
             **_parse.COLOR_PARTS
         )
     ),
-    "saturation": re.compile(r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)),
+    "saturation": re.compile(
+        r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)
+    ),
     "lightness": re.compile(r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)),
     "min-contrast_start": re.compile(r'(?i)\s+min-contrast\(\s*'),
     "blend_start": re.compile(r'(?i)\s+blenda?\(\s*'),
