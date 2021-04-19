@@ -1,12 +1,16 @@
 # ColorHelper
 
-## 3.3.2
+## 3.4.0
 
+- **NEW**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
+  settings.
+- **NEW**: New `coloraide` brings support for `oklab`, `oklch`, `jzazbz`, `jzczhz`  
+  D65 variations of CIELAB, CIELCH, and XYZ (none of which are enabled by default).
+- **NEW**: Some refactoring of `coloraide` caused custom color classes to get  
+  updated. User created custom classes may have to get updated to work.
 - **FIX**: Upgrade `coloraide` which fixes issues related to inconsistent use of  
   D65 white values in XYZ transforms and Bradford CAT and other lesser bug fixes  
-  as well.
-- **FIX**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
-  settings.
+  as well. This particularly improves conversions to and from CIELAB.
 
 ## 3.3.1
 
