@@ -98,7 +98,7 @@ class _ColorMixin:
         pt = 0
         if len(sels) >= 1:
             pt = sels[0].begin()
-        rule = util.get_rules(self.view)
+        rule = util.get_rules(self.view, {})
         color_class, filters, output, edit_mode = self.get_color_options(pt, rule)
         self.edit_mode = edit_mode
         self.custom_color_class = color_class

@@ -1,6 +1,6 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 from ..lib.coloraide import Color
-from ..lib.coloraide.css.spaces import SRGB
+from ..lib.coloraide.css.spaces.srgb import SRGB
 from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
 import copy
