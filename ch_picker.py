@@ -11,9 +11,9 @@ from mdpopups import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
 from .lib.coloraide.css.spaces import _color_names as css_names
-from . import color_helper_util as util
-from .color_helper_mixin import _ColorMixin
-from .color_helper_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA
+from . import ch_util as util
+from .ch_mixin import _ColorMixin
+from .ch_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA
 import copy
 
 color_map = None

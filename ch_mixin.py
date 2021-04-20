@@ -1,9 +1,9 @@
 """Mix-in class."""
 import sublime
 import mdpopups
-from . import color_helper_util as util
-from .color_helper_util import HEX, HEX_NA
-from .multiconf import get as qualify_settings
+from . import ch_util as util
+from .ch_util import HEX, HEX_NA
+from .lib.multiconf import get as qualify_settings
 from .lib.coloraide import Color
 from collections import namedtuple
 

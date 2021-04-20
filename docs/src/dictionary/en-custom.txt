@@ -1,4 +1,6 @@
 ASE
+CIELAB
+CMC
 CSS
 Changelog
 ColorAide
@@ -13,6 +15,7 @@ HREF
 HSL
 HWB
 HiDPI
+ITP
 Inline
 JSON
 KDE

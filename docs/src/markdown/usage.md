@@ -127,6 +127,25 @@ The tool can be launched from the quick panel (if a color is selected), from the
 When editing is complete, simply press enter and the color will be handed returned to the document for inserting, or
 to the color picker if launched from there.
 
+## Color Difference Tool
+
+![ColorMod Tool](images/diff_tool.gif)
+
+The Color Difference tool is used to compare two colors. If you select two colors and execute the Color Difference tool
+from the command palette, you can enter two colors and get the difference using Delta E 2000 which uses CIELAB to
+compute the difference. You can change the distance method simply by adding `@method` at the end. Currently, you can
+use Delta E 2000 (`@2000`), Delta E CMC (`@cmc`), Delta E 94 (`@94`), Delta E 76 (`@76`), Delta E ITP (`@itp`), or
+simple Euclidean distancing (`@euclidean`).
+
+You can also access this tool from the main color panel or even the context menu. If using the panel, the current color
+will be inserted as the initial text.
+
+Keep in mind, if using `@euclidean`, the color space of the first color is used, and Cylindrical color spaces don't work
+well.
+
+If ++enter++ is pressed, the first color will be returned and Color Helper will prompt you to replace the first selected
+color in your view. If you do not want this, just dismiss the dialog with ++esc++.
+
 ## Color Palettes
 
 ColorHelper allows for saving colors in color palettes. These are either saved globally or in project specific settings.
