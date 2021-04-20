@@ -6,12 +6,12 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
-from .color_helper_native_picker import pick as native_picker
 import mdpopups
-from . import color_helper_util as util
 from html.parser import HTMLParser
-from .color_helper_mixin import _ColorMixin
+from .lib.coloraide import Color
+from .ch_native_picker import pick as native_picker
+from .ch_mixin import _ColorMixin
+from . import ch_util as util
 
 __pc_name__ = "ColorHelper"
 
@@ -58,10 +58,6 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             values = href.split(':', 2)
             color = util.decode_color(values[2]) if len(values) > 2 else None
             self.show_tool(values[1], color)
-        elif href.startswith('__edit__'):
-            self.edit_color(*(href.split(':', 2)[1:]))
-        elif href.startswith('__contrast__'):
-            self.contrast_color(href.split(':', 1)[1])
         elif href.startswith('__color_picker__'):
             self.color_picker(href.split(':', 1)[1])
         elif href.startswith('__add_fav__'):
@@ -303,6 +299,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif tool == "__colormod__":
             cmd = "color_helper_sublime_color_mod"
             edit_color = current if is_color_mod else color
+        elif tool == "__diff__":
+            cmd = "color_helper_difference"
+            edit_color = color
         else:
             return
 
@@ -537,7 +536,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         template_vars['tools'] = [
             ('Edit and Mix', '__tool__:__edit__'),
             ('Contrast', '__tool__:__contrast__'),
-            ('Sublime ColorMod', '__tool__:__colormod__')
+            ('Sublime ColorMod', '__tool__:__colormod__'),
+            ('Color Difference', '__tool__:__diff__')
         ]
 
         mdpopups.show_popup(

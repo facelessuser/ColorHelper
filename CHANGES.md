@@ -2,11 +2,12 @@
 
 ## 3.4.0
 
+- **NEW**: New color difference tool.
 - **NEW**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
   settings.
 - **NEW**: New `coloraide` brings support for `oklab`, `oklch`, `jzazbz`, `jzczhz`,  
   `ICtCp`, D65 variations of CIELAB, CIELCH, and XYZ (none of which are enabled  
-  by default).
+  as output options by default).
 - **NEW**: Some refactoring of `coloraide` caused custom color classes to get  
   updated. User created custom classes may have to get updated to work.
 - **FIX**: Upgrade `coloraide` which fixes issues related to inconsistent use of  

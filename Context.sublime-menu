@@ -30,6 +30,10 @@
             {
                 "caption": "Color Helper: ST ColorMod",
                 "command": "color_helper_sublime_color_mod"
+            },
+            {
+                "caption": "Color Helper: Difference",
+                "command": "color_helper_difference"
             }
         ]
     },

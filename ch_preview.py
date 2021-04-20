@@ -12,9 +12,9 @@ from time import time, sleep
 import re
 import os
 import mdpopups
-from . import color_helper_util as util
+from . import ch_util as util
 import traceback
-from .multiconf import get as qualify_settings
+from .lib.multiconf import get as qualify_settings
 from collections import namedtuple
 
 PREVIEW_IMG = (

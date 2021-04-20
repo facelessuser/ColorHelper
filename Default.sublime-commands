@@ -37,6 +37,10 @@
         "command": "color_helper_sublime_color_mod"
     },
     {
+        "caption": "Color Helper: Difference",
+        "command": "color_helper_difference"
+    },
+    {
         "caption": "Color Helper: Reload Custom Color Classes (Dev)",
         "command": "color_helper_reload_color_class"
     }

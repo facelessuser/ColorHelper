@@ -1,7 +1,7 @@
 """Development tools for color helper."""
 import sublime
 import sublime_plugin
-from . import color_helper_util as util
+from . import ch_util as util
 import sys
 import traceback
 
