@@ -299,6 +299,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif tool == "__colormod__":
             cmd = "color_helper_sublime_color_mod"
             edit_color = current if is_color_mod else color
+        elif tool == "__blend__":
+            cmd = "color_helper_blend_mode"
+            edit_color = color
         elif tool == "__diff__":
             cmd = "color_helper_difference"
             edit_color = color
@@ -536,6 +539,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         template_vars['tools'] = [
             ('Edit and Mix', '__tool__:__edit__'),
             ('Contrast', '__tool__:__contrast__'),
+            ('Blend Modes', '__tool__:__blend__'),
             ('Sublime ColorMod', '__tool__:__colormod__'),
             ('Color Difference', '__tool__:__diff__')
         ]

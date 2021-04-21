@@ -17,7 +17,7 @@ RE_PERCENT = re.compile(r'\s+([-+]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)%)')
 RE_SPACE = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
 RE_RATIO = re.compile(r'\s+((?:(?:[0-9]*\.[0-9]+)|[0-9]+))')
 RE_MINUS = re.compile(r'\s*\-\s*(?!\d)')
-RE_DIFF_METHOD = re.compile(r'(?i)\s*@\s*([-a-z0-9]+)')
+RE_MODE = re.compile(r'(?i)\s*!\s*([-a-z0-9]+)')
 
 STYLE = """
 <style>

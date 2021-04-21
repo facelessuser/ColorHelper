@@ -20,7 +20,7 @@
                 "args": { "mode": "color_picker" }
             },
             {
-                "caption": "Color Helper: Edit",
+                "caption": "Color Helper: Edit and Mix",
                 "command": "color_helper_edit"
             },
             {
@@ -34,6 +34,10 @@
             {
                 "caption": "Color Helper: Difference",
                 "command": "color_helper_difference"
+            },
+            {
+                "caption": "Color Helper: Blend Modes",
+                "command": "color_helper_blend_mode"
             }
         ]
     },
