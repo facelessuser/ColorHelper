@@ -148,7 +148,7 @@ def evaluate(string):
     return colors
 
 
-class ColorContrastInputHandler(tools._ColorInputHandler):
+class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
     """Handle color inputs."""
 
     def __init__(self, view, initial=None, **kwargs):
@@ -239,11 +239,11 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
     """Open edit a color directly."""
 
     def run(
-        self, edit, color_contrast, initial=None, on_done=None, **kwargs
+        self, edit, color_helper_contrast_ratio, initial=None, on_done=None, **kwargs
     ):
         """Run command."""
 
-        colors = evaluate(color_contrast)
+        colors = evaluate(color_helper_contrast_ratio)
         color = None
         if colors:
             color = colors[0]
@@ -264,4 +264,4 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
     def input(self, kwargs):  # noqa: A003
         """Input."""
 
-        return ColorContrastInputHandler(self.view, **kwargs)
+        return ColorHelperContrastRatioInputHandler(self.view, **kwargs)

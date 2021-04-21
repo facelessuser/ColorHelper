@@ -1,3 +1,4 @@
+[blend-modes]: https://facelessuser.github.io/coloraide/compositing/#blend-modes
 [color-picker]: https://packagecontrol.io/packages/ColorPicker
 [coloraide]: https://facelessuser.github.io/coloraide/
 [coloraide-strings]: https://facelessuser.github.io/coloraide/strings/

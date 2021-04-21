@@ -3,6 +3,7 @@
 ## 3.4.0
 
 - **NEW**: New color difference tool.
+- **NEW**: New blend modes tool.
 - **NEW**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
   settings.
 - **NEW**: New `coloraide` brings support for `oklab`, `oklch`, `jzazbz`, `jzczhz`,  

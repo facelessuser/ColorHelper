@@ -35,7 +35,7 @@ Please see [Sublime Text Documentation](https://www.sublimetext.com/docs/color_s
 """
 
 
-class ColorModInputHandler(tools._ColorInputHandler):
+class ColorHelperColorModInputHandler(tools._ColorInputHandler):
     """Handle color inputs."""
 
     def __init__(self, view, initial=None, **kwargs):
@@ -139,11 +139,11 @@ class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand)
     """Open edit a color directly."""
 
     def run(
-        self, edit, color_mod, initial=None, on_done=None, **kwargs
+        self, edit, color_helper_color_mod, initial=None, on_done=None, **kwargs
     ):
         """Run command."""
 
-        text = color_mod.strip()
+        text = color_helper_color_mod.strip()
         self.custom_color_class = util.import_color("ColorHelper.custom.st_colormod.Color")
         color = self.custom_color_class(text)
 
@@ -164,4 +164,4 @@ class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand)
     def input(self, kwargs):  # noqa: A003
         """Input."""
 
-        return ColorModInputHandler(self.view, **kwargs)
+        return ColorHelperColorModInputHandler(self.view, **kwargs)

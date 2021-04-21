@@ -57,7 +57,7 @@ def parse_color(string, start=0, second=False):
         start = color.end
         if color.end != length:
             more = True
-            # Percentage if provided
+            # Percentage is provided
             m = tools.RE_PERCENT.match(string, start)
             if m:
                 start = m.end(0)
@@ -153,6 +153,9 @@ def evaluate(string):
             # controls how much of the second color gets mixed in.
             percent = percent2
 
+        if space is None and first:
+            space = first.color.space()
+
         # Package up the color, or the two reference colors along with the mixed.
         if first:
             colors.append(first.color)
@@ -166,7 +169,7 @@ def evaluate(string):
     return colors
 
 
-class ColorInputHandler(tools._ColorInputHandler):
+class ColorHelperEditInputHandler(tools._ColorInputHandler):
     """Handle color inputs."""
 
     def __init__(self, view, initial=None, **kwargs):
@@ -265,11 +268,11 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
     """Open edit a color directly."""
 
     def run(
-        self, edit, color, initial=None, on_done=None, **kwargs
+        self, edit, color_helper_edit, initial=None, on_done=None, **kwargs
     ):
         """Run command."""
 
-        colors = evaluate(color)
+        colors = evaluate(color_helper_edit)
         color = None
         if colors:
             color = colors[-1]
@@ -290,4 +293,4 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
     def input(self, kwargs):  # noqa: A003
         """Input."""
 
-        return ColorInputHandler(self.view, **kwargs)
+        return ColorHelperEditInputHandler(self.view, **kwargs)

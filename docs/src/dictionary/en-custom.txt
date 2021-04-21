@@ -48,6 +48,7 @@ emoji
 grayscale
 inline
 installable
+ish
 lowercased
 luminance
 macOS
