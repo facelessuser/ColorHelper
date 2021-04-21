@@ -151,6 +151,7 @@
     //                     rest, are still available under tools menu item on the popups.
     "color_classes": {
         "css-level-4": {
+            "filters": ["srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb", "xyz"],
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true}},

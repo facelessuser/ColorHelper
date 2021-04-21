@@ -21,6 +21,7 @@ COMMA = {"fit": False, "comma": True}
 FULL_PREC = {"fit": False, "precision": -1}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb")
+CSS_L4_SPACES = ("srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb", "xyz")
 
 lang_map = {
     # `'name': (('mapping_alias',), ('tmLanguage_or_sublime-syntax file',))`
