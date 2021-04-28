@@ -9,6 +9,7 @@ import sublime_plugin
 import mdpopups
 from html.parser import HTMLParser
 from .lib.coloraide import Color
+from .lib.coloraide import __version_info__ as color_ver
 from .ch_native_picker import pick as native_picker
 from .ch_mixin import _ColorMixin
 from . import ch_util as util
@@ -449,6 +450,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         )
         click_color_box_to_pick = s.get('click_color_box_to_pick', 'none')
 
+        # Make sure color versions are loaded proper so upgrades can happen if required
+        color_ver_okay = color_ver >= util.REQUIRED_COLOR_VERSION
+
         template_vars['edit_mode'] = self.edit_mode
         if click_color_box_to_pick == 'color_picker' and show_picker:
             template_vars['click_color_picker'] = True
@@ -462,9 +466,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         if click_color_box_to_pick != 'color_picker' and show_picker:
             template_vars['show_picker_menu'] = True
 
-        if show_global_palettes or show_project_palettes:
+        if (show_global_palettes or show_project_palettes) and color_ver_okay:
             template_vars['show_global_palette_menu'] = True
-        if show_favorite_palette:
+        if show_favorite_palette and color_ver_okay:
             template_vars['show_favorite_menu'] = True
             template_vars['is_marked'] = color.to_string(**util.COLOR_FULL_PREC) in util.get_favs()['colors']
 
@@ -752,7 +756,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.os_color_picker = s.get('use_os_color_picker', False)
         self.no_info = True
         self.no_palette = True
-        if mode == "palette":
+        if mode == "palette" and color_ver >= util.REQUIRED_COLOR_VERSION:
             self.no_palette = False
             if palette_name is not None:
                 self.show_colors(palette_name)

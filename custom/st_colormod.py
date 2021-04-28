@@ -240,7 +240,9 @@ class ColorMod:
 
                 while not done:
                     m = None
-                    for name, pattern in RE_ADJUSTERS.items():
+                    name = None
+                    for key, pattern in RE_ADJUSTERS.items():
+                        name = key
                         m = pattern.match(string, start)
                         if m:
                             start = m.end(0)

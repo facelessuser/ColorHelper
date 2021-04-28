@@ -65,7 +65,7 @@ def gam_srgb(rgb):
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i > 0.0031308:
-            result.append(math.copysign((1.055 * abs_i ** (1 / 2.4) - 0.055), i))
+            result.append(math.copysign(1.055 * (abs_i ** (1 / 2.4)) - 0.055, i))
         else:
             result.append(12.92 * i)
     return result
@@ -83,7 +83,7 @@ class SRGB(Space):
     CHANNEL_NAMES = ("red", "green", "blue", "alpha")
     WHITE = _cat.WHITES["D65"]
 
-    _range = (
+    RANGE = (
         GamutBound([0.0, 1.0]),
         GamutBound([0.0, 1.0]),
         GamutBound([0.0, 1.0])

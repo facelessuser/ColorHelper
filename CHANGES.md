@@ -1,5 +1,17 @@
 # ColorHelper
 
+## 3.5.0
+
+- **NEW**: Remove default palette file as it just contained examples that most  
+  people would never use.
+- **NEW**: Color palettes now provide a format version so that they can be upgraded  
+  if needed. Due to the compatibility issue with a change for `color()` format,  
+  color palettes will be upgraded.
+- **FIX**: `color()` format for `lab` and other colors that have percentage only  
+  channels must require those channels to be input as percentages per the CSS  
+  level 4 specifications. This affects the string output for the `color()` format  
+  as well.
+
 ## 3.4.0
 
 - **NEW**: New color difference tool.

@@ -10,6 +10,16 @@ import platform
 import mdpopups
 import base64
 import importlib
+import re
+from .lib.coloraide.spaces import RE_DEFAULT_MATCH
+from .lib.coloraide import Color
+from .lib.coloraide import __version_info__ as coloraide_version
+
+PALETTE_CONFIG = 'color_helper.palettes'
+REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
+UPDATE_COLORS = re.compile(RE_DEFAULT_MATCH.format(**{'color_space': r'[-a-z0-9]+'}))
+COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
+PALETTE_FMT = (1, 0)
 
 RE_COLOR_START = r"(?i)(?:\b(?<![-#&$])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
 
@@ -221,55 +231,101 @@ def get_scope(view, rules, skip_sel_check=False):
     return scopes
 
 
+def update_colors_1_0(colors):
+    """Update colors for version 1.0."""
+
+    new_colors = []
+    for c in colors:
+        try:
+            m = UPDATE_COLORS.match(c)
+            if m:
+                values = m.group(2).split('/')
+                channels = [float(x.rstrip('%')) for x in values[0].split(' ')]
+                if len(values) > 1:
+                    alpha = float(values[1])
+                else:
+                    alpha = 1
+                new_colors.append(Color(m.group(1), channels, alpha).to_string(**COLOR_FULL_PREC))
+            else:
+                new_colors.append(Color(c).to_string(**COLOR_FULL_PREC))
+        except Exception:
+            pass
+    return new_colors
+
+
+def _get_palettes(window=None):
+    """Get palettes."""
+
+    if window is None:
+        palettes = sublime.load_settings(PALETTE_CONFIG)
+        fmt = tuple([int(x) for x in palettes.get('__format__', '0.0').split('.')])
+        if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_1_0:
+            if fmt == (0, 0):
+                favs = update_colors_1_0(palettes.get('favorites', []))
+                palettes.set('favorites', favs)
+                all_pallets = palettes.get('palettes', [])
+                for p in all_pallets:
+                    p['colors'] = update_colors_1_0(p['colors'])
+                palettes.set('palettes', all_pallets)
+                palettes.set('__format__', '1.0')
+                sublime.save_settings(PALETTE_CONFIG)
+    else:
+        data = window.project_data()
+        if data is None:
+            data = {
+                'color_helper_palettes_format': '.'.join(PALETTE_FMT),
+                'color_helper_palettes': []
+            }
+        color_palettes = data.get('color_helper_palettes', [])
+        if color_palettes:
+            fmt = tuple([int(x) for x in data.get('color_helper_palettes_format', '0.0').split('.')])
+            if fmt != PALETTE_FMT:
+                if fmt == (0, 0) and coloraide_version >= COLOR_FMT_1_0:
+                    for p in color_palettes:
+                        p['colors'] = update_colors_1_0(p['colors'])
+                    data['color_helper_palettes'] = color_palettes
+                    data['color_helper_palettes_format'] = '.'.join(PALETTE_FMT)
+                    window.set_project_data(data)
+        palettes = data
+    return palettes
+
+
 def get_favs():
     """Get favorites object."""
 
-    bookmark_colors = sublime.load_settings('color_helper.palettes').get("favorites", [])
+    bookmark_colors = _get_palettes().get("favorites", [])
     return {"name": "Favorites", "colors": bookmark_colors}
 
 
 def save_palettes(palettes, favs=False):
     """Save palettes."""
 
-    s = sublime.load_settings('color_helper.palettes')
+    s = _get_palettes()
     if favs:
         s.set('favorites', palettes)
     else:
         s.set('palettes', palettes)
-    sublime.save_settings('color_helper.palettes')
+    sublime.save_settings(PALETTE_CONFIG)
 
 
 def save_project_palettes(window, palettes):
     """Save project palettes."""
 
-    data = window.project_data()
-    if data is None:
-        data = {'color_helper_palettes': palettes}
-    else:
-        data['color_helper_palettes'] = palettes
+    data = _get_palettes(window)
+    data['color_helper_palettes'] = palettes
     window.set_project_data(data)
 
 
 def get_palettes():
     """Get palettes."""
 
-    return sublime.load_settings('color_helper.palettes').get("palettes", [])
+    return _get_palettes().get("palettes", [])
 
 
 def get_project_palettes(window):
     """Get project palettes."""
-    data = window.project_data()
-    if data is None:
-        data = {}
-    return data.get('color_helper_palettes', [])
 
-
-def get_project_folders(window):
-    """Get project folder."""
-    data = window.project_data()
-    if data is None:
-        data = {'folders': [{'path': f} for f in window.folders()]}
-    return data.get('folders', [])
+    return _get_palettes(window).get('color_helper_palettes', [])
 
 
 def merge_rules(a, b):
