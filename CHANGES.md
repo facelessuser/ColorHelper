@@ -2,6 +2,8 @@
 
 ## 3.5.0
 
+- **NEW**: `generic` rule will now allow scanning in strings by default. If this  
+  is not desired, simply modify it in user settings to reflect desired behavior.
 - **NEW**: Remove default palette file as it just contained examples that most  
   people would never use.
 - **NEW**: Color palettes now provide a format version so that they can be upgraded  

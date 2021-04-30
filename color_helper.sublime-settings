@@ -111,7 +111,7 @@
     // Additionally, `color_class` only accepts a string defining a single color class.
     "generic": {
         "allow_scanning": false,
-        "scanning": ["-comment -string"],
+        "scanning": ["-comment"],
         "color_class": "css-level-4"
     },
 
