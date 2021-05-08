@@ -13,6 +13,7 @@
   channels must require those channels to be input as percentages per the CSS  
   level 4 specifications. This affects the string output for the `color()` format  
   as well.
+- **FIX**: Latest `coloraide` improves gamut mapping.
 
 ## 3.4.0
 
