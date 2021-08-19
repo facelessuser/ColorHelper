@@ -56,7 +56,7 @@ def parse_color(string, start=0, second=False):
     more = None
     ratio = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False, filters=util.SRGB_SPACES)
+    color = Color.match(string, start=start, fullmatch=False, filters=util.CSS_SRGB_SPACES)
     if color:
         start = color.end
         if color.end != length:
@@ -178,7 +178,7 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                     pass
                 if color is not None:
                     color = Color(color)
-                    if color.space() not in util.SRGB_SPACES:
+                    if color.space() not in util.CSS_SRGB_SPACES:
                         color = color.convert("srgb", fit=True)
                     return color.to_string(**util.DEFAULT)
         return ''

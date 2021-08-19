@@ -30,7 +30,9 @@ DEFAULT = {"fit": False}
 COMMA = {"fit": False, "comma": True}
 FULL_PREC = {"fit": False, "precision": -1}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
-SRGB_SPACES = ("srgb", "hsl", "hwb")
+COLOR_SERIALIZE = {"color": True, "fit": False, "precision": -1}
+SRGB_SPACES = ("srgb", "hsl", "hwb", "hsv")
+CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
 CSS_L4_SPACES = ("srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb", "xyz")
 
 lang_map = {
@@ -245,9 +247,9 @@ def update_colors_1_0(colors):
                     alpha = float(values[1])
                 else:
                     alpha = 1
-                new_colors.append(Color(m.group(1), channels, alpha).to_string(**COLOR_FULL_PREC))
+                new_colors.append(Color(m.group(1), channels, alpha).to_string(**COLOR_SERIALIZE))
             else:
-                new_colors.append(Color(c).to_string(**COLOR_FULL_PREC))
+                new_colors.append(Color(c).to_string(**COLOR_SERIALIZE))
         except Exception:
             pass
     return new_colors

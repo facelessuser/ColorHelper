@@ -65,7 +65,7 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
                     # Basically, if the file already supports `color-mod` input,
                     # then we want to return the text raw if it parses.
                     try:
-                        color = self.color_mod_class(text, filters=util.SRGB_SPACES)
+                        color = self.color_mod_class(text, filters=util.CSS_SRGB_SPACES)
                     except Exception:
                         pass
                 if color is None:
@@ -93,9 +93,10 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
                 srgb = Color(color).convert("srgb")
                 preview_border = self.default_border
                 message = ""
-                if not srgb.in_gamut():
-                    srgb.fit()
+                check_space = 'srgb' if srgb.space() not in util.SRGB_SPACES else srgb.space()
+                if not srgb.in_gamut(check_space):
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
+                srgb.fit(in_place=True)
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)
                 preview_border = self.default_border

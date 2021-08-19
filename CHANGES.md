@@ -14,6 +14,7 @@
   level 4 specifications. This affects the string output for the `color()` format  
   as well.
 - **FIX**: Latest `coloraide` improves gamut mapping.
+- **FIX**: Small gamut fitting adjustments.
 
 ## 3.4.0
 

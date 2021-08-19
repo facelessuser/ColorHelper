@@ -413,14 +413,15 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     # Calculate a reasonable border color for our image at this location and get color strings
                     hsl = Color(
                         mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
-                        filters=util.SRGB_SPACES
+                        filters=util.CSS_SRGB_SPACES
                     ).convert("hsl")
                     hsl.lightness = hsl.lightness + (30 if hsl.luminance() < 0.5 else -30)
                     preview_border = hsl.convert("srgb", fit=True).to_string(**util.HEX)
 
                     color = Color(obj.color)
                     title = ''
-                    if not color.in_gamut("srgb"):
+                    check_space = 'srgb' if color.space() not in util.SRGB_SPACES else color.space()
+                    if not color.in_gamut(check_space):
                         title = ' title="Preview out of gamut"'
                         if self.show_out_of_gamut_preview:
                             srgb = color.convert("srgb", fit=True)
@@ -431,7 +432,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                             preview2 = self.out_of_gamut
                             preview_border = self.out_of_gamut_border
                     else:
-                        srgb = color.convert("srgb")
+                        srgb = color.convert("srgb", fit=True)
                         preview1 = srgb.to_string(**util.HEX_NA)
                         preview2 = srgb.to_string(**util.HEX)
 

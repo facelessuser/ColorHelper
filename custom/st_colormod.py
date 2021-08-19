@@ -235,8 +235,7 @@ class ColorMod:
 
             if color is not None:
                 self._color = color
-                if not self._color.in_gamut():
-                    self._color.fit(method="clip", in_place=True)
+                self._color.fit(method="clip", in_place=True)
 
                 while not done:
                     m = None
@@ -264,8 +263,7 @@ class ColorMod:
                     else:
                         break
 
-                    if not self._color.in_gamut():
-                        self._color.fit(method="clip", in_place=True)
+                    self._color.fit(method="clip", in_place=True)
             else:
                 raise ValueError('Could not calculate base color')
         except Exception:
