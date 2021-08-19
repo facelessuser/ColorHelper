@@ -103,7 +103,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         """Handle color box click."""
 
         self.view.sel().clear()
-        for k, v in self.previews[self.view.id()].items():
+        for k, v in self.previews[self.view.buffer_id()].items():
             if href == v.uid:
                 phantom = self.view.query_phantom(v.pid)
                 if phantom:
@@ -231,7 +231,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
     def get_color_class(self, pt, classes):
         """Get color class based on selection scope."""
 
-        view_id = self.view.id()
+        view_id = self.view.buffer_id()
         if not self.color_classes[view_id] or self.view.settings().get('color_helper.refresh', True):
             util.debug("Clear color class stash")
             self.view.settings().set('color_helper.refresh', False)
@@ -283,7 +283,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         settings = self.view.settings()
         colors = []
 
-        view_id = self.view.id()
+        view_id = self.view.buffer_id()
 
         # Allow per view scan override
         option = settings.get("color_helper.scan_override", None)
@@ -474,7 +474,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
     def add_phantoms(self, colors):
         """Add phantoms."""
 
-        i = self.view.id()
+        i = self.view.buffer_id()
         for html, pt, start, end, unique_id in colors:
             pid = self.view.add_phantom(
                 'color_helper',
@@ -487,21 +487,21 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
     def reset_previous(self):
         """Reset previous region."""
-        self.previous_region[self.view.id()] = sublime.Region(0)
+        self.previous_region[self.view.buffer_id()] = sublime.Region(0)
 
     def erase_phantoms(self):
         """Erase phantoms."""
 
         # Obliterate!
         self.view.erase_phantoms('color_helper')
-        self.previews[self.view.id()].clear()
+        self.previews[self.view.buffer_id()].clear()
         self.reset_previous()
 
     def run(self, clear=False, force=False):
         """Run."""
 
         self.view = self.window.active_view()
-        ids = set([view.id() for view in self.window.views()])
+        ids = set([view.buffer_id() for view in self.window.views()])
         keys = set(self.previews.keys())
         diff = keys - ids
 
@@ -510,7 +510,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
             del self.previous_region[i]
             del self.color_classes[i]
 
-        i = self.view.id()
+        i = self.view.buffer_id()
         if i not in self.previews:
             self.previews[i] = {}
         if i not in self.previous_region:
