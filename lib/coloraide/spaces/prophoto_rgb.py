@@ -1,6 +1,5 @@
 """Pro Photo RGB color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from . import _cat
 from .srgb import SRGB
 from .xyz import XYZ
 from .. import util
@@ -31,8 +30,8 @@ def xyz_to_lin_prophoto(xyz):
     """Convert XYZ to linear-light prophoto-rgb."""
 
     m = [
-        [1.3459433009386652, -0.255607509316767, -0.051111765870885],
-        [-0.544598869458717, 1.508167317720767, 0.0205351415866469],
+        [1.3459433009386652, -0.25560750931676696, -0.05111176587088495],
+        [-0.544598869458717, 1.508167317720767, 0.020535141586646915],
         [0.0, 0.0, 1.2118127506937628]
     ]
 
@@ -73,7 +72,7 @@ def gam_prophoto(rgb):
         if abs(i) < ET:
             result.append(16.0 * i)
         else:
-            result.append(util.npow(i, 1.0 / 1.8))
+            result.append(util.nth_root(i, 1.8))
     return result
 
 
@@ -82,16 +81,16 @@ class ProPhotoRGB(SRGB):
 
     SPACE = "prophoto-rgb"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = _cat.WHITES["D50"]
+    WHITE = "D50"
 
     @classmethod
-    def _to_xyz(cls, rgb):
+    def _to_xyz(cls, parent, rgb):
         """To XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), lin_prophoto_to_xyz(lin_prophoto(rgb)))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_prophoto_to_xyz(lin_prophoto(rgb)))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return gam_prophoto(xyz_to_lin_prophoto(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz)))
+        return gam_prophoto(xyz_to_lin_prophoto(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))

@@ -1,6 +1,5 @@
 """A98 RGB color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from ..spaces import _cat
 from .srgb import SRGB
 from .xyz import XYZ
 from .. import util
@@ -18,9 +17,9 @@ def lin_a98rgb_to_xyz(rgb):
     """
 
     m = [
-        [0.5767308871981476, 0.1855539507112141, 0.1881851620906385],
-        [0.2973768637115448, 0.6273490714522, 0.0752740648362554],
-        [0.0270342603374131, 0.0706872193185578, 0.9911085203440293]
+        [0.5767308871981476, 0.18555395071121408, 0.18818516209063846],
+        [0.2973768637115448, 0.6273490714522, 0.07527406483625539],
+        [0.027034260337413137, 0.0706872193185578, 0.9911085203440293]
     ]
 
     return util.dot(m, rgb)
@@ -30,9 +29,9 @@ def xyz_to_lin_a98rgb(xyz):
     """Convert XYZ to linear-light a98-rgb."""
 
     m = [
-        [2.04136897926008, -0.5649463871751959, -0.3446943843778484],
-        [-0.9692660305051867, 1.8760108454466937, 0.0415560175303498],
-        [0.0134473872161703, -0.1183897423541256, 1.0154095719504166]
+        [2.04136897926008, -0.5649463871751959, -0.34469438437784844],
+        [-0.9692660305051867, 1.8760108454466937, 0.04155601753034983],
+        [0.013447387216170269, -0.11838974235412557, 1.0154095719504166]
     ]
 
     return util.dot(m, xyz)
@@ -55,16 +54,16 @@ class A98RGB(SRGB):
 
     SPACE = "a98-rgb"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = _cat.WHITES["D65"]
+    WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, rgb):
+    def _to_xyz(cls, parent, rgb):
         """To XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), lin_a98rgb_to_xyz(lin_a98rgb(rgb)))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_a98rgb_to_xyz(lin_a98rgb(rgb)))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return gam_a98rgb(xyz_to_lin_a98rgb(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz)))
+        return gam_a98rgb(xyz_to_lin_a98rgb(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))

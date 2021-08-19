@@ -1,12 +1,10 @@
 """Utilities."""
-import decimal
+import copy
 import math
 import numbers
-import re
 import warnings
 from functools import wraps
 
-RE_FLOAT_TRIM = re.compile(r'^(?P<keep>-?\d+)(?P<trash>\.0+|(?P<keep2>\.\d*[1-9])0+)$')
 NaN = float('nan')
 INF = float('inf')
 ACHROMATIC_THRESHOLD = 0.0005
@@ -97,7 +95,7 @@ def is_number(value):
 
 
 def is_nan(value):
-    """Print is "not a number"."""
+    """Check if value is "not a number"."""
 
     return math.isnan(value)
 
@@ -221,12 +219,131 @@ def divide(a, b):
     return value
 
 
-def cbrt(x):
-    """Cube root."""
+def diag(v, k=0):
+    """Create a diagonal matrix from a vector or return a vector of the diagonal of a matrix."""
 
-    if 0 <= x:
-        return x ** (1.0 / 3.0)
-    return -(-x) ** (1.0 / 3.0)
+    is_vector = isinstance(v[0], numbers.Number)
+    size = len(v)
+    d = []
+
+    if is_vector:
+        # Create a diagonal matrix with the provided values
+        for i, value in enumerate(v):
+            # Check that the matrix is square, we .cannot invert the matrix if it is not
+            d.append([0] * i + [value] + [0] * (size - i - 1))
+    else:  # pragma: no cover
+        for r in v:
+            if len(r) != size:
+                raise ValueError('Matrix must be a n x n matrix')
+            if 0 <= k < size:
+                d.append(r[k])
+            k += 1
+    return d
+
+
+def inv(matrix):
+    """
+    Invert the matrix.
+
+    Derived from https://github.com/ThomIves/MatrixInverse.
+
+    While not as performant as using `numpy`, we are often caching any
+    inversion we are doing, so this keeps us from having to require all
+    of `numpy` for the few hits to this we do.
+
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or
+    distribute this software, either in source code form or as a compiled
+    binary, for any purpose, commercial or non-commercial, and by any
+    means.
+
+    In jurisdictions that recognize copyright laws, the author or authors
+    of this software dedicate any and all copyright interest in the
+    software to the public domain. We make this dedication for the benefit
+    of the public at large and to the detriment of our heirs and
+    successors. We intend this dedication to be an overt act of
+    relinquishment in perpetuity of all present and future rights to this
+    software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+    For more information, please refer to <http://unlicense.org/>
+    """
+
+    size = len(matrix)
+    indices = list(range(size))
+    m = copy.deepcopy(matrix)
+
+    # Ensure we have a square matrix
+    for r in m:
+        if len(r) != size:  # pragma: no cover
+            raise ValueError('Matrix must be a n x n matrix')
+
+    # Create an identity matrix of the same size as our provided matrix
+    im = diag([1] * size)
+
+    # Iterating through each row, we will scale each row by it's "focus diagonal".
+    # Then using the scaled row, we will adjust the other rows.
+    # ```
+    # [[fd, 0,  0 ]
+    #  [0,  fd, 0 ]
+    #  [0,  0,  fd]]
+    # ```
+    for fd in indices:
+        # We will divide each value in the row by the "focus diagonal" value.
+        # If the we have a zero for the given `fd` value, we cannot invert.
+        denom = m[fd][fd]
+        if denom == 0:  # pragma: no cover
+            raise ValueError('Matrix is not invertable')
+
+        # We are converting the matrix to the identity and vice versa,
+        # So scale the diagonal such that it will now equal 1.
+        # Additionally, the same operations will be applied to the identity matrix
+        # and will turn it into `m ** -1` (what we are looking for)
+        fd_scalar = 1.0 / denom
+        for j in indices:
+            m[fd][j] *= fd_scalar
+            im[fd][j] *= fd_scalar
+
+        # Now, using the value found at the index `fd` in the remaining rows (excluding `row[fd]`),
+        # Where `cr` is the current row under evaluation, subtract `row[cr][fd] * row[fd] from row[cr]`.
+        for cr in indices[0:fd] + indices[fd + 1:]:
+            # The scalar for the current row
+            cr_scalar = m[cr][fd]
+
+            # Scale each item in the `row[fd]` and subtract it from the current row `row[cr]`
+            for j in indices:
+                m[cr][j] -= cr_scalar * m[fd][j]
+                im[cr][j] -= cr_scalar * im[fd][j]
+
+    # The identify matrix is now the inverse matrix and vice versa.
+    return im
+
+
+def cbrt(n):
+    """Calculate cube root."""
+
+    return nth_root(n, 3)
+
+
+def nth_root(n, p):
+    """Calculate nth root."""
+
+    if p == 0:  # pragma: no cover
+        return float('inf')
+
+    if n == 0:
+        # Can't do anything with zero
+        return 0
+
+    return math.copysign(abs(n) ** (p ** -1), n)
 
 
 def clamp(value, mn=None, mx=None):
@@ -242,34 +359,6 @@ def clamp(value, mn=None, mx=None):
         return max(min(value, mx), mn)
 
 
-def adjust_precision(f, p):
-    """Adjust precision and scale."""
-
-    with decimal.localcontext() as ctx:
-        if p > 0:
-            # Set precision
-            ctx.prec = p
-        ctx.rounding = decimal.ROUND_HALF_UP
-
-        if p == -1:
-            # Full precision
-            value = decimal.Decimal(f)
-        elif p == 0:
-            # Just round to integer
-            value = decimal.Decimal(round_half_up(f))
-        else:
-            # Round to precision
-            value = (decimal.Decimal(f) * decimal.Decimal('1.0'))
-            exp = value.as_tuple().exponent
-            if exp < 0 and abs(value.as_tuple().exponent) > p:
-                value = value.quantize(decimal.Decimal(10) ** -p)
-
-        if value.is_zero():
-            value = abs(value)
-
-        return float(value)
-
-
 def fmt_float(f, p=0):
     """
     Set float precision and trim precision zeros.
@@ -281,19 +370,26 @@ def fmt_float(f, p=0):
 
     value = adjust_precision(f, p)
     string = ('{{:{}f}}'.format('.53' if p == -1 else '.' + str(p))).format(value)
-    m = RE_FLOAT_TRIM.match(string)
-    if m:
-        string = m.group('keep')
-        if m.group('keep2'):
-            string += m.group('keep2')
-    return string
+    return string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
+
+
+def adjust_precision(f, p=0):
+    """Adjust precision."""
+
+    if p == -1:
+        return f
+
+    elif p == 0:
+        return round_half_up(f)
+
+    else:
+        whole = int(f)
+        digits = 0 if whole == 0 else int(math.log10(-whole if whole < 0 else whole)) + 1
+        return round_half_up(whole if digits >= p else f, p - digits)
 
 
 def round_half_up(n, scale=0):
     """Round half up."""
-
-    if scale == -1:
-        return n
 
     mult = 10 ** scale
     return math.floor(n * mult + 0.5) / mult

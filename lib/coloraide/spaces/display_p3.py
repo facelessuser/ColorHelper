@@ -1,6 +1,5 @@
 """Display-p3 color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from ..spaces import _cat
 from .srgb import SRGB, lin_srgb, gam_srgb
 from .xyz import XYZ
 from .. import util
@@ -28,9 +27,9 @@ def xyz_to_lin_p3(xyz):
     """Convert XYZ to linear-light P3."""
 
     m = [
-        [2.493180755328967, -0.9312655254971399, -0.4026597237588819],
-        [-0.8295031158210786, 1.7626941211197922, 0.0236250887417396],
-        [0.0358536257800717, -0.0761889547826522, 0.9570926215180221]
+        [2.493180755328967, -0.9312655254971399, -0.40265972375888187],
+        [-0.8295031158210786, 1.7626941211197922, 0.02362508874173957],
+        [0.035853625780071716, -0.07618895478265224, 0.9570926215180221]
     ]
 
     return util.dot(m, xyz)
@@ -53,16 +52,16 @@ class DisplayP3(SRGB):
 
     SPACE = "display-p3"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = _cat.WHITES["D65"]
+    WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, rgb):
+    def _to_xyz(cls, parent, rgb):
         """To XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), lin_p3_to_xyz(lin_p3(rgb)))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_p3_to_xyz(lin_p3(rgb)))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return gam_p3(xyz_to_lin_p3(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz)))
+        return gam_p3(xyz_to_lin_p3(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))

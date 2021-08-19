@@ -215,13 +215,12 @@ class ColorHelperEditInputHandler(tools._ColorInputHandler):
                 orig = Color(color)
                 message = ""
                 color_string = ""
-                if not orig.in_gamut('srgb'):
+                check_space = 'srgb' if orig.space() not in util.SRGB_SPACES else orig.space()
+                if not orig.in_gamut(check_space):
                     orig = orig.fit("srgb")
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
-                    srgb = orig.convert('srgb', fit=True)
-                else:
-                    srgb = orig.convert('srgb')
+                srgb = orig.convert('srgb', fit=True)
                 color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
                 preview = srgb.to_string(**util.HEX_NA)
                 preview_alpha = srgb.to_string(**util.HEX)

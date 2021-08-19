@@ -1,6 +1,5 @@
 """Rec 2020 color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from . import _cat
 from .srgb import SRGB
 from .xyz import XYZ
 from .. import util
@@ -26,7 +25,7 @@ def lin_2020(rgb):
         if abs_i < BETA45:
             result.append(i / 4.5)
         else:
-            result.append(math.copysign(((abs_i + ALPHA - 1) / ALPHA) ** (1 / 0.45), i))
+            result.append(math.copysign(util.nth_root((abs_i + ALPHA - 1) / ALPHA, 0.45), i))
     return result
 
 
@@ -69,9 +68,9 @@ def xyz_to_lin_2020(xyz):
     """Convert XYZ to linear-light rec-2020."""
 
     m = [
-        [1.7165106697619734, -0.3556416699867159, -0.2533455418219072],
+        [1.7165106697619734, -0.35564166998671587, -0.25334554182190716],
         [-0.6666930011826241, 1.6165022083469103, 0.015768750389995],
-        [0.017643638767459, -0.0427797816690446, 0.9423050727200183]
+        [0.017643638767459002, -0.04277978166904461, 0.9423050727200183]
     ]
 
     return util.dot(m, xyz)
@@ -82,16 +81,16 @@ class Rec2020(SRGB):
 
     SPACE = "rec2020"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = _cat.WHITES["D65"]
+    WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, rgb):
+    def _to_xyz(cls, parent, rgb):
         """To XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), lin_2020_to_xyz(lin_2020(rgb)))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_2020_to_xyz(lin_2020(rgb)))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return gam_2020(xyz_to_lin_2020(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz)))
+        return gam_2020(xyz_to_lin_2020(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))

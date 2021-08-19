@@ -119,6 +119,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def create_palette(self, palette_name, palette_type, color):
         """Add color to new color palette."""
 
+        color = Color(color).to_string(**util.COLOR_SERIALIZE)
+
         if palette_type == '__global__':
             color_palettes = util.get_palettes()
             for palette in color_palettes:
@@ -139,6 +141,8 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
     def add_palette(self, color, palette_type, palette_name):
         """Add palette."""
+
+        color = Color(color).to_string(**util.COLOR_SERIALIZE)
 
         if palette_type == "__special__":
             if palette_name == 'Favorites':
@@ -220,7 +224,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Add favorite."""
 
         favs = util.get_favs()['colors']
-        favs.append(color)
+        favs.append(Color(color).to_string(**util.COLOR_SERIALIZE))
         util.save_palettes(favs, favs=True)
         # For some reason if using update,
         # the convert divider will be too wide.
@@ -230,7 +234,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Remove favorite."""
 
         favs = util.get_favs()['colors']
-        favs.remove(color)
+        favs.remove(Color(color).to_string(**util.COLOR_SERIALIZE))
         util.save_palettes(favs, favs=True)
         # For some reason if using update,
         # the convert divider will be too wide.
@@ -470,7 +474,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             template_vars['show_global_palette_menu'] = True
         if show_favorite_palette and color_ver_okay:
             template_vars['show_favorite_menu'] = True
-            template_vars['is_marked'] = color.to_string(**util.COLOR_FULL_PREC) in util.get_favs()['colors']
+            template_vars['is_marked'] = color.to_string(**util.COLOR_SERIALIZE) in util.get_favs()['colors']
 
         preview = self.get_preview(color)
         message = ''
@@ -766,7 +770,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = Color("white", filters=util.SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
+                color = Color("white", filters=util.CSS_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
             else:
                 color = obj.color.to_string(**util.COLOR_FULL_PREC)
             self.color_picker(color)

@@ -7,7 +7,7 @@ from .lib.multiconf import get as qualify_settings
 from .lib.coloraide import Color
 from collections import namedtuple
 
-SPACER = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
+SPACER = Color("transparent", filters=util.CSS_SRGB_SPACES).to_string(**HEX)
 
 
 class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'])):
@@ -30,7 +30,7 @@ class _ColorMixin:
         border_color = ch_settings.get('image_border_color')
         if border_color is not None:
             try:
-                border_color = Color(border_color, filters=util.SRGB_SPACES)
+                border_color = Color(border_color, filters=util.CSS_SRGB_SPACES)
                 border_color.fit("srgb", in_place=True)
             except Exception:
                 border_color = None
@@ -39,15 +39,15 @@ class _ColorMixin:
             # Calculate border color for images
             border_color = Color(
                 self.view.style()['background'],
-                filters=util.SRGB_SPACES
+                filters=util.CSS_SRGB_SPACES
             ).convert("hsl")
             border_color.lightness = border_color.lightness + (30 if border_color.luminance() < 0.5 else -30)
 
         self.default_border = border_color.convert("srgb").to_string(**HEX)
-        self.out_of_gamut = Color("transparent", filters=util.SRGB_SPACES).to_string(**HEX)
+        self.out_of_gamut = Color("transparent", filters=util.CSS_SRGB_SPACES).to_string(**HEX)
         self.out_of_gamut_border = Color(
             self.view.style().get('redish', "red"),
-            filters=util.SRGB_SPACES
+            filters=util.CSS_SRGB_SPACES
         ).to_string(**HEX)
 
     def get_color_options(self, pt, rule):
@@ -174,7 +174,8 @@ class _ColorMixin:
 
         message = ''
         preview_border = self.default_border
-        if not color.in_gamut("srgb"):
+        check_space = 'srgb' if color.space() not in util.SRGB_SPACES else color.space()
+        if not color.in_gamut(check_space):
             message = 'preview out of gamut'
             if self.show_out_of_gamut_preview:
                 srgb = color.convert("srgb", fit=True)
@@ -185,7 +186,7 @@ class _ColorMixin:
                 preview2 = self.out_of_gamut
                 preview_border = self.out_of_gamut_border
         else:
-            srgb = color.convert("srgb")
+            srgb = color.convert("srgb", fit=True)
             preview1 = srgb.to_string(**HEX_NA)
             preview2 = srgb.to_string(**HEX)
 

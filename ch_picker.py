@@ -93,7 +93,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color("hsl(0 100% {}% / {})".format(lightness, alpha), filters=util.SRGB_SPACES)
+            color = Color("hsl(0 100% {}% / {})".format(lightness, alpha), filters=util.CSS_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -150,7 +150,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.saturation = color.saturation - 10
 
             # Generate a grayscale bar.
-            color = Color('hsl({} {}% 100% / {})'.format(hue, saturation, alpha), filters=util.SRGB_SPACES)
+            color = Color('hsl({} {}% 100% / {})'.format(hue, saturation, alpha), filters=util.CSS_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -216,7 +216,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2hex_map):
-            color = Color(name, filters=util.SRGB_SPACES)
+            color = Color(name, filters=util.CSS_SRGB_SPACES)
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -331,7 +331,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             coord = cutil.no_nan(getattr(clone, color_filter)) - step
             setattr(clone, color_filter, coord)
 
-            if not clone.in_gamut():
+            if not clone.in_gamut(tolerance=0):
                 temp.append(self.get_spacer(width=count))
                 break
             elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
@@ -382,7 +382,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             coord = cutil.no_nan(getattr(clone, color_filter)) + step
             setattr(clone, color_filter, coord)
 
-            if not clone.in_gamut():
+            if not clone.in_gamut(tolerance=0):
                 html.append(self.get_spacer(width=count))
                 break
             elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
@@ -515,7 +515,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 cmd,
                 {
-                    "initial": Color(color, filters=util.SRGB_SPACES).to_string(**DEFAULT),
+                    "initial": Color(color, filters=util.CSS_SRGB_SPACES).to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel
                 }
             )

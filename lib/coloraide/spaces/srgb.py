@@ -1,6 +1,5 @@
 """SRGB color class."""
 from ..spaces import RE_DEFAULT_MATCH, Space, GamutBound
-from . import _cat
 from .xyz import XYZ
 from .. import util
 import re
@@ -15,9 +14,9 @@ def lin_srgb_to_xyz(rgb):
     """
 
     m = [
-        [0.4124564390896923, 0.357576077643909, 0.180437483266399],
-        [0.2126728514056226, 0.715152155287818, 0.0721749933065596],
-        [0.0193338955823293, 0.119192025881303, 0.950304078536368]
+        [0.41245643908969226, 0.357576077643909, 0.18043748326639897],
+        [0.21267285140562256, 0.715152155287818, 0.07217499330655959],
+        [0.019333895582329303, 0.11919202588130297, 0.950304078536368]
     ]
 
     return util.dot(m, rgb)
@@ -27,9 +26,9 @@ def xyz_to_lin_srgb(xyz):
     """Convert XYZ to linear-light sRGB."""
 
     m = [
-        [3.2404541621141045, -1.5371385127977162, -0.498531409556016],
-        [-0.969266030505187, 1.8760108454466944, 0.0415560175303498],
-        [0.0556434309591147, -0.2040259135167538, 1.057225188223179]
+        [3.2404541621141045, -1.5371385127977162, -0.49853140955601605],
+        [-0.969266030505187, 1.8760108454466944, 0.04155601753034984],
+        [0.05564343095911475, -0.20402591351675384, 1.057225188223179]
     ]
 
     return util.dot(m, xyz)
@@ -65,7 +64,7 @@ def gam_srgb(rgb):
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i > 0.0031308:
-            result.append(math.copysign(1.055 * (abs_i ** (1 / 2.4)) - 0.055, i))
+            result.append(math.copysign(1.055 * (util.nth_root(abs_i, 2.4)) - 0.055, i))
         else:
             result.append(12.92 * i)
     return result
@@ -78,10 +77,9 @@ class SRGB(Space):
     # In addition to the current gamut, check HSL as it is much more sensitive to small
     # gamut changes. This is mainly for a better user experience. Colors will still be
     # mapped/clipped in the current space, unless specified otherwise.
-    GAMUT_CHECK = "hsl"
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
     CHANNEL_NAMES = ("red", "green", "blue", "alpha")
-    WHITE = _cat.WHITES["D65"]
+    WHITE = "D65"
 
     RANGE = (
         GamutBound([0.0, 1.0]),
@@ -126,13 +124,13 @@ class SRGB(Space):
         self._coords[2] = self._handle_input(value)
 
     @classmethod
-    def _to_xyz(cls, rgb):
+    def _to_xyz(cls, parent, rgb):
         """SRGB to XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), lin_srgb_to_xyz(lin_srgb(rgb)))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_srgb_to_xyz(lin_srgb(rgb)))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """XYZ to SRGB."""
 
-        return gam_srgb(xyz_to_lin_srgb(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz)))
+        return gam_srgb(xyz_to_lin_srgb(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))

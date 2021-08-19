@@ -4,7 +4,6 @@ Jzazbz class.
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
 from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound
-from . import _cat
 from .xyz_d65 import XYZ
 from .. import util
 import re
@@ -31,21 +30,21 @@ M2 = 1.7 * 2523 / (2 ** 5)
 
 # XYZ transform matrices
 xyz_to_lms_m = [
-    [0.41478972, 0.579999, 0.0146480],
-    [-0.2015100, 1.120649, 0.0531008],
-    [-0.0166008, 0.264800, 0.6684799]
+    [0.41478972, 0.579999, 0.014648],
+    [-0.20151, 1.120649, 0.0531008],
+    [-0.0166008, 0.2648, 0.6684799]
 ]
 
 lms_to_xyz_mi = [
-    [1.9242264357876069, -1.0047923125953657, 0.037651404030618],
-    [0.3503167620949991, 0.7264811939316552, -0.065384422948085],
-    [-0.0909828109828475, -0.3127282905230739, 1.5227665613052603]
+    [1.9242264357876069, -1.0047923125953657, 0.037651404030617994],
+    [0.35031676209499907, 0.7264811939316552, -0.06538442294808501],
+    [-0.09098281098284754, -0.3127282905230739, 1.5227665613052603]
 ]
 
 # LMS to Izazbz matrices
 lms_p_to_izazbz_m = [
     [0.5, 0.5, 0],
-    [3.524000, -4.066708, 0.542708],
+    [3.524, -4.066708, 0.542708],
     [0.199076, 1.096799, -1.295875]
 ]
 
@@ -107,7 +106,7 @@ class Jzazbz(Space):
     SPACE = "jzazbz"
     CHANNEL_NAMES = ("jz", "az", "bz", "alpha")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = _cat.WHITES["D65"]
+    WHITE = "D65"
 
     RANGE = (
         GamutUnbound([0, 1]),
@@ -152,13 +151,13 @@ class Jzazbz(Space):
         self._coords[2] = self._handle_input(value)
 
     @classmethod
-    def _to_xyz(cls, jzazbz):
+    def _to_xyz(cls, parent, jzazbz):
         """To XYZ."""
 
-        return _cat.chromatic_adaption(cls.white(), XYZ.white(), jzazbz_to_xyz_d65(jzazbz))
+        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, jzazbz_to_xyz_d65(jzazbz))
 
     @classmethod
-    def _from_xyz(cls, xyz):
+    def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return xyz_d65_to_jzazbz(_cat.chromatic_adaption(XYZ.white(), cls.white(), xyz))
+        return xyz_d65_to_jzazbz(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz))
