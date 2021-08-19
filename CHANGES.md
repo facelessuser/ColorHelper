@@ -15,6 +15,7 @@
   as well.
 - **FIX**: Latest `coloraide` improves gamut mapping.
 - **FIX**: Small gamut fitting adjustments.
+- **FIX**: Fix issue with duplicate previews when working with clone views.
 
 ## 3.4.0
 
