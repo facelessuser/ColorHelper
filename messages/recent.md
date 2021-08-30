@@ -1,4 +1,4 @@
-# ColorHelper 3.3.0
+# ColorHelper 3.5.0
 
 New release!
 
@@ -7,20 +7,22 @@ prior releases.
 
 Restart of Sublime Text may be required.
 
-## 3.4.0
+## 3.5.0
 
-- **NEW**: New color difference tool.
-- **NEW**: New blend modes tool.
-- **NEW**: Fix typo. `0xahex` color class should have been named `0xhex` in the  
-  settings.
-- **NEW**: New `coloraide` brings support for `oklab`, `oklch`, `jzazbz`, `jzczhz`,  
-  `ICtCp`, D65 variations of CIELAB, CIELCH, and XYZ (none of which are enabled  
-  as output options by default).
-- **NEW**: Some refactoring of `coloraide` caused custom color classes to get  
-  updated. User created custom classes may have to get updated to work.
-- **FIX**: Upgrade `coloraide` which fixes issues related to inconsistent use of  
-  D65 white values in XYZ transforms and Bradford CAT and other lesser bug fixes  
-  as well. This particularly improves conversions to and from CIELAB.
+- **NEW**: `generic` rule will now allow scanning in strings by default. If this  
+  is not desired, simply modify it in user settings to reflect desired behavior.
+- **NEW**: Remove default palette file as it just contained examples that most  
+  people would never use.
+- **NEW**: Color palettes now provide a format version so that they can be upgraded  
+  if needed. Due to the compatibility issue with a change for `color()` format,  
+  color palettes will be upgraded.
+- **FIX**: `color()` format for `lab` and other colors that have percentage only  
+  channels must require those channels to be input as percentages per the CSS  
+  level 4 specifications. This affects the string output for the `color()` format  
+  as well.
+- **FIX**: Latest `coloraide` improves gamut mapping.
+- **FIX**: Small gamut fitting adjustments.
+- **FIX**: Fix issue with duplicate previews when working with clone views.
 
 ## Updated from 2.0 to 3.0?
 
