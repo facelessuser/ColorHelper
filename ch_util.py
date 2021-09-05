@@ -22,7 +22,7 @@ COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
 PALETTE_FMT = (1, 0)
 
 RE_COLOR_START = \
-r"(?i)(?:\b(?<![-#&$])(?:color\((?!\s*-)|(?:hsla?|lch|lab|hwb|rgba?)\()|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
+    r"(?i)(?:\b(?<![-#&$])(?:color\((?!\s*-)|(?:hsla?|lch|lab|hwb|rgba?)\()|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
 
 COLOR = {"color": True, "fit": False}
 HEX = {"hex": True}
