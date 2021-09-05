@@ -9,12 +9,12 @@ from . import contrast
 from . import match
 from .. import util
 from ..spaces.hsv import HSV
-from ..spaces.srgb import SRGB
+from ..spaces.srgb.css import SRGB
 from ..spaces.srgb_linear import SRGBLinear
-from ..spaces.hsl import HSL
-from ..spaces.hwb import HWB
-from ..spaces.lab import Lab
-from ..spaces.lch import Lch
+from ..spaces.hsl.css import HSL
+from ..spaces.hwb.css import HWB
+from ..spaces.lab.css import Lab
+from ..spaces.lch.css import Lch
 from ..spaces.lab_d65 import LabD65
 from ..spaces.lch_d65 import LchD65
 from ..spaces.display_p3 import DisplayP3
@@ -28,12 +28,14 @@ from ..spaces.oklch import Oklch
 from ..spaces.jzazbz import Jzazbz
 from ..spaces.jzczhz import JzCzhz
 from ..spaces.ictcp import ICtCp
+from ..spaces.luv import Luv
+from ..spaces.lchuv import Lchuv
 
 
 SUPPORTED = (
     HSL, HWB, Lab, Lch, LabD65, LchD65, SRGB, SRGBLinear, HSV,
     DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZ, XYZD65,
-    Oklab, Oklch, Jzazbz, JzCzhz, ICtCp
+    Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Luv, Lchuv
 )
 
 

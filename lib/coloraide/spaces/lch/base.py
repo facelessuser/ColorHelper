@@ -1,17 +1,17 @@
-"""LCH class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, OptionalPercent
-from .oklab import Oklab
-from .. import util
+"""Lch class."""
+from ...spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, Percent
+from ..lab.base import Lab
+from ... import util
 import re
 import math
 
-ACHROMATIC_THRESHOLD = 0.0002
+ACHROMATIC_THRESHOLD = 0.00000000001
 
 
-def oklab_to_oklch(oklab):
-    """Oklab to Oklch."""
+def lab_to_lch(lab):
+    """Lab to Lch."""
 
-    l, a, b = oklab
+    l, a, b = lab
 
     c = math.sqrt(a ** 2 + b ** 2)
     h = math.degrees(math.atan2(b, a))
@@ -21,13 +21,14 @@ def oklab_to_oklch(oklab):
     if c < ACHROMATIC_THRESHOLD:
         h = util.NaN
 
-    return [l, c, util.constrain_hue(h)]
+    test = [l, c, util.constrain_hue(h)]
+    return test
 
 
-def oklch_to_oklab(oklch):
-    """Oklch to Oklab."""
+def lch_to_lab(lch):
+    """Lch to Lab."""
 
-    l, c, h = oklch
+    l, c, h = lch
     h = util.no_nan(h)
 
     # If, for whatever reason (mainly direct user input),
@@ -42,18 +43,18 @@ def oklch_to_oklab(oklch):
     )
 
 
-class Oklch(Cylindrical, Space):
-    """Oklch class."""
+class LchBase(Cylindrical, Space):
+    """Lch class."""
 
-    SPACE = "oklch"
-    SERIALIZE = ("--oklch",)
     CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
 
     RANGE = (
-        GamutUnbound([OptionalPercent(0), OptionalPercent(1)]),
-        GamutUnbound([0.0, 1.0]),
+        # I think chroma, specifically should be clamped.
+        # Some libraries don't to prevent rounding issues. We should only get
+        # negative chroma via direct user input, but when translating to
+        # Lab, this will be corrected.
+        GamutUnbound([Percent(0.0), Percent(100.0)]),
+        GamutUnbound([0.0, 100.0]),
         GamutUnbound([Angle(0.0), Angle(360.0)]),
     )
 
@@ -101,26 +102,35 @@ class Oklch(Cylindrical, Space):
             coords[2] = util.NaN
         return coords, alpha
 
+
+class Lch(LchBase):
+    """Lch class."""
+
+    SPACE = "lch"
+    SERIALIZE = ("--lch",)
+    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
+    WHITE = "D50"
+
     @classmethod
-    def _to_oklab(cls, parent, oklch):
+    def _to_lab(cls, parent, lch):
         """To Lab."""
 
-        return oklch_to_oklab(oklch)
+        return lch_to_lab(lch)
 
     @classmethod
-    def _from_oklab(cls, parent, oklab):
+    def _from_lab(cls, parent, lab):
         """To Lab."""
 
-        return oklab_to_oklch(oklab)
+        return lab_to_lch(lab)
 
     @classmethod
-    def _to_xyz(cls, parent, oklch):
+    def _to_xyz(cls, parent, lch):
         """To XYZ."""
 
-        return Oklab._to_xyz(parent, cls._to_oklab(parent, oklch))
+        return Lab._to_xyz(parent, cls._to_lab(parent, lch))
 
     @classmethod
     def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return cls._from_oklab(parent, Oklab._from_xyz(parent, xyz))
+        return cls._from_lab(parent, Lab._from_xyz(parent, xyz))

@@ -1,34 +1,33 @@
-"""Lch class."""
+"""LCH class."""
 from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, Percent
-from .lab import Lab
+from .luv import Luv
 from .. import util
 import re
 import math
 
-ACHROMATIC_THRESHOLD = 0.00000000001
+ACHROMATIC_THRESHOLD = 0.000000000002
 
 
-def lab_to_lch(lab):
-    """Lab to Lch."""
+def luv_to_lchuv(luv):
+    """Luv to Lch(uv)."""
 
-    l, a, b = lab
+    l, u, v = luv
 
-    c = math.sqrt(a ** 2 + b ** 2)
-    h = math.degrees(math.atan2(b, a))
+    c = math.sqrt(u ** 2 + v ** 2)
+    h = math.degrees(math.atan2(v, u))
 
     # Achromatic colors will often get extremely close, but not quite hit zero.
     # Essentially, we want to discard noise through rounding and such.
     if c < ACHROMATIC_THRESHOLD:
         h = util.NaN
 
-    test = [l, c, util.constrain_hue(h)]
-    return test
+    return [l, c, util.constrain_hue(h)]
 
 
-def lch_to_lab(lch):
-    """Lch to Lab."""
+def lchuv_to_luv(lchuv):
+    """Lch(uv) to Luv."""
 
-    l, c, h = lch
+    l, c, h = lchuv
     h = util.no_nan(h)
 
     # If, for whatever reason (mainly direct user input),
@@ -43,18 +42,18 @@ def lch_to_lab(lch):
     )
 
 
-class LchBase(Cylindrical, Space):
-    """Lch class."""
+class Lchuv(Cylindrical, Space):
+    """Lch(uv) class."""
 
+    SPACE = "lchuv"
+    SERIALIZE = ("--lchuv",)
     CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
+    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
+    WHITE = "D65"
 
     RANGE = (
-        # I think chroma, specifically should be clamped.
-        # Some libraries don't to prevent rounding issues. We should only get
-        # negative chroma via direct user input, but when translating to
-        # Lab, this will be corrected.
-        GamutUnbound([Percent(0.0), Percent(100.0)]),
-        GamutUnbound([0.0, 100.0]),
+        GamutUnbound([Percent(0), Percent(100.0)]),
+        GamutUnbound([0.0, 176.0]),
         GamutUnbound([Angle(0.0), Angle(360.0)]),
     )
 
@@ -102,34 +101,26 @@ class LchBase(Cylindrical, Space):
             coords[2] = util.NaN
         return coords, alpha
 
+    @classmethod
+    def _to_luv(cls, parent, lchuv):
+        """To Luv."""
 
-class Lch(LchBase):
-    """Lch class."""
-
-    SPACE = "lch"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE))
-    WHITE = "D50"
+        return lchuv_to_luv(lchuv)
 
     @classmethod
-    def _to_lab(cls, parent, lch):
-        """To Lab."""
+    def _from_luv(cls, parent, luv):
+        """To Luv."""
 
-        return lch_to_lab(lch)
-
-    @classmethod
-    def _from_lab(cls, parent, lab):
-        """To Lab."""
-
-        return lab_to_lch(lab)
+        return luv_to_lchuv(luv)
 
     @classmethod
-    def _to_xyz(cls, parent, lch):
+    def _to_xyz(cls, parent, lchuv):
         """To XYZ."""
 
-        return Lab._to_xyz(parent, cls._to_lab(parent, lch))
+        return Luv._to_xyz(parent, cls._to_luv(parent, lchuv))
 
     @classmethod
     def _from_xyz(cls, parent, xyz):
         """From XYZ."""
 
-        return cls._from_lab(parent, Lab._from_xyz(parent, xyz))
+        return cls._from_luv(parent, Luv._from_xyz(parent, xyz))

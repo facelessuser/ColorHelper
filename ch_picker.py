@@ -10,7 +10,7 @@ import mdpopups
 from mdpopups import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
-from .lib.coloraide.css.spaces import _color_names as css_names
+from .lib.coloraide.spaces.srgb import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
 from .ch_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA

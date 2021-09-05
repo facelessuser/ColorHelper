@@ -17,11 +17,12 @@ from .lib.coloraide import __version_info__ as coloraide_version
 
 PALETTE_CONFIG = 'color_helper.palettes'
 REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
-UPDATE_COLORS = re.compile(RE_DEFAULT_MATCH.format(**{'color_space': r'[-a-z0-9]+'}))
+UPDATE_COLORS = re.compile(RE_DEFAULT_MATCH.format(**{'color_space': r'[-a-z0-9]+', 'channels': 3}))
 COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
 PALETTE_FMT = (1, 0)
 
-RE_COLOR_START = r"(?i)(?:\b(?<![-#&$])(?:color|hsla?|lch|lab|hwb|rgba?)\(|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
+RE_COLOR_START = \
+r"(?i)(?:\b(?<![-#&$])(?:color\((?!\s*-)|(?:hsla?|lch|lab|hwb|rgba?)\()|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
 
 COLOR = {"color": True, "fit": False}
 HEX = {"hex": True}
@@ -247,7 +248,7 @@ def update_colors_1_0(colors):
                     alpha = float(values[1])
                 else:
                     alpha = 1
-                new_colors.append(Color(m.group(1), channels, alpha).to_string(**COLOR_SERIALIZE))
+                new_colors.append(Color(m.group(1).lstrip('-'), channels, alpha).to_string(**COLOR_SERIALIZE))
             else:
                 new_colors.append(Color(c).to_string(**COLOR_SERIALIZE))
         except Exception:
