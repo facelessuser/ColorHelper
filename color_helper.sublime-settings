@@ -211,6 +211,14 @@
             "output": [
                 {"space": "srgb", "format": {"hex": true}}
             ]
+        },
+        // for color codes like `&HAABBGGRR` and `&HBBGGRR`
+        "and_h_abgr": {
+            "class": "ColorHelper.custom.and_h_abgr.ColorAlphaHex",
+            "filters": ["srgb"],
+            "output": [
+                {"space": "srgb", "format": {"upper": true}}
+            ]
         }
     },
 
@@ -379,6 +387,14 @@
                 "constant.color.w3c-standard-color-name.css",
                 "meta.property-value.css"
             ]
+        },
+        {
+            // ASS ( based on: https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS) )
+            "name": "ASS",
+            "base_scopes": ["text.ass"],
+            "scanning": ["constant.other.color"],
+            "color_class": "and_h_abgr",
+            "color_trigger": "" // "constant.other.color" scope is already accurate for colors
         }
     ],
 
