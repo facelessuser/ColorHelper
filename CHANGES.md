@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.6.0
+
+- **NEW**: Add support for [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)).
+
 ## 3.5.0
 
 - **NEW**: `generic` rule will now allow scanning in strings by default. If this  

@@ -1,4 +1,4 @@
-# ColorHelper 3.5.0
+# ColorHelper 3.6.0
 
 New release!
 
@@ -7,22 +7,9 @@ prior releases.
 
 Restart of Sublime Text may be required.
 
-## 3.5.0
+## 3.6.0
 
-- **NEW**: `generic` rule will now allow scanning in strings by default. If this  
-  is not desired, simply modify it in user settings to reflect desired behavior.
-- **NEW**: Remove default palette file as it just contained examples that most  
-  people would never use.
-- **NEW**: Color palettes now provide a format version so that they can be upgraded  
-  if needed. Due to the compatibility issue with a change for `color()` format,  
-  color palettes will be upgraded.
-- **FIX**: `color()` format for `lab` and other colors that have percentage only  
-  channels must require those channels to be input as percentages per the CSS  
-  level 4 specifications. This affects the string output for the `color()` format  
-  as well.
-- **FIX**: Latest `coloraide` improves gamut mapping.
-- **FIX**: Small gamut fitting adjustments.
-- **FIX**: Fix issue with duplicate previews when working with clone views.
+- **NEW**: Add support for [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)).
 
 ## Updated from 2.0 to 3.0?
 
