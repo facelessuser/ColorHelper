@@ -1,5 +1,67 @@
 # Frequently Asked Questions
 
+## Duplicate Colors?
+
+If you are seeing duplicate color previews, it may be because you have an LSP server installed that is injecting its own
+previews or some other package. While we can't provide an exhaustive list, we've provided a few known examples.
+
+Often, the duplicate colors may have a slightly different style, and when you click them, they will not not open the
+ColorHelper dialog.
+
+### LSP
+Two such examples are [`LSP-css`](https://packagecontrol.io/packages/LSP-css) and
+[`LSP-json`](https://packagecontrol.io/packages/LSP-json).
+
+The solution is to disable either ColorHelper or the color provider for the LSP package. If you are here, you probably
+enjoy ColorHelper's features and would prefer to disable the LSP package provider. If so, you can do the following.
+
+For `LSP-css`:
+
+In case it's `LSP-css`, you can disable the color boxes as follows: Run `Preferences: LSP-css Settings` from the
+Command Palette. Then add:
+
+```js
+    "disabled_capabilities": {
+        "colorProvider": true,
+    },
+```
+
+For `LSP-json`:
+
+In case it's `LSP-json`, you can disable the color boxes as follows: Run `Preferences: LSP-json Settings` from the
+Command Palette. Then add:
+
+```js
+{
+    "disabled_capabilities": {
+        // the trigger characters are too blunt, we'll specify auto_complete_selector manually
+        "completionProvider": {
+            "triggerCharacters": true
+        },
+        "colorProvider": true
+    }
+}
+```
+
+There may be other LSP packages. It is assumed the approach would be similar for all of them. Just make sure to check
+what the default disabled capabilities are and copy them over in addition to adding your own.
+
+### Advanced Substation Alpha (ASS)
+
+One package that comes with color previews out of the box is the [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)) package.
+
+You can disable their color previews by modifying it's settings with the following.
+
+Navigate to `Preferences -> Package Settings -> Advanced Substation Alpha (ASS) -> Settings`. Then add:
+
+```js
+{
+    // when to show a color phantom beside a color code?
+    // can be "never", "always" or "hover"
+    "show_color_phantom": "never",
+}
+```
+
 ## Hex Uppercase
 
 > How do I output hex in uppercase?

@@ -6,6 +6,7 @@ Changelog
 ColorAide
 ColorAide's
 ColorHelper
+ColorHelper's
 ColorMod
 ColorPicker
 Control's
@@ -20,6 +21,7 @@ Inline
 JSON
 KDE
 LCH
+LSP
 MERCHANTABILITY
 MacOS
 MkDocs
