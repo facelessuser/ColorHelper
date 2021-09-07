@@ -10,7 +10,7 @@ import re
 class AssABGR(SRGB):
     """ASS `ABGR` color space."""
 
-    MATCH = re.compile(r"(?:&H|\[1-4]?c)([0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b", re.IGNORECASE)
+    MATCH = re.compile(r"(?:&H|\[1-4]?c)(?P<color>[0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b", re.IGNORECASE)
 
     @classmethod
     def match(cls, string: str, start: int = 0, fullmatch: bool = True):
@@ -18,7 +18,7 @@ class AssABGR(SRGB):
 
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return cls.split_channels(m.group(1)), m.end(0)
+            return cls.split_channels(m.group("color")), m.end(0)
         return None, None
 
     @classmethod
