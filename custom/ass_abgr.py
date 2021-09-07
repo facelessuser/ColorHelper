@@ -10,7 +10,7 @@ import re
 class AssABGR(SRGB):
     """ASS `ABGR` color space."""
 
-    MATCH = re.compile(r"&H([0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
+    MATCH = re.compile(r"(?:&H|\[1-4]?c)([0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b", re.IGNORECASE)
 
     @classmethod
     def match(cls, string: str, start: int = 0, fullmatch: bool = True):

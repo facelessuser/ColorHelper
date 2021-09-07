@@ -394,7 +394,7 @@
             "base_scopes": ["text.ass"],
             "scanning": ["constant.other.color"],
             "color_class": "ass_abgr",
-            "color_trigger": "(?i)&h"
+            "color_trigger": "(?i)&h|\\\\[1-4]?c"
         }
     ],
 
