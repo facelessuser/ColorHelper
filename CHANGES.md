@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 3.6.1
+
+- **FIX**: Remove unnecessary dependencies.
+
 ## 3.6.0
 
 - **NEW**: Add support for [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)).
