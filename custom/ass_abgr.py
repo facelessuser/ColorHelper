@@ -10,7 +10,7 @@ import re
 class AssABGR(SRGB):
     """ASS `ABGR` color space."""
 
-    MATCH = re.compile(r"&H([0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
+    MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
 
     @classmethod
     def match(cls, string: str, start: int = 0, fullmatch: bool = True):
@@ -18,7 +18,7 @@ class AssABGR(SRGB):
 
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return cls.split_channels(m.group(1)), m.end(0)
+            return cls.split_channels(m.group("color")), m.end(0)
         return None, None
 
     @classmethod
@@ -32,9 +32,10 @@ class AssABGR(SRGB):
     def split_channels(cls, color: str):
         """Split string into the appropriate channels."""
 
-        # convert `BBGGRR` to `AABBGGRR`
-        if len(color) == 6:
-            color = "00" + color
+        # convert `RR` / `GGRR` / `BBGGRR` to `AABBGGRR`
+        # consecutive leading 0s can be omitted and the alpha is 00 (opaque) by default
+        color = color.zfill(8)
+
         # deal with `AABBGGRR`
         if len(color) == 8:
             return cls.null_adjust(
