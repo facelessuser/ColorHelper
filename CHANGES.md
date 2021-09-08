@@ -2,6 +2,8 @@
 
 ## 3.6.1
 
+- **FIX**: Fix issues with [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)) 
+  support.
 - **FIX**: Remove unnecessary dependencies.
 
 ## 3.6.0
