@@ -10,7 +10,7 @@ import re
 class AssABGR(SRGB):
     """ASS `ABGR` color space."""
 
-    MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})\b")
+    MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
 
     @classmethod
     def match(cls, string: str, start: int = 0, fullmatch: bool = True):
