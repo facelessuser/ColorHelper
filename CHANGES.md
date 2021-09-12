@@ -5,6 +5,8 @@
 - **FIX**: Fix issues with [Advanced Substation Alpha (ASS)](https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS)) 
   support.
 - **FIX**: Remove unnecessary dependencies.
+- **FIX**: Upgrade `coloraide` which brings the possibility of using CIELuv,  
+  LCH~uv~, DIN99o, and DIN99o LCH. Small improvements and fixes also included.
 
 ## 3.6.0
 

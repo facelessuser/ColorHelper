@@ -5,7 +5,7 @@ from .. import util
 import re
 import math
 
-ACHROMATIC_THRESHOLD = 0.000000000002
+ACHROMATIC_THRESHOLD = 0.0000000002
 
 
 def luv_to_lchuv(luv):
@@ -49,7 +49,7 @@ class Lchuv(Cylindrical, Space):
     SERIALIZE = ("--lchuv",)
     CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = "D50"
 
     RANGE = (
         GamutUnbound([Percent(0), Percent(100.0)]),

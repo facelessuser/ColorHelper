@@ -3,7 +3,7 @@ Luv class.
 
 https://en.wikipedia.org/wiki/CIELUV
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Percent, WHITES
+from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Percent, WHITES, Labish
 from .xyz import XYZ
 from .. import util
 import re
@@ -46,8 +46,8 @@ def luv_to_xyz(luv, white):
     un, vn = xyz_to_uv(WHITES[white])
 
     if l != 0:
-        up = (u / ( 13 * l)) + un
-        vp = (v / ( 13 * l)) + vn
+        up = (u / (13 * l)) + un
+        vp = (v / (13 * l)) + vn
     else:
         up = vp = 0
 
@@ -62,14 +62,14 @@ def luv_to_xyz(luv, white):
     return [x, y, z]
 
 
-class Luv(Space):
+class Luv(Labish, Space):
     """Oklab class."""
 
     SPACE = "luv"
     SERIALIZE = ("--luv",)
     CHANNEL_NAMES = ("lightness", "u", "v", "alpha")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = "D50"
 
     RANGE = (
         GamutUnbound([Percent(0), Percent(100.0)]),
