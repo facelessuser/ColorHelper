@@ -41,14 +41,6 @@
     "click_color_box_to_pick": "none",
 
     //////////////////
-    // Gamut
-    //////////////////
-
-    // Controls whether previews will try to visually show an out of gamut
-    // color by using gamut mapping.
-    "show_out_of_gamut_preview": true,
-
-    //////////////////
     // Palettes
     //////////////////
 
@@ -72,6 +64,20 @@
 
     // Use native, OS specific color pickers. Linux requires `kcolorchooser`.
     "use_os_color_picker": false,
+
+    // Enable the preferred color picker options: `srgb`, `hsl`, `hsv`, `hwb`, `okhsl`, and `okhsv`
+    // If no valid spaces are specified, `srgb` will be used.
+    "enabled_color_picker_modes": ["srgb", "hsl", "hsv"],
+
+    // If the color is already in the space of an enabled mode, use that mode.
+    // If disabled, the "preferred" mode will be used.
+    "auto_color_picker_mode": true,
+
+    // If "auto" mode is disabled, or the "auto" mode could not determine a suitable picker,
+    // the preferrreed color picker space will be used. If the preferred is invalid, the
+    // first picker from `enabled_color_picker_modes` will be used, and if that is not valid,
+    // `srgb` will be used.
+    "preferred_color_picker_mode": "hsl",
 
     //////////////////
     // Preview

@@ -4,38 +4,26 @@ Luv class.
 https://en.wikipedia.org/wiki/CIELUV
 """
 from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Percent, WHITES, Labish
+from .lab.base import KAPPA, EPSILON, KE
 from .xyz import XYZ
 from .. import util
 import re
 
 
-def xyz_to_uv(xyz):
-    """XYZ to UV."""
-
-    x, y, z = xyz
-    denom = (x + 15 * y + 3 * z)
-    if denom != 0:
-        u = (4 * x) / (x + 15 * y + 3 * z)
-        v = (9 * y) / (x + 15 * y + 3 * z)
-    else:
-        u = v = 0
-
-    return u, v
-
-
 def xyz_to_luv(xyz, white):
     """XYZ to Luv."""
 
-    u, v = xyz_to_uv(xyz)
-    un, vn = xyz_to_uv(WHITES[white])
+    u, v = util.xyz_to_uv(xyz)
+    w_xyz = util.xy_to_xyz(WHITES[white])
+    ur, vr = util.xyz_to_uv(w_xyz)
 
-    y = xyz[1] / WHITES[white][1]
-    l = 116 * util.nth_root(y, 3) - 16 if y > ((6 / 29) ** 3) else ((29 / 3) ** 3) * y
+    yr = xyz[1] / w_xyz[1]
+    l = 116 * util.nth_root(yr, 3) - 16 if yr > EPSILON else KAPPA * yr
 
     return [
         l,
-        13 * l * (u - un),
-        13 * l * (v - vn),
+        13 * l * (u - ur),
+        13 * l * (v - vr),
     ]
 
 
@@ -43,15 +31,16 @@ def luv_to_xyz(luv, white):
     """Luv to XYZ."""
 
     l, u, v = luv
-    un, vn = xyz_to_uv(WHITES[white])
+    xyz = util.xy_to_xyz(WHITES[white])
+    ur, vr = util.xyz_to_uv(xyz)
 
     if l != 0:
-        up = (u / (13 * l)) + un
-        vp = (v / (13 * l)) + vn
+        up = (u / (13 * l)) + ur
+        vp = (v / (13 * l)) + vr
     else:
         up = vp = 0
 
-    y = WHITES[white][1] * ((l + 16) / 116) ** 3 if l > 8 else WHITES[white][1] * l * ((3 / 29) ** 3)
+    y = xyz[1] * (((l + 16) / 116) ** 3 if l > KE else l / KAPPA)
 
     if vp != 0:
         x = y * ((9 * up) / (4 * vp))
@@ -67,7 +56,10 @@ class Luv(Labish, Space):
 
     SPACE = "luv"
     SERIALIZE = ("--luv",)
-    CHANNEL_NAMES = ("lightness", "u", "v", "alpha")
+    CHANNEL_NAMES = ("l", "u", "v", "alpha")
+    CHANNEL_ALIASES = {
+        "lightness": "l"
+    }
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D50"
 
@@ -78,13 +70,13 @@ class Luv(Labish, Space):
     )
 
     @property
-    def lightness(self):
+    def l(self):
         """L channel."""
 
         return self._coords[0]
 
-    @lightness.setter
-    def lightness(self, value):
+    @l.setter
+    def l(self, value):
         """Get true luminance."""
 
         self._coords[0] = self._handle_input(value)

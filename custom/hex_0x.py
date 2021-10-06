@@ -3,7 +3,6 @@ from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
 from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
-import copy
 import re
 
 
@@ -52,7 +51,7 @@ class HexSRGB(SRGB):
         )
 
     def to_string(
-        self, parent, *, options=None, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to Hex format."""
 
@@ -85,5 +84,5 @@ class HexSRGB(SRGB):
 class ColorHex(Color):
     """Color object whose sRGB color space looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 
-    CS_MAP = copy.copy(Color.CS_MAP)
-    CS_MAP["srgb"] = HexSRGB
+
+ColorHex.register(HexSRGB, overwrite=True)

@@ -3,7 +3,7 @@ JzCzhz class.
 
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, OptionalPercent
+from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, Angle, OptionalPercent
 from .jzazbz import Jzazbz
 from .. import util
 import re
@@ -46,7 +46,7 @@ def jzczhz_to_jzazbz(jzczhz):
     )
 
 
-class JzCzhz(Cylindrical, Space):
+class JzCzhz(Lchish, Space):
     """
     JzCzhz class.
 
@@ -55,7 +55,12 @@ class JzCzhz(Cylindrical, Space):
 
     SPACE = "jzczhz"
     SERIALIZE = ("--jzczhz",)
-    CHANNEL_NAMES = ("jz", "chroma", "hue", "alpha")
+    CHANNEL_NAMES = ("jz", "cz", "hz", "alpha")
+    CHANNEL_ALIASES = {
+        "lightness": "jz",
+        "chroma": "cz",
+        "hue": "hz"
+    }
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D65"
 
@@ -78,25 +83,25 @@ class JzCzhz(Cylindrical, Space):
         self._coords[0] = self._handle_input(value)
 
     @property
-    def chroma(self):
+    def cz(self):
         """Chroma."""
 
         return self._coords[1]
 
-    @chroma.setter
-    def chroma(self, value):
+    @cz.setter
+    def cz(self, value):
         """Set chroma."""
 
         self._coords[1] = self._handle_input(value)
 
     @property
-    def hue(self):
+    def hz(self):
         """Hue."""
 
         return self._coords[2]
 
-    @hue.setter
-    def hue(self, value):
+    @hz.setter
+    def hz(self, value):
         """Set hue."""
 
         self._coords[2] = self._handle_input(value)
@@ -107,7 +112,14 @@ class JzCzhz(Cylindrical, Space):
 
         if coords[1] < ACHROMATIC_THRESHOLD:
             coords[2] = util.NaN
+
         return coords, alpha
+
+    @classmethod
+    def hue_name(cls):
+        """Hue name."""
+
+        return "hz"
 
     @classmethod
     def _to_jzazbz(cls, parent, jzczhz):

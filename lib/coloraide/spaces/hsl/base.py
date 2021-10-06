@@ -1,5 +1,5 @@
 """HSL class."""
-from ...spaces import Space, RE_DEFAULT_MATCH, Angle, Percent, GamutBound, Cylindrical
+from ...spaces import OptionalPercent, Space, RE_DEFAULT_MATCH, Angle, GamutBound, Cylindrical
 from ..srgb.base import SRGB
 from ... import util
 import re
@@ -28,7 +28,7 @@ def srgb_to_hsl(rgb):
         if s == 0:
             h = util.NaN
 
-    return util.constrain_hue(h), s * 100, l * 100
+    return [util.constrain_hue(h), s, l]
 
 
 def hsl_to_srgb(hsl):
@@ -41,8 +41,6 @@ def hsl_to_srgb(hsl):
     h, s, l = hsl
     h = util.no_nan(h)
     h = h % 360
-    s /= 100.0
-    l /= 100.0
 
     def f(n):
         """Calculate the channels."""
@@ -50,7 +48,7 @@ def hsl_to_srgb(hsl):
         a = s * min(l, 1 - l)
         return l - a * max(-1, min(k - 3, 9 - k, 1))
 
-    return f(0), f(8), f(4)
+    return [f(0), f(8), f(4)]
 
 
 class HSL(Cylindrical, Space):
@@ -58,49 +56,54 @@ class HSL(Cylindrical, Space):
 
     SPACE = "hsl"
     SERIALIZE = ("--hsl",)
-    CHANNEL_NAMES = ("hue", "saturation", "lightness", "alpha")
+    CHANNEL_NAMES = ("h", "s", "l", "alpha")
+    CHANNEL_ALIASES = {
+        "hue": "h",
+        "saturation": "s",
+        "lightness": "l"
+    }
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D65"
     GAMUT_CHECK = "srgb"
 
     RANGE = (
         GamutBound([Angle(0.0), Angle(360.0)]),
-        GamutBound([Percent(0.0), Percent(100.0)]),
-        GamutBound([Percent(0.0), Percent(100.0)])
+        GamutBound([OptionalPercent(0.0), OptionalPercent(1.0)]),
+        GamutBound([OptionalPercent(0.0), OptionalPercent(1.0)])
     )
 
     @property
-    def hue(self):
+    def h(self):
         """Hue channel."""
 
         return self._coords[0]
 
-    @hue.setter
-    def hue(self, value):
+    @h.setter
+    def h(self, value):
         """Shift the hue."""
 
         self._coords[0] = self._handle_input(value)
 
     @property
-    def saturation(self):
+    def s(self):
         """Saturation channel."""
 
         return self._coords[1]
 
-    @saturation.setter
-    def saturation(self, value):
+    @s.setter
+    def s(self, value):
         """Saturate or unsaturate the color by the given factor."""
 
         self._coords[1] = self._handle_input(value)
 
     @property
-    def lightness(self):
+    def l(self):
         """Lightness channel."""
 
         return self._coords[2]
 
-    @lightness.setter
-    def lightness(self, value):
+    @l.setter
+    def l(self, value):
         """Set lightness channel."""
 
         self._coords[2] = self._handle_input(value)
@@ -111,6 +114,7 @@ class HSL(Cylindrical, Space):
 
         if coords[1] == 0:
             coords[0] = util.NaN
+
         return coords, alpha
 
     @classmethod

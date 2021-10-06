@@ -13,7 +13,7 @@ from .lib.coloraide import util as cutil
 from .lib.coloraide.spaces.srgb import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
-from .ch_util import DEFAULT, COLOR_FULL_PREC, HEX, HEX_NA
+from .ch_util import DEFAULT, COLOR_FULL_PREC, EXTENDED_SRGB_SPACES, HEX, HEX_NA
 import copy
 
 color_map = None
@@ -23,6 +23,32 @@ default_border = None
 color_scale = None
 
 BORDER_SIZE = 1
+
+
+def get_color_picker_modes():
+    """Get color picker modes."""
+
+    settings = sublime.load_settings("color_helper.sublime-settings")
+
+    # Create a list of valid modes
+    modes = []
+    for m in settings.get('enabled_color_picker_modes', ['srgb']):
+        if m in EXTENDED_SRGB_SPACES:
+            modes.append(m)
+
+    if not modes:
+        modes = ['srgb']
+
+    preferred = settings.get('preferred_color_picker_mode', 'srgb')
+    if preferred not in modes:
+        preferred = modes[0]
+    auto = settings.get('auto_color_picker_mode', True)
+
+    return {
+        "modes": modes,
+        "preferred": preferred,
+        "auto": auto
+    }
 
 
 class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
@@ -41,8 +67,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.height_big = int(self.height + self.height / 4)
         self.setup_mode(color, mode)
         self.setup_controls(controls)
-        self.color = color.convert(self.mode, fit=True)
+        color.convert(self.mode, in_place=True)
+        if not color.in_gamut():
+            color.fit(in_place=True)
+        else:
+            color.fit(method='clip', in_place=True)
         # Ensure hue is between 0 - 360.
+        self.color = color
         if self.color.space() != "srgb" and not self.color.is_nan("hue"):
             self.color.hue = self.color.hue % 360
 
@@ -51,11 +82,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         # Use the provided mode, if any, or use the mode of the color
         # If the color is not one of the supported spaces, use sRGB.
-        if mode is None or mode not in ("srgb", "hsl", "hwb"):
-            if color.space() in ("srgb", "hsl", "hwb"):
-                mode = color.space()
-            else:
-                mode = "srgb"
+        modes = get_color_picker_modes()
+
+        if modes['auto'] and color.space() in modes['modes']:
+            mode = color.space()
+        else:
+            mode = modes['preferred']
+        self.modes = modes['modes']
         self.mode = mode
 
     def setup_controls(self, controls):
@@ -65,7 +98,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             controls = 'box'
         self.controls = controls
 
-    def get_color_map_square(self):
+    def get_color_map_square_hsv(self, mode='hsv'):
         """Get a square variant of the color map."""
 
         global color_map
@@ -74,11 +107,16 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = cutil.no_nan(self.color.convert('hsl').coords())
+        hue, saturation, value = cutil.no_nan(self.color.convert(mode).coords())
         alpha = cutil.no_nan(self.color.alpha)
 
-        r_sat = cutil.round_half_up(saturation / 100, 1) * 100
-        r_lit = cutil.round_half_up(lightness / 100, 1) * 100
+        r_sat = saturation
+        r_val = value
+        r_hue = 0
+        for x in range(0, 17):
+            if abs(r_hue - hue) < 11.21875:
+                break
+            r_hue += 22.4375
 
         # Only update if the last time we rendered we changed
         # something that would require a new render.
@@ -93,15 +131,146 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color("hsl(0 100% {}% / {})".format(lightness, alpha), filters=util.CSS_SRGB_SPACES)
+            color = Color(mode, [r_hue, 0, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
-            for y in range(0, 11):
+            for y in range(0, 17):
+                html_colors.append([])
+                for x in range(0, 17):
+                    this_sat = abs(color.saturation - r_sat) < 0.03125
+                    this_val = abs(color.value - r_val) < 0.03125
+                    border_color = self.default_border
+                    if this_sat and this_val:
+                        lum = color.luminance()
+                        border_color = '#ffffff' if lum < 0.5 else '#000000'
+                    value = color.convert("srgb").to_string(**HEX_NA)
+                    kwargs = {
+                        "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
+                        "check_size": check_size
+                    }
+
+                    if this_val and this_sat:
+                        border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
+                    elif y == 0 and x == 0:
+                        border_map = colorbox.TOP | colorbox.LEFT
+                    elif y == 0 and x == 16:
+                        border_map = colorbox.TOP | colorbox.RIGHT
+                    elif y == 0:
+                        border_map = colorbox.TOP
+                    elif y == 16 and x == 0:
+                        border_map = colorbox.BOTTOM | colorbox.LEFT
+                    elif y == 16 and x == 16:
+                        border_map = colorbox.BOTTOM | colorbox.RIGHT
+                    elif y == 16:
+                        border_map = colorbox.BOTTOM
+                    elif x == 0:
+                        border_map = colorbox.LEFT
+                    elif x == 16:
+                        border_map = colorbox.RIGHT
+                    else:
+                        border_map = 0
+                    kwargs["border_map"] = border_map
+
+                    html_colors[-1].append(
+                        '<a href="{}">{}</a>'.format(
+                            color.to_string(**COLOR_FULL_PREC),
+                            mdpopups.color_box(
+                                [value], border_color,
+                                **kwargs
+                            )
+                        )
+                    )
+                    color.saturation = min(color.saturation + 0.0625, 1)
+                    color.hue = r_hue
+                color.value = max(color.value - 0.0625, 0)
+                color.saturation = 0
+                color.hue = r_hue
+
+            # Generate a hue bar.
+            color = Color(mode, [0, 1, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            if color.is_nan("hue"):
+                color.hue = 0.0
+            check_size = self.check_size(self.height)
+            for y in range(0, 17):
+                value = color.convert("srgb").to_string(**HEX_NA)
+                kwargs = {
+                    "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
+                }
+
+                this_hue = color.hue == r_hue
+                border_color = self.default_border
+                if this_hue:
+                    lum = color.luminance()
+                    border_color = '#ffffff' if lum < 0.5 else '#000000'
+
+                if this_hue:
+                    border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
+                elif y == 0:
+                    border_map = colorbox.TOP | colorbox.LEFT | colorbox.RIGHT
+                elif y == 16:
+                    border_map = colorbox.BOTTOM | colorbox.LEFT | colorbox.RIGHT
+                else:
+                    border_map = colorbox.LEFT | colorbox.RIGHT
+                kwargs["border_map"] = border_map
+
+                color.value = r_val
+                color.saturation = r_sat
+                html_colors[y].append(
+                    '<a href="{}">{}</a>'.format(
+                        color.to_string(**COLOR_FULL_PREC),
+                        mdpopups.color_box(
+                            [value], border_color,
+                            **kwargs
+                        )
+                    )
+                )
+                color.hue = color.hue + 22.4375
+                color.value = 1
+                color.saturation = 1
+
+            color_map = (
+                ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors])
+            )
+        self.template_vars['color_picker'] = color_map
+
+    def get_color_map_square(self, mode='hsl'):
+        """Get a square variant of the color map."""
+
+        global color_map
+        global color_map_size
+        global line_height
+        global default_border
+        global color_scale
+
+        hue, saturation, lightness = cutil.no_nan(self.color.convert(mode).coords())
+        alpha = cutil.no_nan(self.color.alpha)
+
+        r_sat = saturation
+        r_lit = lightness
+
+        # Only update if the last time we rendered we changed
+        # something that would require a new render.
+        if (True):
+            color_map_size = self.graphic_size
+            color_scale = self.graphic_scale
+
+            line_height = self.line_height
+            default_border = self.default_border
+
+            html_colors = []
+
+            # Generate the colors with each row being darker than the last.
+            # Each column will progress through hues.
+            color = Color(mode, [0, 1, lightness], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            if color.is_nan("hue"):
+                color.hue = 0.0
+            check_size = self.check_size(self.height)
+            for y in range(0, 17):
                 html_colors.append([])
                 for x in range(0, 17):
                     this_hue = False
-                    this_sat = color.saturation == r_sat
+                    this_sat = abs(color.saturation - r_sat) < 0.03125
                     border_color = self.default_border
                     if this_sat:
                         this_hue = abs(color.hue - hue) < 11.21875
@@ -122,11 +291,11 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         border_map = colorbox.TOP | colorbox.RIGHT
                     elif y == 0:
                         border_map = colorbox.TOP
-                    elif y == 10 and x == 0:
+                    elif y == 16 and x == 0:
                         border_map = colorbox.BOTTOM | colorbox.LEFT
-                    elif y == 10 and x == 16:
+                    elif y == 16 and x == 16:
                         border_map = colorbox.BOTTOM | colorbox.RIGHT
-                    elif y == 10:
+                    elif y == 16:
                         border_map = colorbox.BOTTOM
                     elif x == 0:
                         border_map = colorbox.LEFT
@@ -147,20 +316,20 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     )
                     color.hue = color.hue + 22.4375
                 color.hue = 0.0
-                color.saturation = color.saturation - 10
+                color.saturation = color.saturation - 0.0625
 
             # Generate a grayscale bar.
-            color = Color('hsl({} {}% 100% / {})'.format(hue, saturation, alpha), filters=util.CSS_SRGB_SPACES)
+            color = Color(mode, [hue, saturation, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
-            for y in range(0, 11):
+            for y in range(0, 17):
                 value = color.convert("srgb").to_string(**HEX_NA)
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
-                this_lit = color.lightness == r_lit
+                this_lit = abs(color.lightness - r_lit) < 0.03125
                 border_color = self.default_border
                 if this_lit:
                     lum = color.luminance()
@@ -170,7 +339,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
                 elif y == 0:
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.RIGHT
-                elif y == 10:
+                elif y == 16:
                     border_map = colorbox.BOTTOM | colorbox.LEFT | colorbox.RIGHT
                 else:
                     border_map = colorbox.LEFT | colorbox.RIGHT
@@ -185,7 +354,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         )
                     )
                 )
-                color.lightness = color.lightness - 10
+                color.lightness = color.lightness - 0.0625
 
             color_map = (
                 ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors])
@@ -216,7 +385,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2hex_map):
-            color = Color(name, filters=util.CSS_SRGB_SPACES)
+            color = Color(name, filters=util.EXTENDED_SRGB_SPACES)
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -240,6 +409,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             "blue": (0, 255),
             "alpha": (0, 100),
             "hue": (0, 359),
+            "value": (0, 100),
             "saturation": (0, 100),
             "lightness": (0, 100),
             "whiteness": (0, 100),
@@ -258,9 +428,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         elif color_filter in ('alpha',):
             estimate = int(cutil.fmt_float(current * 100, 0))
             current = '{}%'.format(cutil.fmt_float(current * 100, 5))
-        elif color_filter in ('whiteness', 'blackness', 'saturation', 'lightness'):
-            estimate = int(cutil.fmt_float(current, 0))
-            current = '{}%'.format(cutil.fmt_float(current, 5))
+        elif color_filter in ('whiteness', 'blackness', 'saturation', 'lightness', 'value'):
+            estimate = int(cutil.fmt_float(current * 100, 0))
+            current = '{}%'.format(cutil.fmt_float(current * 100, 5))
         elif color_filter in ('hue',):
             estimate = int(cutil.fmt_float(current, 0))
             current = '{}\xb0'.format(cutil.fmt_float(current, 5))
@@ -279,8 +449,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             elif color_filter == 'hue':
                 color.hue = x
                 label = label.format("{:d}\xb0".format(x))
-            elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness'):
-                color.set(color_filter, x)
+            elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness', 'value'):
+                color.set(color_filter, x / 100)
                 label = label.format("{:d}%".format(x))
 
             html.append(
@@ -313,14 +483,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         options = HEX_NA if color_filter != 'alpha' else HEX
 
         coord = cutil.no_nan(getattr(clone, color_filter))
-        if color_filter in ('red', 'green', 'blue', 'alpha'):
+        if color_filter != 'hue':
             rounded = cutil.round_half_up(coord, 2)
             setattr(clone, color_filter, rounded)
             step = 0.01
-        elif color_filter in ('lightness', 'saturation', 'whiteness', 'blackness'):
-            rounded = cutil.round_half_up(coord, 0)
-            setattr(clone, color_filter, rounded)
-            step = 1
         else:
             rounded = cutil.round_half_up(coord / 359, 2) * 359
             setattr(clone, color_filter, rounded)
@@ -331,13 +497,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             coord = cutil.no_nan(getattr(clone, color_filter)) - step
             setattr(clone, color_filter, coord)
 
-            if not clone.in_gamut(tolerance=0):
+            if color_filter != "hue" and (coord < 0 or coord > 1):
                 temp.append(self.get_spacer(width=count))
                 break
-            elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
-                temp.append(self.get_spacer(width=count))
-                break
-            elif self.mode in ("hsl", "hwb") and color_filter == "hue" and (coord < 0 or coord > 359):
+            elif color_filter == "hue" and (coord < 0 or coord > 359):
                 temp.append(self.get_spacer(width=count))
                 break
             else:
@@ -382,13 +545,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             coord = cutil.no_nan(getattr(clone, color_filter)) + step
             setattr(clone, color_filter, coord)
 
-            if not clone.in_gamut(tolerance=0):
+            if color_filter != "hue" and (coord < 0 or coord > 1):
                 html.append(self.get_spacer(width=count))
                 break
-            elif color_filter == "alpha" and (coord < 0 or coord > 1.0):
-                html.append(self.get_spacer(width=count))
-                break
-            elif self.mode in ("hsl", "hwb") and color_filter == "hue" and (coord < 0 or coord > 359):
+            elif color_filter == "hue" and (coord < 0 or coord > 359):
                 html.append(self.get_spacer(width=count))
                 break
             else:
@@ -515,7 +675,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 cmd,
                 {
-                    "initial": Color(color, filters=util.CSS_SRGB_SPACES).to_string(**DEFAULT),
+                    "initial": Color(color, filters=util.EXTENDED_SRGB_SPACES).to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel
                 }
             )
@@ -574,14 +734,20 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Show the normal color picker of the specified space
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = '__cancel__'
-            if self.controls == "box":
-                self.get_color_map_square()
+            if self.controls == "box" and self.mode not in ('hsv', 'okhsv'):
+                self.get_color_map_square('hsl' if self.mode != 'okhsl' else 'okhsl')
+            elif self.controls == "box":
+                self.get_color_map_square_hsv('hsv' if self.mode != 'okhsv' else 'okhsv')
             self.get_current_color()
             if self.controls == "sliders":
-                if self.mode == "hsl":
+                if self.mode in ("hsl", "okhsl"):
                     self.get_channel('channel_1', 'H', 'hue')
                     self.get_channel('channel_2', 'S', 'saturation')
                     self.get_channel('channel_3', 'L', 'lightness')
+                elif self.mode in ("hsv", "okhsv"):
+                    self.get_channel('channel_1', 'H', 'hue')
+                    self.get_channel('channel_2', 'S', 'saturation')
+                    self.get_channel('channel_3', 'V', 'value')
                 elif self.mode == "hwb":
                     self.get_channel('channel_1', 'H', 'hue')
                     self.get_channel('channel_2', 'W', 'whiteness')
@@ -592,6 +758,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     self.get_channel('channel_3', 'B', 'blue')
                 self.get_channel('channel_alpha', 'A', 'alpha')
 
+            self.template_vars['modes'] = self.modes
             self.template_vars['mode'] = self.mode
             self.template_vars['box_control'] = self.controls == 'box'
             self.template_vars['color_full'] = self.color.to_string(**COLOR_FULL_PREC)

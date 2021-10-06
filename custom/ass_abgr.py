@@ -3,7 +3,6 @@ from ColorHelper.lib.coloraide import Color
 from ColorHelper.lib.coloraide import util
 from ColorHelper.lib.coloraide.spaces import _parse
 from ColorHelper.lib.coloraide.spaces.srgb.css import SRGB
-import copy
 import re
 
 
@@ -49,7 +48,7 @@ class AssABGR(SRGB):
 
         raise RuntimeError("Something is wrong in code logics.")
 
-    def to_string(self, parent, *, options=None, alpha=None, precision=None, fit=True, **kwargs):
+    def to_string(self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
         """Convert color to `&HAABBGGRR`."""
 
         options = kwargs
@@ -82,5 +81,5 @@ class AssABGR(SRGB):
 class ColorAssABGR(Color):
     """Color class for ASS `ABGR` colors."""
 
-    CS_MAP = copy.copy(Color.CS_MAP)
-    CS_MAP["srgb"] = AssABGR
+
+ColorAssABGR.register(AssABGR, overwrite=True)

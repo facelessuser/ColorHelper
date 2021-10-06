@@ -3,7 +3,6 @@ from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
 from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
-import copy
 import re
 
 RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**_parse.COLOR_PARTS))
@@ -696,7 +695,7 @@ class SRGBX11(SRGB):
     )
 
     def to_string(
-        self, parent, *, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS."""
 
@@ -795,5 +794,5 @@ class SRGBX11(SRGB):
 class ColorSRGBX11(Color):
     """Hex SRGB with X11 color names."""
 
-    CS_MAP = copy.copy(Color.CS_MAP)
-    CS_MAP["srgb"] = SRGBX11
+
+ColorSRGBX11.register(SRGBX11, overwrite=True)

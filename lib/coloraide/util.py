@@ -17,6 +17,16 @@ DEF_DISTANCE_SPACE = "lab"
 DEF_FIT = "lch-chroma"
 DEF_DELTA_E = "76"
 
+ERR_MAP_MSG = """
+    To add or remove items from this mapping, please subclass the
+    'Color' object and replace the entire mapping by either copying
+    this mapping and then altering it or by creating an entirely
+    new mapping. Example:
+
+    class MyNewClass(Color):
+        {name} = {{**Color.{name}, **my_override_map}}
+"""
+
 # Many libraries use 200, but `Colorjs.io` uses 203
 # The author explains why 203 was chosen:
 #
@@ -37,6 +47,77 @@ M2 = 2523 / 32
 C1 = 3424 / 4096
 C2 = 2413 / 128
 C3 = 2392 / 128
+
+
+def xy_to_xyz(xy, Y=1):
+    """Convert `xyY` to `xyz`."""
+
+    x, y = xy
+    return [0, 0, 0] if y == 0 else [(x * Y) / y, Y, (1 - x - y) * Y / y]
+
+
+def xyz_to_uv(xyz):
+    """XYZ to UV."""
+
+    x, y, z = xyz
+    denom = (x + 15 * y + 3 * z)
+    if denom != 0:
+        u = (4 * x) / denom
+        v = (9 * y) / denom
+    else:
+        u = v = 0
+
+    return u, v
+
+
+def uv_to_xy(uv):
+    """XYZ to UV."""
+
+    u, v = uv
+    denom = (6 * u - 16 * v + 12)
+    if denom != 0:
+        x = (9 * u) / denom
+        y = (4 * v) / denom
+    else:
+        x = y = 0
+
+    return x, y
+
+
+def xy_to_uv_1960(xy):
+    """XYZ to UV."""
+
+    x, y = xy
+    denom = (12 * y - 2 * x + 3)
+    if denom != 0:
+        u = (4 * x) / denom
+        v = (6 * y) / denom
+    else:
+        u = v = 0
+
+    return u, v
+
+
+def uv_1960_to_xy(uv):
+    """XYZ to UV."""
+
+    u, v = uv
+    denom = (2 * u - 8 * v + 4)
+    if denom != 0:
+        x = (3 * u) / denom
+        y = (2 * v) / denom
+    else:
+        x = y = 0
+
+    return x, y
+
+
+def xyz_to_xyY(xyz, white):
+    """XYZ to `xyY`."""
+
+    x, y, z = xyz
+    d = x + y + z
+    return [white[0], white[1], y] if d == 0 else [x / d, y / d, y]
 
 
 def pq_st2084_inverse_eotf(values, c1=C1, c2=C2, c3=C3, m1=M1, m2=M2):
@@ -100,13 +181,13 @@ def is_nan(value):
     return math.isnan(value)
 
 
-def no_nan(value):
+def no_nan(value, default=0.0):
     """Convert list of numbers or single number to valid numbers."""
 
     if is_number(value):
-        return 0.0 if is_nan(value) else value
+        return default if is_nan(value) else value
     else:
-        return [(0.0 if is_nan(x) else x) for x in value]
+        return [(default if is_nan(x) else x) for x in value]
 
 
 def cmp_coords(c1, c2):
@@ -368,9 +449,22 @@ def fmt_float(f, p=0):
     <positive number>: precision level
     """
 
+    if is_nan(f):
+        return "none"
+
     value = adjust_precision(f, p)
     string = ('{{:{}f}}'.format('.53' if p == -1 else '.' + str(p))).format(value)
     return string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
+
+
+def fmt_percent(f, p=0):
+    """Get percent."""
+
+    if not is_nan(f):
+        value = '{}%'.format(fmt_float(f, p))
+    else:
+        value = 'none'
+    return value
 
 
 def adjust_precision(f, p=0):
@@ -399,17 +493,31 @@ def deprecated(message, stacklevel=2):  # pragma: no cover
     """
     Raise a `DeprecationWarning` when wrapped function/method is called.
 
-    Borrowed from https://stackoverflow.com/a/48632082/866026
+    Usage:
+
+        @deprecated("This method will be removed in version X; use Y instead.")
+        def some_method()"
+            pass
     """
 
-    def _decorator(func):
+    def _wrapper(func):
         @wraps(func)
-        def _func(*args, **kwargs):
+        def _deprecated_func(*args, **kwargs):
             warnings.warn(
                 "'{}' is deprecated. {}".format(func.__name__, message),
                 category=DeprecationWarning,
                 stacklevel=stacklevel
             )
             return func(*args, **kwargs)
-        return _func
-    return _decorator
+        return _deprecated_func
+    return _wrapper
+
+
+def warn_deprecated(message, stacklevel=2):  # pragma: no cover
+    """Warn deprecated."""
+
+    warnings.warn(
+        message,
+        category=DeprecationWarning,
+        stacklevel=stacklevel
+    )

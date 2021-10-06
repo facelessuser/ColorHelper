@@ -45,8 +45,8 @@ in other [palettes](#palette-panel) than can be accessed later.
     see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
 
 The internal color picker can be launched from the view's context menu, the command palette, or from the
-[Color Info Panel](#color_info).  When launched, it will use the current selected color. The internal color picker is
-contained inside a popup.  It has a color map box at the top where different colors can be selected. You can
+[Color Info Panel](#color_info).  By default, when launched, it will use the current selected color. The internal color
+picker is contained inside a popup.  It has a color map box at the top where different colors can be selected. You can
 toggle between altering the color in the sRGB, HSL, or HWB color space. You can also switch between the color map box
 and sliders.
 
@@ -65,6 +65,15 @@ panel will open:
 ![CSS color names](images/css_color_name_panel.png)
 
 When done, simply select the `select` link to insert the color back into the document.
+
+Out of the box `hsl`, `hsv`, and `srgb` are spaces that are enabled when doing color picking. `srgb` just uses `hsl`
+with sRGB channel sliders.
+
+If desired, a couple additional color spaces can be used: `okhsl` and `okhsv` (HSL and HSV variants based on Oklab) or
+HWB (HSL picker with with HWB sliders). This can all be configured in the settings.
+
+Additionally, if you desire a certain color space to always be used, you can turn off the "auto" mode and even specify
+what your preferred color space for the color picker should be.
 
 ## Edit Tool
 

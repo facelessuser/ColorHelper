@@ -22,4 +22,42 @@ installed (KDE not required) and in your command line path, then it will be used
     "use_os_color_picker": false,
 ```
 
+## `enabled_color_picker_modes`
+
+By default color pickers are available in the sRGB, HSL, and HSV color space. sRGB actually just uses the HSL color
+space picker with sRGB sliders.
+
+In addition to the default color pickers, one can enable HWB (HSL color picker with HWB sliders) and Okhsl and Okhsv
+which are alternatives to the HSL and HSV but derived from the Oklab color space.
+
+```js
+    // Enable the preferred color picker options: `srgb`, `hsl`, `hsv`, `hwb`, `okhsl`, and `okhsv`
+    // If no valid spaces are specified, `srgb` will be used.
+    "enabled_color_picker_modes": ["srgb", "hsl", "hsv"],
+```
+
+## `auto_color_picker_mode`
+
+Controls whether ColorHelper, based on the input color, decides which color space to use. If a matching color space
+cannot be found, the preferred color space picker will be selected.
+
+```js
+    // If the color is already in the space of an enabled mode, use that mode.
+    // If disabled, the "preferred" mode will be used.
+    "auto_color_picker_mode": true,
+```
+
+## `preferred_color_picker_mode`
+
+The preferred color picker space to use. If invalid or not enabled, the first enabled color space will be used, and if
+there are none enabled, `srgb` will be used as a last resort.
+
+```js
+    // If "auto" mode is disabled, or the "auto" mode could not determine a suitable picker,
+    // the preferrreed color picker space will be used. If the preferred is invalid, the
+    // first picker from `enabled_color_picker_modes` will be used, and if that is not valid,
+    // `srgb` will be used.
+    "preferred_color_picker_mode": "hsl",
+```
+
 --8<-- "refs.md"

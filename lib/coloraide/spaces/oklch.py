@@ -1,11 +1,35 @@
-"""LCH class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, OptionalPercent
+"""
+LCH class.
+
+---- License ----
+
+Copyright (c) 2021 Björn Ottosson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, Angle, OptionalPercent
 from .oklab import Oklab
 from .. import util
 import re
 import math
 
-ACHROMATIC_THRESHOLD = 0.0003
+ACHROMATIC_THRESHOLD = 0.000002
 
 
 def oklab_to_oklch(oklab):
@@ -42,12 +66,17 @@ def oklch_to_oklab(oklch):
     )
 
 
-class Oklch(Cylindrical, Space):
+class Oklch(Lchish, Space):
     """Oklch class."""
 
     SPACE = "oklch"
     SERIALIZE = ("--oklch",)
-    CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
+    CHANNEL_NAMES = ("l", "c", "h", "alpha")
+    CHANNEL_ALIASES = {
+        "lightness": "l",
+        "chroma": "c",
+        "hue": "h"
+    }
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D65"
 
@@ -58,37 +87,37 @@ class Oklch(Cylindrical, Space):
     )
 
     @property
-    def lightness(self):
+    def l(self):
         """Lightness."""
 
         return self._coords[0]
 
-    @lightness.setter
-    def lightness(self, value):
+    @l.setter
+    def l(self, value):
         """Get true luminance."""
 
         self._coords[0] = self._handle_input(value)
 
     @property
-    def chroma(self):
+    def c(self):
         """Chroma."""
 
         return self._coords[1]
 
-    @chroma.setter
-    def chroma(self, value):
+    @c.setter
+    def c(self, value):
         """chroma."""
 
         self._coords[1] = self._handle_input(value)
 
     @property
-    def hue(self):
+    def h(self):
         """Hue."""
 
         return self._coords[2]
 
-    @hue.setter
-    def hue(self, value):
+    @h.setter
+    def h(self, value):
         """Shift the hue."""
 
         self._coords[2] = self._handle_input(value)
@@ -99,6 +128,7 @@ class Oklch(Cylindrical, Space):
 
         if coords[1] < ACHROMATIC_THRESHOLD:
             coords[2] = util.NaN
+
         return coords, alpha
 
     @classmethod

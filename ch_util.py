@@ -30,10 +30,12 @@ HEX_NA = {"hex": True, "alpha": False}
 DEFAULT = {"fit": False}
 COMMA = {"fit": False, "comma": True}
 FULL_PREC = {"fit": False, "precision": -1}
+COLOR_PIC_FULL_PREC = {"color": True, "fit": 'clip', "precision": 0}
 COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 COLOR_SERIALIZE = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb", "hsv")
 CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
+EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
 CSS_L4_SPACES = ("srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb", "xyz")
 
 lang_map = {
