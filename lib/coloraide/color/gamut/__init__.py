@@ -1,36 +1,25 @@
 """Gamut handling."""
 from ... import util
-from ... spaces import Angle, GamutBound
-from . import clip
-from . import lch_chroma
+from ... spaces import Angle, Cylindrical, GamutBound
+from abc import ABCMeta, abstractmethod
 
 
-def norm_angles(color):
-    """Normalize angles."""
+class Fit(ABCMeta):
+    """Fit plugin class."""
 
-    channels = util.no_nan(color.coords())
-    gamut = color._space.RANGE
-    fit = []
-    for i, value in enumerate(channels):
-        a = gamut[i][0]
+    @staticmethod
+    @abstractmethod
+    def name():
+        """Get name of method."""
 
-        # Wrap the angle
-        if isinstance(a, Angle):
-            fit.append(value % 360.0)
-            continue
-
-        # Fit value in bounds.
-        fit.append(value)
-    return fit
+    @staticmethod
+    @abstractmethod
+    def distance(color):
+        """Get coordinates of the new gamut mapped color."""
 
 
 class Gamut:
     """Handle gamut related functions."""
-
-    FIT_MAP = {
-        "clip": clip.fit,
-        "lch-chroma": lch_chroma.fit
-    }
 
     def fit(self, space=None, *, method=None, in_place=False):
         """Fit the gamut using the provided method."""
@@ -55,9 +44,13 @@ class Gamut:
 
         # If we are perfectly in gamut, don't waste time fitting, just normalize hues.
         # If out of gamut, apply mapping/clipping/etc.
-        c._space._coords, c._space._alpha = (
-            c._space.null_adjust(norm_angles(c) if c.in_gamut(tolerance=0.0) else func(c), self.alpha)
-        )
+        if c.in_gamut(tolerance=0.0):
+            if isinstance(c._space, Cylindrical):
+                name = c._space.hue_name()
+                c.set(name, util.constrain_hue(c.get(name)))
+        else:
+            c._space._coords = func(c)
+        c.normalize()
 
         # Adjust "this" color
         return this.update(c)

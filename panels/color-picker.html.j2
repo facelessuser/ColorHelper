@@ -26,9 +26,12 @@
 
 {{plugin.color_display}}
 
-[sRGB](__space__:srgb){: .button {% if plugin.mode == 'srgb' %}.selected{% endif %}} 
-[HSL](__space__:hsl){: .button {% if plugin.mode == 'hsl' %}.selected{% endif %}}
-[HWB](__space__:hwb){: .button {% if plugin.mode == 'hwb' %}.selected{% endif %}}
+{% for mode in plugin.modes %}
+[{{ mode }}](__space__:{{mode}}){: .button {% if plugin.mode == mode %}.selected{% endif %}}
+{%- if loop.index % 3 == 0 -%}
+<div>&nbsp;</div>
+{%- endif -%}
+{% endfor %}
 
 ---
 </div>

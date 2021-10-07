@@ -50,6 +50,12 @@ CATS = {
         [0.7982000, 0.3389000, -0.1371000],
         [-0.5918000, 1.5512000, 0.0406000],
         [0.0008000, 0.0239000, 0.9753000]
+    ],
+    "cat16": [
+        # https://arxiv.org/pdf/1802.06067.pdf
+        [-0.401288, -0.250268, -0.002079],
+        [0.650173, 1.204414, 0.048952],
+        [-0.051461, -0.045854, -0.953127]
     ]
 }
 
@@ -75,12 +81,12 @@ def calc_adaptation_matrices(w1, w2, method='bradford'):
     mi = util.inv(m)
 
     try:
-        first = util.dot(m, WHITES[w1])
+        first = util.dot(m, util.xy_to_xyz(WHITES[w1]))
     except KeyError:  # pragma: no cover
         raise ValueError('Unknown white point encountered: {}'.format(w1))
 
     try:
-        second = util.dot(m, WHITES[w2])
+        second = util.dot(m, util.xy_to_xyz(WHITES[w2]))
     except KeyError:  # pragma: no cover
         raise ValueError('Unknown white point encountered: {}'.format(w2))
 

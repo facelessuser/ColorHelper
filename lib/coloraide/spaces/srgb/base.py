@@ -5,6 +5,18 @@ from ... import util
 import re
 import math
 
+RGB_TO_XYZ = [
+    [0.4123907992659593, 0.357584339383878, 0.18048078840183432],
+    [0.21263900587151024, 0.715168678767756, 0.07219231536073373],
+    [0.01933081871559182, 0.11919477979462598, 0.9505321522496608]
+]
+
+XYZ_TO_RGB = [
+    [3.2409699419045226, -1.537383177570094, -0.49861076029300355],
+    [-0.9692436362808796, 1.8759675015077202, 0.04155505740717562],
+    [0.055630079696993635, -0.2039769588889765, 1.0569715142428784]
+]
+
 
 def lin_srgb_to_xyz(rgb):
     """
@@ -13,25 +25,13 @@ def lin_srgb_to_xyz(rgb):
     D65 (no chromatic adaptation)
     """
 
-    m = [
-        [0.41245643908969226, 0.357576077643909, 0.18043748326639897],
-        [0.21267285140562256, 0.715152155287818, 0.07217499330655959],
-        [0.019333895582329303, 0.11919202588130297, 0.950304078536368]
-    ]
-
-    return util.dot(m, rgb)
+    return util.dot(RGB_TO_XYZ, rgb)
 
 
 def xyz_to_lin_srgb(xyz):
     """Convert XYZ to linear-light sRGB."""
 
-    m = [
-        [3.2404541621141045, -1.5371385127977162, -0.49853140955601605],
-        [-0.969266030505187, 1.8760108454466944, 0.04155601753034984],
-        [0.05564343095911475, -0.20402591351675384, 1.057225188223179]
-    ]
-
-    return util.dot(m, xyz)
+    return util.dot(XYZ_TO_RGB, xyz)
 
 
 def lin_srgb(rgb):
@@ -78,7 +78,12 @@ class SRGB(Space):
     # gamut changes. This is mainly for a better user experience. Colors will still be
     # mapped/clipped in the current space, unless specified otherwise.
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE, channels=3))
-    CHANNEL_NAMES = ("red", "green", "blue", "alpha")
+    CHANNEL_NAMES = ("r", "g", "b", "alpha")
+    CHANNEL_ALIASES = {
+        "red": 'r',
+        "green": 'g',
+        "blue": 'b'
+    }
     WHITE = "D65"
 
     RANGE = (
@@ -88,37 +93,37 @@ class SRGB(Space):
     )
 
     @property
-    def red(self):
+    def r(self):
         """Adjust red."""
 
         return self._coords[0]
 
-    @red.setter
-    def red(self, value):
+    @r.setter
+    def r(self, value):
         """Adjust red."""
 
         self._coords[0] = self._handle_input(value)
 
     @property
-    def green(self):
+    def g(self):
         """Adjust green."""
 
         return self._coords[1]
 
-    @green.setter
-    def green(self, value):
+    @g.setter
+    def g(self, value):
         """Adjust green."""
 
         self._coords[1] = self._handle_input(value)
 
     @property
-    def blue(self):
+    def b(self):
         """Adjust blue."""
 
         return self._coords[2]
 
-    @blue.setter
-    def blue(self, value):
+    @b.setter
+    def b(self, value):
         """Adjust blue."""
 
         self._coords[2] = self._handle_input(value)

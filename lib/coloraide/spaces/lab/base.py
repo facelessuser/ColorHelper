@@ -35,7 +35,7 @@ def lab_to_xyz(lab, white):
     ]
 
     # Compute XYZ by scaling `xyz` by reference `white`
-    return util.multiply(xyz, white)
+    return util.multiply(xyz, util.xy_to_xyz(white))
 
 
 def xyz_to_lab(xyz, white):
@@ -49,7 +49,7 @@ def xyz_to_lab(xyz, white):
     """
 
     # compute `xyz`, which is XYZ scaled relative to reference white
-    xyz = util.divide(xyz, white)
+    xyz = util.divide(xyz, util.xy_to_xyz(white))
     # Compute `fx`, `fy`, and `fz`
     fx, fy, fz = [util.cbrt(i) if i > EPSILON else (KAPPA * i + 16) / 116 for i in xyz]
 
@@ -63,7 +63,10 @@ def xyz_to_lab(xyz, white):
 class LabBase(Labish, Space):
     """Lab class."""
 
-    CHANNEL_NAMES = ("lightness", "a", "b", "alpha")
+    CHANNEL_NAMES = ("l", "a", "b", "alpha")
+    CHANNEL_ALIASES = {
+        "lightness": "l"
+    }
 
     RANGE = (
         GamutUnbound([Percent(0), Percent(100.0)]),  # Technically we could/should clamp the zero side.
@@ -72,13 +75,13 @@ class LabBase(Labish, Space):
     )
 
     @property
-    def lightness(self):
+    def l(self):
         """L channel."""
 
         return self._coords[0]
 
-    @lightness.setter
-    def lightness(self, value):
+    @l.setter
+    def l(self, value):
         """Get true luminance."""
 
         self._coords[0] = self._handle_input(value)

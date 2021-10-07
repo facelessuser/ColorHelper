@@ -1,5 +1,5 @@
 """LCH class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Cylindrical, Angle, Percent
+from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, Angle, Percent
 from .luv import Luv
 from .. import util
 import re
@@ -42,12 +42,17 @@ def lchuv_to_luv(lchuv):
     )
 
 
-class Lchuv(Cylindrical, Space):
+class Lchuv(Lchish, Space):
     """Lch(uv) class."""
 
     SPACE = "lchuv"
     SERIALIZE = ("--lchuv",)
-    CHANNEL_NAMES = ("lightness", "chroma", "hue", "alpha")
+    CHANNEL_NAMES = ("l", "c", "h", "alpha")
+    CHANNEL_ALIASES = {
+        "lightness": "l",
+        "chroma": "c",
+        "hue": "h"
+    }
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D50"
 
@@ -58,37 +63,37 @@ class Lchuv(Cylindrical, Space):
     )
 
     @property
-    def lightness(self):
+    def l(self):
         """Lightness."""
 
         return self._coords[0]
 
-    @lightness.setter
-    def lightness(self, value):
+    @l.setter
+    def l(self, value):
         """Get true luminance."""
 
         self._coords[0] = self._handle_input(value)
 
     @property
-    def chroma(self):
+    def c(self):
         """Chroma."""
 
         return self._coords[1]
 
-    @chroma.setter
-    def chroma(self, value):
+    @c.setter
+    def c(self, value):
         """chroma."""
 
         self._coords[1] = self._handle_input(value)
 
     @property
-    def hue(self):
+    def h(self):
         """Hue."""
 
         return self._coords[2]
 
-    @hue.setter
-    def hue(self, value):
+    @h.setter
+    def h(self, value):
         """Shift the hue."""
 
         self._coords[2] = self._handle_input(value)

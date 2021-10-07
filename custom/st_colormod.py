@@ -4,6 +4,7 @@ from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
 from ..lib.coloraide.spaces import _parse
 from ..lib.coloraide import util
+from collections.abc import Mapping
 import functools
 import math
 
@@ -423,13 +424,13 @@ class ColorMod:
         if is_dark:
             primary = "whiteness"
             secondary = "blackness"
-            min_mix = orig.whiteness
-            max_mix = 100.0
+            min_mix = orig.whiteness * 100
+            max_mix = 100
         else:
             primary = "blackness"
             secondary = "whiteness"
-            min_mix = orig.blackness
-            max_mix = 100.0
+            min_mix = orig.blackness * 100
+            max_mix = 100
         orig_ratio = ratio
         last_ratio = 0
         last_mix = 0
@@ -440,10 +441,10 @@ class ColorMod:
             mid_mix = round((max_mix + min_mix) / 2, 1)
             mid_other = (
                 orig.get(secondary) -
-                ((mid_mix - orig.get(primary)) / (100.0 - orig.get(primary))) * orig.get(secondary)
+                ((mid_mix - orig.get(primary) * 100) / (1 - orig.get(primary) * 100)) * orig.get(secondary) * 100
             )
-            temp.set(primary, mid_mix)
-            temp.set(secondary, mid_other)
+            temp.set(primary, mid_mix / 100)
+            temp.set(secondary, mid_other / 100)
             ratio = temp.contrast(color2)
 
             if ratio < target:
@@ -464,7 +465,16 @@ class ColorMod:
             return
 
         # Use the best, last values
-        final = orig.new("hwb", [orig.hue, last_mix, last_other] if is_dark else [orig.hue, last_other, last_mix])
+        coords = [
+            orig.hue,
+            last_mix / 100,
+            last_other / 100
+        ] if is_dark else [
+            orig.hue,
+            last_other / 100,
+            last_mix / 100
+        ]
+        final = orig.new("hwb", coords)
         final = final.convert('srgb')
         # If we are lightening the color, then we'd like to round up to ensure we are over the luminance threshold
         # as sRGB will clip off decimals. If we are darkening, then we want to just floor the values as the algorithm
@@ -539,6 +549,14 @@ class Color(ColorCSS):
                 if space == s and (not filters or s in filters):
                     obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
                     return obj
+        elif isinstance(color, Mapping):
+            space = color['space']
+            if not filters or space in filters:
+                cs = self.CS_MAP[space]
+                coords = [color[name] for name in cs.CHANNEL_NAMES[:-1]]
+                alpha = color['alpha']
+                obj = cs(coords, alpha)
+                return obj
         elif isinstance(color, ColorCSS):
             if not filters or color.space() in filters:
                 obj = self.CS_MAP[color.space()](color._space)

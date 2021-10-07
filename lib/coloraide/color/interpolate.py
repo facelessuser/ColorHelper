@@ -95,7 +95,7 @@ class InterpolateSingle(Interpolator):
             name = self.names[i]
             c2 = self.channels2[i]
             if util.is_nan(c1) and util.is_nan(c2):
-                value = 0.0
+                value = util.NaN
             elif util.is_nan(c1):
                 value = c2
             elif util.is_nan(c2):
@@ -112,7 +112,10 @@ class InterpolateSingle(Interpolator):
         color = self.create(self.space, channels[:-1], channels[-1])
         if self.premultiplied:
             postdivide(color)
-        return color.convert(self.outspace, in_place=True) if self.outspace != color.space() else color
+        if self.outspace != color.space():
+            return color.convert(self.outspace, in_place=True)
+        else:
+            return color.normalize()
 
 
 class InterpolatePiecewise(Interpolator):
@@ -440,7 +443,10 @@ class Interpolate:
         """Mask color channels."""
 
         this = self if in_place else self.clone()
-        masks = set([channel] if isinstance(channel, str) else channel)
+        aliases = self._space.CHANNEL_ALIASES
+        masks = set(
+            [aliases.get(channel, channel)] if isinstance(channel, str) else [aliases.get(c, c) for c in channel]
+        )
         for name in self._space.CHANNEL_NAMES:
             if (not invert and name in masks) or (invert and name not in masks):
                 this.set(name, util.NaN)

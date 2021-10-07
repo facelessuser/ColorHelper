@@ -15,18 +15,21 @@ color\(\s*
     **_parse.COLOR_PARTS
 )
 
+
+# From CIE 2004 Colorimetry T.3 and T.8
+# B from https://en.wikipedia.org/wiki/Standard_illuminant#White_point
 WHITES = {
-    "A": [1.09850, 1.00000, 0.35585],
-    "B": [0.99072, 1.00000, 0.85223],
-    "C": [0.98074, 1.00000, 1.18232],
-    "D50": [0.96422, 1.00000, 0.82521],
-    "D55": [0.95682, 1.00000, 0.92149],
-    "D65": [0.95047, 1.00000, 1.08883],
-    "D75": [0.94972, 1.00000, 1.22638],
-    "E": [1.00000, 1.00000, 1.00000],
-    "F2": [0.99186, 1.00000, 0.67393],
-    "F7": [0.95041, 1.00000, 1.08747],
-    "F11": [1.00962, 1.00000, 0.64350]
+    "A": (0.44758, 0.40745),
+    "B": (0.34842, 0.35161),
+    "C": (0.31006, 0.31616),
+    "D50": (0.34570, 0.35850),  # Use 4 digits like everyone
+    "D55": (0.33243, 0.34744),
+    "D65": (0.31270, 0.32900),  # Use 4 digits like everyone
+    "D75": (0.29903, 0.31488),
+    "E": (1 / 3, 1 / 3),
+    "F2": (0.37210, 0.37510),
+    "F7": (0.31290, 0.32920),
+    "F11": (0.38050, 0.37690)
 }
 
 
@@ -53,23 +56,65 @@ class GamutUnbound(tuple):
 class Cylindrical:
     """Cylindrical space."""
 
-    def hue_name(self):
+    @classmethod
+    def hue_name(cls):
         """Hue channel name."""
 
-        return "hue"
+        return "h"
+
+    @classmethod
+    def hue_index(cls):  # pragma: no cover
+        """Get hue index."""
+
+        return cls.CHANNEL_NAMES.index(cls.hue_name())
 
 
 class Labish:
     """Lab-ish color spaces."""
 
-    def labish_names(self):
-        """Return lab-ish names in the order L a b."""
+    @classmethod
+    def labish_names(cls):
+        """Return Lab-ish names in the order L a b."""
 
-        return self.CHANNEL_NAMES[:3]
+        return cls.CHANNEL_NAMES[:3]
+
+    @classmethod
+    def labish_indexes(cls):  # pragma: no cover
+        """Return the index of the Lab-ish channels."""
+
+        names = cls.labish_names()
+        return [cls.CHANNEL_NAMES.index(name) for name in names]
+
+
+class Lchish(Cylindrical):
+    """Lch-ish color spaces."""
+
+    @classmethod
+    def lchish_names(cls):  # pragma: no cover
+        """Return Lch-ish names in the order L c h."""
+
+        return cls.CHANNEL_NAMES[:3]
+
+    @classmethod
+    def lchish_indexes(cls):  # pragma: no cover
+        """Return the index of the Lab-ish channels."""
+
+        names = cls.lchish_names()
+        return [cls.CHANNEL_NAMES.index(name) for name in names]
+
+
+class BaseSpace(ABCMeta):
+    """Ensure on subclass that the subclass has new instances of mappings."""
+
+    def __init__(cls, name, bases, clsdict):
+        """Copy mappings on subclass."""
+
+        if len(cls.mro()) > 2:
+            cls.CHANNEL_ALIASES = dict(cls.CHANNEL_ALIASES)
 
 
 class Space(
-    metaclass=ABCMeta
+    metaclass=BaseSpace
 ):
     """Base color space object."""
 
@@ -81,6 +126,8 @@ class Space(
     NUM_COLOR_CHANNELS = 3
     # Channel names
     CHANNEL_NAMES = ("alpha",)
+    # Channel aliases
+    CHANNEL_ALIASES = {}
     # For matching the default form of `color(space coords+ / alpha)`.
     # Classes should define this if they want to use the default match.
     DEFAULT_MATCH = ""
@@ -127,11 +174,9 @@ class Space(
 
         gamut = self.RANGE
         values = []
-        for i, coord in enumerate(util.no_nan(self.coords())):
-            value = util.fmt_float(coord, util.DEF_PREC)
-            if isinstance(gamut[i][0], Percent):
-                value += '%'
-            values.append(value)
+        for i, coord in enumerate(self.coords()):
+            fmt = util.fmt_percent if isinstance(gamut[i][0], Percent) else util.fmt_float
+            values.append(fmt(coord, util.DEF_PREC))
 
         return 'color({} {} / {})'.format(
             self._serialize()[0],
@@ -186,6 +231,7 @@ class Space(
     def set(self, name, value):  # noqa: A003
         """Set the given channel."""
 
+        name = self.CHANNEL_ALIASES.get(name, name)
         if name not in self.CHANNEL_NAMES:
             raise ValueError("'{}' is an invalid channel name".format(name))
 
@@ -195,32 +241,33 @@ class Space(
     def get(self, name):
         """Get the given channel's value."""
 
+        name = self.CHANNEL_ALIASES.get(name, name)
         if name not in self.CHANNEL_NAMES:
             raise ValueError("'{}' is an invalid channel name".format(name))
         return getattr(self, name)
 
     def to_string(
-        self, parent, *, alpha=None, precision=None, fit=True, **kwargs
+        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS 'color' string: `color(space coords+ / alpha)`."""
 
         if precision is None:
             precision = parent.PRECISION
 
-        a = util.no_nan(self.alpha)
-        alpha = alpha is not False and (alpha is True or a < 1.0)
+        a = util.no_nan(self.alpha) if not none else self.alpha
+        alpha = alpha is not False and (alpha is True or a < 1.0 or util.is_nan(a))
 
         method = None if not isinstance(fit, str) else fit
-        coords = util.no_nan(parent.fit(method=method).coords() if fit else self.coords())
+        coords = parent.fit(method=method).coords() if fit else self.coords()
+        if not none:
+            coords = util.no_nan(coords)
         gamut = self.RANGE
         template = "color({} {} / {})" if alpha else "color({} {})"
 
         values = []
         for i, coord in enumerate(coords):
-            value = util.fmt_float(coord, precision)
-            if isinstance(gamut[i][0], Percent):
-                value += '%'
-            values.append(value)
+            fmt = util.fmt_percent if isinstance(gamut[i][0], Percent) else util.fmt_float
+            values.append(fmt(coord, precision))
 
         if alpha:
             return template.format(
@@ -251,27 +298,41 @@ class Space(
             split = _parse.RE_SLASH_SPLIT.split(m.group(2).strip(), maxsplit=1)
 
             # Get alpha channel
-            alpha = _parse.norm_alpha_channel(split[-1]) if len(split) > 1 else 1.0
+            alpha = _parse.norm_alpha_channel(split[-1].lower()) if len(split) > 1 else 1.0
 
             # Parse color channels
             channels = []
             for i, c in enumerate(_parse.RE_CHAN_SPLIT.split(split[0]), 0):
                 if c and i < cls.NUM_COLOR_CHANNELS:
+                    c = c.lower()
+                    # If the channel is a percentage, force it to scale from 0 - 100, not 0 - 1.
                     is_percent = isinstance(cls.RANGE[i][0], Percent)
-                    is_optional_percent = isinstance(cls.RANGE[i][0], OptionalPercent)
-                    has_percent = c.endswith('%')
-                    if is_percent and not has_percent:
-                        # We have an invalid percentage channel
-                        return None, None
-                    elif (not is_percent and not is_optional_percent) and has_percent:
-                        # Percents are not allowed for this channel.
-                        return None, None
+
+                    # Don't bother restricting anything yet. CSS doesn't have any defined
+                    # spaces that use percentages and only percentages anymore.
+                    # They may never have spaces again that do this, or they might.
+                    # Custom spaces can restrict colors further, if desired, but we do not
+                    # desire to restrict further unless forced.
+                    # ```
+                    # is_optional_percent = isinstance(cls.RANGE[i][0], OptionalPercent)
+                    # is_none = c == 'none'
+                    # has_percent = c.endswith('%')
+                    #
+                    # if not is_none:
+                    #     if is_percent and not has_percent:
+                    #         # We have an invalid percentage channel
+                    #         return None, None
+                    #     elif (not is_percent and not is_optional_percent) and has_percent:
+                    #         # Percents are not allowed for this channel.
+                    #         return None, None
+                    # ```
+
                     channels.append(_parse.norm_color_channel(c, not is_percent))
 
-            # Missing channels are filled with zeros
+            # Missing channels are filled with `NaN`
             if len(channels) < cls.NUM_COLOR_CHANNELS:
                 diff = cls.NUM_COLOR_CHANNELS - len(channels)
-                channels.extend([0.0] * diff)
+                channels.extend([util.NaN] * diff)
 
             # Apply null adjustments (null hues) if applicable
             return cls.null_adjust(channels, alpha), m.end(0)
