@@ -394,7 +394,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
-                    color.to_string(**COLOR_FULL_PREC),
+                    color.convert(self.mode).to_string(**COLOR_FULL_PREC),
                     name
                 )
             )
