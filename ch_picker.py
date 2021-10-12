@@ -77,14 +77,16 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         if self.color.space() != "srgb" and not self.color.is_nan("hue"):
             self.color.hue = self.color.hue % 360
 
-    def setup_mode(self, color, mode):
+    def setup_mode(self, color, specified):
         """Setup mode."""
 
         # Use the provided mode, if any, or use the mode of the color
         # If the color is not one of the supported spaces, use sRGB.
         modes = get_color_picker_modes()
 
-        if modes['auto'] and color.space() in modes['modes']:
+        if specified is not None and specified in modes['modes']:
+            mode = specified
+        elif modes['auto'] and color.space() in modes['modes']:
             mode = color.space()
         else:
             mode = modes['preferred']
@@ -645,6 +647,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Edit color in edit panel
             mdpopups.hide_popup(self.view)
 
+            convert = self.mode
+            if tool == '__colormod__':
+                if convert == 'okhsl':
+                    convert = "hsl"
+                elif convert == "okhsv":
+                    convert = "hsv"
+
             # Provide callback info for the color picker.
             on_done = {
                 "command": "color_helper_picker",
@@ -675,7 +684,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 cmd,
                 {
-                    "initial": Color(color, filters=util.EXTENDED_SRGB_SPACES).to_string(**DEFAULT),
+                    "initial": Color(color, filters=util.EXTENDED_SRGB_SPACES)
+                    .convert(convert, in_place=True)
+                    .to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel
                 }
             )
