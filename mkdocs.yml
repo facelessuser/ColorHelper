@@ -22,6 +22,8 @@ theme:
   features:
     - navigation.tabs
     - navigation.top
+  pymdownx:
+    sponsor: "https://github.com/sponsors/facelessuser"
 
 nav:
   - Getting Started:
@@ -95,6 +97,7 @@ markdown_extensions:
       separator: "\uff0b"
   - pymdownx.details:
   - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.saneheaders:
 
 extra:

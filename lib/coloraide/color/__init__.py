@@ -25,7 +25,7 @@ from ..spaces.a98_rgb import A98RGB
 from ..spaces.prophoto_rgb import ProPhotoRGB
 from ..spaces.rec2020 import Rec2020
 from ..spaces.xyz import XYZ
-from ..spaces.xyz_d65 import XYZD65
+from ..spaces.xyz_d50 import XYZD50
 from ..spaces.oklab import Oklab
 from ..spaces.oklch import Oklch
 from ..spaces.jzazbz import Jzazbz
@@ -35,6 +35,8 @@ from ..spaces.din99o import Din99o
 from ..spaces.din99o_lch import Din99oLch
 from ..spaces.luv import Luv
 from ..spaces.lchuv import Lchuv
+from ..spaces.luv_d65 import LuvD65
+from ..spaces.lchuv_d65 import LchuvD65
 from ..spaces.okhsl import Okhsl
 from ..spaces.okhsv import Okhsv
 from .distance import DeltaE
@@ -55,9 +57,9 @@ SUPPORTED_DE = (
 
 SUPPORTED_SPACES = (
     HSL, HWB, Lab, Lch, LabD65, LchD65, SRGB, SRGBLinear, HSV,
-    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZ, XYZD65,
+    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZ, XYZD50,
     Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Din99o, Din99oLch, Luv, Lchuv,
-    Okhsl, Okhsv
+    LuvD65, LchuvD65, Okhsl, Okhsv
 )
 
 SUPPORTED_FIT = (
@@ -101,6 +103,15 @@ class Color(
         """Initialize."""
 
         self._attach(self._parse(color, data, alpha, filters=filters, **kwargs))
+
+    def __dir__(self):
+        """Get attributes for `dir()`."""
+
+        attr = super().__dir__()
+        attr.extend(self._space.CHANNEL_NAMES)
+        attr.extend(list(self._space.CHANNEL_ALIASES.keys()))
+        attr.extend(['delta_e_{}'.format(name) for name in self.DE_MAP.keys()])
+        return attr
 
     def __eq__(self, other):
         """Compare equal."""

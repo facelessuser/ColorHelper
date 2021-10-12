@@ -19,23 +19,6 @@ install the correct branch on your system and keep it up to date.
 
 5. Enjoy!
 
-## Install 3.0 Beta {: #install-3.0-beta}
-
-To install the 3.0 Beta, you will need to add the following to your `Packages/User/Package Control.sublime-settings`
-file.
-
-```js
-    // A list of packages to install pre-release versions for. Versions
-    // under 1.0.0 are not considered pre-release, only those using the SemVer
-    // -prerelease suffixes will be ignored if the package is not in this
-    // list.
-    "install_prereleases": ["ColorHelper"]
-```
-
-The setting enables prerelease packages for ColorHelper so that you can get the 3.0 beta.
-
-Feedback can be provided in the beta thread in project's issues: #159.
-
 ## Manual Installation
 
 !!! warning "Warning"
@@ -54,11 +37,7 @@ will have to keep all the packages updated yourself.
 1. Download the latest releases of the following dependencies and unpack or git clone in the `Packages` folder as shown
    below:
 
-    - https://bitbucket.org/teddy_beer_maniac/sublime-text-dependency-markupsafe -> `markupsafe`
-    - https://bitbucket.org/teddy_beer_maniac/sublime-text-dependency-jinja2 -> `python-jinja2`
-    - https://github.com/packagecontrol/pygments -> `pygments`
     - https://github.com/facelessuser/sublime-markdown-popups -> `mdpopups`
-    - https://github.com/facelessuser/sublime-markdown -> `python-markdown`
 
 2. Download and unpack or git clone the latest ColorHelper release and unpack as `ColorHelper`:
 
@@ -217,11 +196,6 @@ will have to keep all the packages updated yourself.
             if os.path.exists(encode(path)):
                 add(path, first=first)
 
-
-    add_dependency('pygments')
-    add_dependency('markupsafe')
-    add_dependency('python-markdown')
-    add_dependency('python-jinja2')
     add_dependency('mdpopups')
     ```
 

@@ -19,7 +19,8 @@ PALETTE_CONFIG = 'color_helper.palettes'
 REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
 UPDATE_COLORS = re.compile(RE_DEFAULT_MATCH.format(**{'color_space': r'[-a-z0-9]+', 'channels': 3}))
 COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
-PALETTE_FMT = (1, 0)
+COLOR_FMT_2_0 = (0, 3, 0, 'final')
+PALETTE_FMT = (2, 0)
 
 RE_COLOR_START = \
     r"(?i)(?:\b(?<![-#&$])(?:color\((?!\s*-)|(?:hsla?|lch|lab|hwb|rgba?)\()|\b(?<![-#&$])[\w]{3,}(?![(-])\b|(?<![&])#)"
@@ -36,7 +37,10 @@ COLOR_SERIALIZE = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb", "hsv")
 CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
 EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
-CSS_L4_SPACES = ("srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb", "xyz")
+CSS_L4_SPACES = (
+    "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
+    "prophoto-rgb", "a98-rgb", "xyz", "xyz-d50"
+)
 
 lang_map = {
     # `'name': (('mapping_alias',), ('tmLanguage_or_sublime-syntax file',))`
@@ -236,6 +240,36 @@ def get_scope(view, rules, skip_sel_check=False):
     return scopes
 
 
+def update_colors_2_0(colors):
+    """Update colors for version 2.0."""
+
+    new_colors = []
+    for c in colors:
+        try:
+            m = UPDATE_COLORS.match(c)
+            if m and m.group(1) in ('xyz', '--xyz-d65'):
+                space = m.group(1)
+                values = m.group(2).split('/')
+                channels = [float(x) for x in values[0].split(' ')]
+
+                if len(values) > 1:
+                    alpha = float(values[1])
+                else:
+                    alpha = 1
+
+                if space == 'xyz':
+                    space = 'xyz-d50'
+                elif space == '--xyz-d65':
+                    space = 'xyz'
+
+                new_colors.append(Color(space.lstrip('-'), channels, alpha).to_string(**COLOR_SERIALIZE))
+            else:
+                new_colors.append(c)
+        except Exception:
+            pass
+    return new_colors
+
+
 def update_colors_1_0(colors):
     """Update colors for version 1.0."""
 
@@ -244,13 +278,17 @@ def update_colors_1_0(colors):
         try:
             m = UPDATE_COLORS.match(c)
             if m:
+                space = m.group(1)
                 values = m.group(2).split('/')
                 channels = [float(x.rstrip('%')) for x in values[0].split(' ')]
+                if space in ('--hsl', '--hsv'):
+                    channels[1] = channels[1] / 100
+                    channels[2] = channels[2] / 100
                 if len(values) > 1:
                     alpha = float(values[1])
                 else:
                     alpha = 1
-                new_colors.append(Color(m.group(1).lstrip('-'), channels, alpha).to_string(**COLOR_SERIALIZE))
+                new_colors.append(Color(space.lstrip('-'), channels, alpha).to_string(**COLOR_SERIALIZE))
             else:
                 new_colors.append(Color(c).to_string(**COLOR_SERIALIZE))
         except Exception:
@@ -274,6 +312,17 @@ def _get_palettes(window=None):
                 palettes.set('palettes', all_pallets)
                 palettes.set('__format__', '1.0')
                 sublime.save_settings(PALETTE_CONFIG)
+                fmt = (1, 0)
+        if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_2_0:
+            if fmt == (1, 0):
+                favs = update_colors_2_0(palettes.get('favorites', []))
+                palettes.set('favorites', favs)
+                all_pallets = palettes.get('palettes', [])
+                for p in all_pallets:
+                    p['colors'] = update_colors_1_0(p['colors'])
+                palettes.set('palettes', all_pallets)
+                palettes.set('__format__', '2.0')
+                sublime.save_settings(PALETTE_CONFIG)
     else:
         data = window.project_data()
         if data is None:
@@ -284,13 +333,22 @@ def _get_palettes(window=None):
         color_palettes = data.get('color_helper_palettes', [])
         if color_palettes:
             fmt = tuple([int(x) for x in data.get('color_helper_palettes_format', '0.0').split('.')])
-            if fmt != PALETTE_FMT:
-                if fmt == (0, 0) and coloraide_version >= COLOR_FMT_1_0:
+            if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_1_0:
+                if fmt == (0, 0):
                     for p in color_palettes:
                         p['colors'] = update_colors_1_0(p['colors'])
                     data['color_helper_palettes'] = color_palettes
-                    data['color_helper_palettes_format'] = '.'.join(PALETTE_FMT)
+                    fmt = (1, 0)
+                    data['color_helper_palettes_format'] = '.'.join(fmt)
                     window.set_project_data(data)
+                if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_2_0:
+                    if fmt == (1, 0):
+                        for p in color_palettes:
+                            p['colors'] = update_colors_2_0(p['colors'])
+                        data['color_helper_palettes'] = color_palettes
+                        data['color_helper_palettes_format'] = '.'.join(PALETTE_FMT)
+                        window.set_project_data(data)
+
         palettes = data
     return palettes
 
