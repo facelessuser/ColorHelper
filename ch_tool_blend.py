@@ -23,13 +23,13 @@ markdown_extensions:
 
 ## Instructions
 
-Colors can be specified in any supported color space, but blend modes work best on<br>
-RGB-ish colors spaces. They can be converted and output to another color space with<br>
-<code>@colorspace</code>.
+Colors are blended in sRGB color space unless a different space is specified<br>
+by <code>@colorspace</code>. Colors will be gamut mapped to the specified color space.<br>
+Blend modes are designed for RGB-ish color spaces, even if the accepts other<br>
+spaces.
 
 If two colors are provided, joined with <code>+</code>, the colors will be blended.<br>
-Default blend mode is <code>normal</code>, but can be changed with<br>
-<code>!blendmode</code>.
+Default blend mode is <code>normal</code>, but can be changed with <code>!blendmode</code>.
 
 Transparent backdrops will be <code>normal</code> blended with white.
 """

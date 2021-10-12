@@ -113,6 +113,11 @@ color picker if launched from there.
 
 ![Contrast Tool](images/contrast_tool.gif)
 
+!!! warning "Contrast and Colors Outside the sRGB gamut"
+    Composition of transparent colors are defaulted to the sRGB color space. The contrast ration targeting algorithm is
+    also specific to the sRGB color gamut. For this reason, all colors that are outside of the sRGB gamut are gamut
+    mapped to be within the sRGB color space.
+
 The contrast tool allows for viewing a color's contrast ratio or quickly adjusting a color to meet a minimum contrast
 ratio (if the ratio is achievable).
 

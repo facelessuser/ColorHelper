@@ -26,7 +26,9 @@ Also accepts normal CSS color syntax. Color functions can be nested.
 
 ## Instructions
 
-Colors must be in the **sRGB**, **HSL**, or **HSB** color space.
+Colors must be in the **sRGB**, **HSL**, or **HWB** color space. Other color<br>
+spaces may be parsed outside of `color()`, but modern CSS colors <br>
+that are defined using the conflicting `color()` format will not work.
 
 Supported adjusters are <code>alpha()</code>, <code>a()</code>, <code>lightness()</code>, <code>l()</code>,<br>
 <code>saturation()</code>, <code>s()</code>, <code>blend()</code>, and <code>blenda()</code>.
@@ -88,6 +90,7 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
+            html = None
             color = self.color_mod_class(text.strip())
             if color is not None:
                 srgb = Color(color).convert("srgb")
