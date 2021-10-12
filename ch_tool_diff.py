@@ -19,7 +19,7 @@ markdown_extensions:
 
 ## Format
 
-<code>Color( - Color)?( @method)?</code>
+<code>Color( - Color)?( !method)?</code>
 
 ## Instructions
 
