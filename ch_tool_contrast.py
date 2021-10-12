@@ -34,8 +34,8 @@ markdown_extensions:
 
 ## Instructions
 
-Colors should be either an **sRGB**, **HSL**, or **HWB** color.<br>
-All others will be converted to **sRGB**.
+Colors should be within the sRGB gamut, any color<br>
+that is not will have gamut reduction perfromed on it.
 
 If only one color is provided, a default background<br>
 of either **black** or **white** will be used.
@@ -56,7 +56,7 @@ def parse_color(string, start=0, second=False):
     more = None
     ratio = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False, filters=util.CSS_SRGB_SPACES)
+    color = Color.match(string, start=start, fullmatch=False)
     if color:
         start = color.end
         if color.end != length:
@@ -115,24 +115,28 @@ def evaluate(string):
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
-            colors.append(first)
+            colors.append(first.fit('srgb', in_place=True))
         if second:
             if second.alpha < 1.0:
                 second.alpha = 1.0
-            colors.append(second)
+            colors.append(second.fit('srgb', in_place=True))
             if ratio:
                 if first.alpha < 1.0:
                     first = first.compose(second, space="srgb")
+                hwb_fg = first.convert('hwb').clip(in_place=True)
+                hwb_bg = second.convert('hwb').clip(in_place=True)
+                first.update(hwb_fg)
+                second.update(hwb_bg)
 
                 colormod = util.import_color("ColorHelper.custom.st_colormod.Color")
                 color = colormod(
                     "color({} min-contrast({} {}))".format(
-                        first.to_string(**util.FULL_PREC),
-                        second.to_string(**util.FULL_PREC),
+                        hwb_fg.to_string(**util.FULL_PREC),
+                        hwb_bg.to_string(**util.FULL_PREC),
                         ratio
                     )
                 )
-                first = Color(color)
+                first.update(Color(color))
                 colors[0] = first
 
             if first.alpha < 1.0:
@@ -142,7 +146,7 @@ def evaluate(string):
                 colors.append(first.compose("white", space="srgb"))
                 colors.append(first.compose("black", space="srgb"))
             else:
-                colors.append(first.clone())
+                colors.append(first)
     except Exception:
         colors = []
     return colors
@@ -178,8 +182,6 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                     pass
                 if color is not None:
                     color = Color(color)
-                    if color.space() not in util.CSS_SRGB_SPACES:
-                        color = color.convert("srgb", fit=True)
                     return color.to_string(**util.DEFAULT)
         return ''
 
@@ -218,8 +220,8 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                 )
                 html += "<p><strong>Contrast ratio</strong>: {}</p>".format(colors[1].contrast(colors[2]))
                 html += CONTRAST_DEMO.format(
-                    colors[2].to_string(**util.COMMA),
-                    colors[1].to_string(**util.COMMA)
+                    colors[2].convert('srgb').clip().to_string(**util.COMMA),
+                    colors[1].convert('srgb').clip().to_string(**util.COMMA)
                 )
             return sublime.Html(style + html)
         except Exception:
