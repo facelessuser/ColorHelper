@@ -12,6 +12,7 @@ from time import time, sleep
 import re
 import os
 import mdpopups
+from .lib import colorbox
 from . import ch_util as util
 import traceback
 from .lib.multiconf import get as qualify_settings
@@ -266,9 +267,12 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
     def setup_gamut_options(self):
         """Setup gamut options."""
 
-        self.out_of_gamut = Color("transparent").to_string(**util.HEX)
-        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).to_string(**util.HEX)
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
+        self.gamut_space = ch_settings.get('gamut_space', 'srgb')
+        if self.gamut_space not in util.GAMUT_SPACES:
+            self.gamut_space = 'srgb'
+        self.out_of_gamut = Color("transparent").convert(self.gamut_space)
+        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).convert(self.gamut_space)
 
     def do_search(self, force=False):
         """
@@ -416,35 +420,39 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                         filters=util.CSS_SRGB_SPACES
                     ).convert("hsl")
                     hsl.lightness = hsl.lightness + (0.3 if hsl.luminance() < 0.5 else -0.3)
-                    preview_border = hsl.convert("srgb", fit=True).to_string(**util.HEX)
+                    preview_border = hsl.convert(self.gamut_space, fit=True).set('alpha', 1)
 
                     color = Color(obj.color)
                     title = ''
-                    check_space = 'srgb' if color.space() not in util.SRGB_SPACES else color.space()
+                    if self.gamut_space == 'srgb':
+                        check_space = self.gamut_space if color.space() not in util.SRGB_SPACES else color.space()
+                    else:
+                        check_space = self.gamut_space
                     if not color.in_gamut(check_space):
                         title = ' title="Preview out of gamut"'
                         if self.show_out_of_gamut_preview:
-                            srgb = color.convert("srgb", fit=True)
-                            preview1 = srgb.to_string(**util.HEX_NA)
-                            preview2 = srgb.to_string(**util.HEX)
+                            pcolor = color.convert(self.gamut_space, fit=True)
+                            preview1 = pcolor.clone().set('alpha', 1)
+                            preview2 = pcolor
                         else:
                             preview1 = self.out_of_gamut
                             preview2 = self.out_of_gamut
                             preview_border = self.out_of_gamut_border
                     else:
-                        srgb = color.convert("srgb", fit=True)
-                        preview1 = srgb.to_string(**util.HEX_NA)
-                        preview2 = srgb.to_string(**util.HEX)
+                        pcolor = color.convert(self.gamut_space, fit=True)
+                        preview1 = pcolor.clone().set('alpha', 1)
+                        preview2 = pcolor
 
                     # Create preview
                     unique_id = str(time()) + str(region)
                     html = PREVIEW_IMG.format(
                         unique_id,
                         title,
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [preview1, preview2], preview_border,
                             height=box_height, width=box_height,
-                            border_size=PREVIEW_BORDER_SIZE, check_size=check_size
+                            border_size=PREVIEW_BORDER_SIZE, check_size=check_size,
+                            gamut_space=self.gamut_space
                         )
                     )
                     colors.append(

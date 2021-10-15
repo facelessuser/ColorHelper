@@ -101,6 +101,13 @@
     // color by using gamut mapping.
     "show_out_of_gamut_preview": true,
 
+    // The gamut space to render previews in.
+    // Supported spaces are: `srgb`, `display-p3`, `rec2020`,
+    //                       `a98-rgb`, and `prophoto-rgb`.
+    // If your display does not run with one of these gamuts,
+    // You should not change this.
+    "gamut_space": "srgb",
+
     //////////////////
     // Color Rules
     //////////////////

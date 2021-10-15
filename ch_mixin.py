@@ -1,13 +1,13 @@
 """Mix-in class."""
 import sublime
-import mdpopups
+from . lib import colorbox
 from . import ch_util as util
-from .ch_util import HEX, HEX_NA
+from .ch_util import GAMUT_SPACES
 from .lib.multiconf import get as qualify_settings
 from .lib.coloraide import Color
 from collections import namedtuple
 
-SPACER = Color("transparent", filters=util.CSS_SRGB_SPACES).to_string(**HEX)
+SPACER = Color("transparent")
 
 
 class Preview(namedtuple('Preview', ['preview1', 'preview2', 'border', 'message'])):
@@ -22,6 +22,9 @@ class _ColorMixin:
 
         ch_settings = sublime.load_settings('color_helper.sublime-settings')
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
+        self.gamut_space = ch_settings.get('gamut_space', 'srgb')
+        if self.gamut_space not in GAMUT_SPACES:
+            self.gamut_space = 'srgb'
 
     def setup_image_border(self):
         """Setup_image_border."""
@@ -30,8 +33,8 @@ class _ColorMixin:
         border_color = ch_settings.get('image_border_color')
         if border_color is not None:
             try:
-                border_color = Color(border_color, filters=util.CSS_SRGB_SPACES)
-                border_color.fit("srgb", in_place=True)
+                border_color = Color(border_color)
+                border_color.fit(self.gamut_space, in_place=True)
             except Exception:
                 border_color = None
 
@@ -43,12 +46,12 @@ class _ColorMixin:
             ).convert("hsl")
             border_color.lightness = border_color.lightness + (0.3 if border_color.luminance() < 0.5 else -0.3)
 
-        self.default_border = border_color.convert("srgb").to_string(**HEX)
-        self.out_of_gamut = Color("transparent", filters=util.CSS_SRGB_SPACES).to_string(**HEX)
+        self.default_border = border_color.convert(self.gamut_space, in_place=True)
+        self.out_of_gamut = Color("transparent").convert(self.gamut_space, in_place=True)
         self.out_of_gamut_border = Color(
             self.view.style().get('redish', "red"),
             filters=util.CSS_SRGB_SPACES
-        ).to_string(**HEX)
+        ).convert(self.gamut_space, in_place=True)
 
     def get_color_options(self, pt, rule):
         """Get color class based on selection scope."""
@@ -115,10 +118,11 @@ class _ColorMixin:
     def get_spacer(self, width=1, height=1):
         """Get a spacer."""
 
-        return mdpopups.color_box(
-            [SPACER], border_size=0,
+        return colorbox.color_box(
+            [SPACER.convert(self.gamut_space)], border_size=0,
             height=self.height * height, width=self.width * width,
-            check_size=self.check_size(self.height), alpha=True
+            check_size=self.check_size(self.height), alpha=True,
+            gamut_space=self.gamut_space
         )
 
     def setup_sizes(self):
@@ -174,20 +178,23 @@ class _ColorMixin:
 
         message = ''
         preview_border = self.default_border
-        check_space = 'srgb' if color.space() not in util.SRGB_SPACES else color.space()
+        if self.gamut_space == 'srgb':
+            check_space = self.gamut_space if color.space() not in util.SRGB_SPACES else color.space()
+        else:
+            check_space = self.gamut_space
         if not color.in_gamut(check_space):
             message = 'preview out of gamut'
             if self.show_out_of_gamut_preview:
-                srgb = color.convert("srgb", fit=True)
-                preview1 = srgb.to_string(**HEX_NA)
-                preview2 = srgb.to_string(**HEX)
+                pcolor = color.convert(self.gamut_space, fit=True)
+                preview1 = pcolor.clone().set('alpha', 1)
+                preview2 = pcolor
             else:
                 preview1 = self.out_of_gamut
                 preview2 = self.out_of_gamut
                 preview_border = self.out_of_gamut_border
         else:
-            srgb = color.convert("srgb", fit=True)
-            preview1 = srgb.to_string(**HEX_NA)
-            preview2 = srgb.to_string(**HEX)
+            pcolor = color.convert(self.gamut_space, fit=True)
+            preview1 = pcolor.clone().set('alpha', 1)
+            preview2 = pcolor
 
         return Preview(preview1, preview2, preview_border, message)

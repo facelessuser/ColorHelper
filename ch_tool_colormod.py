@@ -3,6 +3,7 @@ import sublime
 import sublime_plugin
 from .lib.coloraide import Color
 import mdpopups
+from .lib import colorbox
 from . import ch_util as util
 from . import ch_tools as tools
 from .ch_mixin import _ColorMixin
@@ -93,28 +94,33 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
             html = None
             color = self.color_mod_class(text.strip())
             if color is not None:
-                srgb = Color(color).convert("srgb")
+                pcolor = Color(color)
                 preview_border = self.default_border
                 message = ""
-                check_space = 'srgb' if srgb.space() not in util.SRGB_SPACES else srgb.space()
-                if not srgb.in_gamut(check_space):
+                if self.gamut_space == 'srgb':
+                    check_space = self.gamut_space if pcolor.space() not in util.SRGB_SPACES else pcolor.space()
+                else:
+                    check_space = self.gamut_space
+                if not pcolor.in_gamut(check_space):
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
-                srgb.fit(in_place=True)
-                preview = srgb.to_string(**util.HEX_NA)
-                preview_alpha = srgb.to_string(**util.HEX)
+                pcolor.convert(self.gamut_space, fit=True, in_place=True)
+                preview = pcolor.clone().set('alpha', 1)
+                preview_alpha = pcolor
                 preview_border = self.default_border
                 temp = Color(preview_border)
                 if temp.luminance() < 0.5:
-                    second_border = temp.mix('white', 0.25, space="srgb").to_string(**util.HEX_NA)
+                    second_border = temp.mix('white', 0.25, space=self.gamut_space, out_space=self.gamut_space)
+                    second_border.set('alpha', 1)
                 else:
-                    second_border = temp.mix('black', 0.25, space="srgb").to_string(**util.HEX_NA)
+                    second_border = temp.mix('black', 0.25, space=self.gamut_space, out_space=self.gamut_space)
+                    second_border.set('alpha', 1)
 
                 height = self.height * 3
                 width = self.width * 3
                 check_size = self.check_size(height, scale=8)
 
                 html = tools.PREVIEW_IMG.format(
-                    mdpopups.color_box(
+                    colorbox.color_box(
                         [preview, preview_alpha],
                         preview_border, second_border,
                         border_size=1, height=height, width=width, check_size=check_size
