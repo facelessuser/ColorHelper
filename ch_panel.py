@@ -7,6 +7,7 @@ License: MIT
 import sublime
 import sublime_plugin
 import mdpopups
+from .lib import colorbox
 from html.parser import HTMLParser
 from .lib.coloraide import Color
 from .lib.coloraide import __version_info__ as color_ver
@@ -373,7 +374,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         colors.append(
             '[{}]({})'.format(
-                mdpopups.color_box(
+                colorbox.color_box(
                     color_box, self.default_border,
                     height=self.height * PALETTE_SCALE_Y, width=self.palette_w * PALETTE_SCALE_X,
                     border_size=BORDER_SIZE, check_size=self.check_size(self.height * PALETTE_SCALE_Y)
@@ -410,7 +411,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             if delete:
                 colors.append(
                     '[{}](__delete_color__:{}:{}:{} "{}")'.format(
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [preview.preview1, preview.preview2],
                             preview.border, height=height, width=width, border_size=BORDER_SIZE,
                             check_size=check_size
@@ -421,7 +422,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             else:
                 colors.append(
                     '[{}](__insert__:{}:{}:{} "{}")'.format(
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [preview.preview1, preview.preview2],
                             preview.border, height=height, width=width, border_size=BORDER_SIZE,
                             check_size=check_size
@@ -481,7 +482,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         if preview.message:
             message = '<p class="comment">* {}</p>'.format(preview.message)
         template_vars['color_preview'] = (
-            mdpopups.color_box(
+            colorbox.color_box(
                 [preview.preview1, preview.preview2], preview.border,
                 height=self.height * PREVIEW_SCALE, width=self.width * PREVIEW_SCALE,
                 border_size=BORDER_SIZE, check_size=self.check_size(self.height * PREVIEW_SCALE, scale=8)
@@ -770,7 +771,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = Color("white", filters=util.CSS_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
+                color = Color("white", filters=util.EXTENDED_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
             else:
                 color = obj.color.to_string(**util.COLOR_FULL_PREC)
             self.color_picker(color)

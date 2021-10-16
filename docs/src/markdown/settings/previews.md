@@ -37,4 +37,25 @@ Controls whether previews will attempt to gamut map a color that is out of the p
     "show_out_of_gamut_preview": true,
 ```
 
+## `gamut_space`
+
+!!! warning "Experimental Feature"
+
+!!! new "New in 3.8.0"
+
+Select the gamut space used for color previews. You should only pick a space that matches your system. If you happen
+to have a display that does not align with one of the spaces below, you may just have to pick whatever is closes.
+Previews accuracy is based on how precise Sublime's is able to render colors and how close one of these profiles aligns
+to your display. If at one time, Sublime actually manages colors, this may or may not be required, or may change in
+functionality.
+
+```js
+    // The gamut space to render previews in.
+    // Supported spaces are: `srgb`, `display-p3`, `rec2020`,
+    //                       `a98-rgb`, and `prophoto-rgb`.
+    // If your display does not run with one of these gamuts,
+    // You should not change this.
+    "gamut_space": "srgb",
+```
+
 --8<-- "refs.md"

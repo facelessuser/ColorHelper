@@ -41,6 +41,7 @@ CSS_L4_SPACES = (
     "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
     "prophoto-rgb", "a98-rgb", "xyz", "xyz-d50"
 )
+GAMUT_SPACES = ("srgb", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb")
 
 lang_map = {
     # `'name': (('mapping_alias',), ('tmLanguage_or_sublime-syntax file',))`

@@ -7,13 +7,13 @@ License: MIT
 import sublime
 import sublime_plugin
 import mdpopups
-from mdpopups import colorbox
+from .lib import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
 from .lib.coloraide.spaces.srgb import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
-from .ch_util import DEFAULT, COLOR_FULL_PREC, EXTENDED_SRGB_SPACES, HEX, HEX_NA
+from .ch_util import DEFAULT, COLOR_FULL_PREC, EXTENDED_SRGB_SPACES
 import copy
 
 color_map = None
@@ -145,8 +145,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     border_color = self.default_border
                     if this_sat and this_val:
                         lum = color.luminance()
-                        border_color = '#ffffff' if lum < 0.5 else '#000000'
-                    value = color.convert("srgb").to_string(**HEX_NA)
+                        border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                    value = color.convert(self.gamut_space)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
@@ -177,7 +177,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     html_colors[-1].append(
                         '<a href="{}">{}</a>'.format(
                             color.to_string(**COLOR_FULL_PREC),
-                            mdpopups.color_box(
+                            colorbox.color_box(
                                 [value], border_color,
                                 **kwargs
                             )
@@ -195,7 +195,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
-                value = color.convert("srgb").to_string(**HEX_NA)
+                value = color.convert(self.gamut_space)
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
@@ -204,7 +204,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 border_color = self.default_border
                 if this_hue:
                     lum = color.luminance()
-                    border_color = '#ffffff' if lum < 0.5 else '#000000'
+                    border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
 
                 if this_hue:
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
@@ -221,7 +221,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 html_colors[y].append(
                     '<a href="{}">{}</a>'.format(
                         color.to_string(**COLOR_FULL_PREC),
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [value], border_color,
                             **kwargs
                         )
@@ -278,8 +278,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         this_hue = abs(color.hue - hue) < 11.21875
                         if this_hue:
                             lum = color.luminance()
-                            border_color = '#ffffff' if lum < 0.5 else '#000000'
-                    value = color.convert("srgb").to_string(**HEX_NA)
+                            border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                    value = color.convert(self.gamut_space)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
                         "check_size": check_size
@@ -310,7 +310,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     html_colors[-1].append(
                         '<a href="{}">{}</a>'.format(
                             color.to_string(**COLOR_FULL_PREC),
-                            mdpopups.color_box(
+                            colorbox.color_box(
                                 [value], border_color,
                                 **kwargs
                             )
@@ -326,7 +326,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
-                value = color.convert("srgb").to_string(**HEX_NA)
+                value = color.convert(self.gamut_space)
                 kwargs = {
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
@@ -335,7 +335,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 border_color = self.default_border
                 if this_lit:
                     lum = color.luminance()
-                    border_color = '#ffffff' if lum < 0.5 else '#000000'
+                    border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
 
                 if this_lit:
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
@@ -350,7 +350,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 html_colors[y].append(
                     '<a href="{}">{}</a>'.format(
                         color.to_string(**COLOR_FULL_PREC),
-                        mdpopups.color_box(
+                        colorbox.color_box(
                             [value], border_color,
                             **kwargs
                         )
@@ -368,11 +368,11 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         # Show a preview of the current color.
         check_size = self.check_size(self.height * 2)
-        preview = self.color.convert("srgb")
+        preview = self.color.convert(self.gamut_space)
         html = (
             '<span class="current-color">{}</span>'.format(
-                mdpopups.color_box(
-                    [preview.to_string(**HEX_NA), preview.to_string(**HEX)],
+                colorbox.color_box(
+                    [preview.clone().set('alpha', 1), preview],
                     self.default_border,
                     border_size=BORDER_SIZE, height=self.height * 3, width=self.width * 3,
                     check_size=check_size
@@ -391,8 +391,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             html.append(
                 '[{}]({}) {}<br>'.format(
-                    mdpopups.color_box(
-                        [color.to_string(**HEX)], self.default_border,
+                    colorbox.color_box(
+                        [color.convert(self.gamut_space)], self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
@@ -418,7 +418,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             "blackness": (0, 100)
         }
 
-        options = HEX_NA if color_filter != 'alpha' else HEX
+        show_alpha = color_filter == 'alpha'
         minimum, maximum = ranges[color_filter]
         check_size = self.check_size(self.height)
         html = []
@@ -457,8 +457,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             html.append(
                 '[{}]({}) {}<br>'.format(
-                    mdpopups.color_box(
-                        [color.convert("srgb").to_string(**options)], self.default_border,
+                    colorbox.color_box(
+                        [color.convert(self.gamut_space).set('alpha', lambda x: x if show_alpha else 1)],
+                        self.default_border,
                         border_size=BORDER_SIZE, height=self.height, width=self.height * 8,
                         check_size=check_size
                     ),
@@ -482,7 +483,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         count = 10
         check_size = self.check_size(self.height)
         clone = self.color.clone()
-        options = HEX_NA if color_filter != 'alpha' else HEX
+        show_alpha = color_filter == 'alpha'
 
         coord = cutil.no_nan(getattr(clone, color_filter))
         if color_filter != 'hue':
@@ -520,8 +521,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     '<a href="{}" title="{}">{}</a>'.format(
                         clone.to_string(**COLOR_FULL_PREC),
                         clone.to_string(),
-                        mdpopups.color_box(
-                            [clone.convert("srgb").to_string(**options)], self.default_border,
+                        colorbox.color_box(
+                            [clone.convert(self.gamut_space).set('alpha', lambda x: x if show_alpha else 1)],
+                            self.default_border,
                             **kwargs
                         )
                     )
@@ -532,8 +534,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             '<a href="{}" title="{}">{}</a>'.format(
                 self.color.to_string(**COLOR_FULL_PREC),
                 clone.to_string(),
-                mdpopups.color_box(
-                    [self.color.convert("srgb").to_string(**options)], self.default_border,
+                colorbox.color_box(
+                    [self.color.convert(self.gamut_space).set('alpha', lambda x: x if show_alpha else 1)],
+                    self.default_border,
                     border_size=BORDER_SIZE, height=self.height_big, width=self.width, check_size=check_size
                 )
             )
@@ -568,8 +571,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     '<a href="{}" title="{}">{}</a>'.format(
                         clone.to_string(**COLOR_FULL_PREC),
                         clone.to_string(),
-                        mdpopups.color_box(
-                            [clone.convert("srgb").to_string(**options)], self.default_border,
+                        colorbox.color_box(
+                            [clone.convert(self.gamut_space).set('alpha', lambda x: x if show_alpha else 1)],
+                            self.default_border,
                             **kwargs
                         )
                     )
