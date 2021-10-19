@@ -752,42 +752,16 @@ class SRGBX11(SRGB):
             return _parse.norm_hex_channel(value)
 
     @classmethod
-    def split_channels(cls, color):
-        """Split channels."""
-
-        m = cls.HEX_MATCH.match(color)
-        assert(m is not None)
-        if m.group(1):
-            return cls.null_adjust(
-                (
-                    cls.translate_channel(0, "#" + color[1:3]),
-                    cls.translate_channel(1, "#" + color[3:5]),
-                    cls.translate_channel(2, "#" + color[5:7])
-                ),
-                cls.translate_channel(-1, "#" + m.group(2)) if m.group(2) else 1.0
-            )
-        else:
-            return cls.null_adjust(
-                (
-                    cls.translate_channel(0, "#" + color[1] * 2),
-                    cls.translate_channel(1, "#" + color[2] * 2),
-                    cls.translate_channel(2, "#" + color[3] * 2)
-                ),
-                cls.translate_channel(-1, "#" + m.group(4) * 2) if m.group(4) else 1.0
-            )
-
-    @classmethod
     def match(cls, string, start=0, fullmatch=True):
         """Match a CSS color string."""
 
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            if string[start:start + 1] != "#":
+            string = string[m.start(0):m.end(0)].lower()
+            if not string.startswith("#"):
                 string = name2hex(string[m.start(0):m.end(0)])
-                if string is not None:
-                    return cls.split_channels(string), m.end(0)
-            else:
-                return cls.split_channels(string[m.start(0):m.end(0)]), m.end(0)
+            if string is not None:
+                return cls.split_channels(string), m.end(0)
         return None, None
 
 
