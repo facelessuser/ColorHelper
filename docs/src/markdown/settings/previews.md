@@ -44,10 +44,12 @@ Controls whether previews will attempt to gamut map a color that is out of the p
 !!! new "New in 3.8.0"
 
 Select the gamut space used for color previews. You should only pick a space that matches your system. If you happen
-to have a display that does not align with one of the spaces below, you may just have to pick whatever is closes.
-Previews accuracy is based on how precise Sublime's is able to render colors and how close one of these profiles aligns
-to your display. If at one time, Sublime actually manages colors, this may or may not be required, or may change in
-functionality.
+to have a display that does not align with one of the spaces below, you may just have to pick whatever is closest.
+
+Preview accuracy is based on how precise Sublime is able to render colors and how close one of these profiles aligns
+to your display and it's currently configured profile. If at one time, Sublime actually manages colors, this may or may
+not be required, or may change in functionality. If your display supports Display P3, but is configured with a profile
+for sRGB, then you should not touch the below setting.
 
 ```js
     // The gamut space to render previews in.

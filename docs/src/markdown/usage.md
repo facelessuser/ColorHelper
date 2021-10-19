@@ -42,7 +42,8 @@ generally not correct.
 As a workaround ColorHelper allows you to change the preview gamut with the `gamut_space` option. If on a macOS system
 with a Display P3 display, we can simply set `gamut_space` to `display-p3` and we will get more accurate previews for
 both sRGB colors **and** Display P3 colors without needing to perform gamut mapping. But keep in mind, this setting
-should not be changed to a gamut space your monitor does not support or your previews will likely be distorted.
+should not be changed to a gamut space your monitor does not support or is not currently using or your previews will,
+likely be distorted.
 
 !!! new "New in 3.8.0"
     `gamut_space` is a new experimental option added in 3.8.0.
