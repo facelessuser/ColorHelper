@@ -601,20 +601,17 @@ class Color(ColorCSS):
                 string = handle_vars(string, variables)
             obj, match_end = ColorMod(fullmatch).adjust(string, start)
             if obj is not None:
-                return ColorMatch(obj._space, start, end if end is not None else match_end)
+                return obj._space, start, end if end is not None else match_end
         else:
             filters = set(filters) if filters is not None else set()
-            obj = None
             for space, space_class in cls.CS_MAP.items():
                 if filters and space not in filters:
                     continue
                 value, match_end = space_class.match(string, start, fullmatch)
                 if value is not None:
                     color = space_class(*value)
-                    obj = ColorMatch(color, start, match_end)
-            if obj is not None and end:
-                obj.end = end
-            return obj
+                    return color, start, end if end is not None else match_end
+        return None
 
     @classmethod
     def match(cls, string, start=0, fullmatch=False, *, filters=None, variables=None):
@@ -622,8 +619,9 @@ class Color(ColorCSS):
 
         obj = cls._match(string, start, fullmatch, filters=filters, variables=variables)
         if obj is not None:
-            obj.color = cls(obj.color.space(), obj.color.coords(), obj.color.alpha)
-        return obj
+            color = obj[0]
+            return ColorMatch(cls(color.space(), color.coords(), color.alpha), obj[1], obj[2])
+        return None
 
     def new(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Create new color object."""

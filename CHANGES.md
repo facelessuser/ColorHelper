@@ -1,5 +1,12 @@
 # ColorHelper
 
+## 3.9.0
+
+- **NEW**: Update to latest `coloraide` which provides minor bug fixes.  
+  As the new version now includes type annotations, ColorHelper now  
+  requires the `typing` dependency until it can be migrated to use Python  
+  3.8. Typing refactor did moderately affect custom color classes.
+
 ## 3.8.0
 
 - **NEW**: Allow selecting the preview gamut to control what RGB space  

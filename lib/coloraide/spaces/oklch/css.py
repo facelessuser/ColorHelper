@@ -1,4 +1,4 @@
-"""HSL class."""
+"""Oklch class."""
 import re
 from . import base
 from ...spaces import _parse
@@ -10,19 +10,18 @@ if TYPE_CHECKING:  # pragma: no cover
     from ...color import Color
 
 
-class HSL(base.HSL):
-    """HSL class."""
+class Oklch(base.Oklch):
+    """Oklch class."""
 
-    DEF_VALUE = "hsl(0 0% 0% / 1)"
-    START = re.compile(r'(?i)\bhsla?\(')
+    START = re.compile(r'(?i)\boklch\(')
     MATCH = re.compile(
         r"""(?xi)
-        \bhsla?\(\s*
+        \boklch\(\s*
         (?:
             # Space separated format
-            {angle}{space}{percent}{space}{percent}(?:{slash}(?:{percent}|{float}))? |
+            {percent}{space}{float}{space}{angle}(?:{slash}(?:{percent}|{float}))? |
             # comma separated format
-            {angle}{comma}{percent}{comma}{percent}(?:{comma}(?:{percent}|{float}))?
+            {percent}{comma}{float}{comma}{angle}(?:{comma}(?:{percent}|{float}))?
         )
         \s*\)
         """.format(**_parse.COLOR_PARTS)
@@ -40,10 +39,10 @@ class HSL(base.HSL):
     ) -> str:
         """Convert to CSS."""
 
-        options = kwargs
         if precision is None:
             precision = parent.PRECISION
 
+        options = kwargs
         if options.get("color"):
             return super().to_string(parent, alpha=alpha, precision=precision, fit=fit, none=none, **kwargs)
 
@@ -55,29 +54,31 @@ class HSL(base.HSL):
             coords = util.no_nans(coords)
 
         if alpha:
-            template = "hsla({}, {}, {}, {})" if options.get("comma") else "hsl({} {} {} / {})"
+            template = "oklch({}, {}, {}, {})" if options.get("comma") else "oklch({} {} {} / {})"
             return template.format(
-                util.fmt_float(coords[0], precision),
-                util.fmt_percent(coords[1] * 100, precision),
-                util.fmt_percent(coords[2] * 100, precision),
+                util.fmt_percent(coords[0] * 100, precision),
+                util.fmt_float(coords[1], precision),
+                util.fmt_float(coords[2], precision),
                 util.fmt_float(a, max(util.DEF_PREC, precision))
             )
         else:
-            template = "hsl({}, {}, {})" if options.get("comma") else "hsl({} {} {})"
+            template = "oklch({}, {}, {})" if options.get("comma") else "oklch({} {} {})"
             return template.format(
-                util.fmt_float(coords[0], precision),
-                util.fmt_percent(coords[1] * 100, precision),
-                util.fmt_percent(coords[2] * 100, precision)
+                util.fmt_percent(coords[0] * 100, precision),
+                util.fmt_float(coords[1], precision),
+                util.fmt_float(coords[2], precision)
             )
 
     @classmethod
     def translate_channel(cls, channel: int, value: str) -> float:
-        """Translate channel."""
+        """Translate channel string."""
 
         if channel == 0:
+            return _parse.norm_percent_channel(value) / 100
+        elif channel == 1:
+            return _parse.norm_float(value)
+        elif channel == 2:
             return _parse.norm_angle_channel(value)
-        elif channel in (1, 2):
-            return _parse.norm_percent_channel(value, True)
         elif channel == -1:
             return _parse.norm_alpha_channel(value)
         else:  # pragma: no cover
@@ -87,7 +88,7 @@ class HSL(base.HSL):
     def split_channels(cls, color: str) -> Tuple[MutableVector, float]:
         """Split channels."""
 
-        start = 5 if color[:4].lower() == 'hsla' else 4
+        start = 6
         channels = []
         alpha = 1.0
         for i, c in enumerate(_parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
@@ -113,4 +114,4 @@ class HSL(base.HSL):
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             return cls.split_channels(string[m.start(0):m.end(0)]), m.end(0)
-        return None, None
+        return None, None  # pragma: no cover
