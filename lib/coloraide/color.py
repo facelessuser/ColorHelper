@@ -7,37 +7,37 @@ from . import convert
 from . import gamut
 from . import compositing
 from . import interpolate
-from .. import util
-from ..util import Vector, MutableVector, ColorInput
-from ..spaces import Space, Cylindrical
-from ..spaces.hsv import HSV
-from ..spaces.srgb.css import SRGB
-from ..spaces.srgb_linear import SRGBLinear
-from ..spaces.hsl.css import HSL
-from ..spaces.hwb.css import HWB
-from ..spaces.lab.css import Lab
-from ..spaces.lch.css import Lch
-from ..spaces.lab_d65 import LabD65
-from ..spaces.lch_d65 import LchD65
-from ..spaces.display_p3 import DisplayP3
-from ..spaces.a98_rgb import A98RGB
-from ..spaces.prophoto_rgb import ProPhotoRGB
-from ..spaces.rec2020 import Rec2020
-from ..spaces.xyz import XYZ
-from ..spaces.xyz_d50 import XYZD50
-from ..spaces.oklab.base import Oklab
-from ..spaces.oklch.base import Oklch
-from ..spaces.jzazbz import Jzazbz
-from ..spaces.jzczhz import JzCzhz
-from ..spaces.ictcp import ICtCp
-from ..spaces.din99o import Din99o
-from ..spaces.din99o_lch import Din99oLch
-from ..spaces.luv import Luv
-from ..spaces.lchuv import Lchuv
-from ..spaces.luv_d65 import LuvD65
-from ..spaces.lchuv_d65 import LchuvD65
-from ..spaces.okhsl import Okhsl
-from ..spaces.okhsv import Okhsv
+from . import util
+from .util import Vector, MutableVector, ColorInput
+from .spaces import Space, Cylindrical
+from .spaces.hsv import HSV
+from .spaces.srgb.css import SRGB
+from .spaces.srgb_linear import SRGBLinear
+from .spaces.hsl.css import HSL
+from .spaces.hwb.css import HWB
+from .spaces.lab.css import Lab
+from .spaces.lch.css import Lch
+from .spaces.lab_d65 import LabD65
+from .spaces.lch_d65 import LchD65
+from .spaces.display_p3 import DisplayP3
+from .spaces.a98_rgb import A98RGB
+from .spaces.prophoto_rgb import ProPhotoRGB
+from .spaces.rec2020 import Rec2020
+from .spaces.xyz import XYZ
+from .spaces.xyz_d50 import XYZD50
+from .spaces.oklab import Oklab
+from .spaces.oklch import Oklch
+from .spaces.jzazbz import Jzazbz
+from .spaces.jzczhz import JzCzhz
+from .spaces.ictcp import ICtCp
+from .spaces.din99o import Din99o
+from .spaces.din99o_lch import Din99oLch
+from .spaces.luv import Luv
+from .spaces.lchuv import Lchuv
+from .spaces.luv_d65 import LuvD65
+from .spaces.lchuv_d65 import LchuvD65
+from .spaces.okhsl import Okhsl
+from .spaces.okhsv import Okhsv
 from .distance import DeltaE
 from .distance.delta_e_76 import DE76
 from .distance.delta_e_94 import DE94
@@ -108,6 +108,16 @@ class Color(metaclass=BaseColor):
     DELTA_E = util.DEF_DELTA_E
     CHROMATIC_ADAPTATION = 'bradford'
 
+    # It is highly unlikely that a user would ever need to override this, but
+    # just in case, it is exposed, but undocumented.
+    #
+    # This is meant to prevent infinite loops in the event that a user registers
+    # poorly crafted color spaces with circular convert linkage or somehow doesn't
+    # resolve to XYZ. 10 is a generous size as our current largest iteration chain
+    # is 6, and increasing that past 10 seems highly unlikely:
+    #    XYZ -> sRGB Linear -> sRGB -> HSL -> HSV -> HWB
+    _MAX_CONVERT_ITERATIONS = 10
+
     def __init__(
         self,
         color: ColorInput,
@@ -126,6 +136,7 @@ class Color(metaclass=BaseColor):
 
         attr = cast(List['str'], super().__dir__())
         attr.extend(self._space.CHANNEL_NAMES)
+        attr.extend('alpha')
         attr.extend(list(self._space.CHANNEL_ALIASES.keys()))
         attr.extend(['delta_e_{}'.format(name) for name in self.DE_MAP.keys()])
         return attr
@@ -156,9 +167,10 @@ class Color(metaclass=BaseColor):
                 for space, space_class in self.CS_MAP.items():
                     s = color.lower()
                     if space == s and (not filters or s in filters):
-                        if len(data) < space_class.NUM_COLOR_CHANNELS:
-                            data = list(data) + [util.NaN] * (space_class.NUM_COLOR_CHANNELS - len(data))
-                        obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
+                        num_channels = len(space_class.CHANNEL_NAMES)
+                        if len(data) < num_channels:
+                            data = list(data) + [util.NaN] * (num_channels - len(data))
+                        obj = space_class(data[:num_channels], alpha)
                         break
             else:
                 m = self._match(color, fullmatch=True, filters=filters)
@@ -172,7 +184,7 @@ class Color(metaclass=BaseColor):
             space = color['space']
             if not filters or space in filters:
                 cs = self.CS_MAP[space]
-                coords = [color[name] for name in cs.CHANNEL_NAMES[:-1]]
+                coords = [color[name] for name in cs.CHANNEL_NAMES]
                 alpha = color.get('alpha', 1)
                 obj = cs(coords, alpha)
         else:
@@ -201,10 +213,10 @@ class Color(metaclass=BaseColor):
         for space, space_class in cls.CS_MAP.items():
             if filter_set and space not in filter_set:
                 continue
-            value, match_end = space_class.match(string, start, fullmatch)
-            if value is not None:
-                color = space_class(*value)
-                return color, start, cast(int, match_end)
+            m = space_class.match(string, start, fullmatch)
+            if m is not None:
+                color = space_class(*m[0])
+                return color, start, m[1]
         return None
 
     @classmethod
@@ -218,10 +230,10 @@ class Color(metaclass=BaseColor):
     ) -> Optional[ColorMatch]:
         """Match color."""
 
-        obj = cls._match(string, start, fullmatch, filters=filters)
-        if obj is not None:
-            color = obj[0]
-            return ColorMatch(cls(color.space(), color.coords(), color.alpha), obj[1], obj[2])
+        m = cls._match(string, start, fullmatch, filters=filters)
+        if m is not None:
+            color = m[0]
+            return ColorMatch(cls(color.NAME, color.coords(), color.alpha), m[1], m[2])
         return None
 
     @classmethod
@@ -238,15 +250,15 @@ class Color(metaclass=BaseColor):
         mapping = None  # type: Optional[Union[Dict[str, Type[Fit]], Dict[str, Type[DeltaE]], Dict[str, Type[Space]]]]
         for p in plugin:
             if issubclass(p, Space):
-                name = p.space()
+                name = p.NAME
                 value = p
                 mapping = cls.CS_MAP
             elif issubclass(p, DeltaE):
-                name = p.name()
+                name = p.NAME
                 value = p
                 mapping = cls.DE_MAP
             elif issubclass(p, Fit):
-                name = p.name()
+                name = p.NAME
                 value = p
                 mapping = cls.FIT_MAP
                 if name == 'clip':
@@ -297,9 +309,10 @@ class Color(metaclass=BaseColor):
         """Return color as a data object."""
 
         data = {'space': self.space()}  # type: Dict[str, Any]
-        coords = self.coords() + [self.alpha]
+        coords = self.coords()
         for i, name in enumerate(self._space.CHANNEL_NAMES, 0):
             data[name] = coords[i]
+        data['alpha'] = self.alpha
         return data
 
     def normalize(self) -> 'Color':
@@ -344,7 +357,7 @@ class Color(metaclass=BaseColor):
     def space(self) -> str:
         """The current color space."""
 
-        return self._space.space()
+        return self._space.NAME
 
     def coords(self) -> MutableVector:
         """Coordinates."""
@@ -422,7 +435,7 @@ class Color(metaclass=BaseColor):
         c = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
         space = self.space()
         self._attach(c)
-        if c.space() != space:
+        if c.NAME != space:
             self.convert(space, in_place=True)
         return self
 
@@ -554,7 +567,7 @@ class Color(metaclass=BaseColor):
         masks = set(
             [aliases.get(channel, channel)] if isinstance(channel, str) else [aliases.get(c, c) for c in channel]
         )
-        for name in self._space.CHANNEL_NAMES:
+        for name in (self._space.CHANNEL_NAMES + ('alpha',)):
             if (not invert and name in masks) or (invert and name not in masks):
                 this.set(name, util.NaN)
         return this
@@ -749,10 +762,8 @@ class Color(metaclass=BaseColor):
             return self.update(obj)
 
         # Handle a function that modifies the value or a direct value
-        if callable(value):
-            self.set(name, value(self.get(name)))
-        else:
-            self._space.set(name, value)
+        self._space.set(name, value(self._space.get(name)) if callable(value) else value)
+
         return self
 
     def __getattr__(self, name: str) -> Any:
@@ -761,18 +772,16 @@ class Color(metaclass=BaseColor):
         if name.startswith('delta_e_'):
             de = name[8:]
             if de in self.DE_MAP:
-                return functools.partial(getattr(self, 'delta_e'), method=de)
+                return functools.partial(self.delta_e, method=de)
 
         # Don't test `_space` as it is used to get Space channel attributes.
         elif name != "_space":
-            # Get channel names
-            result = getattr(self, "_space")
-            if result is not None:
-                # If requested attribute is a channel name, return the attribute from the Space instance.
-                name = result.CHANNEL_ALIASES.get(name, name)
-                if name in result.CHANNEL_NAMES:
-                    return getattr(result, name)
+            try:
+                return self._space.get(name)
+            except AttributeError:
+                pass
 
+        # Get attributes from Color class.
         return super().__getattribute__(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -780,10 +789,8 @@ class Color(metaclass=BaseColor):
 
         try:
             # See if we need to set the space specific channel attributes.
-            name = self._space.CHANNEL_ALIASES.get(name, name)
-            if name in self._space.CHANNEL_NAMES:
-                setattr(self._space, name, value)
-                return
+            self._space.set(name, value)
+            return
         except AttributeError:
             pass
         # Set all attributes on the Color class.

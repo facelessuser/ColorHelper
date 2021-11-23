@@ -1,22 +1,18 @@
 """HyAB distance."""
 from ..distance import DeltaE
 import math
-from ... import util
-from ...spaces import Labish
+from .. import util
+from ..spaces import Labish
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...color import Color
+    from ..color import Color
 
 
 class DEHyAB(DeltaE):
     """Delta E HyAB class."""
 
-    @staticmethod
-    def name() -> str:
-        """Name of method."""
-
-        return "hyab"
+    NAME = "hyab"
 
     @staticmethod
     def distance(color: 'Color', sample: 'Color', space: str = "lab", **kwargs: Any) -> float:

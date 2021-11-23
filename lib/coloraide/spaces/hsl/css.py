@@ -1,7 +1,7 @@
 """HSL class."""
 import re
-from . import base
-from ...spaces import _parse
+from .. import hsl as base
+from ... import parse
 from ... import util
 from ...util import MutableVector
 from typing import Union, Optional, Tuple, Any, TYPE_CHECKING
@@ -14,7 +14,6 @@ class HSL(base.HSL):
     """HSL class."""
 
     DEF_VALUE = "hsl(0 0% 0% / 1)"
-    START = re.compile(r'(?i)\bhsla?\(')
     MATCH = re.compile(
         r"""(?xi)
         \bhsla?\(\s*
@@ -25,7 +24,7 @@ class HSL(base.HSL):
             {angle}{comma}{percent}{comma}{percent}(?:{comma}(?:{percent}|{float}))?
         )
         \s*\)
-        """.format(**_parse.COLOR_PARTS)
+        """.format(**parse.COLOR_PARTS)
     )
 
     def to_string(
@@ -75,11 +74,11 @@ class HSL(base.HSL):
         """Translate channel."""
 
         if channel == 0:
-            return _parse.norm_angle_channel(value)
+            return parse.norm_angle_channel(value)
         elif channel in (1, 2):
-            return _parse.norm_percent_channel(value, True)
+            return parse.norm_percent_channel(value, True)
         elif channel == -1:
-            return _parse.norm_alpha_channel(value)
+            return parse.norm_alpha_channel(value)
         else:  # pragma: no cover
             raise ValueError('{} is not a valid channel index'.format(channel))
 
@@ -90,7 +89,7 @@ class HSL(base.HSL):
         start = 5 if color[:4].lower() == 'hsla' else 4
         channels = []
         alpha = 1.0
-        for i, c in enumerate(_parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
+        for i, c in enumerate(parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
             c = c.lower()
             if i <= 2:
                 channels.append(cls.translate_channel(i, c))
@@ -104,13 +103,13 @@ class HSL(base.HSL):
         string: str,
         start: int = 0,
         fullmatch: bool = True
-    ) -> Tuple[Optional[Tuple[MutableVector, float]], Optional[int]]:
+    ) -> Optional[Tuple[Tuple[MutableVector, float], int]]:
         """Match a CSS color string."""
 
-        channels, end = super().match(string, start, fullmatch)
-        if channels is not None:
-            return channels, end
+        match = super().match(string, start, fullmatch)
+        if match is not None:
+            return match
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             return cls.split_channels(string[m.start(0):m.end(0)]), m.end(0)
-        return None, None
+        return None

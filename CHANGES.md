@@ -6,6 +6,7 @@
   As the new version now includes type annotations, ColorHelper now  
   requires the `typing` dependency until it can be migrated to use Python  
   3.8. Typing refactor did moderately affect custom color classes.
+- **FIX**: ColorPicker should not show colors maps with opacity.
 
 ## 3.8.0
 

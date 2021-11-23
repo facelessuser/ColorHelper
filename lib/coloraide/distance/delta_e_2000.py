@@ -1,11 +1,11 @@
 """Delta E 2000."""
 import math
-from ... import util
+from .. import util
 from ..distance import DeltaE
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...color import Color
+    from ..color import Color
 
 G_CONST = 25 ** 7
 
@@ -13,11 +13,7 @@ G_CONST = 25 ** 7
 class DE2000(DeltaE):
     """Delta E 2000 class."""
 
-    @staticmethod
-    def name() -> str:
-        """Name of method."""
-
-        return "2000"
+    NAME = "2000"
 
     @staticmethod
     def distance(

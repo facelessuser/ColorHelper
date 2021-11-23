@@ -1,7 +1,7 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
-from ..lib.coloraide.spaces import _parse
+from ..lib.coloraide import parse
 from ..lib.coloraide import util
 import re
 
@@ -9,7 +9,7 @@ import re
 class ASRGB(SRGB):
     """SRGB that looks for alpha first in hex format."""
 
-    MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**_parse.COLOR_PARTS))
+    MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**parse.COLOR_PARTS))
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):
@@ -25,7 +25,7 @@ class ASRGB(SRGB):
         """Translate channel string."""
 
         if -1 <= channel <= 2:
-            return _parse.norm_hex_channel(value)
+            return parse.norm_hex_channel(value)
 
     @classmethod
     def split_channels(cls, color):

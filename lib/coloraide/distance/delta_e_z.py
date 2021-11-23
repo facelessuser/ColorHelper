@@ -5,21 +5,17 @@ https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
 from ..distance import DeltaE
 import math
-from ... import util
+from .. import util
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...color import Color
+    from ..color import Color
 
 
 class DEZ(DeltaE):
     """Delta E z class."""
 
-    @staticmethod
-    def name() -> str:
-        """Name of method."""
-
-        return "jz"
+    NAME = "jz"
 
     @staticmethod
     def distance(color: 'Color', sample: 'Color', **kwargs: Any) -> float:

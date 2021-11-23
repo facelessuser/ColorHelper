@@ -16,13 +16,13 @@ License: MIT (As noted in https://github.com/LeaVerou/color.js/blob/master/packa
 import math
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-from .. import util
-from ..spaces import Cylindrical, FLG_ANGLE
+from . import util
+from .spaces import Cylindrical, FLG_ANGLE
 from typing import Optional, Callable, Sequence, Mapping, Type, Dict, List, Any, Union, cast, TYPE_CHECKING
-from ..util import Vector, ColorInput
+from .util import Vector, ColorInput
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ..color import Color
+    from .color import Color
 
 
 class Lerp:
@@ -404,25 +404,30 @@ def color_piecewise_lerp(
     # Ensure we have something we can interpolate with
     count = len(pw)
     if count == 1:
-        pw = [pw[0], pw[0]]
+        pw.append(pw[0])
         count += 1
 
-    # Calculate stops
-    stops = {}
-    for i, x in enumerate(pw, 0):
-        if not isinstance(x, Piecewise):
-            pw[i] = Piecewise(x)
-        elif x.stop is not None:
-            stops[i] = x.stop
-    stops = calc_stops(stops, count)
-
     # Construct piecewise interpolation object
+    stops = {}
     color_map = []
-    current = cast(Piecewise, pw[0]).color
-    for i in range(1, count):
-        p = cast(Piecewise, pw[i])
+    for i, x in enumerate(pw, 0):
+
+        # Normalize all colors as Piecewise objects
+        if isinstance(x, Piecewise):
+            stops[i] = x.stop
+            p = x
+        else:
+            p = Piecewise(x)
+
+        # The first is the calling color which is already a Color object
+        if i == 0:
+            current = p.color
+            continue
+
+        # Ensure input provided via Piecewise object is a Color object
         color = current._handle_color_input(p.color)
 
+        # Create an entry interpolating the current color and the next color
         color_map.append(
             current.interpolate(
                 color,
@@ -433,8 +438,14 @@ def color_piecewise_lerp(
                 premultiplied=p.premultiplied if p.premultiplied is not None else premultiplied
             )
         )
+
+        # The "next" color is now the "current" color
         current = color
 
+    # Calculate stops
+    stops = calc_stops(stops, count)
+
+    # Send the interpolation list along with the stop map to the Piecewise interpolator
     return InterpolatePiecewise(stops, color_map)
 
 
@@ -469,7 +480,7 @@ def color_lerp(
     channels2.append(color2.alpha)
 
     return InterpolateSingle(
-        names=color1._space.CHANNEL_NAMES,
+        names=color1._space.CHANNEL_NAMES + ('alpha',),
         channels1=channels1,
         channels2=channels2,
         create=type(color1),

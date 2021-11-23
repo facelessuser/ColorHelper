@@ -5,21 +5,17 @@ https://kb.portrait.com/help/ictcp-color-difference-metric
 """
 from ..distance import DeltaE
 import math
-from ... import util
+from .. import util
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...color import Color
+    from ..color import Color
 
 
 class DEITP(DeltaE):
     """Delta E ITP class."""
 
-    @staticmethod
-    def name() -> str:
-        """Name of method."""
-
-        return "itp"
+    NAME = "itp"
 
     @staticmethod
     def distance(color: 'Color', sample: 'Color', scalar: float = 720, **kwargs: Any) -> float:

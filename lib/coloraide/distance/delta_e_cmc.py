@@ -1,21 +1,17 @@
 """Delta E CMC."""
 from ..distance import DeltaE
 import math
-from ... import util
+from .. import util
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ...color import Color
+    from ..color import Color
 
 
 class DECMC(DeltaE):
     """Delta E CMC class."""
 
-    @staticmethod
-    def name() -> str:
-        """Name of method."""
-
-        return "cmc"
+    NAME = "cmc"
 
     @staticmethod
     def distance(

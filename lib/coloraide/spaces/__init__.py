@@ -1,23 +1,24 @@
 """Color base."""
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from .. import util
 from ..util import Vector, MutableVector
-from . import _parse
+from .. import parse
 from typing import Tuple, Dict, Pattern, Optional, Union, Sequence, Any, List, cast, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
-# Technically this form can handle any number of channels as long as any
-# extra are thrown away. We only support 6 currently. If we ever support
-# colors with more channels, we can bump this.
+# Technically, this form could handle any number of channels as long as any extra
+# are thrown away. Currently, each space only allows exact, expected channels.
+# In the future, we could allow colors to accept more and throw away extras
+# like the CSS specification requires.
 RE_DEFAULT_MATCH = r"""(?xi)
 color\(\s*
 (?:({{color_space}})\s+)?
 ((?:{percent}|{float})(?:{space}(?:{percent}|{float})){{{{,{{channels:d}}}}}}(?:{slash}(?:{percent}|{float}))?)
 \s*\)
 """.format(
-    **_parse.COLOR_PARTS
+    **parse.COLOR_PARTS
 )
 
 
@@ -104,7 +105,7 @@ class Labish:
     def labish_names(cls) -> Tuple[str, ...]:
         """Return Lab-ish names in the order L a b."""
 
-        return cast(Type['Space'], cls).CHANNEL_NAMES[:3]
+        return cast(Type['Space'], cls).CHANNEL_NAMES
 
     @classmethod
     def labish_indexes(cls) -> List[int]:  # pragma: no cover
@@ -121,7 +122,7 @@ class Lchish(Cylindrical):
     def lchish_names(cls) -> Tuple[str, ...]:  # pragma: no cover
         """Return Lch-ish names in the order L c h."""
 
-        return cast(Type['Space'], cls).CHANNEL_NAMES[:3]
+        return cast(Type['Space'], cls).CHANNEL_NAMES
 
     @classmethod
     def lchish_indexes(cls) -> List[int]:  # pragma: no cover
@@ -146,14 +147,13 @@ class Space(
 ):
     """Base color space object."""
 
+    BASE = ""  # type: str
     # Color space name
-    SPACE = ""
+    NAME = ""
     # Serialized name
     SERIALIZE = tuple()  # type: Tuple[str, ...]
-    # Number of channels
-    NUM_COLOR_CHANNELS = 3
     # Channel names
-    CHANNEL_NAMES = ("alpha",)  # type: Tuple[str, ...]
+    CHANNEL_NAMES = tuple()  # type: Tuple[str, ...]
     # Channel aliases
     CHANNEL_ALIASES = {}  # type: Dict[str, str]
     # For matching the default form of `color(space coords+ / alpha)`.
@@ -179,21 +179,22 @@ class Space(
     def __init__(self, color: Union['Space', Vector], alpha: Optional[float] = None) -> None:
         """Initialize."""
 
+        num_channels = len(self.CHANNEL_NAMES)
         self._alpha = util.NaN
-        self._coords = [util.NaN] * self.NUM_COLOR_CHANNELS
+        self._coords = [util.NaN] * num_channels
 
         if isinstance(color, Space):
             for index, channel in enumerate(color.coords()):
-                self.set(self.CHANNEL_NAMES[index], channel)
+                setattr(self, self.CHANNEL_NAMES[index], channel)
             self.alpha = color.alpha
         elif isinstance(color, Sequence):
-            if len(color) != self.NUM_COLOR_CHANNELS:  # pragma: no cover
+            if len(color) != num_channels:  # pragma: no cover
                 # Only likely to happen with direct usage internally.
                 raise ValueError(
-                    "A list of channel values should be at a minimum of {}.".format(self.NUM_COLOR_CHANNELS)
+                    "A list of channel values should be at a minimum of {}.".format(num_channels)
                 )
-            for index in range(self.NUM_COLOR_CHANNELS):
-                self.set(self.CHANNEL_NAMES[index], color[index])
+            for index in range(num_channels):
+                setattr(self, self.CHANNEL_NAMES[index], color[index])
             self.alpha = 1.0 if alpha is None else alpha
         else:  # pragma: no cover
             # Only likely to happen with direct usage internally.
@@ -202,11 +203,7 @@ class Space(
     def __repr__(self) -> str:
         """Representation."""
 
-        gamut = self.BOUNDS
-        values = []
-        for i, coord in enumerate(self.coords()):
-            fmt = util.fmt_percent if gamut[i].flags & FLG_PERCENT else util.fmt_float
-            values.append(fmt(coord, util.DEF_PREC))
+        values = [util.fmt_float(coord, util.DEF_PREC) for coord in self.coords()]
 
         return 'color({} {} / {})'.format(
             self._serialize()[0],
@@ -229,16 +226,10 @@ class Space(
         return self._coords[:]
 
     @classmethod
-    def space(cls) -> str:
-        """Get the color space."""
-
-        return cls.SPACE
-
-    @classmethod
     def _serialize(cls) -> Tuple[str, ...]:
         """Get the serialized name."""
 
-        return (cls.space(),) if not cls.SERIALIZE else cls.SERIALIZE
+        return (cls.NAME,) if not cls.SERIALIZE else cls.SERIALIZE
 
     @classmethod
     def white(cls) -> MutableVector:
@@ -262,8 +253,8 @@ class Space(
         """Set the given channel."""
 
         name = self.CHANNEL_ALIASES.get(name, name)
-        if name not in self.CHANNEL_NAMES:
-            raise ValueError("'{}' is an invalid channel name".format(name))
+        if name not in self.CHANNEL_NAMES and name != 'alpha':
+            raise AttributeError("'{}' is an invalid channel name".format(name))
 
         setattr(self, name, value)
         return self
@@ -272,9 +263,19 @@ class Space(
         """Get the given channel's value."""
 
         name = self.CHANNEL_ALIASES.get(name, name)
-        if name not in self.CHANNEL_NAMES:
-            raise ValueError("'{}' is an invalid channel name".format(name))
+        if name not in self.CHANNEL_NAMES and name != 'alpha':
+            raise AttributeError("'{}' is an invalid channel name".format(name))
         return cast(float, getattr(self, name))
+
+    @classmethod
+    @abstractmethod
+    def to_base(cls, coords: MutableVector) -> MutableVector:  # pragma: no cover
+        """To base color."""
+
+    @classmethod
+    @abstractmethod
+    def from_base(cls, coords: MutableVector) -> MutableVector:  # pragma: no cover
+        """From base color."""
 
     def to_string(
         self,
@@ -298,14 +299,10 @@ class Space(
         coords = parent.fit(method=method).coords() if fit else self.coords()
         if not none:
             coords = util.no_nans(coords)
-        gamut = self.BOUNDS
+
+        values = [util.fmt_float(coord, precision) for coord in coords]
+
         template = "color({} {} / {})" if alpha else "color({} {})"
-
-        values = []
-        for i, coord in enumerate(coords):
-            fmt = util.fmt_percent if gamut[i].flags & FLG_PERCENT else util.fmt_float
-            values.append(fmt(coord, precision))
-
         if alpha:
             return template.format(
                 self._serialize()[0], ' '.join(values), util.fmt_float(a, max(precision, util.DEF_PREC))
@@ -325,7 +322,7 @@ class Space(
         string: str,
         start: int = 0,
         fullmatch: bool = True
-    ) -> Tuple[Optional[Tuple[MutableVector, float]], Optional[int]]:
+    ) -> Optional[Tuple[Tuple[MutableVector, float], int]]:
         """Match a color by string."""
 
         m = cast(Pattern[str], cls.DEFAULT_MATCH).match(string, start)
@@ -337,15 +334,16 @@ class Space(
         ):
 
             # Break channels up into a list
-            split = _parse.RE_SLASH_SPLIT.split(m.group(2).strip(), maxsplit=1)
+            num_channels = len(cls.CHANNEL_NAMES)
+            split = parse.RE_SLASH_SPLIT.split(m.group(2).strip(), maxsplit=1)
 
             # Get alpha channel
-            alpha = _parse.norm_alpha_channel(split[-1].lower()) if len(split) > 1 else 1.0
+            alpha = parse.norm_alpha_channel(split[-1].lower()) if len(split) > 1 else 1.0
 
             # Parse color channels
             channels = []
-            for i, c in enumerate(_parse.RE_CHAN_SPLIT.split(split[0]), 0):
-                if c and i < cls.NUM_COLOR_CHANNELS:
+            for i, c in enumerate(parse.RE_CHAN_SPLIT.split(split[0]), 0):
+                if c and i < num_channels:
                     c = c.lower()
                     # If the channel is a percentage, force it to scale from 0 - 100, not 0 - 1.
                     is_percent = cls.BOUNDS[i].flags & FLG_PERCENT
@@ -369,14 +367,14 @@ class Space(
                     #         return None, None
                     # ```
 
-                    channels.append(_parse.norm_color_channel(c, not is_percent))
+                    channels.append(parse.norm_color_channel(c, not is_percent))
 
             # Missing channels are filled with `NaN`
-            if len(channels) < cls.NUM_COLOR_CHANNELS:
-                diff = cls.NUM_COLOR_CHANNELS - len(channels)
+            if len(channels) < num_channels:
+                diff = num_channels - len(channels)
                 channels.extend([util.NaN] * diff)
 
             # Apply null adjustments (null hues) if applicable
             return cls.null_adjust(channels, alpha), m.end(0)
 
-        return None, None
+        return None
