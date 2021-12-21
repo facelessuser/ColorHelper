@@ -554,7 +554,7 @@ class Color(ColorCSS):
             for space, space_class in self.CS_MAP.items():
                 s = color.lower()
                 if space == s and (not filters or s in filters):
-                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
+                    obj = space_class(data[:len(space_class.CHANNEL_NAMES)], alpha)
                     return obj
         elif isinstance(color, Mapping):
             space = color['space']
@@ -614,10 +614,10 @@ class Color(ColorCSS):
             for space, space_class in cls.CS_MAP.items():
                 if filters and space not in filters:
                     continue
-                value, match_end = space_class.match(string, start, fullmatch)
-                if value is not None:
-                    color = space_class(*value)
-                    return color, start, end if end is not None else match_end
+                m = space_class.match(string, start, fullmatch)
+                if m is not None:
+                    color = space_class(*m[0])
+                    return color, start, end if end is not None else m[1]
         return None
 
     @classmethod
