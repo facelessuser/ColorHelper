@@ -331,7 +331,7 @@ class ColorMod:
         """Process HWB and HSL channels (except hue)."""
 
         value = m.group(2)
-        value = float(value.strip('%'))
+        value = float(value.strip('%')) * parse.SCALE_PERCENT
         op = m.group(1).strip() if m.group(1) else ""
         getattr(self, name)(value, op=op, hue=hue)
         if not self._color.is_nan("hsl.hue"):
