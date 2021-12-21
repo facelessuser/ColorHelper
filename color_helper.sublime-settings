@@ -143,7 +143,7 @@
     //                         {"space": "hwb", "format": {"comma": False, "precision": 3}},
     //                         {"space": "lch", "format": {"comma": False, "precision": 3}},
     //                         {"space": "lab", "format": {"comma": False, "precision": 3}},
-    //                         {"space": "xyz", "format": {}}
+    //                         {"space": "xyz-d65", "format": {}}
     //                     ]
     //                     ```
     //
@@ -155,7 +155,7 @@
     //
     // - `filters`:        A list that restricts color recognition to only the specified color spaces.
     //                     Default is an empty list. Allowed color spaces are `srgb`, `hsl`, `hwb`, `hsv`,
-    //                     `lch`, `lab`, `xyz`, `display-p3`, `rec2020`, `a98-rgb`, and `prophoto-rgb`.
+    //                     `lch`, `lab`, `xyz-d65`, `display-p3`, `rec2020`, `a98-rgb`, and `prophoto-rgb`.
     //
     // - `edit_mode`:      Optional parameter that controls the "edit" tool that is used in the info
     //                     panel when you click the large color preview. The default value is `default`,
@@ -166,7 +166,7 @@
         "css-level-4": {
             "filters": [
                 "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
-                "prophoto-rgb", "a98-rgb", "xyz", "xyz-d50"
+                "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50"
             ],
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
@@ -179,7 +179,7 @@
                 {"space": "rec2020", "format": {}},
                 {"space": "prophoto-rgb", "format": {}},
                 {"space": "a98-rgb", "format": {}},
-                {"space": "xyz", "format": {}},
+                {"space": "xyz-d65", "format": {}},
                 {"space": "xyz-d50", "format": {}}
             ]
         },

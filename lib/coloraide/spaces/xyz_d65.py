@@ -5,12 +5,12 @@ from ..util import MutableVector
 from typing import Tuple
 
 
-class XYZ(Space):
+class XYZD65(Space):
     """XYZ D65 class."""
 
-    BASE = "xyz"
-    NAME = "xyz"
-    SERIALIZE = ("xyz", "xyz-d65")  # type: Tuple[str, ...]
+    BASE = "xyz-d65"
+    NAME = "xyz-d65"
+    SERIALIZE = ("xyz-d65", 'xyz')  # type: Tuple[str, ...]
     CHANNEL_NAMES = ("x", "y", "z")
     DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     WHITE = "D65"

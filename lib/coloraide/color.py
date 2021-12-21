@@ -23,7 +23,7 @@ from .spaces.display_p3 import DisplayP3
 from .spaces.a98_rgb import A98RGB
 from .spaces.prophoto_rgb import ProPhotoRGB
 from .spaces.rec2020 import Rec2020
-from .spaces.xyz import XYZ
+from .spaces.xyz_d65 import XYZD65
 from .spaces.xyz_d50 import XYZD50
 from .spaces.oklab import Oklab
 from .spaces.oklch import Oklch
@@ -47,23 +47,25 @@ from .distance.delta_e_itp import DEITP
 from .distance.delta_e_99o import DE99o
 from .distance.delta_e_z import DEZ
 from .distance.delta_e_hyab import DEHyAB
+from .distance.delta_e_ok import DEOK
 from .gamut import Fit
 from .gamut.fit_lch_chroma import LchChroma
+from .gamut.fit_oklch_chroma import OklchChroma
 from typing import Union, Sequence, Dict, List, Optional, Any, cast, Callable, Set, Tuple, Type, Mapping
 
 SUPPORTED_DE = (
-    DE76, DE94, DECMC, DE2000, DEITP, DE99o, DEZ, DEHyAB
+    DE76, DE94, DECMC, DE2000, DEITP, DE99o, DEZ, DEHyAB, DEOK
 )
 
 SUPPORTED_SPACES = (
     HSL, HWB, Lab, Lch, LabD65, LchD65, SRGB, SRGBLinear, HSV,
-    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZ, XYZD50,
+    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZD65, XYZD50,
     Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Din99o, Din99oLch, Luv, Lchuv,
     LuvD65, LchuvD65, Okhsl, Okhsv
 )
 
 SUPPORTED_FIT = (
-    LchChroma,
+    LchChroma, OklchChroma
 )
 
 
@@ -461,7 +463,7 @@ class Color(metaclass=BaseColor):
 
         uv = None
         if mode == '1976':
-            xyz = self.convert('xyz')
+            xyz = self.convert('xyz-d65')
             coords = self.chromatic_adaptation(xyz._space.WHITE, self._space.WHITE, xyz.coords())
             uv = util.xyz_to_uv(coords)
         elif mode == '1960':
@@ -473,7 +475,7 @@ class Color(metaclass=BaseColor):
     def xy(self) -> MutableVector:
         """Convert to `xy`."""
 
-        xyz = self.convert('xyz')
+        xyz = self.convert('xyz-d65')
         coords = self.chromatic_adaptation(xyz._space.WHITE, self._space.WHITE, xyz.coords())
         return util.xyz_to_xyY(coords, self._space.white())[:2]
 
@@ -500,7 +502,14 @@ class Color(metaclass=BaseColor):
         # Adjust "this" color
         return this.update(c)
 
-    def fit(self, space: Optional[str] = None, *, method: Optional[str] = None, in_place: bool = False) -> 'Color':
+    def fit(
+        self,
+        space: Optional[str] = None,
+        *,
+        method: Optional[str] = None,
+        in_place: bool = False,
+        **kwargs: Any
+    ) -> 'Color':
         """Fit the gamut using the provided method."""
 
         # Dedicated clip method.
@@ -533,7 +542,7 @@ class Color(metaclass=BaseColor):
                 c.set(name, util.constrain_hue(c.get(name)))
         else:
             # Doesn't seem to be an easy way that `mypy` can know whether this is the ABC class or not
-            c._space._coords = func(c)
+            c._space._coords = func(c, **kwargs)
         c.normalize()
 
         # Adjust "this" color
@@ -726,7 +735,7 @@ class Color(metaclass=BaseColor):
     def luminance(self) -> float:
         """Get color's luminance."""
 
-        return cast(float, self.convert("xyz").y)
+        return cast(float, self.convert("xyz-d65").y)
 
     def contrast(self, color: ColorInput) -> float:
         """Compare the contrast ratio of this color and the provided color."""
