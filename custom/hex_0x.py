@@ -1,7 +1,7 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
-from ..lib.coloraide.spaces import _parse
+from ..lib.coloraide import parse
 from ..lib.coloraide import util
 import re
 
@@ -10,7 +10,7 @@ def norm_hex_channel(string):
     """Normalize the hex string to a form we can handle."""
 
     if string.startswith('0x'):
-        return int(string[2:], 16) * _parse.RGB_CHANNEL_SCALE
+        return int(string[2:], 16) * parse.RGB_CHANNEL_SCALE
     else:
         raise ValueError("String format of a hex channel must be in the form of '0xXX'")
 

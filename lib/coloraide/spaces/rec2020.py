@@ -1,10 +1,11 @@
 """Rec 2020 color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from .srgb.base import SRGB
-from .xyz import XYZ
+from .srgb import SRGB
 from .. import util
 import re
 import math
+from ..util import MutableVector
+from typing import cast
 
 ALPHA = 1.09929682680944
 BETA = 0.018053968510807
@@ -23,7 +24,7 @@ XYZ_TO_RGB = [
 ]
 
 
-def lin_2020(rgb):
+def lin_2020(rgb: MutableVector) -> MutableVector:
     """
     Convert an array of rec-2020 RGB values in the range 0.0 - 1.0 to linear light (un-corrected) form.
 
@@ -41,7 +42,7 @@ def lin_2020(rgb):
     return result
 
 
-def gam_2020(rgb):
+def gam_2020(rgb: MutableVector) -> MutableVector:
     """
     Convert an array of linear-light rec-2020 RGB  in the range 0.0-1.0 to gamma corrected form.
 
@@ -59,7 +60,7 @@ def gam_2020(rgb):
     return result
 
 
-def lin_2020_to_xyz(rgb):
+def lin_2020_to_xyz(rgb: MutableVector) -> MutableVector:
     """
     Convert an array of linear-light rec-2020 values to CIE XYZ using  D65.
 
@@ -67,30 +68,31 @@ def lin_2020_to_xyz(rgb):
     http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
     """
 
-    return util.dot(RGB_TO_XYZ, rgb)
+    return cast(MutableVector, util.dot(RGB_TO_XYZ, rgb))
 
 
-def xyz_to_lin_2020(xyz):
+def xyz_to_lin_2020(xyz: MutableVector) -> MutableVector:
     """Convert XYZ to linear-light rec-2020."""
 
-    return util.dot(XYZ_TO_RGB, xyz)
+    return cast(MutableVector, util.dot(XYZ_TO_RGB, xyz))
 
 
 class Rec2020(SRGB):
     """Rec 2020 class."""
 
-    SPACE = "rec2020"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE, channels=3))
+    BASE = "xyz-d65"
+    NAME = "rec2020"
+    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
     WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, parent, rgb):
-        """To XYZ."""
+    def to_base(cls, coords: MutableVector) -> MutableVector:
+        """To XYZ from Rec 2020."""
 
-        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_2020_to_xyz(lin_2020(rgb)))
+        return lin_2020_to_xyz(lin_2020(coords))
 
     @classmethod
-    def _from_xyz(cls, parent, xyz):
-        """From XYZ."""
+    def from_base(cls, coords: MutableVector) -> MutableVector:
+        """From XYZ to Rec 2020."""
 
-        return gam_2020(xyz_to_lin_2020(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))
+        return gam_2020(xyz_to_lin_2020(coords))

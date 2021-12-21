@@ -1,7 +1,7 @@
 """Custom color that looks for colors of format `&HAABBGGRR` as `#AARRGGBB`."""
 from ColorHelper.lib.coloraide import Color
 from ColorHelper.lib.coloraide import util
-from ColorHelper.lib.coloraide.spaces import _parse
+from ColorHelper.lib.coloraide import parse
 from ColorHelper.lib.coloraide.spaces.srgb.css import SRGB
 import re
 
@@ -25,7 +25,7 @@ class AssABGR(SRGB):
         """Translate channel string."""
 
         if -1 <= channel <= 2:
-            return _parse.norm_hex_channel(value)
+            return parse.norm_hex_channel(value)
 
     @classmethod
     def split_channels(cls, color: str):

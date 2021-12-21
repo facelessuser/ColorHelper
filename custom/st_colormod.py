@@ -2,7 +2,7 @@
 import re
 from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
-from ..lib.coloraide.spaces import _parse
+from ..lib.coloraide import parse
 from ..lib.coloraide import util
 from collections.abc import Mapping
 import functools
@@ -22,32 +22,39 @@ TOKENS = {
             \#(?:{hex}{{6}}(?:{hex}{{2}})?|{hex}{{3}}(?:{hex})?) |
             [\w][\w\d]*
         )
-        """.format(**_parse.COLOR_PARTS)
+        """.format(**parse.COLOR_PARTS)
     ),
     "functions": re.compile(r'(?i)[\w][\w\d]*\('),
-    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**_parse.COLOR_PARTS))
+    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**parse.COLOR_PARTS))
 }
 
 RE_ADJUSTERS = {
     "alpha": re.compile(
-        r'(?i)\s+a(?:lpha)?\(\s*(?:(\+\s+|\-\s+)?({percent}|{float})|(\*)?\s*({percent}|{float}))\s*\)'.format(
-            **_parse.COLOR_PARTS
+        r"""
+        (?xi)
+        \s+a(?:lpha)?\(\s*
+        (?:(\+\s+|\-\s+)?({strict_percent}|{strict_float})|(\*)?\s*({strict_percent}|{strict_float}))
+        \s*\)
+        """.format(
+            **parse.COLOR_PARTS
         )
     ),
     "saturation": re.compile(
-        r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)
+        r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**parse.COLOR_PARTS)
     ),
-    "lightness": re.compile(r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({percent})\s*\)'.format(**_parse.COLOR_PARTS)),
+    "lightness": re.compile(
+        r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**parse.COLOR_PARTS)
+    ),
     "min-contrast_start": re.compile(r'(?i)\s+min-contrast\(\s*'),
     "blend_start": re.compile(r'(?i)\s+blenda?\(\s*'),
     "end": re.compile(r'(?i)\s*\)')
 }
 
-RE_HUE = re.compile(r'(?i){angle}'.format(**_parse.COLOR_PARTS))
+RE_HUE = re.compile(r'(?i){angle}'.format(**parse.COLOR_PARTS))
 RE_COLOR_START = re.compile(r'(?i)color\(\s*')
-RE_BLEND_END = re.compile(r'(?i)\s+({percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**_parse.COLOR_PARTS))
+RE_BLEND_END = re.compile(r'(?i)\s+({strict_percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**parse.COLOR_PARTS))
 RE_BRACKETS = re.compile(r'(?:(\()|(\))|[^()]+)')
-RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({float})\s*\)'.format(**_parse.COLOR_PARTS))
+RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({strict_float})\s*\)'.format(**parse.COLOR_PARTS))
 RE_VARS = re.compile(r'(?i)(?:(?<=^)|(?<=[\s\t\(,/]))(var\(\s*([-\w][-\w\d]*)\s*\))(?!\()(?=[\s\t\),/]|$)')
 
 
@@ -212,7 +219,7 @@ class ColorMod:
                 start = m.end(0)
                 m = RE_HUE.match(string, start)
                 if m:
-                    hue = _parse.norm_angle(m.group(0))
+                    hue = parse.norm_angle(m.group(0))
                     color = Color("hsl", [hue, 1, 0.5]).convert("srgb")
                     start = m.end(0)
                 if color is None:
@@ -309,7 +316,7 @@ class ColorMod:
         else:
             value = m.group(4)
         if value.endswith('%'):
-            value = float(value.strip('%')) * _parse.SCALE_PERCENT
+            value = float(value.strip('%')) * parse.SCALE_PERCENT
         else:
             value = float(value)
         op = ""
@@ -324,7 +331,7 @@ class ColorMod:
         """Process HWB and HSL channels (except hue)."""
 
         value = m.group(2)
-        value = float(value.strip('%'))
+        value = float(value.strip('%')) * parse.SCALE_PERCENT
         op = m.group(1).strip() if m.group(1) else ""
         getattr(self, name)(value, op=op, hue=hue)
         if not self._color.is_nan("hsl.hue"):
@@ -351,7 +358,7 @@ class ColorMod:
                 raise ValueError("Could not find a valid color for 'blend'")
         m = RE_BLEND_END.match(string, start)
         if m:
-            value = float(m.group(1).strip('%')) * _parse.SCALE_PERCENT
+            value = float(m.group(1).strip('%')) * parse.SCALE_PERCENT
             space = "srgb"
             if m.group(2):
                 space = m.group(2).lower()
@@ -547,7 +554,7 @@ class Color(ColorCSS):
             for space, space_class in self.CS_MAP.items():
                 s = color.lower()
                 if space == s and (not filters or s in filters):
-                    obj = space_class(data[:space_class.NUM_COLOR_CHANNELS], alpha)
+                    obj = space_class(data[:len(space_class.CHANNEL_NAMES)], alpha)
                     return obj
         elif isinstance(color, Mapping):
             space = color['space']
@@ -564,7 +571,7 @@ class Color(ColorCSS):
             m = self._match(color, fullmatch=True, filters=filters, variables=variables)
             if m is None:
                 raise ValueError("'{}' is not a valid color".format(color))
-            obj = m.color
+            obj = m[0]
         if obj is None:
             raise ValueError("Could not process the provided color")
         return obj
@@ -601,20 +608,17 @@ class Color(ColorCSS):
                 string = handle_vars(string, variables)
             obj, match_end = ColorMod(fullmatch).adjust(string, start)
             if obj is not None:
-                return ColorMatch(obj._space, start, end if end is not None else match_end)
+                return obj._space, start, end if end is not None else match_end
         else:
             filters = set(filters) if filters is not None else set()
-            obj = None
             for space, space_class in cls.CS_MAP.items():
                 if filters and space not in filters:
                     continue
-                value, match_end = space_class.match(string, start, fullmatch)
-                if value is not None:
-                    color = space_class(*value)
-                    obj = ColorMatch(color, start, match_end)
-            if obj is not None and end:
-                obj.end = end
-            return obj
+                m = space_class.match(string, start, fullmatch)
+                if m is not None:
+                    color = space_class(*m[0])
+                    return color, start, end if end is not None else m[1]
+        return None
 
     @classmethod
     def match(cls, string, start=0, fullmatch=False, *, filters=None, variables=None):
@@ -622,8 +626,9 @@ class Color(ColorCSS):
 
         obj = cls._match(string, start, fullmatch, filters=filters, variables=variables)
         if obj is not None:
-            obj.color = cls(obj.color.space(), obj.color.coords(), obj.color.alpha)
-        return obj
+            color = obj[0]
+            return ColorMatch(cls(color.NAME, color.coords(), color.alpha), obj[1], obj[2])
+        return None
 
     def new(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Create new color object."""

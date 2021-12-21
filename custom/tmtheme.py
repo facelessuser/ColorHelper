@@ -1,11 +1,11 @@
 """Custom color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
-from ..lib.coloraide.spaces import _parse
+from ..lib.coloraide import parse
 from ..lib.coloraide import util
 import re
 
-RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**_parse.COLOR_PARTS))
+RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**parse.COLOR_PARTS))
 
 name2hex_map = {
     "black": "#000000",
@@ -691,7 +691,7 @@ class SRGBX11(SRGB):
             # Names
             \b(?<!\#)[a-z]{{3,}}(?!\()\b
         )
-        """.format(**_parse.COLOR_PARTS)
+        """.format(**parse.COLOR_PARTS)
     )
 
     def to_string(
@@ -749,7 +749,7 @@ class SRGBX11(SRGB):
         """Translate channel string."""
 
         if channel in (-1, 0, 1, 2):
-            return _parse.norm_hex_channel(value)
+            return parse.norm_hex_channel(value)
 
     @classmethod
     def match(cls, string, start=0, fullmatch=True):

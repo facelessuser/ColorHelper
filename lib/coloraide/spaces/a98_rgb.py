@@ -1,9 +1,10 @@
 """A98 RGB color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from .srgb.base import SRGB
-from .xyz import XYZ
+from .srgb import SRGB
 from .. import util
 import re
+from ..util import MutableVector
+from typing import cast
 
 RGB_TO_XYZ = [
     [0.5766690429101304, 0.18555823790654635, 0.18822864623499475],
@@ -18,7 +19,7 @@ XYZ_TO_RGB = [
 ]
 
 
-def lin_a98rgb_to_xyz(rgb):
+def lin_a98rgb_to_xyz(rgb: MutableVector) -> MutableVector:
     """
     Convert an array of linear-light a98-rgb values to CIE XYZ using D50.D65.
 
@@ -28,22 +29,22 @@ def lin_a98rgb_to_xyz(rgb):
     https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf
     """
 
-    return util.dot(RGB_TO_XYZ, rgb)
+    return cast(MutableVector, util.dot(RGB_TO_XYZ, rgb))
 
 
-def xyz_to_lin_a98rgb(xyz):
+def xyz_to_lin_a98rgb(xyz: MutableVector) -> MutableVector:
     """Convert XYZ to linear-light a98-rgb."""
 
-    return util.dot(XYZ_TO_RGB, xyz)
+    return cast(MutableVector, util.dot(XYZ_TO_RGB, xyz))
 
 
-def lin_a98rgb(rgb):
+def lin_a98rgb(rgb: MutableVector) -> MutableVector:
     """Convert an array of a98-rgb values in the range 0.0 - 1.0 to linear light (un-corrected) form."""
 
     return [util.npow(val, 563 / 256) for val in rgb]
 
 
-def gam_a98rgb(rgb):
+def gam_a98rgb(rgb: MutableVector) -> MutableVector:
     """Convert an array of linear-light a98-rgb  in the range 0.0-1.0 to gamma corrected form."""
 
     return [util.npow(val, 256 / 563) for val in rgb]
@@ -52,18 +53,19 @@ def gam_a98rgb(rgb):
 class A98RGB(SRGB):
     """A98 RGB class."""
 
-    SPACE = "a98-rgb"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE, channels=3))
+    BASE = "xyz-d65"
+    NAME = "a98-rgb"
+    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
     WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, parent, rgb):
-        """To XYZ."""
+    def to_base(cls, coords: MutableVector) -> MutableVector:
+        """To XYZ from A98 RGB."""
 
-        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_a98rgb_to_xyz(lin_a98rgb(rgb)))
+        return lin_a98rgb_to_xyz(lin_a98rgb(coords))
 
     @classmethod
-    def _from_xyz(cls, parent, xyz):
-        """From XYZ."""
+    def from_base(cls, coords: MutableVector) -> MutableVector:
+        """From XYZ to A98 RGB."""
 
-        return gam_a98rgb(xyz_to_lin_a98rgb(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))
+        return gam_a98rgb(xyz_to_lin_a98rgb(coords))

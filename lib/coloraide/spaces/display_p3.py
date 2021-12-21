@@ -1,9 +1,10 @@
 """Display-p3 color class."""
 from ..spaces import RE_DEFAULT_MATCH
-from .srgb.base import SRGB, lin_srgb, gam_srgb
-from .xyz import XYZ
+from .srgb import SRGB, lin_srgb, gam_srgb
 from .. import util
 import re
+from ..util import MutableVector
+from typing import cast
 
 RGB_TO_XYZ = [
     [4.8657094864821610e-01, 2.6566769316909306e-01, 1.9821728523436244e-01],
@@ -18,7 +19,7 @@ XYZ_TO_RGB = [
 ]
 
 
-def lin_p3_to_xyz(rgb):
+def lin_p3_to_xyz(rgb: MutableVector) -> MutableVector:
     """
     Convert an array of linear-light image-p3 values to CIE XYZ using  D65 (no chromatic adaptation).
 
@@ -26,22 +27,22 @@ def lin_p3_to_xyz(rgb):
     """
 
     # 0 was computed as -3.972075516933488e-17
-    return util.dot(RGB_TO_XYZ, rgb)
+    return cast(MutableVector, util.dot(RGB_TO_XYZ, rgb))
 
 
-def xyz_to_lin_p3(xyz):
+def xyz_to_lin_p3(xyz: MutableVector) -> MutableVector:
     """Convert XYZ to linear-light P3."""
 
-    return util.dot(XYZ_TO_RGB, xyz)
+    return cast(MutableVector, util.dot(XYZ_TO_RGB, xyz))
 
 
-def lin_p3(rgb):
+def lin_p3(rgb: MutableVector) -> MutableVector:
     """Convert an array of image-p3 RGB values in the range 0.0 - 1.0 to linear light (un-corrected) form."""
 
     return lin_srgb(rgb)  # same as sRGB
 
 
-def gam_p3(rgb):
+def gam_p3(rgb: MutableVector) -> MutableVector:
     """Convert an array of linear-light image-p3 RGB  in the range 0.0-1.0 to gamma corrected form."""
 
     return gam_srgb(rgb)  # same as sRGB
@@ -50,18 +51,19 @@ def gam_p3(rgb):
 class DisplayP3(SRGB):
     """Display-p3 class."""
 
-    SPACE = "display-p3"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=SPACE, channels=3))
+    BASE = "xyz-d65"
+    NAME = "display-p3"
+    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
     WHITE = "D65"
 
     @classmethod
-    def _to_xyz(cls, parent, rgb):
-        """To XYZ."""
+    def to_base(cls, coords: MutableVector) -> MutableVector:
+        """To XYZ from Display P3."""
 
-        return parent.chromatic_adaptation(cls.WHITE, XYZ.WHITE, lin_p3_to_xyz(lin_p3(rgb)))
+        return lin_p3_to_xyz(lin_p3(coords))
 
     @classmethod
-    def _from_xyz(cls, parent, xyz):
-        """From XYZ."""
+    def from_base(cls, coords: MutableVector) -> MutableVector:
+        """From XYZ to Display P3."""
 
-        return gam_p3(xyz_to_lin_p3(parent.chromatic_adaptation(XYZ.WHITE, cls.WHITE, xyz)))
+        return gam_p3(xyz_to_lin_p3(coords))

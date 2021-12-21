@@ -109,8 +109,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, value = cutil.no_nan(self.color.convert(mode).coords())
-        alpha = cutil.no_nan(self.color.alpha)
+        hue, saturation, value = cutil.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_val = value
@@ -133,7 +132,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color(mode, [r_hue, 0, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [r_hue, 0, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -190,7 +189,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.hue = r_hue
 
             # Generate a hue bar.
-            color = Color(mode, [0, 1, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [0, 1, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -245,8 +244,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = cutil.no_nan(self.color.convert(mode).coords())
-        alpha = cutil.no_nan(self.color.alpha)
+        hue, saturation, lightness = cutil.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_lit = lightness
@@ -264,7 +262,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color(mode, [0, 1, lightness], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [0, 1, lightness], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -321,7 +319,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.saturation = color.saturation - 0.0625
 
             # Generate a grayscale bar.
-            color = Color(mode, [hue, saturation, 1], alpha, filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [hue, saturation, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)

@@ -1,5 +1,17 @@
 # ColorHelper
 
+## 3.9.0
+
+- **NEW**: Update to latest `coloraide` which provides minor bug fixes.  
+  As the new version now includes type annotations, ColorHelper now  
+  requires the `typing` dependency until it can be migrated to use Python  
+  3.8. Typing refactor did moderately affect custom color classes.
+- **NEW**: Gamut mapping now uses Oklch instead of CIE LCH per CSS  
+  specifications.
+- **FIX**: Fix `blend` and `blenda` regression in emulation of Sublime's  
+  ColorMod implementation.
+- **FIX**: ColorPicker should not show colors maps with opacity.
+
 ## 3.8.0
 
 - **NEW**: Allow selecting the preview gamut to control what RGB space  

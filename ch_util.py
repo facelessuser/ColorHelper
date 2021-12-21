@@ -39,7 +39,7 @@ CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
 EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
 CSS_L4_SPACES = (
     "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
-    "prophoto-rgb", "a98-rgb", "xyz", "xyz-d50"
+    "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50"
 )
 GAMUT_SPACES = ("srgb", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb")
 
@@ -161,7 +161,7 @@ DEF_OUTPUT = [
     {"space": "hwb", "format": {"comma": False, "precision": 3}},
     {"space": "lch", "format": {"comma": False, "precision": 3}},
     {"space": "lab", "format": {"comma": False, "precision": 3}},
-    {"space": "xyz", "format": {}}
+    {"space": "xyz-d65", "format": {}}
 ]
 
 
@@ -261,7 +261,7 @@ def update_colors_2_0(colors):
                 if space == 'xyz':
                     space = 'xyz-d50'
                 elif space == '--xyz-d65':
-                    space = 'xyz'
+                    space = 'xyz-d65'
 
                 new_colors.append(Color(space.lstrip('-'), channels, alpha).to_string(**COLOR_SERIALIZE))
             else:
