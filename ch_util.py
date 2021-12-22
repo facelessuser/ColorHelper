@@ -39,7 +39,7 @@ CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
 EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
 CSS_L4_SPACES = (
     "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
-    "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50"
+    "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear"
 )
 GAMUT_SPACES = ("srgb", "display-p3", "rec2020", "prophoto-rgb", "a98-rgb")
 

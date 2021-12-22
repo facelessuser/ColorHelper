@@ -166,7 +166,7 @@
         "css-level-4": {
             "filters": [
                 "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
-                "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50"
+                "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear"
             ],
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
@@ -179,6 +179,7 @@
                 {"space": "rec2020", "format": {}},
                 {"space": "prophoto-rgb", "format": {}},
                 {"space": "a98-rgb", "format": {}},
+                {"space": "srgb-linear", "format": {}},
                 {"space": "xyz-d65", "format": {}},
                 {"space": "xyz-d50", "format": {}}
             ]
