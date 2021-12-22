@@ -1,4 +1,4 @@
-# ColorHelper 3.8.0
+# ColorHelper 4.0.0
 
 New release!
 
@@ -7,15 +7,23 @@ prior releases.
 
 Restart of Sublime Text may be required.
 
-## 3.8.0
+## 4.0.0
 
-- **NEW**: Allow selecting the preview gamut to control what RGB space  
-  images previews are rendered in. For example, before this change,  
-  macOS computers with Display P3 monitors would render sRGB colors  
-  as Display P3 colors and could provide inaccurate previews. Now  
-  you can set `gamut_space` to `display-p3` and sRGB and Display P3  
-  colors will be closer to their actual color. Gamut can be set to  
-  `srgb`, `display-p3`, `a98-rgb`, `prophoto-rgb`, and `rec2020`.  
-  Colors will on only make sense on displays of these types with  
-  the appropriate color profile enabled. Directly related to  
-  https://github.com/sublimehq/sublime_text/issues/4930.
+> **BREAKING CHANGE**
+> If you have defined custom colors rules and specifically reference `xyz`  
+> rules should be updated to refer to `xyz` as `xyz-d65`.
+
+- **NEW**: Update to latest `coloraide` which provides minor bug fixes.  
+  As the new version now includes type annotations, ColorHelper now  
+  requires the `typing` dependency until it can be migrated to use Python  
+  3.8. Typing refactor did moderately affect custom color classes.
+- **NEW**: `xyz` is now known as `xyz-d65` in the settings file.  
+  If you have custom rules that override or add `xyz`, please update  
+  the rules to reference `xyz-d65` instead.
+- **NEW**: Gamut mapping now uses Oklch instead of CIE LCH per CSS recnet  
+  specifications changes to the CSS Level 4 specification.
+- **NEW**: Expose sRGB Linear color space per the CSS specification.
+- **FIX**: Fix `blend` and `blenda` regression in emulation of Sublime's  
+  ColorMod implementation.
+- **FIX**: ColorPicker should not show colors maps with opacity in the  
+  color map square.
