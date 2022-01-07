@@ -762,7 +762,7 @@ class SRGBX11(SRGB):
                 string = name2hex(string[m.start(0):m.end(0)])
             if string is not None:
                 return cls.split_channels(string), m.end(0)
-        return None, None
+        return None
 
 
 class ColorSRGBX11(Color):

@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 4.0.1
+
+- **FIX**: Fix built-in custom color class match return. This caused files  
+  using one of the built-in color classes to fail in creating previews.
+
 ## 4.0.0
 
 > **BREAKING CHANGE**

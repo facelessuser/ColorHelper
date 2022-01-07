@@ -18,7 +18,7 @@ class AssABGR(SRGB):
         m = cls.MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             return cls.split_channels(m.group("color")), m.end(0)
-        return None, None
+        return None
 
     @classmethod
     def translate_channel(cls, channel: int, value: str):
