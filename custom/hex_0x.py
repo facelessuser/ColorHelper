@@ -64,7 +64,7 @@ class HexSRGB(SRGB):
             template = template.upper()
 
         method = None if not isinstance(fit, str) else fit
-        coords = util.no_nan(parent.fit(method=method).coords())
+        coords = util.no_nans(parent.fit(method=method).coords())
         if show_alpha:
             value = template.format(
                 int(util.round_half_up(coords[0] * 255.0)),
