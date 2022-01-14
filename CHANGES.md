@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 4.1.1
+
+- **FIX**: Fix palette update logic that would not properly format the  
+  version.
+
 ## 4.1.0
 
 - **NEW**: Add minimal color support in Sublime's built-in GraphViz  
