@@ -206,7 +206,7 @@
             "class": "ColorHelper.custom.tmtheme.ColorSRGBX11",
             "filters": ["srgb"],
             "output": [
-                {"space": "srgb", "format": {"names": true}}
+                {"space": "srgb", "format": {}}
             ]
         },
         "argb": {
@@ -297,6 +297,20 @@
                 // HTML attributes (based on: Sublime Default)
                 "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
                 "meta.tag.any.html meta.attribute-with-value.style.html"
+            ]
+        },
+        {
+            "name": "Graphviz/DOT",
+            "base_scopes": [
+                "source.dot"
+            ],
+            "color_class": [
+                {"class": "tmtheme", "scopes": "meta.attributes.dot -text.html.basic"},
+                {"class": "css-level-4", "scopes": "text.html.basic"}
+            ],
+            "scanning": [
+                "source.dot meta.attributes.dot -text.html.basic",
+                "meta.attribute-with-value.html meta.string.html"
             ]
         },
         {

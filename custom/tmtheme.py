@@ -689,7 +689,7 @@ class SRGBX11(SRGB):
             # Hex syntax
             \#(?:{hex}{{6}}(?:{hex}{{2}})?|{hex}{{3}}(?:{hex})?)\b |
             # Names
-            \b(?<!\#)[a-z]{{3,}}(?!\()\b
+            \b(?<!\#)[a-z][a-z0-9]{{2,}}(?!\()\b
         )
         """.format(**parse.COLOR_PARTS)
     )
@@ -707,7 +707,7 @@ class SRGBX11(SRGB):
         hex_upper = options.get("upper", False)
         compress = options.get("compress", False)
         method = None if not isinstance(fit, str) else fit
-        coords = util.no_nan(parent.fit(method=method).coords())
+        coords = util.no_nans(parent.fit(method=method).coords())
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if alpha else "#{:02x}{:02x}{:02x}"
         if hex_upper:
@@ -759,7 +759,7 @@ class SRGBX11(SRGB):
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             string = string[m.start(0):m.end(0)].lower()
             if not string.startswith("#"):
-                string = name2hex(string[m.start(0):m.end(0)])
+                string = name2hex(string)
             if string is not None:
                 return cls.split_channels(string), m.end(0)
         return None
