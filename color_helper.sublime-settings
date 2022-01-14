@@ -300,7 +300,21 @@
             ]
         },
         {
-            "name": "Graphviz/DOT",
+            // Setting is experimental, set "enable" to false if false positives are problematic.
+            //
+            // GraphViz provides limited scoping that limits our ability to identify exactly
+            // where colors will and will not appear. It also uses deprecated attributes
+            // in HTML snippets that do not style the colors with the CSS syntax as HTML normally
+            // does.
+            //
+            // All of this "could" lead to false positives. We do our best to limit scoping as
+            // much as reasonable. HSV support is currently limited due to the fact the syntax
+            // is very non-spefic (floats separated by commas or spaces) and is likely to cause
+            // the most false positives. If the GraphViz syntax were to scope colors with a
+            // special scope, or at least properties that are likely to contain colors, we
+            // could greatly reduce/elliminate false positives and add HSV support with more
+            // confidence.
+            "name": "Graphviz",
             "base_scopes": [
                 "source.dot"
             ],
