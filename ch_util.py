@@ -328,7 +328,7 @@ def _get_palettes(window=None):
         data = window.project_data()
         if data is None:
             data = {
-                'color_helper_palettes_format': '.'.join(PALETTE_FMT),
+                'color_helper_palettes_format': '.'.join(str(x) for x in PALETTE_FMT),
                 'color_helper_palettes': []
             }
         color_palettes = data.get('color_helper_palettes', [])
@@ -340,14 +340,14 @@ def _get_palettes(window=None):
                         p['colors'] = update_colors_1_0(p['colors'])
                     data['color_helper_palettes'] = color_palettes
                     fmt = (1, 0)
-                    data['color_helper_palettes_format'] = '.'.join(fmt)
+                    data['color_helper_palettes_format'] = '.'.join(str(x) for x in fmt)
                     window.set_project_data(data)
                 if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_2_0:
                     if fmt == (1, 0):
                         for p in color_palettes:
                             p['colors'] = update_colors_2_0(p['colors'])
                         data['color_helper_palettes'] = color_palettes
-                        data['color_helper_palettes_format'] = '.'.join(PALETTE_FMT)
+                        data['color_helper_palettes_format'] = '.'.join(str(x) for x in PALETTE_FMT)
                         window.set_project_data(data)
 
         palettes = data
