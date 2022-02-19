@@ -25,8 +25,8 @@ from .spaces.prophoto_rgb import ProPhotoRGB
 from .spaces.rec2020 import Rec2020
 from .spaces.xyz_d65 import XYZD65
 from .spaces.xyz_d50 import XYZD50
-from .spaces.oklab import Oklab
-from .spaces.oklch import Oklch
+from .spaces.oklab.css import Oklab
+from .spaces.oklch.css import Oklch
 from .spaces.jzazbz import Jzazbz
 from .spaces.jzczhz import JzCzhz
 from .spaces.ictcp import ICtCp
@@ -107,6 +107,7 @@ class Color(metaclass=BaseColor):
     FIT_MAP = {}  # type: Dict[str, Type[Fit]]
     PRECISION = util.DEF_PREC
     FIT = util.DEF_FIT
+    INTERPOLATE = util.DEF_INTERPOLATE
     DELTA_E = util.DEF_DELTA_E
     CHROMATIC_ADAPTATION = 'bradford'
 
@@ -375,11 +376,7 @@ class Color(metaclass=BaseColor):
         filters: Optional[Sequence[str]] = None,
         **kwargs: Any
     ) -> 'Color':
-        """
-        Create new color object.
-
-        TODO: maybe allow `currentcolor` here? It would basically clone the current object.
-        """
+        """Create new color object."""
 
         return type(self)(color, data, alpha, filters=filters, **kwargs)
 
@@ -496,7 +493,7 @@ class Color(metaclass=BaseColor):
                 name = c._space.hue_name()
                 c.set(name, util.constrain_hue(c.get(name)))
         else:
-            c._space._coords = gamut.clip_channels(c)
+            gamut.clip_channels(c)
         c.normalize()
 
         # Adjust "this" color
@@ -542,7 +539,7 @@ class Color(metaclass=BaseColor):
                 c.set(name, util.constrain_hue(c.get(name)))
         else:
             # Doesn't seem to be an easy way that `mypy` can know whether this is the ABC class or not
-            c._space._coords = func(c, **kwargs)
+            func(c, **kwargs)
         c.normalize()
 
         # Adjust "this" color
@@ -588,6 +585,7 @@ class Color(metaclass=BaseColor):
         steps: int = 2,
         max_steps: int = 1000,
         max_delta_e: float = 0,
+        delta_e: Optional[str] = None,
         **interpolate_args: Any
     ) -> List['Color']:
         """
@@ -602,7 +600,7 @@ class Color(metaclass=BaseColor):
         Default delta E method used is delta E 76.
         """
 
-        return self.interpolate(color, **interpolate_args).steps(steps, max_steps, max_delta_e)
+        return self.interpolate(color, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
 
     def mix(
         self,
@@ -628,7 +626,7 @@ class Color(metaclass=BaseColor):
         self,
         color: Union[Union[ColorInput, interpolate.Piecewise], Sequence[Union[ColorInput, interpolate.Piecewise]]],
         *,
-        space: str = "lab",
+        space: Optional[str] = None,
         out_space: Optional[str] = None,
         stop: float = 0,
         progress: Optional[Callable[..., float]] = None,
@@ -647,7 +645,7 @@ class Color(metaclass=BaseColor):
         mixing occurs.
         """
 
-        space = space.lower()
+        space = (space if space is not None else self.INTERPOLATE).lower()
         out_space = self.space() if out_space is None else out_space.lower()
 
         # A piecewise object was provided, so treat it as such,
