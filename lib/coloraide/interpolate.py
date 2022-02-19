@@ -65,17 +65,23 @@ class Interpolator(metaclass=ABCMeta):
         """Initialize."""
 
     @abstractmethod
-    def get_delta(self) -> Any:
+    def get_delta(self, method: Optional[str]) -> Any:
         """Get the delta."""
 
     @abstractmethod
     def __call__(self, p: float) -> 'Color':
         """Call the interpolator."""
 
-    def steps(self, steps: int = 2, max_steps: int = 1000, max_delta_e: float = 0) -> List['Color']:
+    def steps(
+        self,
+        steps: int = 2,
+        max_steps: int = 1000,
+        max_delta_e: float = 0,
+        delta_e: Optional[str] = None
+    ) -> List['Color']:
         """Steps."""
 
-        return color_steps(self, steps, max_steps, max_delta_e)
+        return color_steps(self, steps, max_steps, max_delta_e, delta_e)
 
 
 class InterpolateSingle(Interpolator):
@@ -103,10 +109,13 @@ class InterpolateSingle(Interpolator):
         self.outspace = outspace
         self.premultiplied = premultiplied
 
-    def get_delta(self) -> float:
+    def get_delta(self, method: Optional[str]) -> float:
         """Get the delta."""
 
-        return self.create(self.space, self.channels1).delta_e(self.create(self.space, self.channels2))
+        return self.create(self.space, self.channels1).delta_e(
+            self.create(self.space, self.channels2),
+            method=method
+        )
 
     def __call__(self, p: float) -> 'Color':
         """Run through the coordinates and run the interpolation on them."""
@@ -150,10 +159,10 @@ class InterpolatePiecewise(Interpolator):
         self.stops = stops
         self.interpolators = interpolators
 
-    def get_delta(self) -> Vector:
+    def get_delta(self, method: Optional[str]) -> Vector:
         """Get the delta total."""
 
-        return [i.get_delta() for i in self.interpolators]
+        return [i.get_delta(method) for i in self.interpolators]
 
     def __call__(self, p: float) -> 'Color':
         """Interpolate."""
@@ -335,7 +344,8 @@ def color_steps(
     interpolator: Interpolator,
     steps: int = 2,
     max_steps: int = 1000,
-    max_delta_e: float = 0
+    max_delta_e: float = 0,
+    delta_e: Optional[str] = None
 ) -> List['Color']:
     """Color steps."""
 
@@ -343,7 +353,7 @@ def color_steps(
         actual_steps = steps
     else:
         actual_steps = 0
-        deltas = interpolator.get_delta()
+        deltas = interpolator.get_delta(delta_e)
         if not isinstance(deltas, Sequence):
             deltas = [deltas]
         # Make a very rough guess of required steps.
@@ -370,12 +380,17 @@ def color_steps(
         for i, entry in enumerate(ret):
             if i == 0:
                 continue
-            m_delta = max(m_delta, cast('Color', entry['color']).delta_e(cast('Color', ret[i - 1]['color'])))
+            m_delta = max(
+                m_delta,
+                cast('Color', entry['color']).delta_e(
+                    cast('Color', ret[i - 1]['color']),
+                    method=delta_e
+                )
+            )
 
         # If we currently have delta over our limit inject more stops.
         # If inserting between every color would push us over the max_steps, halt.
-        count = len(ret)
-        while m_delta > max_delta_e and (count * 2 - 1 <= max_steps):
+        while m_delta > max_delta_e and (len(ret) * 2 - 1 <= max_steps):
             # Inject stops while measuring again to see if it was sufficient
             m_delta = 0.0
             i = 1
@@ -386,8 +401,8 @@ def color_steps(
                 color = interpolator(p)
                 m_delta = max(
                     m_delta,
-                    color.delta_e(cast('Color', prev['color'])),
-                    color.delta_e(cast('Color', cur['color']))
+                    color.delta_e(cast('Color', prev['color']), method=delta_e),
+                    color.delta_e(cast('Color', cur['color']), method=delta_e)
                 )
                 ret.insert(i, {'p': p, 'color': color})
                 i += 2
@@ -465,8 +480,9 @@ def color_lerp(
     """Color interpolation."""
 
     # Convert to the color space and ensure the color fits inside
-    color1 = color1.convert(space, fit=True)
-    color2 = color1._handle_color_input(color2).convert(space, fit=True)
+    fit = not color1.CS_MAP[space].EXTENDED_RANGE
+    color1 = color1.convert(space, fit=fit)
+    color2 = color1._handle_color_input(color2).convert(space, fit=fit)
 
     # Adjust hues if we have two valid hues
     if isinstance(color1._space, Cylindrical):

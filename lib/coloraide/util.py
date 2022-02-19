@@ -22,8 +22,8 @@ DEF_FIT_TOLERANCE = 0.000075
 DEF_ALPHA = 1.0
 DEF_MIX = 0.5
 DEF_HUE_ADJ = "shorter"
-DEF_DISTANCE_SPACE = "lab"
-DEF_FIT = "oklch-chroma"
+DEF_INTERPOLATE = "oklab"
+DEF_FIT = "lch-chroma"
 DEF_DELTA_E = "76"
 
 ERR_MAP_MSG = """

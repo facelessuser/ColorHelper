@@ -166,22 +166,25 @@
         "css-level-4": {
             "filters": [
                 "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
-                "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear"
+                "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear",
+                "oklab", "oklch"
             ],
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true}},
                 {"space": "hsl", "format": {"comma": true}},
                 {"space": "hwb", "format": {"comma": false}},
-                {"space": "lch", "format": {"comma": false}},
-                {"space": "lab", "format": {"comma": false}},
-                {"space": "display-p3", "format": {}},
-                {"space": "rec2020", "format": {}},
-                {"space": "prophoto-rgb", "format": {}},
                 {"space": "a98-rgb", "format": {}},
+                {"space": "display-p3", "format": {}},
+                {"space": "prophoto-rgb", "format": {}},
+                {"space": "rec2020", "format": {}},
                 {"space": "srgb-linear", "format": {}},
                 {"space": "xyz-d65", "format": {}},
-                {"space": "xyz-d50", "format": {}}
+                {"space": "xyz-d50", "format": {}},
+                {"space": "lab", "format": {"comma": false}},
+                {"space": "lch", "format": {"comma": false}},
+                {"space": "oklab", "format": {"comma": false}},
+                {"space": "oklch", "format": {"comma": false}}
             ]
         },
         "css-level-3": {
