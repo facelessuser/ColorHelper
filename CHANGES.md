@@ -6,7 +6,7 @@
   mapping in CIELCH. While interpolation is great in Oklab/Oklch, gamut  
   mapping with chroma reduction in Oklch has some less desirable corner  
   cases. Using Oklch is in the early stages in the CSS Color Level 4 spec  
-  and there needs to be more time for this mature and be tested more.
+  and there needs to be more time for this to mature and be tested more.
 - **NEW**: `oklab()` and `oklch()` CSS format is now available. This form  
   is based on the published CSS Level 4 spec and requires lightness to be  
   a percentage. In the future, it is likely that percentages will be  
