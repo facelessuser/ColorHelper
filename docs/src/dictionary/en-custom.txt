@@ -1,4 +1,5 @@
 ASE
+CIE
 CIELAB
 CMC
 CSS
@@ -14,6 +15,7 @@ EmojiOne
 GitHub
 HREF
 HSL
+HSLuv
 HSV
 HWB
 HiDPI
@@ -23,6 +25,7 @@ JSON
 KDE
 LCH
 LSP
+Luv
 MERCHANTABILITY
 MacOS
 MkDocs

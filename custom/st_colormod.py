@@ -4,6 +4,7 @@ from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
 from ..lib.coloraide import parse
 from ..lib.coloraide import util
+from ..lib.coloraide.spaces.hwb.css import HWB as HWBORIG
 from collections.abc import Mapping
 import functools
 import math
@@ -159,6 +160,65 @@ def handle_vars(string, variables, parents=None):
     parent_vars = set() if parents is None else parents
 
     return RE_VARS.sub(functools.partial(_var_replace, var=temp_vars, parents=parent_vars), string)
+
+
+class HWB(HWBORIG):
+    """HWB class that allows commas."""
+
+    MATCH = re.compile(
+        r"""(?xi)
+        \bhwb\(\s*
+        (?:
+            # Space separated format
+            {angle}{space}{percent}{space}{percent}(?:{slash}(?:{percent}|{float}))? |
+            # comma separated format
+            {angle}{comma}{percent}{comma}{percent}(?:{comma}(?:{percent}|{float}))?
+        )
+        \s*\)
+        """.format(**parse.COLOR_PARTS)
+    )
+
+    def to_string(
+        self,
+        parent,
+        *,
+        alpha=None,
+        precision=None,
+        fit=True,
+        none=False,
+        **kwargs
+    ) -> str:
+        """Convert to CSS."""
+
+        if precision is None:
+            precision = parent.PRECISION
+
+        options = kwargs
+        if options.get("color"):
+            return super().to_string(parent, alpha=alpha, precision=precision, fit=fit, none=none, **kwargs)
+
+        a = util.no_nan(self.alpha) if not none else self.alpha
+        alpha = alpha is not False and (alpha is True or a < 1.0 or util.is_nan(a))
+        method = None if not isinstance(fit, str) else fit
+        coords = parent.fit(method=method).coords() if fit else self.coords()
+        if not none:
+            coords = util.no_nans(coords)
+
+        if alpha:
+            template = "hwb({}, {}, {}, {})" if options.get("comma") else "hwb({} {} {} / {})"
+            return template.format(
+                util.fmt_float(coords[0], precision),
+                util.fmt_percent(coords[1] * 100, precision),
+                util.fmt_percent(coords[2] * 100, precision),
+                util.fmt_float(self.alpha, max(util.DEF_PREC, precision))
+            )
+        else:
+            template = "hwb({}, {}, {})" if options.get("comma") else "hwb({} {} {})"
+            return template.format(
+                util.fmt_float(coords[0], precision),
+                util.fmt_percent(coords[1] * 100, precision),
+                util.fmt_percent(coords[2] * 100, precision)
+            )
 
 
 class ColorMod:
@@ -653,3 +713,6 @@ class Color(ColorCSS):
 
         self._attach(self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs))
         return self
+
+
+Color.register(HWB, overwrite=True)

@@ -31,11 +31,10 @@ from .spaces.jzazbz import Jzazbz
 from .spaces.jzczhz import JzCzhz
 from .spaces.ictcp import ICtCp
 from .spaces.din99o import Din99o
-from .spaces.din99o_lch import Din99oLch
+from .spaces.lch99o import Lch99o
 from .spaces.luv import Luv
 from .spaces.lchuv import Lchuv
-from .spaces.luv_d65 import LuvD65
-from .spaces.lchuv_d65 import LchuvD65
+from .spaces.hsluv import HSLuv
 from .spaces.okhsl import Okhsl
 from .spaces.okhsv import Okhsv
 from .distance import DeltaE
@@ -60,8 +59,8 @@ SUPPORTED_DE = (
 SUPPORTED_SPACES = (
     HSL, HWB, Lab, Lch, LabD65, LchD65, SRGB, SRGBLinear, HSV,
     DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZD65, XYZD50,
-    Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Din99o, Din99oLch, Luv, Lchuv,
-    LuvD65, LchuvD65, Okhsl, Okhsv
+    Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Din99o, Lch99o, Luv, Lchuv,
+    Okhsl, Okhsv, HSLuv
 )
 
 SUPPORTED_FIT = (
@@ -166,6 +165,7 @@ class Color(metaclass=BaseColor):
 
         obj = None
         if isinstance(color, str):
+            # Parse a color space name and coordinates
             if data is not None:
                 for space, space_class in self.CS_MAP.items():
                     s = color.lower()
@@ -175,15 +175,18 @@ class Color(metaclass=BaseColor):
                             data = list(data) + [util.NaN] * (num_channels - len(data))
                         obj = space_class(data[:num_channels], alpha)
                         break
+            # Parse a CSS string
             else:
                 m = self._match(color, fullmatch=True, filters=filters)
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
                 obj = m[0]
         elif isinstance(color, Color):
+            # Handle a color instance
             if not filters or color.space() in filters:
                 obj = self.CS_MAP[color.space()](color._space)
         elif isinstance(color, Mapping):
+            # Handle a color dictionary
             space = color['space']
             if not filters or space in filters:
                 cs = self.CS_MAP[space]
@@ -347,15 +350,12 @@ class Color(metaclass=BaseColor):
     def _handle_color_input(self, color: ColorInput) -> 'Color':
         """Handle color input."""
 
-        if (
-            isinstance(color, str) or
-            isinstance(color, Mapping) or
-            (self._is_color(color) and not self._is_this_color(color))
-        ):
+        if isinstance(color, (str, Mapping)):
             return self.new(color)
-        elif not self._is_color(color):
+        elif self._is_color(color):
+            return color if self._is_this_color(color) else self.new(color)
+        else:
             raise TypeError("Unexpected type '{}'".format(type(color)))
-        return color
 
     def space(self) -> str:
         """The current color space."""
@@ -384,11 +384,6 @@ class Color(metaclass=BaseColor):
         """Clone."""
 
         return self.new(self.space(), self.coords(), self.alpha)
-
-    def chromatic_adaptation(self, w1: str, w2: str, xyz: Vector) -> MutableVector:
-        """Apply chromatic adaption to XYZ coordinates."""
-
-        return cat.chromatic_adaptation(w1, w2, xyz, method=self.CHROMATIC_ADAPTATION)
 
     def convert(self, space: str, *, fit: Union[bool, str] = False, in_place: bool = False) -> 'Color':
         """Convert to color space."""
@@ -461,7 +456,12 @@ class Color(metaclass=BaseColor):
         uv = None
         if mode == '1976':
             xyz = self.convert('xyz-d65')
-            coords = self.chromatic_adaptation(xyz._space.WHITE, self._space.WHITE, xyz.coords())
+            coords = cat.chromatic_adaptation(
+                xyz._space.WHITE,
+                self._space.WHITE,
+                xyz.coords(),
+                self.CHROMATIC_ADAPTATION
+            )
             uv = util.xyz_to_uv(coords)
         elif mode == '1960':
             uv = util.xy_to_uv_1960(self.xy())
@@ -473,7 +473,12 @@ class Color(metaclass=BaseColor):
         """Convert to `xy`."""
 
         xyz = self.convert('xyz-d65')
-        coords = self.chromatic_adaptation(xyz._space.WHITE, self._space.WHITE, xyz.coords())
+        coords = cat.chromatic_adaptation(
+            xyz._space.WHITE,
+            self._space.WHITE,
+            xyz.coords(),
+            self.CHROMATIC_ADAPTATION
+        )
         return util.xyz_to_xyY(coords, self._space.white())[:2]
 
     def clip(self, space: Optional[str] = None, *, in_place: bool = False) -> 'Color':
@@ -481,8 +486,6 @@ class Color(metaclass=BaseColor):
 
         if space is None:
             space = self.space()
-
-        this = self.clone() if not in_place else self
 
         # Convert to desired space
         c = self.convert(space)
@@ -494,10 +497,9 @@ class Color(metaclass=BaseColor):
                 c.set(name, util.constrain_hue(c.get(name)))
         else:
             gamut.clip_channels(c)
-        c.normalize()
 
         # Adjust "this" color
-        return this.update(c)
+        return self.update(c) if in_place else c.convert(self.space(), in_place=True)
 
     def fit(
         self,
@@ -519,8 +521,6 @@ class Color(metaclass=BaseColor):
         if method is None:
             method = self.FIT
 
-        this = self.clone() if not in_place else self
-
         # Select appropriate mapping algorithm
         if method in self.FIT_MAP:
             func = self.FIT_MAP[method].fit
@@ -540,10 +540,9 @@ class Color(metaclass=BaseColor):
         else:
             # Doesn't seem to be an easy way that `mypy` can know whether this is the ABC class or not
             func(c, **kwargs)
-        c.normalize()
 
         # Adjust "this" color
-        return this.update(c)
+        return self.update(c) if in_place else c.convert(self.space(), in_place=True)
 
     def in_gamut(self, space: Optional[str] = None, *, tolerance: float = util.DEF_FIT_TOLERANCE) -> bool:
         """Check if current color is in gamut."""
@@ -700,9 +699,8 @@ class Color(metaclass=BaseColor):
         color = compositing.compose(self, bcolor, blend, operator, space)
 
         outspace = self.space() if out_space is None else out_space.lower()
-        return (
-            self.mutate(color.convert(outspace)) if in_place else color.convert(outspace)
-        ).normalize()
+        color.convert(outspace, in_place=True)
+        return self.mutate(color) if in_place else color
 
     def delta_e(
         self,

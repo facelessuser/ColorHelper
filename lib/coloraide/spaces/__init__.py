@@ -308,13 +308,12 @@ class Space(
 
         values = [util.fmt_float(coord, precision) for coord in coords]
 
-        template = "color({} {} / {})" if alpha else "color({} {})"
         if alpha:
-            return template.format(
+            return "color({} {} / {})".format(
                 self._serialize()[0], ' '.join(values), util.fmt_float(a, max(precision, util.DEF_PREC))
             )
         else:
-            return template.format(self._serialize()[0], ' '.join(values))
+            return "color({} {})".format(self._serialize()[0], ' '.join(values))
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
@@ -350,30 +349,9 @@ class Space(
             channels = []
             for i, c in enumerate(parse.RE_CHAN_SPLIT.split(split[0]), 0):
                 if c and i < num_channels:
-                    c = c.lower()
                     # If the channel is a percentage, force it to scale from 0 - 100, not 0 - 1.
                     is_percent = cls.BOUNDS[i].flags & FLG_PERCENT
-
-                    # Don't bother restricting anything yet. CSS doesn't have any defined
-                    # spaces that use percentages and only percentages anymore.
-                    # They may never have spaces again that do this, or they might.
-                    # Custom spaces can restrict colors further, if desired, but we do not
-                    # desire to restrict further unless forced.
-                    # ```
-                    # is_optional_percent = cls.BOUNDS[i].flags & FLG_OPT_PERCENT
-                    # is_none = c == 'none'
-                    # has_percent = c.endswith('%')
-                    #
-                    # if not is_none:
-                    #     if is_percent and not has_percent:
-                    #         # We have an invalid percentage channel
-                    #         return None, None
-                    #     elif (not is_percent and not is_optional_percent) and has_percent:
-                    #         # Percents are not allowed for this channel.
-                    #         return None, None
-                    # ```
-
-                    channels.append(parse.norm_color_channel(c, not is_percent))
+                    channels.append(parse.norm_color_channel(c.lower(), not is_percent))
 
             # Missing channels are filled with `NaN`
             if len(channels) < num_channels:
@@ -381,6 +359,6 @@ class Space(
                 channels.extend([util.NaN] * diff)
 
             # Apply null adjustments (null hues) if applicable
-            return cls.null_adjust(channels, alpha), m.end(0)
+            return (channels, alpha), m.end(0)
 
         return None

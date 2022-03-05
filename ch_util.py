@@ -41,7 +41,7 @@ COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 COLOR_SERIALIZE = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb", "hsv")
 CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
-EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
+EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv", "hsluv")
 CSS_L4_SPACES = (
     "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
     "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear"

@@ -41,7 +41,7 @@ class HexSRGB(SRGB):
     def split_channels(cls, color):
         """Split channels."""
 
-        return cls.null_adjust(
+        return (
             (
                 cls.translate_channel(0, '0x' + color[2:4]),
                 cls.translate_channel(1, '0x' + color[4:6]),

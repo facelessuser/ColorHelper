@@ -37,7 +37,7 @@ class AssABGR(SRGB):
 
         # deal with `AABBGGRR`
         if len(color) == 8:
-            return cls.null_adjust(
+            return (
                 (
                     cls.translate_channel(0, "#" + color[6:]),  # RR
                     cls.translate_channel(1, "#" + color[4:6]),  # GG

@@ -32,7 +32,7 @@ class ASRGB(SRGB):
         """Split channels."""
 
         if len(color) == 9:
-            return cls.null_adjust(
+            return (
                 (
                     cls.translate_channel(0, "#" + color[3:5]),
                     cls.translate_channel(1, "#" + color[5:7]),
@@ -41,7 +41,7 @@ class ASRGB(SRGB):
                 cls.translate_channel(-1, "#" + color[1:3]),
             )
         else:
-            return cls.null_adjust(
+            return (
                 (
                     cls.translate_channel(0, "#" + color[1:3]),
                     cls.translate_channel(1, "#" + color[3:5]),
