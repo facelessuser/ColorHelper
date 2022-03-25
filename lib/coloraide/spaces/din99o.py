@@ -3,9 +3,8 @@ Din99o class.
 
 https://de.wikipedia.org/wiki/DIN99-Farbraum
 """
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .lab import Lab
-import re
 import math
 from ..util import MutableVector
 
@@ -96,8 +95,7 @@ class Din99o(Lab):
     BASE = 'xyz-d65'
     NAME = "din99o"
     SERIALIZE = ("--din99o",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

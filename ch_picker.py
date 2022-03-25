@@ -10,7 +10,7 @@ import mdpopups
 from .lib import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
-from .lib.coloraide.spaces.srgb import color_names as css_names
+from .lib.coloraide.css import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
 from .ch_util import DEFAULT, COLOR_FULL_PREC, EXTENDED_SRGB_SPACES
@@ -389,7 +389,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.height)
         html = []
-        for name in sorted(css_names.name2hex_map):
+        for name in sorted(css_names.name2val_map):
             color = Color(name, filters=util.EXTENDED_SRGB_SPACES)
 
             html.append(

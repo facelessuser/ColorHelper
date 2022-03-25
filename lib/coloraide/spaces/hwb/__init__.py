@@ -1,7 +1,8 @@
 """HWB class."""
-from ...spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ...spaces import Space, Cylindrical
+from ...cat import WHITES
+from ...gamut.bounds import GamutBound, FLG_ANGLE, FLG_PERCENT
 from ... import util
-import re
 from ...util import MutableVector
 from typing import Tuple
 
@@ -44,14 +45,13 @@ class HWB(Cylindrical, Space):
         "whiteness": "w",
         "blackness": "b"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     GAMUT_CHECK = "srgb"
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutBound(0.0, 360.0, FLG_ANGLE),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT)
+        GamutBound(0.0, 1.0, FLG_PERCENT),
+        GamutBound(0.0, 1.0, FLG_PERCENT)
     )
 
     @property
@@ -64,7 +64,7 @@ class HWB(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def w(self) -> float:
@@ -76,7 +76,7 @@ class HWB(Cylindrical, Space):
     def w(self, value: float) -> None:
         """Set whiteness channel."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def b(self) -> float:
@@ -88,15 +88,16 @@ class HWB(Cylindrical, Space):
     def b(self, value: float) -> None:
         """Set blackness channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
         """On color update."""
 
+        coords = util.no_nans(coords)
         if coords[1] + coords[2] >= 1:
             coords[0] = util.NaN
-        return coords, alpha
+        return coords, util.no_nan(alpha)
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

@@ -1,8 +1,9 @@
 """LCH class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_ANGLE, FLG_PERCENT
+from ..spaces import Space
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
 from .lch import Lch, ACHROMATIC_THRESHOLD
 from .. import util
-import re
 import math
 from ..util import MutableVector
 
@@ -27,12 +28,8 @@ def lchuv_to_luv(lchuv: MutableVector) -> MutableVector:
     """Lch(uv) to Luv."""
 
     l, c, h = lchuv
-    h = util.no_nan(h)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if c < 0.0:
-        c = 0.0
+    if util.is_nan(h):  # pragma: no cover
+        return [l, 0.0, 0.0]
 
     return [
         l,
@@ -47,11 +44,10 @@ class Lchuv(Lch, Space):
     BASE = "luv"
     NAME = "lchuv"
     SERIALIZE = ("--lchuv",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
-        GamutUnbound(0, 100.0, FLG_PERCENT),
+        GamutUnbound(0, 100.0, FLG_OPT_PERCENT),
         GamutUnbound(0.0, 176.0),
         GamutUnbound(0.0, 360.0, FLG_ANGLE)
     )

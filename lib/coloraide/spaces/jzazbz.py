@@ -2,10 +2,26 @@
 Jzazbz class.
 
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
+
+There seems to be some debate on how to scale Jzazbz. Colour Science chooses not to scale at all.
+Colorio seems to scale at 100.
+
+The spec mentions multiple times targeting a luminance of 10,000 cd/m^2.
+Relative XYZ has Y=1 for media white
+BT.2048 says media white Y=203 at PQ 58
+This is confirmed here: https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-3-2019-PDF-E.pdf
+
+It is tough to tell who is correct as everything passes through the Matlab scripts fine as it
+just scales the results differently, so forward and backwards translation comes out great regardless,
+but looking at the images in the spec, it seems the scaling using Y=203 at PQ 58 may be correct. It
+is almost certain that some scaling is being applied and that applying none is almost certainly wrong.
+
+If at some time that these assumptions are incorrect, we will be happy to alter the model.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_OPT_PERCENT, Labish
+from ..spaces import Space, Labish
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
 from .. import util
-import re
 from ..util import MutableVector
 from typing import cast
 
@@ -113,8 +129,7 @@ class Jzazbz(Labish, Space):
         "a": 'az',
         "b": 'bz'
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
@@ -132,7 +147,7 @@ class Jzazbz(Labish, Space):
     def jz(self, value: float) -> None:
         """Set jz channel."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def az(self) -> float:
@@ -144,7 +159,7 @@ class Jzazbz(Labish, Space):
     def az(self, value: float) -> None:
         """Az axis."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def bz(self) -> float:
@@ -156,7 +171,7 @@ class Jzazbz(Labish, Space):
     def bz(self, value: float) -> None:
         """Set bz axis."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

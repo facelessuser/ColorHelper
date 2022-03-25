@@ -1,6 +1,7 @@
 """XYZ D65 class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound
-import re
+from ..spaces import Space
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound
 from ..util import MutableVector
 from typing import Tuple
 
@@ -12,8 +13,7 @@ class XYZD65(Space):
     NAME = "xyz-d65"
     SERIALIZE = ("xyz-d65", 'xyz')  # type: Tuple[str, ...]
     CHANNEL_NAMES = ("x", "y", "z")
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0),
@@ -31,7 +31,7 @@ class XYZD65(Space):
     def x(self, value: float) -> None:
         """Shift the X."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def y(self) -> float:
@@ -43,7 +43,7 @@ class XYZD65(Space):
     def y(self, value: float) -> None:
         """Set Y."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def z(self) -> float:
@@ -55,7 +55,7 @@ class XYZD65(Space):
     def z(self, value: float) -> None:
         """Set Z channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

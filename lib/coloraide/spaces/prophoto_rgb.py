@@ -1,8 +1,7 @@
 """Pro Photo RGB color class."""
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .srgb import SRGB
 from .. import util
-import re
 from ..util import MutableVector
 from typing import cast
 
@@ -82,8 +81,7 @@ class ProPhotoRGB(SRGB):
 
     BASE = "xyz-d50"
     NAME = "prophoto-rgb"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
-    WHITE = "D50"
+    WHITE = WHITES['2deg']['D50']
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

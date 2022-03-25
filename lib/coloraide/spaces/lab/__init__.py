@@ -1,7 +1,8 @@
 """Lab class."""
-from ...spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_PERCENT, Labish
+from ...spaces import Space, Labish
+from ...cat import WHITES
+from ...gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
 from ... import util
-import re
 from ...util import Vector, MutableVector
 from typing import cast
 
@@ -71,12 +72,11 @@ class Lab(Labish, Space):
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D50"
+    WHITE = WHITES['2deg']['D50']
     BOUNDS = (
-        GamutUnbound(0.0, 100.0, FLG_PERCENT),
-        GamutUnbound(-160, 160),
-        GamutUnbound(-160, 160)
+        GamutUnbound(0.0, 100.0, FLG_OPT_PERCENT),
+        GamutUnbound(-125, 125),
+        GamutUnbound(-125, 125)
     )
 
     @property
@@ -89,7 +89,7 @@ class Lab(Labish, Space):
     def l(self, value: float) -> None:
         """Get true luminance."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def a(self) -> float:
@@ -101,7 +101,7 @@ class Lab(Labish, Space):
     def a(self, value: float) -> None:
         """A axis."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def b(self) -> float:
@@ -113,7 +113,7 @@ class Lab(Labish, Space):
     def b(self, value: float) -> None:
         """B axis."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

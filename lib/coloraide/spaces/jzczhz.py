@@ -3,9 +3,10 @@ JzCzhz class.
 
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, FLG_ANGLE, FLG_OPT_PERCENT
+from ..spaces import Space, Lchish
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
 from .. import util
-import re
 import math
 from ..util import MutableVector
 from typing import Tuple
@@ -33,12 +34,8 @@ def jzczhz_to_jzazbz(jzczhz: MutableVector) -> MutableVector:
     """JzCzhz to Jzazbz."""
 
     jz, cz, hz = jzczhz
-    hz = util.no_nan(hz)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if cz < 0.0:
-        cz = 0.0
+    if util.is_nan(hz):  # pragma: no cover
+        return [jz, 0.0, 0.0]
 
     return [
         jz,
@@ -63,8 +60,7 @@ class JzCzhz(Lchish, Space):
         "chroma": "cz",
         "hue": "hz"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
@@ -82,7 +78,7 @@ class JzCzhz(Lchish, Space):
     def jz(self, value: float) -> None:
         """Set jz."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def cz(self) -> float:
@@ -94,7 +90,7 @@ class JzCzhz(Lchish, Space):
     def cz(self, value: float) -> None:
         """Set chroma."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = util.clamp(value, 0.0)
 
     @property
     def hz(self) -> float:
@@ -106,16 +102,17 @@ class JzCzhz(Lchish, Space):
     def hz(self, value: float) -> None:
         """Set hue."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
         """On color update."""
 
+        coords = util.no_nans(coords)
         if coords[1] < ACHROMATIC_THRESHOLD:
             coords[2] = util.NaN
 
-        return coords, alpha
+        return coords, util.no_nan(alpha)
 
     @classmethod
     def hue_name(cls) -> str:

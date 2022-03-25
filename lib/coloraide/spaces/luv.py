@@ -3,19 +3,21 @@ Luv class.
 
 https://en.wikipedia.org/wiki/CIELUV
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_PERCENT, WHITES, Labish
+from ..spaces import Space, Labish
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
 from .lab import KAPPA, EPSILON, KE
 from .. import util
-import re
 from ..util import MutableVector
+from typing import Tuple
 
 
-def xyz_to_luv(xyz: MutableVector, white: str) -> MutableVector:
+def xyz_to_luv(xyz: MutableVector, white: Tuple[float, float]) -> MutableVector:
     """XYZ to Luv."""
 
-    u, v = util.xyz_to_uv(xyz)
-    w_xyz = util.xy_to_xyz(WHITES[white])
-    ur, vr = util.xyz_to_uv(w_xyz)
+    u, v = util.xy_to_uv(util.xyz_to_xyY(xyz, white)[:2])
+    w_xyz = util.xy_to_xyz(white)
+    ur, vr = util.xy_to_uv(white)
 
     yr = xyz[1] / w_xyz[1]
     l = 116 * util.nth_root(yr, 3) - 16 if yr > EPSILON else KAPPA * yr
@@ -27,12 +29,12 @@ def xyz_to_luv(xyz: MutableVector, white: str) -> MutableVector:
     ]
 
 
-def luv_to_xyz(luv: MutableVector, white: str) -> MutableVector:
+def luv_to_xyz(luv: MutableVector, white: Tuple[float, float]) -> MutableVector:
     """Luv to XYZ."""
 
     l, u, v = luv
-    xyz = util.xy_to_xyz(WHITES[white])
-    ur, vr = util.xyz_to_uv(xyz)
+    w_xyz = util.xy_to_xyz(white)
+    ur, vr = util.xy_to_uv(white)
 
     if l != 0:
         up = (u / (13 * l)) + ur
@@ -40,7 +42,7 @@ def luv_to_xyz(luv: MutableVector, white: str) -> MutableVector:
     else:
         up = vp = 0
 
-    y = xyz[1] * (((l + 16) / 116) ** 3 if l > KE else l / KAPPA)
+    y = w_xyz[1] * (((l + 16) / 116) ** 3 if l > KE else l / KAPPA)
 
     if vp != 0:
         x = y * ((9 * up) / (4 * vp))
@@ -61,11 +63,10 @@ class Luv(Labish, Space):
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
-        GamutUnbound(0.0, 100.0, FLG_PERCENT),
+        GamutUnbound(0.0, 100.0, FLG_OPT_PERCENT),
         GamutUnbound(-175.0, 175.0),
         GamutUnbound(-175.0, 175.0)
     )
@@ -80,7 +81,7 @@ class Luv(Labish, Space):
     def l(self, value: float) -> None:
         """Get true luminance."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def u(self) -> float:
@@ -92,7 +93,7 @@ class Luv(Labish, Space):
     def u(self, value: float) -> None:
         """U axis."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def v(self) -> float:
@@ -104,7 +105,7 @@ class Luv(Labish, Space):
     def v(self, value: float) -> None:
         """V axis."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

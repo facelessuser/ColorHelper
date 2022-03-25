@@ -25,10 +25,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .oklab import oklab_to_linear_srgb
 from .. import util
-import re
 import math
 import sys
 from ..util import MutableVector
@@ -327,12 +328,12 @@ def okhsl_to_oklab(hsl: MutableVector) -> MutableVector:
     """Convert Okhsl to sRGB."""
 
     h, s, l = hsl
-    h = util.no_nan(h) / 360.0
+    h = h / 360.0
 
     L = toe_inv(l)
     a = b = 0.0
 
-    if L != 0 and L != 1 and s != 0:
+    if L != 0 and L != 1 and s != 0 and not util.is_nan(h):
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -425,8 +426,7 @@ class Okhsl(Cylindrical, Space):
         "saturation": "s",
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
     BOUNDS = (
@@ -445,7 +445,7 @@ class Okhsl(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -457,7 +457,7 @@ class Okhsl(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def l(self) -> float:
@@ -469,15 +469,16 @@ class Okhsl(Cylindrical, Space):
     def l(self, value: float) -> None:
         """Set lightness channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
         """On color update."""
 
+        coords = util.no_nans(coords)
         if coords[1] == 0 or coords[2] in (0, 1):
             coords[0] = util.NaN
-        return coords, alpha
+        return coords, util.no_nan(alpha)
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

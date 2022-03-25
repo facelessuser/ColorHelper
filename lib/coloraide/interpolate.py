@@ -17,7 +17,8 @@ import math
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from . import util
-from .spaces import Cylindrical, FLG_ANGLE
+from .spaces import Cylindrical
+from .gamut.bounds import FLG_ANGLE
 from typing import Optional, Callable, Sequence, Mapping, Type, Dict, List, Any, Union, cast, TYPE_CHECKING
 from .util import Vector, ColorInput
 
@@ -319,7 +320,7 @@ def adjust_hues(color1: 'Color', color2: 'Color', hue: str) -> None:
     elif hue == "longer":
         if 0 < (c2 - c1) < 180:
             c1 += 360
-        elif -180 < (c2 - c1) < 0:
+        elif -180 < (c2 - c1) <= 0:
             c2 += 360
 
     elif hue == "increasing":

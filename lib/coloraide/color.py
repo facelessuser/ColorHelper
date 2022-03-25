@@ -8,6 +8,7 @@ from . import gamut
 from . import compositing
 from . import interpolate
 from . import util
+from .css import parse
 from .util import Vector, MutableVector, ColorInput
 from .spaces import Space, Cylindrical
 from .spaces.hsv import HSV
@@ -50,6 +51,7 @@ from .distance.delta_e_ok import DEOK
 from .gamut import Fit
 from .gamut.fit_lch_chroma import LchChroma
 from .gamut.fit_oklch_chroma import OklchChroma
+from .gamut.fit_css_color_4 import CssColor4
 from typing import Union, Sequence, Dict, List, Optional, Any, cast, Callable, Set, Tuple, Type, Mapping
 
 SUPPORTED_DE = (
@@ -64,7 +66,7 @@ SUPPORTED_SPACES = (
 )
 
 SUPPORTED_FIT = (
-    LchChroma, OklchChroma
+    LchChroma, OklchChroma, CssColor4
 )
 
 
@@ -131,7 +133,7 @@ class Color(metaclass=BaseColor):
     ) -> None:
         """Initialize."""
 
-        self._attach(self._parse(color, data, alpha, filters=filters, **kwargs))
+        self._space = self._parse(color, data, alpha, filters=filters, **kwargs)
 
     def __dir__(self) -> Sequence[str]:
         """Get attributes for `dir()`."""
@@ -152,8 +154,9 @@ class Color(metaclass=BaseColor):
             util.cmp_coords(other.coords() + [other.alpha], self.coords() + [self.alpha])
         )
 
+    @classmethod
     def _parse(
-        self,
+        cls,
         color: ColorInput,
         data: Optional[Vector] = None,
         alpha: float = util.DEF_ALPHA,
@@ -167,29 +170,28 @@ class Color(metaclass=BaseColor):
         if isinstance(color, str):
             # Parse a color space name and coordinates
             if data is not None:
-                for space, space_class in self.CS_MAP.items():
-                    s = color.lower()
-                    if space == s and (not filters or s in filters):
-                        num_channels = len(space_class.CHANNEL_NAMES)
-                        if len(data) < num_channels:
-                            data = list(data) + [util.NaN] * (num_channels - len(data))
-                        obj = space_class(data[:num_channels], alpha)
-                        break
+                s = color.lower()
+                space_class = cls.CS_MAP.get(s)
+                if space_class and (not filters or s in filters):
+                    num_channels = len(space_class.CHANNEL_NAMES)
+                    if len(data) < num_channels:
+                        data = list(data) + [util.NaN] * (num_channels - len(data))
+                    obj = space_class(data[:num_channels], alpha)
             # Parse a CSS string
             else:
-                m = self._match(color, fullmatch=True, filters=filters)
+                m = cls._match(color, fullmatch=True, filters=filters)
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
                 obj = m[0]
         elif isinstance(color, Color):
             # Handle a color instance
             if not filters or color.space() in filters:
-                obj = self.CS_MAP[color.space()](color._space)
+                obj = cls.CS_MAP[color.space()](color._space)
         elif isinstance(color, Mapping):
             # Handle a color dictionary
             space = color['space']
             if not filters or space in filters:
-                cs = self.CS_MAP[space]
+                cs = cls.CS_MAP[space]
                 coords = [color[name] for name in cs.CHANNEL_NAMES]
                 alpha = color.get('alpha', 1)
                 obj = cs(coords, alpha)
@@ -216,13 +218,21 @@ class Color(metaclass=BaseColor):
 
         filter_set = set(filters) if filters is not None else set()  # type: Set[str]
 
+        # Attempt color match
+        m = parse.parse_color(string, cls.CS_MAP, start, fullmatch)
+        if m is not None:
+            if not filter_set or m[0].NAME in filter_set:
+                return m[0](*m[1]), start, m[2]
+            return None
+
+        # Attempt color space specific match
         for space, space_class in cls.CS_MAP.items():
             if filter_set and space not in filter_set:
                 continue
-            m = space_class.match(string, start, fullmatch)
-            if m is not None:
-                color = space_class(*m[0])
-                return color, start, m[1]
+            m2 = space_class.match(string, start, fullmatch)
+            if m2 is not None:
+                color = space_class(*m2[0])
+                return color, start, m2[1]
         return None
 
     @classmethod
@@ -243,6 +253,18 @@ class Color(metaclass=BaseColor):
         return None
 
     @classmethod
+    def _is_this_color(cls, obj: Any) -> bool:
+        """Test if the input is "this" Color, not a subclass."""
+
+        return type(obj) is cls
+
+    @classmethod
+    def _is_color(cls, obj: Any) -> bool:
+        """Test if the input is a Color."""
+
+        return isinstance(obj, Color)
+
+    @classmethod
     def register(
         cls,
         plugin: Union[Type[Fit], Type[DeltaE], Type[Space], Sequence[Any]],
@@ -256,21 +278,18 @@ class Color(metaclass=BaseColor):
         mapping = None  # type: Optional[Union[Dict[str, Type[Fit]], Dict[str, Type[DeltaE]], Dict[str, Type[Space]]]]
         for p in plugin:
             if issubclass(p, Space):
-                name = p.NAME
-                value = p
                 mapping = cls.CS_MAP
             elif issubclass(p, DeltaE):
-                name = p.NAME
-                value = p
                 mapping = cls.DE_MAP
             elif issubclass(p, Fit):
-                name = p.NAME
-                value = p
                 mapping = cls.FIT_MAP
-                if name == 'clip':
+                if p.NAME == 'clip':
                     raise ValueError("'{}' is a reserved name for gamut mapping/reduction and cannot be overridden")
             else:
                 raise TypeError("Cannot register plugin of type '{}'".format(type(p)))
+
+            name = p.NAME
+            value = p
 
             if name != "*" and name not in mapping or overwrite:
                 mapping[name] = value
@@ -331,21 +350,6 @@ class Color(metaclass=BaseColor):
         """Check if channel is NaN."""
 
         return util.is_nan(self.get(name))
-
-    def _is_this_color(self, obj: Any) -> bool:
-        """Test if the input is "this" Color, not a subclass."""
-
-        return type(obj) is type(self)
-
-    def _is_color(self, obj: Any) -> bool:
-        """Test if the input is a Color."""
-
-        return isinstance(obj, Color)
-
-    def _attach(self, space: Space) -> None:
-        """Attach the this objects convert space to the color."""
-
-        self._space = space
 
     def _handle_color_input(self, color: ColorInput) -> 'Color':
         """Handle color input."""
@@ -412,7 +416,7 @@ class Color(metaclass=BaseColor):
         """Mutate the current color to a new color."""
 
         c = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
-        self._attach(c)
+        self._space = c
         return self
 
     def update(
@@ -428,7 +432,7 @@ class Color(metaclass=BaseColor):
 
         c = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
         space = self.space()
-        self._attach(c)
+        self._space = c
         if c.NAME != space:
             self.convert(space, in_place=True)
         return self
@@ -453,16 +457,8 @@ class Color(metaclass=BaseColor):
     def uv(self, mode: str = '1976') -> MutableVector:
         """Convert to `xy`."""
 
-        uv = None
         if mode == '1976':
-            xyz = self.convert('xyz-d65')
-            coords = cat.chromatic_adaptation(
-                xyz._space.WHITE,
-                self._space.WHITE,
-                xyz.coords(),
-                self.CHROMATIC_ADAPTATION
-            )
-            uv = util.xyz_to_uv(coords)
+            uv = util.xy_to_uv(self.xy())
         elif mode == '1960':
             uv = util.xy_to_uv_1960(self.xy())
         else:
@@ -725,8 +721,18 @@ class Color(metaclass=BaseColor):
     def distance(self, color: ColorInput, *, space: str = "lab") -> float:
         """Delta."""
 
-        color = self._handle_color_input(color)
-        return distance.distance_euclidean(self, color, space=space)
+        return distance.distance_euclidean(self, self._handle_color_input(color), space=space)
+
+    def closest(
+        self,
+        colors: Sequence[ColorInput],
+        *,
+        method: Optional[str] = None,
+        **kwargs: Any
+    ) -> 'Color':
+        """Find the closest color to the current base color."""
+
+        return distance.closest(self, colors, method=method, **kwargs)
 
     def luminance(self) -> float:
         """Get color's luminance."""
@@ -746,11 +752,9 @@ class Color(metaclass=BaseColor):
 
         # Handle space.attribute
         if '.' in name:
-            parts = name.split('.')
-            if len(parts) != 2:
-                raise ValueError("Could not resolve attribute '{}'".format(name))
-            obj = self.convert(parts[0])
-            return obj.get(parts[1])
+            space, channel = name.split('.', 1)
+            obj = self.convert(space)
+            return obj._space.get(channel)
 
         return self._space.get(name)
 
@@ -759,11 +763,9 @@ class Color(metaclass=BaseColor):
 
         # Handle space.attribute
         if '.' in name:
-            parts = name.split('.')
-            if len(parts) != 2:
-                raise ValueError("Could not resolve attribute '{}'".format(name))
-            obj = self.convert(parts[0])
-            obj.set(parts[1], value)
+            space, channel = name.split('.', 1)
+            obj = self.convert(space)
+            obj._space.set(channel, value(self._space.get(channel)) if callable(value) else value)
             return self.update(obj)
 
         # Handle a function that modifies the value or a direct value

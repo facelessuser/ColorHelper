@@ -25,11 +25,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .. import util
 from .oklab import oklab_to_linear_srgb
 from .okhsl import toe, toe_inv, find_cusp, to_st
-import re
 import math
 from ..util import MutableVector
 from typing import Tuple
@@ -39,12 +40,12 @@ def okhsv_to_oklab(hsv: MutableVector) -> MutableVector:
     """Convert from Okhsv to Oklab."""
 
     h, s, v = hsv
-    h = util.no_nan(h) / 360.0
+    h = h / 360.0
 
     l = toe_inv(v)
     a = b = 0.0
 
-    if l != 0 and s != 0:
+    if l != 0 and s != 0 and not util.is_nan(h):
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -144,8 +145,7 @@ class Okhsv(Cylindrical, Space):
         "saturation": "s",
         "value": "v"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
     BOUNDS = (
@@ -164,7 +164,7 @@ class Okhsv(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -176,7 +176,7 @@ class Okhsv(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def v(self) -> float:
@@ -188,15 +188,16 @@ class Okhsv(Cylindrical, Space):
     def v(self, value: float) -> None:
         """Set value channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
         """On color update."""
 
+        coords = util.no_nans(coords)
         if coords[1] == 0:
             coords[0] = util.NaN
-        return coords, alpha
+        return coords, util.no_nan(alpha)
 
     @classmethod
     def to_base(cls, okhsv: MutableVector) -> MutableVector:

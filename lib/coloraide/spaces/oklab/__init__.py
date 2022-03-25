@@ -25,9 +25,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ...spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_OPT_PERCENT, Labish
+from ...spaces import Space, Labish
+from ...cat import WHITES
+from ...gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
 from ... import util
-import re
 from ...util import Vector, MutableVector
 from typing import cast
 
@@ -120,8 +121,7 @@ class Oklab(Labish, Space):
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
@@ -139,7 +139,7 @@ class Oklab(Labish, Space):
     def l(self, value: float) -> None:
         """Get true luminance."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def a(self) -> float:
@@ -151,7 +151,7 @@ class Oklab(Labish, Space):
     def a(self, value: float) -> None:
         """A axis."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def b(self) -> float:
@@ -163,7 +163,7 @@ class Oklab(Labish, Space):
     def b(self, value: float) -> None:
         """B axis."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, oklab: Vector) -> MutableVector:

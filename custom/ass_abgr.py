@@ -1,52 +1,45 @@
 """Custom color that looks for colors of format `&HAABBGGRR` as `#AARRGGBB`."""
-from ColorHelper.lib.coloraide import Color
-from ColorHelper.lib.coloraide import util
-from ColorHelper.lib.coloraide import parse
-from ColorHelper.lib.coloraide.spaces.srgb.css import SRGB
+from ..lib.coloraide import Color
+from ..lib.coloraide import util
+from ..lib.coloraide.css import parse
+from ..lib.coloraide.spaces.srgb.css import SRGB
 import re
+
+MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
+
+
+def split_channels(color: str):
+    """Split string into the appropriate channels."""
+
+    # convert `RR` / `GGRR` / `BBGGRR` to `AABBGGRR`
+    # consecutive leading 0s can be omitted and the alpha is 00 (opaque) by default
+    color = color.zfill(8)
+
+    # deal with `AABBGGRR`
+    if len(color) == 8:
+        return (
+            (
+                parse.norm_hex_channel(color[6:]),  # RR
+                parse.norm_hex_channel(color[4:6]),  # GG
+                parse.norm_hex_channel(color[2:4]),  # BB
+            ),
+            1 - parse.norm_hex_channel(color[:2]),  # AA
+        )
+
+    raise RuntimeError("Something is wrong in code logics.")
 
 
 class AssABGR(SRGB):
     """ASS `ABGR` color space."""
 
-    MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
-
     @classmethod
     def match(cls, string: str, start: int = 0, fullmatch: bool = True):
         """Match a color string."""
 
-        m = cls.MATCH.match(string, start)
+        m = MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return cls.split_channels(m.group("color")), m.end(0)
+            return split_channels(m.group("color")), m.end(0)
         return None
-
-    @classmethod
-    def translate_channel(cls, channel: int, value: str):
-        """Translate channel string."""
-
-        if -1 <= channel <= 2:
-            return parse.norm_hex_channel(value)
-
-    @classmethod
-    def split_channels(cls, color: str):
-        """Split string into the appropriate channels."""
-
-        # convert `RR` / `GGRR` / `BBGGRR` to `AABBGGRR`
-        # consecutive leading 0s can be omitted and the alpha is 00 (opaque) by default
-        color = color.zfill(8)
-
-        # deal with `AABBGGRR`
-        if len(color) == 8:
-            return (
-                (
-                    cls.translate_channel(0, "#" + color[6:]),  # RR
-                    cls.translate_channel(1, "#" + color[4:6]),  # GG
-                    cls.translate_channel(2, "#" + color[2:4]),  # BB
-                ),
-                1 - cls.translate_channel(-1, "#" + color[:2]),  # AA
-            )
-
-        raise RuntimeError("Something is wrong in code logics.")
 
     def to_string(self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
         """Convert color to `&HAABBGGRR`."""

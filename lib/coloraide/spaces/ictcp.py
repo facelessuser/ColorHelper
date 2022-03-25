@@ -3,9 +3,10 @@ ICtCp class.
 
 https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_OPT_PERCENT, Labish
+from ..spaces import Space, Labish
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
 from .. import util
-import re
 from ..util import MutableVector
 from typing import cast
 
@@ -88,8 +89,7 @@ class ICtCp(Labish, Space):
     NAME = "ictcp"
     SERIALIZE = ("--ictcp",)
     CHANNEL_NAMES = ("i", "ct", "cp")
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
@@ -107,7 +107,7 @@ class ICtCp(Labish, Space):
     def i(self, value: float) -> None:
         """Set `I` channel."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def ct(self) -> float:
@@ -119,7 +119,7 @@ class ICtCp(Labish, Space):
     def ct(self, value: float) -> None:
         """`Ct` axis."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def cp(self) -> float:
@@ -131,7 +131,7 @@ class ICtCp(Labish, Space):
     def cp(self, value: float) -> None:
         """Set `Cp` axis."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

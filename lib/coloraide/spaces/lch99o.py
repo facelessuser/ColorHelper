@@ -1,9 +1,8 @@
 """Din99o Lch class."""
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .lch import Lch
 from .. import util
 import math
-import re
 from ..util import MutableVector
 
 ACHROMATIC_THRESHOLD = 0.0000000002
@@ -13,12 +12,8 @@ def lch_to_lab(lch: MutableVector) -> MutableVector:
     """Din99o Lch to lab."""
 
     l, c, h = lch
-    h = util.no_nan(h)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if c < 0.0:
-        c = 0.0
+    if util.is_nan(h):  # pragma: no cover
+        return [l, 0.0, 0.]
 
     return [
         l,
@@ -48,8 +43,7 @@ class Lch99o(Lch):
     BASE = 'din99o'
     NAME = "lch99o"
     SERIALIZE = ("--lch99o",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

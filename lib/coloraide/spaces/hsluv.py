@@ -24,11 +24,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .lch import ACHROMATIC_THRESHOLD
 from .lab import EPSILON, KAPPA
 from .srgb_linear import XYZ_TO_RGB
-import re
 import math
 from .. import util
 from ..util import MutableVector
@@ -76,13 +77,12 @@ def hsluv_to_lch(hsluv: MutableVector) -> MutableVector:
     """Convert HSLuv to Lch."""
 
     h, s, l = hsluv
-    h = util.no_nan(h)
     c = 0.0
     if l > 100 - 1e-7:
         l = 100.0
     elif l < 1e-08:
         l = 0.0
-    else:
+    elif not util.is_nan(h):
         _hx_max = max_chroma_for_lh(l, h)
         c = _hx_max / 100.0 * s
         if c < ACHROMATIC_THRESHOLD:
@@ -94,13 +94,12 @@ def lch_to_hsluv(lch: MutableVector) -> MutableVector:
     """Convert Lch to HSLuv."""
 
     l, c, h = lch
-    h = util.no_nan(h)
     s = 0.0
     if l > 100 - 1e-7:
         l = 100.0
     elif l < 1e-08:
         l = 0.0
-    else:
+    elif not util.is_nan(h):
         _hx_max = max_chroma_for_lh(l, h)
         s = c / _hx_max * 100.0
     if s < 1e-08:
@@ -120,14 +119,13 @@ class HSLuv(Cylindrical, Space):
         "saturation": "s",
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
     BOUNDS = (
         GamutBound(0.0, 360.0, FLG_ANGLE),
-        GamutBound(0.0, 100.0, FLG_PERCENT),
-        GamutBound(0.0, 100.0, FLG_PERCENT)
+        GamutBound(0.0, 100.0, FLG_OPT_PERCENT),
+        GamutBound(0.0, 100.0, FLG_OPT_PERCENT)
     )
 
     @property
@@ -140,7 +138,7 @@ class HSLuv(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -152,7 +150,7 @@ class HSLuv(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def l(self) -> float:
@@ -164,15 +162,16 @@ class HSLuv(Cylindrical, Space):
     def l(self, value: float) -> None:
         """Set lightness channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
     def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
         """On color update."""
 
+        coords = util.no_nans(coords)
         if coords[1] == 0 or coords[2] > (100 - 1e-7) or coords[2] < 1e-08:
             coords[0] = util.NaN
-        return coords, alpha
+        return coords, util.no_nan(alpha)
 
     @classmethod
     def to_base(cls, coords: MutableVector) -> MutableVector:

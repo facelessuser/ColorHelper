@@ -3,15 +3,17 @@ import math
 import numbers
 import warnings
 from functools import wraps
-from typing import Optional, Sequence, List, Union, Any, Callable, Mapping, cast, TYPE_CHECKING
+from typing import Optional, Sequence, List, Union, Any, Callable, Mapping, Tuple, cast, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
 
 Vector = Sequence[float]
 Matrix = Sequence[Sequence[float]]
+Array = Union[Vector, Matrix]
 MutableVector = List[float]
 MutableMatrix = List[List[float]]
+MutableArray = Union[MutableMatrix, MutableVector]
 ColorInput = Union['Color', str, Mapping[str, Any]]
 
 NaN = float('nan')
@@ -36,17 +38,11 @@ ERR_MAP_MSG = """
         {name} = {{**Color.{name}, **my_override_map}}
 """
 
-# Many libraries use 200, but `Colorjs.io` uses 203
-# The author explains why 203 was chosen:
+# Maximum luminance in PQ is 10,000 cd/m^2
+# Relative XYZ has Y=1 for media white
+# BT.2048 says media white Y=203 at PQ 58
 #
-#   Maximum luminance in PQ is 10,000 cd/m^2
-#   Relative XYZ has Y=1 for media white
-#   BT.2048 says media white Y=203 at PQ 58
-#
-# We will currently use 203 for now as the difference is minimal.
-# If there were a significant difference, and one clearly gave
-# better results, that would make the decision easier, but the
-# explanation above seems sufficient for now.
+# This is confirmed here: https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-3-2019-PDF-E.pdf
 YW = 203
 
 # PQ Constants
@@ -65,32 +61,17 @@ def xy_to_xyz(xy: Vector, Y: float = 1) -> MutableVector:
     return [0, 0, 0] if y == 0 else [(x * Y) / y, Y, (1 - x - y) * Y / y]
 
 
-def xyz_to_uv(xyz: Vector) -> MutableVector:
+def xy_to_uv(xy: Vector) -> MutableVector:
     """XYZ to UV."""
 
-    x, y, z = xyz
-    denom = (x + 15 * y + 3 * z)
-    if denom != 0:
-        u = (4 * x) / denom
-        v = (9 * y) / denom
-    else:
-        u = v = 0
-
-    return [u, v]
+    u, v = xy_to_uv_1960(xy)
+    return [u, v * (3 / 2)]
 
 
 def uv_to_xy(uv: Vector) -> MutableVector:
     """XYZ to UV."""
 
-    u, v = uv
-    denom = (6 * u - 16 * v + 12)
-    if denom != 0:
-        x = (9 * u) / denom
-        y = (4 * v) / denom
-    else:
-        x = y = 0
-
-    return [x, y]
+    return uv_1960_to_xy([uv[0], uv[1] * (2 / 3)])
 
 
 def xy_to_uv_1960(xy: Vector) -> MutableVector:
@@ -198,6 +179,13 @@ def is_number(value: Any) -> bool:
     return isinstance(value, numbers.Number)
 
 
+def assert_number(value: float) -> None:
+    """Assert if not a number."""
+
+    if not isinstance(value, numbers.Number):
+        raise TypeError("Value should be a number, not type '{}'".format(type(value)))
+
+
 def is_nan(value: float) -> bool:
     """Check if value is "not a number"."""
 
@@ -225,120 +213,136 @@ def cmp_coords(c1: Vector, c2: Vector) -> bool:
         return all(map(lambda a, b: (math.isnan(a) and math.isnan(b)) or a == b, c1, c2))
 
 
-def dot(a: Union[float, Vector, Matrix], b: Union[float, Vector, Matrix]) -> Union[float, MutableVector, MutableMatrix]:
+def is_vec_mat(obj: Union[float, Vector, Matrix]) -> Tuple[bool, bool]:
+    """Is a vector or matrix."""
+
+    is_vec = is_mat = False
+    if isinstance(obj, Sequence):
+        if isinstance(obj[0], Sequence):
+            is_mat = True
+        else:
+            is_vec = True
+    return is_vec, is_mat
+
+
+def dot(a: Union[float, Array], b: Union[float, Array]) -> Union[float, MutableArray]:
     """Get dot product of simple numbers, vectors, and 2D matrices and/or numbers."""
 
-    is_a_num = is_number(a)
-    is_b_num = is_number(b)
-    is_a_vec = not is_a_num and is_number(cast(Union[Vector, Matrix], a)[0])
-    is_b_vec = not is_b_num and is_number(cast(Union[Vector, Matrix], b)[0])
-    is_a_mat = not is_a_num and not is_a_vec
-    is_b_mat = not is_b_num and not is_b_vec
+    is_a_vec, is_a_mat = is_vec_mat(a)
+    is_b_vec, is_b_mat = is_vec_mat(b)
 
-    if is_a_num or is_b_num:
-        # Trying to dot a number with a vector or a matrix, so just multiply
-        return multiply(cast(float, a), cast(float, b))
-    elif is_a_vec and is_b_vec:
-        # Dot product of two vectors
-        return sum([x * y for x, y in zip(cast(Vector, a), cast(Vector, b))])
-    elif is_a_mat and is_b_vec:
-        # Dot product of matrix and a vector
-        return [sum([x * y for x, y in zip(row, cast(Vector, b))]) for row in cast(Matrix, a)]
-    elif is_a_vec and is_b_mat:
-        # Dot product of vector and a matrix
-        return [sum([x * y for x, y in zip(cast(Vector, a), col)]) for col in zip(*cast(Matrix, b))]
-    else:
-        # Dot product of two matrices
-        return cast(
-            MutableMatrix,
-            [[sum(x * y for x, y in zip(row, col)) for col in zip(*cast(Matrix, b))] for row in cast(Matrix, a)]
-        )
+    if is_a_vec:
+        if is_b_vec:
+            # Dot product of two vectors
+            return sum([x * y for x, y in zip(cast(Vector, a), cast(Vector, b))])
+        elif is_b_mat:
+            # Dot product of vector and a matrix
+            return [sum([x * y for x, y in zip(cast(Vector, a), col)]) for col in zip(*cast(Matrix, b))]
+
+    elif is_a_mat:
+        if is_b_vec:
+            # Dot product of matrix and a vector
+            return [sum([x * y for x, y in zip(row, cast(Vector, b))]) for row in cast(Matrix, a)]
+        elif is_b_mat:
+            # Dot product of two matrices
+            return cast(
+                MutableMatrix,
+                [[sum(x * y for x, y in zip(row, col)) for col in zip(*cast(Matrix, b))] for row in cast(Matrix, a)]
+            )
+
+    # Trying to dot a number with a vector or a matrix, so just multiply
+    return multiply(a, b)
 
 
-def multiply(
-    a: Union[float, Vector, Matrix],
-    b: Union[float, Vector, Matrix]
-) -> Union[float, MutableVector, MutableMatrix]:
+def multiply(a: Union[float, Array], b: Union[float, Array]) -> Union[float, MutableArray]:
     """Multiply simple numbers, vectors, and 2D matrices."""
 
-    is_a_num = is_number(a)
-    is_b_num = is_number(b)
-    is_a_vec = not is_a_num and is_number(cast(Union[Vector, Matrix], a)[0])
-    is_b_vec = not is_b_num and is_number(cast(Union[Vector, Matrix], b)[0])
-    is_a_mat = not is_a_num and not is_a_vec
-    is_b_mat = not is_b_num and not is_b_vec
+    is_a_vec, is_a_mat = is_vec_mat(a)
+    is_b_vec, is_b_mat = is_vec_mat(b)
 
-    if is_a_num and is_b_num:
-        # Multiply two numbers
-        return cast(float, a) * cast(float, b)
-    elif is_a_num and not is_b_num:
-        # Multiply a number and vector/matrix
-        return cast(MutableVector, [multiply(cast(float, a), i) for i in cast(Union[Vector, Matrix], b)])
-    elif is_b_num and not is_a_num:
-        # Multiply a vector/matrix and number
-        return cast(MutableVector, [multiply(i, cast(float, b)) for i in cast(Union[Vector, Matrix], a)])
-    elif is_a_vec and is_b_vec:
-        # Multiply two vectors
-        return cast(MutableVector, [x * y for x, y in zip(cast(Vector, a), cast(Vector, b))])
-    elif is_a_mat and is_b_vec:
-        # Multiply matrix and a vector
-        return cast(MutableMatrix, [[x * y for x, y in zip(row, cast(Vector, b))] for row in cast(Matrix, a)])
-    elif is_a_vec and is_b_mat:
-        # Multiply vector and a matrix
-        return cast(MutableMatrix, [[x * y for x, y in zip(row, cast(Vector, a))] for row in cast(Matrix, b)])
-    else:
-        # Multiply two matrices
-        return cast(
-            MutableMatrix,
-            [[x * y for x, y in zip(ra, rb)] for ra, rb in zip(cast(Matrix, a), cast(Matrix, b))]
-        )
+    if is_a_vec:
+        if is_b_vec:
+            # Multiply two vectors
+            return cast(MutableVector, [x * y for x, y in zip(cast(Vector, a), cast(Vector, b))])
+        elif is_b_mat:
+            # Multiply vector and a matrix
+            return cast(MutableMatrix, [[x * y for x, y in zip(row, cast(Vector, a))] for row in cast(Matrix, b)])
+        # Multiply a vector and a number
+        return cast(MutableVector, [i * cast(float, b) for i in cast(Vector, a)])
+
+    elif is_a_mat:
+        if is_b_vec:
+            # Multiply matrix and a vector
+            return cast(MutableMatrix, [[x * y for x, y in zip(row, cast(Vector, b))] for row in cast(Matrix, a)])
+        elif is_b_mat:
+            # Multiply two matrices
+            return cast(
+                MutableMatrix,
+                [[x * y for x, y in zip(ra, rb)] for ra, rb in zip(cast(Matrix, a), cast(Matrix, b))]
+            )
+        # Multiply a matrix and a number
+        return cast(MutableVector, [[i * cast(float, b) for i in row] for row in cast(Matrix, a)])
+
+    if is_b_vec:
+        # Multiply a number and a vector
+        return cast(MutableVector, [i * cast(float, a) for i in cast(Vector, b)])
+    elif is_b_mat:
+        # Multiply a number and a matrix
+        return cast(MutableVector, [[i * cast(float, a) for i in row] for row in cast(Matrix, b)])
+
+    # Multiply two numbers
+    return cast(float, a) * cast(float, b)
 
 
-def divide(
-    a: Union[float, Vector, Matrix],
-    b: Union[float, Vector, Matrix]
-) -> Union[float, MutableVector, MutableMatrix]:
+def divide(a: Union[float, Array], b: Union[float, Array]) -> Union[float, Array]:
     """Divide simple numbers, vectors, and 2D matrices."""
 
-    is_a_num = is_number(a)
-    is_b_num = is_number(b)
-    is_a_vec = not is_a_num and is_number(cast(Union[Vector, Matrix], a)[0])
-    is_b_vec = not is_b_num and is_number(cast(Union[Vector, Matrix], b)[0])
-    is_a_mat = not is_a_num and not is_a_vec
-    is_b_mat = not is_b_num and not is_b_vec
+    is_a_vec, is_a_mat = is_vec_mat(a)
+    is_b_vec, is_b_mat = is_vec_mat(b)
 
-    if is_a_num and is_b_num:
-        # Divide two numbers
-        return cast(float, a) / cast(float, b)
-    elif is_a_num and not is_b_num:
-        # Divide a number and vector/matrix
-        return cast(MutableVector, [divide(cast(float, a), i) for i in cast(Union[Vector, Matrix], b)])
-    elif is_b_num and not is_a_num:
-        # Divide a vector/matrix and number
-        return cast(MutableVector, [divide(i, cast(float, b)) for i in cast(Union[Vector, Matrix], a)])
-    elif is_a_vec and is_b_vec:
-        # Divide two vectors
-        return cast(MutableVector, [x / y for x, y in zip(cast(Vector, a), cast(Vector, b))])
-    elif is_a_mat and is_b_vec:
-        # Divide matrix and a vector
-        return cast(MutableMatrix, [[x / y for x, y in zip(row, cast(Vector, b))] for row in cast(Matrix, a)])
-    elif is_a_vec and is_b_mat:
-        # Divide vector and a matrix
-        return cast(MutableMatrix, [[x / y for x, y in zip(row, cast(Vector, a))] for row in cast(Matrix, b)])
-    else:
-        # Divide two matrices
-        return cast(
-            MutableMatrix,
-            [[x / y for x, y in zip(ra, rb)] for ra, rb in zip(cast(Matrix, a), cast(Matrix, b))]
-        )
+    if is_a_vec:
+        if is_b_vec:
+            # Divide two vectors
+            return cast(MutableVector, [x / y for x, y in zip(cast(Vector, a), cast(Vector, b))])
+        elif is_b_mat:
+            # Divide vector and a matrix
+            return cast(
+                MutableMatrix,
+                [[x / y for x, y in zip(cast(Vector, a), row)] for row in cast(Matrix, b)]
+            )
+        # Divide a vector and a number
+        return cast(MutableVector, [i / cast(float, b) for i in cast(Vector, a)])
+
+    elif is_a_mat:
+        if is_b_vec:
+            # Divide matrix and a vector
+            return cast(MutableMatrix, [[x / y for x, y in zip(row, cast(Vector, b))] for row in cast(Matrix, a)])
+        elif is_b_mat:
+            # Divide two matrices
+            return cast(
+                MutableMatrix,
+                [[x / y for x, y in zip(ra, rb)] for ra, rb in zip(cast(Matrix, a), cast(Matrix, b))]
+            )
+        # Divide a matrix and number
+        return cast(MutableVector, [[i / cast(float, b) for i in row] for row in cast(Matrix, a)])
+
+    if is_b_vec:
+        # Divide a number and vector
+        return cast(MutableVector, [cast(float, a) / i for i in cast(Vector, b)])
+    elif is_b_mat:
+        # Divide a number and matrix
+        return cast(MutableVector, [[cast(float, a) / i for i in row] for row in cast(Matrix, b)])
+
+    # Divide two numbers
+    return cast(float, a) / cast(float, b)
 
 
-def diag(v: Union[Vector, Matrix], k: int = 0) -> Union[MutableVector, MutableMatrix]:
+def diag(v: Array, k: int = 0) -> MutableArray:
     """Create a diagonal matrix from a vector or return a vector of the diagonal of a matrix."""
 
     size = len(v)
 
-    if isinstance(v[0], numbers.Number):
+    if not isinstance(v[0], Sequence):
         m = []  # type: MutableMatrix
         # Create a diagonal matrix with the provided vector
         for i, value in enumerate(cast(Vector, v)):
@@ -475,7 +479,7 @@ def clamp(value: float, mn: Optional[float] = None, mx: Optional[float] = None) 
         return value
 
 
-def fmt_float(f: float, p: int = 0) -> str:
+def fmt_float(f: float, p: int = 0, percent: float = 0.0) -> str:
     """
     Set float precision and trim precision zeros.
 
@@ -487,26 +491,17 @@ def fmt_float(f: float, p: int = 0) -> str:
     if is_nan(f):
         return "none"
 
-    value = adjust_precision(f, p)
+    value = adjust_precision(f / (percent * 0.01) if percent else f, p)
     string = ('{{:{}f}}'.format('.53' if p == -1 else '.' + str(p))).format(value)
-    return string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
-
-
-def fmt_percent(f: float, p: int = 0) -> str:
-    """Get percent."""
-
-    if not is_nan(f):
-        value = '{}%'.format(fmt_float(f, p))
-    else:
-        value = 'none'
-    return value
+    s = string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
+    return '{}%'.format(s) if percent else s
 
 
 def adjust_precision(f: float, p: int = 0) -> float:
     """Adjust precision."""
 
     if p == -1:
-        return f
+        return float(f)
 
     elif p == 0:
         return round_half_up(f)
@@ -514,7 +509,7 @@ def adjust_precision(f: float, p: int = 0) -> float:
     else:
         whole = int(f)
         digits = 0 if whole == 0 else int(math.log10(-whole if whole < 0 else whole)) + 1
-        return round_half_up(whole if digits >= p else f, p - digits)
+        return round_half_up(whole if digits > p else f, p - digits)
 
 
 def round_half_up(n: float, scale: int = 0) -> float:
