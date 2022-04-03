@@ -418,7 +418,7 @@ class ColorMod:
         else:
             raise ValueError("Found unterminated or invalid 'blend('")
 
-        value = util.clamp(value, 0.0, 1.0)
+        value = alg.clamp(value, 0.0, 1.0)
         self.blend(color2, 1.0 - value, alpha, space=space)
         if not self._color.is_nan("hsl.hue"):
             hue = self._color.get("hsl.hue")
@@ -536,7 +536,7 @@ class ColorMod:
         # If we are lightening the color, then we'd like to round up to ensure we are over the luminance threshold
         # as sRGB will clip off decimals. If we are darkening, then we want to just floor the values as the algorithm
         # leans more to the light side.
-        rnd = util.round_half_up if is_dark else math.floor
+        rnd = alg.round_half_up if is_dark else math.floor
         final = Color("srgb", [rnd(c * 255.0) / 255.0 for c in final.coords()], final.alpha)
         color1.update(final)
 
@@ -617,7 +617,7 @@ class Color(ColorCSS):
                 if space_class and (not filters or s in filters):
                     num_channels = len(space_class.CHANNEL_NAMES)
                     if len(data) < num_channels:
-                        data = list(data) + [util.NaN] * (num_channels - len(data))
+                        data = list(data) + [alg.NaN] * (num_channels - len(data))
                     obj = space_class(data[:num_channels], alpha)
             # Parse a CSS string
             else:

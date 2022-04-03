@@ -2,7 +2,7 @@
 from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
 from ..lib.coloraide.css import parse
-from ..lib.coloraide import util
+from ..lib.coloraide import algebra as alg
 import re
 
 MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**parse.COLOR_PARTS))
@@ -51,7 +51,7 @@ class ASRGB(SRGB):
         """Convert to Hex format."""
 
         options = kwargs
-        a = util.no_nan(self.alpha)
+        a = alg.no_nan(self.alpha)
         show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
@@ -60,19 +60,19 @@ class ASRGB(SRGB):
 
         # Always fit hex
         method = None if not isinstance(fit, str) else fit
-        coords = util.no_nans(parent.fit(method=method).coords())
+        coords = alg.no_nans(parent.fit(method=method).coords())
         if show_alpha:
             value = template.format(
-                int(util.round_half_up(a * 255.0)),
-                int(util.round_half_up(coords[0] * 255.0)),
-                int(util.round_half_up(coords[1] * 255.0)),
-                int(util.round_half_up(coords[2] * 255.0))
+                int(alg.round_half_up(a * 255.0)),
+                int(alg.round_half_up(coords[0] * 255.0)),
+                int(alg.round_half_up(coords[1] * 255.0)),
+                int(alg.round_half_up(coords[2] * 255.0))
             )
         else:
             value = template.format(
-                int(util.round_half_up(coords[0] * 255.0)),
-                int(util.round_half_up(coords[1] * 255.0)),
-                int(util.round_half_up(coords[2] * 255.0))
+                int(alg.round_half_up(coords[0] * 255.0)),
+                int(alg.round_half_up(coords[1] * 255.0)),
+                int(alg.round_half_up(coords[2] * 255.0))
             )
         return value
 

@@ -6,7 +6,7 @@ Copyright (c) 2015 - 2020 Isaac Muse <isaacmuse@gmail.com>
 """
 from mdpopups.png import Writer
 from .coloraide import Color
-from .coloraide import util
+from .coloraide import algebra as alg
 import base64
 import io
 
@@ -34,7 +34,7 @@ MAX_VALUE = 2 ** BIT_DEPTH - 1
 def process_channel(c):
     """Process channel."""
 
-    return max(min(int(util.round_half_up(c * MAX_VALUE)), MAX_VALUE), 0)
+    return max(min(int(alg.round_half_up(c * MAX_VALUE)), MAX_VALUE), 0)
 
 
 def to_list(rgb, alpha=False):

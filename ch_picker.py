@@ -10,6 +10,7 @@ import mdpopups
 from .lib import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
+from .lib.coloraide import algebra as alg
 from .lib.coloraide.css import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
@@ -109,7 +110,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, value = cutil.no_nans(self.color.convert(mode).coords())
+        hue, saturation, value = alg.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_val = value
@@ -244,7 +245,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = cutil.no_nans(self.color.convert(mode).coords())
+        hue, saturation, lightness = alg.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_lit = lightness
@@ -492,19 +493,19 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone = self.color.clone()
         show_alpha = color_filter == 'alpha'
 
-        coord = cutil.no_nan(getattr(clone, color_filter))
+        coord = alg.no_nan(getattr(clone, color_filter))
         if color_filter != 'hue':
-            rounded = cutil.round_half_up(coord, 2 if mode != 'hsluv' else 0)
+            rounded = alg.round_half_up(coord, 2 if mode != 'hsluv' else 0)
             setattr(clone, color_filter, rounded)
             step = 0.01 * scale
         else:
-            rounded = cutil.round_half_up(coord / 359, 2) * 359
+            rounded = alg.round_half_up(coord / 359, 2) * 359
             setattr(clone, color_filter, rounded)
             step = 3.59
 
         first = True
         while count:
-            coord = cutil.no_nan(getattr(clone, color_filter)) - step
+            coord = alg.no_nan(getattr(clone, color_filter)) - step
             setattr(clone, color_filter, coord)
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
@@ -554,7 +555,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone.update(self.color)
         setattr(clone, color_filter, rounded)
         while count:
-            coord = cutil.no_nan(getattr(clone, color_filter)) + step
+            coord = alg.no_nan(getattr(clone, color_filter)) + step
             setattr(clone, color_filter, coord)
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
