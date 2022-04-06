@@ -4,6 +4,7 @@ from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
 from ..lib.coloraide.css import parse, serialize
 from ..lib.coloraide import util
+from ..lib.coloraide import algebra as alg
 from ..lib.coloraide.spaces.hwb.css import HWB as HWBORIG
 from collections.abc import Mapping
 import functools
@@ -625,7 +626,7 @@ class Color(ColorCSS):
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
                 obj = m[0]
-        elif isinstance(color, Color):
+        elif isinstance(color, ColorCSS):
             # Handle a color instance
             if not filters or color.space() in filters:
                 obj = cls.CS_MAP[color.space()](color._space)

@@ -5,10 +5,13 @@ if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
 
 ColorInput = Union['Color', str, Mapping[str, Any]]
-Vector = Sequence[float]
-Matrix = Sequence[Sequence[float]]
-Array = Union[Vector, Matrix]
-MutableVector = List[float]
-MutableMatrix = List[List[float]]
-MutableArray = Union[MutableMatrix, MutableVector]
+# Vectors, Matrices, and Arrays are assumed to be mutable lists
+Vector = List[float]
+Matrix = List[Vector]
+Array = Union[Matrix, Vector]
+# Anything that resembles a sequence will be considered "like" one of our types above
+VectorLike = Sequence[float]
+MatrixLike = Sequence[VectorLike]
+ArrayLike = Union[VectorLike, MatrixLike]
+# For times when we must explicitly say we support `int` and `float`
 SupportsFloatOrInt = TypeVar('SupportsFloatOrInt', float, int)
