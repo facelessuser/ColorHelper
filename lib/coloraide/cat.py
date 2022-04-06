@@ -1,9 +1,41 @@
 """Chromatic adaptation transforms."""
 from . import util
-from .util import Matrix, MutableMatrix, Vector, MutableVector
-from . spaces import WHITES
+from . import algebra as alg
 from functools import lru_cache
+from .types import MatrixLike, Matrix, VectorLike, Vector
 from typing import Tuple, Dict, cast
+
+# From CIE 2004 Colorimetry T.3 and T.8
+# B from https://en.wikipedia.org/wiki/Standard_illuminant#White_point
+WHITES = {
+    "2deg": {
+        "A": (0.44758, 0.40745),
+        "B": (0.34842, 0.35161),
+        "C": (0.31006, 0.31616),
+        "D50": (0.34570, 0.35850),  # Use 4 digits like everyone
+        "D55": (0.33243, 0.34744),
+        "D65": (0.31270, 0.32900),  # Use 4 digits like everyone
+        "D75": (0.29903, 0.31488),
+        "E": (1 / 3, 1 / 3),
+        "F2": (0.37210, 0.37510),
+        "F7": (0.31290, 0.32920),
+        "F11": (0.38050, 0.37690)
+    },
+
+    "10deg": {
+        "A": (0.45117, 0.40594),
+        "B": (0.34980, 0.35270),
+        "C": (0.31039, 0.31905),
+        "D50": (0.34773, 0.35952),
+        "D55": (0.33412, 0.34877),
+        "D65": (0.31382, 0.33100),
+        "D75": (0.29968, 0.31740),
+        "E": (1 / 3, 1 / 3),
+        "F2": (0.37925, 0.36733),
+        "F3": (0.41761, 0.38324),
+        "F11": (0.38541, 0.37123)
+    }
+}
 
 # Conversion matrices
 CATS = {
@@ -59,15 +91,15 @@ CATS = {
         [0.650173, 1.204414, 0.048952],
         [-0.051461, -0.045854, -0.953127]
     ]
-}  # type: Dict[str, Matrix]
+}  # type: Dict[str, MatrixLike]
 
 
 @lru_cache(maxsize=20)
 def calc_adaptation_matrices(
-    w1: str,
-    w2: str,
+    w1: Tuple[float, float],
+    w2: Tuple[float, float],
     method: str = 'bradford'
-) -> Tuple[MutableMatrix, MutableMatrix]:
+) -> Tuple[Matrix, Matrix]:
     """
     Get the von Kries based adaptation matrix based on the method and illuminants.
 
@@ -84,25 +116,28 @@ def calc_adaptation_matrices(
         m = CATS[method]
     except KeyError:  # pragma: no cover
         raise ValueError('Unknown chromatic adaptation method encountered: {}'.format(method))
-    mi = util.inv(m)
+    mi = alg.inv(m)
 
     try:
-        first = util.dot(m, util.xy_to_xyz(WHITES[w1]))
+        first = alg.dot(m, util.xy_to_xyz(w1), dims=alg.D2_D1)
     except KeyError:  # pragma: no cover
         raise ValueError('Unknown white point encountered: {}'.format(w1))
 
     try:
-        second = util.dot(m, util.xy_to_xyz(WHITES[w2]))
+        second = alg.dot(m, util.xy_to_xyz(w2), dims=alg.D2_D1)
     except KeyError:  # pragma: no cover
         raise ValueError('Unknown white point encountered: {}'.format(w2))
 
-    m2 = util.diag(cast(Vector, util.divide(cast(Vector, first), cast(Vector, second))))
-    adapt = util.dot(mi, util.dot(m2, m))
+    m2 = cast(
+        Matrix,
+        alg.diag(cast(Vector, alg.divide(cast(Vector, first), cast(Vector, second), dims=alg.D1)))
+    )
+    adapt = cast(Matrix, alg.multi_dot([mi, m2, m]))
 
-    return cast(MutableMatrix, adapt), util.inv(cast(Matrix, adapt))
+    return adapt, alg.inv(adapt)
 
 
-def get_adaptation_matrix(w1: str, w2: str, method: str) -> MutableMatrix:
+def get_adaptation_matrix(w1: Tuple[float, float], w2: Tuple[float, float], method: str) -> Matrix:
     """
     Get the appropriate matrix for chromatic adaptation.
 
@@ -116,7 +151,12 @@ def get_adaptation_matrix(w1: str, w2: str, method: str) -> MutableMatrix:
     return mi if a != w2 else m
 
 
-def chromatic_adaptation(w1: str, w2: str, xyz: Vector, method: str = 'bradford') -> MutableVector:
+def chromatic_adaptation(
+    w1: Tuple[float, float],
+    w2: Tuple[float, float],
+    xyz: VectorLike,
+    method: str = 'bradford'
+) -> Vector:
     """Chromatic adaptation."""
 
     if w1 == w2:
@@ -124,4 +164,4 @@ def chromatic_adaptation(w1: str, w2: str, xyz: Vector, method: str = 'bradford'
         return list(xyz)
     else:
         # Get the appropriate chromatic adaptation matrix and apply.
-        return cast(MutableVector, util.dot(get_adaptation_matrix(w1, w2, method), xyz))
+        return cast(Vector, alg.dot(get_adaptation_matrix(w1, w2, method), xyz, dims=alg.D2_D1))

@@ -1,15 +1,17 @@
 """Lch class."""
-from ...spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, FLG_ANGLE, FLG_PERCENT
+from ...spaces import Space, Lchish
+from ...cat import WHITES
+from ...gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
 from ... import util
-import re
 import math
-from ...util import MutableVector
+from ... import algebra as alg
+from ...types import Vector
 from typing import Tuple
 
 ACHROMATIC_THRESHOLD = 0.0000000002
 
 
-def lab_to_lch(lab: MutableVector) -> MutableVector:
+def lab_to_lch(lab: Vector) -> Vector:
     """Lab to Lch."""
 
     l, a, b = lab
@@ -20,22 +22,18 @@ def lab_to_lch(lab: MutableVector) -> MutableVector:
     # Achromatic colors will often get extremely close, but not quite hit zero.
     # Essentially, we want to discard noise through rounding and such.
     if c < ACHROMATIC_THRESHOLD:
-        h = util.NaN
+        h = alg.NaN
 
     test = [l, c, util.constrain_hue(h)]
     return test
 
 
-def lch_to_lab(lch: MutableVector) -> MutableVector:
+def lch_to_lab(lch: Vector) -> Vector:
     """Lch to Lab."""
 
     l, c, h = lch
-    h = util.no_nan(h)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if c < 0.0:
-        c = 0.0
+    if alg.is_nan(h):  # pragma: no cover
+        return [l, 0.0, 0.0]
 
     return [
         l,
@@ -56,14 +54,9 @@ class Lch(Lchish, Space):
         "chroma": "c",
         "hue": "h"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D50"
+    WHITE = WHITES['2deg']['D50']
     BOUNDS = (
-        # I think chroma, specifically should be clamped.
-        # Some libraries don't to prevent rounding issues. We should only get
-        # negative chroma via direct user input, but when translating to
-        # Lab, this will be corrected.
-        GamutUnbound(0.0, 100.0, FLG_PERCENT),
+        GamutUnbound(0.0, 100.0, FLG_OPT_PERCENT),
         GamutUnbound(0.0, 100.0),
         GamutUnbound(0.0, 360.0, FLG_ANGLE)
     )
@@ -78,7 +71,7 @@ class Lch(Lchish, Space):
     def l(self, value: float) -> None:
         """Get true luminance."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def c(self) -> float:
@@ -90,7 +83,7 @@ class Lch(Lchish, Space):
     def c(self, value: float) -> None:
         """chroma."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = alg.clamp(value, 0.0)
 
     @property
     def h(self) -> float:
@@ -102,24 +95,25 @@ class Lch(Lchish, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
+        coords = alg.no_nans(coords)
         if coords[1] < ACHROMATIC_THRESHOLD:
-            coords[2] = util.NaN
-        return coords, alpha
+            coords[2] = alg.NaN
+        return coords, alg.no_nan(alpha)
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To Lab from Lch."""
 
         return lch_to_lab(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From Lab to Lch."""
 
         return lab_to_lch(coords)

@@ -1,24 +1,20 @@
 """Din99o Lch class."""
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .lch import Lch
 from .. import util
 import math
-import re
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 
 ACHROMATIC_THRESHOLD = 0.0000000002
 
 
-def lch_to_lab(lch: MutableVector) -> MutableVector:
+def lch_to_lab(lch: Vector) -> Vector:
     """Din99o Lch to lab."""
 
     l, c, h = lch
-    h = util.no_nan(h)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if c < 0.0:
-        c = 0.0
+    if alg.is_nan(h):  # pragma: no cover
+        return [l, 0.0, 0.0]
 
     return [
         l,
@@ -27,7 +23,7 @@ def lch_to_lab(lch: MutableVector) -> MutableVector:
     ]
 
 
-def lab_to_lch(lab: MutableVector) -> MutableVector:
+def lab_to_lch(lab: Vector) -> Vector:
     """Din99o Lab to Lch."""
 
     l, a, b = lab
@@ -37,28 +33,27 @@ def lab_to_lch(lab: MutableVector) -> MutableVector:
     # Achromatic colors will often get extremely close, but not quite hit zero.
     # Essentially, we want to discard noise through rounding and such.
     if c <= ACHROMATIC_THRESHOLD:
-        h = util.NaN
+        h = alg.NaN
 
     return [l, c, util.constrain_hue(h)]
 
 
-class Din99oLch(Lch):
+class Lch99o(Lch):
     """Din99o Lch class."""
 
     BASE = 'din99o'
-    NAME = "din99o-lch"
-    SERIALIZE = ("--din99o-lch",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    NAME = "lch99o"
+    SERIALIZE = ("--lch99o",)
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To Din99o from Din99o Lch."""
 
         return lch_to_lab(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From Din99o to Din99o Lch."""
 
         return lab_to_lch(coords)

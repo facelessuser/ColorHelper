@@ -10,7 +10,8 @@ import mdpopups
 from .lib import colorbox
 from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
-from .lib.coloraide.spaces.srgb import color_names as css_names
+from .lib.coloraide import algebra as alg
+from .lib.coloraide.css import color_names as css_names
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
 from .ch_util import DEFAULT, COLOR_FULL_PREC, EXTENDED_SRGB_SPACES
@@ -109,7 +110,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, value = cutil.no_nans(self.color.convert(mode).coords())
+        hue, saturation, value = alg.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_val = value
@@ -244,10 +245,11 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = cutil.no_nans(self.color.convert(mode).coords())
+        hue, saturation, lightness = alg.no_nans(self.color.convert(mode).coords())
 
         r_sat = saturation
         r_lit = lightness
+        scale = 1 if mode != 'hsluv' else 100
 
         # Only update if the last time we rendered we changed
         # something that would require a new render.
@@ -262,7 +264,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color(mode, [0, 1, lightness], filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [0, 1 * scale, lightness], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -270,13 +272,15 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 html_colors.append([])
                 for x in range(0, 17):
                     this_hue = False
-                    this_sat = abs(color.saturation - r_sat) < 0.03125
+                    this_sat = abs(color.saturation - r_sat) < (0.03125 * scale)
                     border_color = self.default_border
                     if this_sat:
                         this_hue = abs(color.hue - hue) < 11.21875
                         if this_hue:
                             lum = color.luminance()
-                            border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                            border_color = Color(
+                                self.gamut_space, [1 * scale, 1 * scale, 1 * scale] if lum < 0.5 else [0, 0, 0]
+                            )
                     value = color.convert(self.gamut_space)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
@@ -316,10 +320,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     )
                     color.hue = color.hue + 22.4375
                 color.hue = 0.0
-                color.saturation = color.saturation - 0.0625
+                color.saturation = color.saturation - (0.0625 * scale)
 
             # Generate a grayscale bar.
-            color = Color(mode, [hue, saturation, 1], filters=util.EXTENDED_SRGB_SPACES)
+            color = Color(mode, [hue, saturation, 1 * scale], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color.hue = 0.0
             check_size = self.check_size(self.height)
@@ -329,11 +333,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
-                this_lit = abs(color.lightness - r_lit) < 0.03125
+                this_lit = abs(color.lightness - r_lit) < (0.03125 * scale)
                 border_color = self.default_border
                 if this_lit:
                     lum = color.luminance()
-                    border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                    border_color = Color(
+                        self.gamut_space, [1 * scale, 1 * scale, 1 * scale] if lum < 0.5 else [0, 0, 0]
+                    )
 
                 if this_lit:
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
@@ -354,7 +360,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         )
                     )
                 )
-                color.lightness = color.lightness - 0.0625
+                color.lightness = color.lightness - (0.0625 * scale)
 
             color_map = (
                 ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors])
@@ -384,7 +390,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         check_size = self.check_size(self.height)
         html = []
-        for name in sorted(css_names.name2hex_map):
+        for name in sorted(css_names.name2val_map):
             color = Color(name, filters=util.EXTENDED_SRGB_SPACES)
 
             html.append(
@@ -400,8 +406,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             )
         self.template_vars['channel_names'] = ''.join(html)
 
-    def get_hires_color_channel(self, color_filter):
+    def get_hires_color_channel(self, color_filter, mode='undefined'):
         """Get get a list of all colors within range."""
+
+        scale = 1 if mode != 'hsluv' else 100
 
         ranges = {
             "red": (0, 255),
@@ -429,8 +437,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             estimate = int(cutil.fmt_float(current * 100, 0))
             current = '{}%'.format(cutil.fmt_float(current * 100, 5))
         elif color_filter in ('whiteness', 'blackness', 'saturation', 'lightness', 'value'):
-            estimate = int(cutil.fmt_float(current * 100, 0))
-            current = '{}%'.format(cutil.fmt_float(current * 100, 5))
+            estimate = int(cutil.fmt_float(current * (100 / scale), 0))
+            current = '{}%'.format(cutil.fmt_float(current * (100 / scale), 5))
         elif color_filter in ('hue',):
             estimate = int(cutil.fmt_float(current, 0))
             current = '{}\xb0'.format(cutil.fmt_float(current, 5))
@@ -450,7 +458,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.hue = x
                 label = label.format("{:d}\xb0".format(x))
             elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness', 'value'):
-                color.set(color_filter, x / 100)
+                color.set(color_filter, x / (100 / scale))
                 label = label.format("{:d}%".format(x))
 
             html.append(
@@ -468,8 +476,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.template_vars['hires_color'] = '{} ({})'.format(color_filter, current)
         self.template_vars['channel_hires'] = ''.join(html)
 
-    def get_channel(self, channel, label, color_filter):
+    def get_channel(self, channel, label, color_filter, mode='undefined'):
         """Get color channel."""
+
+        scale = 1 if mode != 'hsluv' else 100
 
         html = []
         html.append(
@@ -483,22 +493,22 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone = self.color.clone()
         show_alpha = color_filter == 'alpha'
 
-        coord = cutil.no_nan(getattr(clone, color_filter))
+        coord = alg.no_nan(getattr(clone, color_filter))
         if color_filter != 'hue':
-            rounded = cutil.round_half_up(coord, 2)
+            rounded = alg.round_half_up(coord, 2 if mode != 'hsluv' else 0)
             setattr(clone, color_filter, rounded)
-            step = 0.01
+            step = 0.01 * scale
         else:
-            rounded = cutil.round_half_up(coord / 359, 2) * 359
+            rounded = alg.round_half_up(coord / 359, 2) * 359
             setattr(clone, color_filter, rounded)
             step = 3.59
 
         first = True
         while count:
-            coord = cutil.no_nan(getattr(clone, color_filter)) - step
+            coord = alg.no_nan(getattr(clone, color_filter)) - step
             setattr(clone, color_filter, coord)
 
-            if color_filter != "hue" and (coord < 0 or coord > 1):
+            if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
                 temp.append(self.get_spacer(width=count))
                 break
             elif color_filter == "hue" and (coord < 0 or coord > 359):
@@ -545,10 +555,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone.update(self.color)
         setattr(clone, color_filter, rounded)
         while count:
-            coord = cutil.no_nan(getattr(clone, color_filter)) + step
+            coord = alg.no_nan(getattr(clone, color_filter)) + step
             setattr(clone, color_filter, coord)
 
-            if color_filter != "hue" and (coord < 0 or coord > 1):
+            if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
                 html.append(self.get_spacer(width=count))
                 break
             elif color_filter == "hue" and (coord < 0 or coord > 359):
@@ -655,6 +665,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     convert = "hsl"
                 elif convert == "okhsv":
                     convert = "hsv"
+                elif convert == "hsluv":
+                    convert = "hsl"
 
             # Provide callback info for the color picker.
             on_done = {
@@ -741,22 +753,22 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Show high resolution channel picker
             self.template_vars['hires'] = True
             self.template_vars['cancel'] = self.color.to_string(**COLOR_FULL_PREC)
-            self.get_hires_color_channel(hirespick)
+            self.get_hires_color_channel(hirespick, mode=self.mode)
         else:
             template = 'Packages/ColorHelper/panels/color-picker.html.j2'
             # Show the normal color picker of the specified space
             self.template_vars['picker'] = True
             self.template_vars['cancel'] = '__cancel__'
             if self.controls == "box" and self.mode not in ('hsv', 'okhsv'):
-                self.get_color_map_square('hsl' if self.mode != 'okhsl' else 'okhsl')
+                self.get_color_map_square('hsl' if self.mode not in ('okhsl', 'hsluv') else self.mode)
             elif self.controls == "box":
                 self.get_color_map_square_hsv('hsv' if self.mode != 'okhsv' else 'okhsv')
             self.get_current_color()
             if self.controls == "sliders":
-                if self.mode in ("hsl", "okhsl"):
-                    self.get_channel('channel_1', 'H', 'hue')
-                    self.get_channel('channel_2', 'S', 'saturation')
-                    self.get_channel('channel_3', 'L', 'lightness')
+                if self.mode in ("hsl", "okhsl", "hsluv"):
+                    self.get_channel('channel_1', 'H', 'hue', mode=self.mode)
+                    self.get_channel('channel_2', 'S', 'saturation', mode=self.mode)
+                    self.get_channel('channel_3', 'L', 'lightness', mode=self.mode)
                 elif self.mode in ("hsv", "okhsv"):
                     self.get_channel('channel_1', 'H', 'hue')
                     self.get_channel('channel_2', 'S', 'saturation')

@@ -27,11 +27,12 @@ installed (KDE not required) and in your command line path, then it will be used
 By default color pickers are available in the sRGB, HSL, and HSV color space. sRGB actually just uses the HSL color
 space picker with sRGB sliders.
 
-In addition to the default color pickers, one can enable HWB (HSL color picker with HWB sliders) and Okhsl and Okhsv
-which are alternatives to the HSL and HSV but derived from the Oklab color space.
+In addition to the default color pickers, one can enable HWB (HSL color picker with HWB sliders), Okhsl, Okhsv, and
+HSLuv which are alternatives to the HSL and HSV color spaces. Okhsl and Okhsl are derived from Oklab, and HSLuv is
+derived from CIE Luv.
 
 ```js
-    // Enable the preferred color picker options: `srgb`, `hsl`, `hsv`, `hwb`, `okhsl`, and `okhsv`
+    // Enable the preferred color picker options: `srgb`, `hsl`, `hsv`, `hwb`, `okhsl`, `okhsv`, `hsluv`
     // If no valid spaces are specified, `srgb` will be used.
     "enabled_color_picker_modes": ["srgb", "hsl", "hsv"],
 ```

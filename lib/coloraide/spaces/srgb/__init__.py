@@ -1,12 +1,13 @@
 """SRGB color class."""
-from ...spaces import RE_DEFAULT_MATCH, Space, GamutBound, FLG_OPT_PERCENT
-from ... import util
-from ...util import MutableVector
-import re
+from ...spaces import Space
+from ...cat import WHITES
+from ...gamut.bounds import GamutBound, FLG_OPT_PERCENT
+from ... import algebra as alg
+from ...types import Vector
 import math
 
 
-def lin_srgb(rgb: MutableVector) -> MutableVector:
+def lin_srgb(rgb: Vector) -> Vector:
     """
     Convert an array of sRGB values in the range 0.0 - 1.0 to linear light (un-corrected) form.
 
@@ -24,7 +25,7 @@ def lin_srgb(rgb: MutableVector) -> MutableVector:
     return result
 
 
-def gam_srgb(rgb: MutableVector) -> MutableVector:
+def gam_srgb(rgb: Vector) -> Vector:
     """
     Convert an array of linear-light sRGB values in the range 0.0-1.0 to gamma corrected form.
 
@@ -36,7 +37,7 @@ def gam_srgb(rgb: MutableVector) -> MutableVector:
         # Mirror linear nature of algorithm on the negative axis
         abs_i = abs(i)
         if abs_i > 0.0031308:
-            result.append(math.copysign(1.055 * (util.nth_root(abs_i, 2.4)) - 0.055, i))
+            result.append(math.copysign(1.055 * (alg.nth_root(abs_i, 2.4)) - 0.055, i))
         else:
             result.append(12.92 * i)
     return result
@@ -47,17 +48,13 @@ class SRGB(Space):
 
     BASE = "srgb-linear"
     NAME = "srgb"
-    # In addition to the current gamut, check HSL as it is much more sensitive to small
-    # gamut changes. This is mainly for a better user experience. Colors will still be
-    # mapped/clipped in the current space, unless specified otherwise.
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
     CHANNEL_NAMES = ("r", "g", "b")
     CHANNEL_ALIASES = {
         "red": 'r',
         "green": 'g',
         "blue": 'b'
     }
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     EXTENDED_RANGE = True
     BOUNDS = (
@@ -76,7 +73,7 @@ class SRGB(Space):
     def r(self, value: float) -> None:
         """Adjust red."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def g(self) -> float:
@@ -88,7 +85,7 @@ class SRGB(Space):
     def g(self, value: float) -> None:
         """Adjust green."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def b(self) -> float:
@@ -100,16 +97,16 @@ class SRGB(Space):
     def b(self, value: float) -> None:
         """Adjust blue."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From sRGB Linear to sRGB."""
 
         return gam_srgb(coords)
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To sRGB Linear from sRGB."""
 
         return lin_srgb(coords)

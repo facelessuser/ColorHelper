@@ -5,9 +5,9 @@ https://www.w3.org/TR/compositing/
 """
 from . import porter_duff
 from . import blend_modes
-from .. import util
-from ..util import MutableVector
-from ..spaces import GamutBound, Bounds
+from .. import algebra as alg
+from ..types import Vector
+from ..gamut.bounds import GamutBound, Bounds
 from typing import Optional, Union, Callable, List, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -29,7 +29,7 @@ def clip_channel(coord: float, bounds: Bounds) -> float:
         b = None
 
     # Fit value in bounds.
-    return util.clamp(coord, a, b)
+    return alg.clamp(coord, a, b)
 
 
 def apply_compositing(
@@ -42,10 +42,10 @@ def apply_compositing(
     """Perform the actual blending."""
 
     # Get the color coordinates
-    csa = util.no_nan(color1.alpha)
-    cba = util.no_nan(color2.alpha)
-    coords1 = util.no_nans(color1.coords())
-    coords2 = util.no_nans(color2.coords())
+    csa = alg.no_nan(color1.alpha)
+    cba = alg.no_nan(color2.alpha)
+    coords1 = alg.no_nans(color1.coords())
+    coords2 = alg.no_nans(color2.coords())
 
     # Setup compositing
     compositor = None  # type: Optional[porter_duff.PorterDuff]
@@ -59,7 +59,7 @@ def apply_compositing(
 
     # Perform compositing
     bounds = color1._space.BOUNDS
-    coords = []  # type: MutableVector
+    coords = []  # type: Vector
     if isinstance(blend, str) and non_seperable:
         # Setup blend mode.
         ns_blender = blend_modes.get_non_seperable_blender(blend.lower())
@@ -111,13 +111,13 @@ def compose(
         return color
 
     if len(backdrop) > 1:
-        dest = backdrop[-1].convert(space, fit=True)
+        dest = backdrop[-1].convert(space)
         for x in range(len(backdrop) - 2, -1, -1):
-            src = backdrop[x].convert(space, fit=True)
+            src = backdrop[x].convert(space)
             dest = apply_compositing(src, dest, blend, operator, non_seperable)
     else:
-        dest = backdrop[0].convert(space, fit=True)
+        dest = backdrop[0].convert(space)
 
-    src = color.convert(space, fit=True)
+    src = color.convert(space)
 
     return apply_compositing(src, dest, blend, operator, non_seperable)

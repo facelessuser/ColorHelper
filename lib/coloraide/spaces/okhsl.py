@@ -25,13 +25,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .oklab import oklab_to_linear_srgb
 from .. import util
-import re
 import math
 import sys
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple, Optional
 
 FLT_MAX = sys.float_info.max
@@ -53,14 +55,14 @@ def toe_inv(x: float) -> float:
     return (x ** 2 + K_1 * x) / (K_3 * (x + K_2))
 
 
-def to_st(cusp: MutableVector) -> MutableVector:
+def to_st(cusp: Vector) -> Vector:
     """To ST."""
 
     l, c = cusp
     return [c / l, c / (1 - l)]
 
 
-def get_st_mid(a: float, b: float) -> MutableVector:
+def get_st_mid(a: float, b: float) -> Vector:
     """
     Returns a smooth approximation of the location of the cusp.
 
@@ -97,7 +99,7 @@ def get_st_mid(a: float, b: float) -> MutableVector:
     return [s, t]
 
 
-def find_cusp(a: float, b: float) -> MutableVector:
+def find_cusp(a: float, b: float) -> Vector:
     """
     Finds L_cusp and C_cusp for a given hue.
 
@@ -109,7 +111,7 @@ def find_cusp(a: float, b: float) -> MutableVector:
 
     # Convert to linear sRGB to find the first point where at least one of r, g or b >= 1:
     r, g, b = oklab_to_linear_srgb([1, s_cusp * a, s_cusp * b])
-    l_cusp = util.nth_root(1.0 / max(max(r, g), b), 3)
+    l_cusp = alg.nth_root(1.0 / max(max(r, g), b), 3)
     c_cusp = l_cusp * s_cusp
 
     return [l_cusp, c_cusp]
@@ -121,7 +123,7 @@ def find_gamut_intersection(
     l1: float,
     c1: float,
     l0: float,
-    cusp: Optional[MutableVector] = None
+    cusp: Optional[Vector] = None
 ) -> float:
     """
     Finds intersection of the line.
@@ -211,7 +213,7 @@ def find_gamut_intersection(
     return t
 
 
-def get_cs(lab: MutableVector) -> MutableVector:
+def get_cs(lab: Vector) -> Vector:
     """Get Cs."""
 
     l, a, b = lab
@@ -323,16 +325,16 @@ def compute_max_saturation(a: float, b: float) -> float:
     return sat
 
 
-def okhsl_to_oklab(hsl: MutableVector) -> MutableVector:
+def okhsl_to_oklab(hsl: Vector) -> Vector:
     """Convert Okhsl to sRGB."""
 
     h, s, l = hsl
-    h = util.no_nan(h) / 360.0
+    h = h / 360.0
 
     L = toe_inv(l)
     a = b = 0.0
 
-    if L != 0 and L != 1 and s != 0:
+    if L != 0 and L != 1 and s != 0 and not alg.is_nan(h):
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -368,16 +370,16 @@ def okhsl_to_oklab(hsl: MutableVector) -> MutableVector:
     return [L, a, b]
 
 
-def oklab_to_okhsl(lab: MutableVector) -> MutableVector:
+def oklab_to_okhsl(lab: Vector) -> Vector:
     """Oklab to Okhsl."""
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
 
-    h = util.NaN
+    h = alg.NaN
     L = lab[0]
     s = 0.0
 
-    if c != 0 and L != 0:
+    if c != 0 and L not in (0, 1):
         a_ = lab[1] / c
         b_ = lab[2] / c
 
@@ -408,7 +410,7 @@ def oklab_to_okhsl(lab: MutableVector) -> MutableVector:
     l = toe(L)
 
     if s == 0:
-        h = util.NaN
+        h = alg.NaN
 
     return [util.constrain_hue(h * 360), s, l]
 
@@ -425,8 +427,7 @@ class Okhsl(Cylindrical, Space):
         "saturation": "s",
         "lightness": "l"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
     BOUNDS = (
@@ -445,7 +446,7 @@ class Okhsl(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -457,7 +458,7 @@ class Okhsl(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def l(self) -> float:
@@ -469,24 +470,25 @@ class Okhsl(Cylindrical, Space):
     def l(self, value: float) -> None:
         """Set lightness channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
-        if coords[1] == 0:
-            coords[0] = util.NaN
-        return coords, alpha
+        coords = alg.no_nans(coords)
+        if coords[1] == 0 or coords[2] in (0, 1):
+            coords[0] = alg.NaN
+        return coords, alg.no_nan(alpha)
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To Oklab from Okhsl."""
 
         return okhsl_to_oklab(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From Oklab to Okhsl."""
 
         return oklab_to_okhsl(coords)

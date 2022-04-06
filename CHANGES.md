@@ -1,5 +1,13 @@
 # ColorHelper
 
+## 4.3.0
+
+- **NEW**: Upgrade `coloraide`, along with various improvements brings  
+  the new HSLuv color space.
+- **NEW**: New `coloraide` enforces the old Lch gamut mapping as some  
+  issues with the CSS recommended Oklch were discovered.
+- **NEW**: Add HSLuv based color picker. Can be enabled in the settings.
+
 ## 4.2.0
 
 - **NEW**: Upgrade `coloraide` library which brings back color mapping  

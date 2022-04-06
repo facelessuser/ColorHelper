@@ -1,39 +1,38 @@
 """SRGB Linear color class."""
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .srgb import SRGB
-import re
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import cast
-from ..import util
 
 
 RGB_TO_XYZ = [
-    [0.4123907992659593, 0.357584339383878, 0.18048078840183432],
-    [0.21263900587151024, 0.715168678767756, 0.07219231536073373],
-    [0.01933081871559182, 0.11919477979462598, 0.9505321522496608]
+    [0.41239079926595923, 0.35758433938387807, 0.1804807884018343],
+    [0.21263900587151022, 0.7151686787677561, 0.07219231536073371],
+    [0.019330818715591818, 0.11919477979462599, 0.9505321522496607]
 ]
 
 XYZ_TO_RGB = [
-    [3.2409699419045226, -1.537383177570094, -0.49861076029300355],
-    [-0.9692436362808796, 1.8759675015077202, 0.04155505740717562],
-    [0.055630079696993635, -0.2039769588889765, 1.0569715142428784]
+    [3.240969941904524, -1.5373831775700946, -0.4986107602930036],
+    [-0.9692436362808795, 1.8759675015077202, 0.04155505740717561],
+    [0.05563007969699365, -0.20397695888897652, 1.0569715142428784]
 ]
 
 
-def lin_srgb_to_xyz(rgb: MutableVector) -> MutableVector:
+def lin_srgb_to_xyz(rgb: Vector) -> Vector:
     """
     Convert an array of linear-light sRGB values to CIE XYZ using sRGB's own white.
 
     D65 (no chromatic adaptation)
     """
 
-    return cast(MutableVector, util.dot(RGB_TO_XYZ, rgb))
+    return cast(Vector, alg.dot(RGB_TO_XYZ, rgb, dims=alg.D2_D1))
 
 
-def xyz_to_lin_srgb(xyz: MutableVector) -> MutableVector:
+def xyz_to_lin_srgb(xyz: Vector) -> Vector:
     """Convert XYZ to linear-light sRGB."""
 
-    return cast(MutableVector, util.dot(XYZ_TO_RGB, xyz))
+    return cast(Vector, alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1))
 
 
 class SRGBLinear(SRGB):
@@ -42,17 +41,16 @@ class SRGBLinear(SRGB):
     BASE = 'xyz-d65'
     NAME = "srgb-linear"
     SERIALIZE = ("srgb-linear",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To XYZ from SRGB Linear."""
 
         return lin_srgb_to_xyz(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From XYZ to SRGB Linear."""
 
         return xyz_to_lin_srgb(coords)

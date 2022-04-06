@@ -17,9 +17,12 @@ import math
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from . import util
-from .spaces import Cylindrical, FLG_ANGLE
+from . import algebra as alg
+from .types import Vector
+from .spaces import Cylindrical
+from .gamut.bounds import FLG_ANGLE
 from typing import Optional, Callable, Sequence, Mapping, Type, Dict, List, Any, Union, cast, TYPE_CHECKING
-from .util import Vector, ColorInput
+from .types import ColorInput
 
 if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
@@ -124,11 +127,11 @@ class InterpolateSingle(Interpolator):
         for i, c1 in enumerate(self.channels1):
             name = self.names[i]
             c2 = self.channels2[i]
-            if util.is_nan(c1) and util.is_nan(c2):
-                value = util.NaN
-            elif util.is_nan(c1):
+            if alg.is_nan(c1) and alg.is_nan(c2):
+                value = alg.NaN
+            elif alg.is_nan(c1):
                 value = c2
-            elif util.is_nan(c2):
+            elif alg.is_nan(c2):
                 value = c1
             else:
                 progress = None
@@ -142,10 +145,7 @@ class InterpolateSingle(Interpolator):
         color = self.create(self.space, channels[:-1], channels[-1])
         if self.premultiplied:
             postdivide(color)
-        if self.outspace != color.space():
-            return color.convert(self.outspace, in_place=True)
-        else:
-            return color.normalize()
+        return color.convert(self.outspace, in_place=True) if self.outspace != color.space() else color
 
 
 class InterpolatePiecewise(Interpolator):
@@ -308,7 +308,7 @@ def adjust_hues(color1: 'Color', color2: 'Color', hue: str) -> None:
     c1 = c1 % 360
     c2 = c2 % 360
 
-    if util.is_nan(c1) or util.is_nan(c2):
+    if alg.is_nan(c1) or alg.is_nan(c2):
         color1.set(name, c1)
         color2.set(name, c2)
         return
@@ -322,7 +322,7 @@ def adjust_hues(color1: 'Color', color2: 'Color', hue: str) -> None:
     elif hue == "longer":
         if 0 < (c2 - c1) < 180:
             c1 += 360
-        elif -180 < (c2 - c1) < 0:
+        elif -180 < (c2 - c1) <= 0:
             c2 += 360
 
     elif hue == "increasing":

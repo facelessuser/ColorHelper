@@ -10,14 +10,13 @@ import platform
 import mdpopups
 import base64
 import importlib
-import re
-from .lib.coloraide.spaces import RE_DEFAULT_MATCH
+from .lib.coloraide.css.parse import RE_COLOR_MATCH
 from .lib.coloraide import Color
 from .lib.coloraide import __version_info__ as coloraide_version
 
 PALETTE_CONFIG = 'color_helper.palettes'
 REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
-UPDATE_COLORS = re.compile(RE_DEFAULT_MATCH.format(**{'color_space': r'[-a-z0-9]+', 'channels': 3}))
+UPDATE_COLORS = RE_COLOR_MATCH
 COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
 COLOR_FMT_2_0 = (0, 3, 0, 'final')
 PALETTE_FMT = (2, 0)
@@ -41,7 +40,7 @@ COLOR_FULL_PREC = {"color": True, "fit": False, "precision": -1}
 COLOR_SERIALIZE = {"color": True, "fit": False, "precision": -1}
 SRGB_SPACES = ("srgb", "hsl", "hwb", "hsv")
 CSS_SRGB_SPACES = ("srgb", "hsl", "hwb")
-EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv")
+EXTENDED_SRGB_SPACES = ("srgb", "hsl", "hwb", "okhsl", "hsv", "okhsv", "hsluv")
 CSS_L4_SPACES = (
     "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
     "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear"

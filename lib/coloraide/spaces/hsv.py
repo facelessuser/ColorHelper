@@ -1,12 +1,14 @@
 """HSV class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .. import util
-import re
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple
 
 
-def hsv_to_hsl(hsv: MutableVector) -> MutableVector:
+def hsv_to_hsl(hsv: Vector) -> Vector:
     """
     HSV to HSL.
 
@@ -18,12 +20,12 @@ def hsv_to_hsl(hsv: MutableVector) -> MutableVector:
     s = 0.0 if (l == 0.0 or l == 1.0) else (v - l) / min(l, 1.0 - l)
 
     if s == 0:
-        h = util.NaN
+        h = alg.NaN
 
     return [util.constrain_hue(h), s, l]
 
 
-def hsl_to_hsv(hsl: MutableVector) -> MutableVector:
+def hsl_to_hsv(hsl: Vector) -> Vector:
     """
     HSL to HSV.
 
@@ -36,7 +38,7 @@ def hsl_to_hsv(hsl: MutableVector) -> MutableVector:
     s = 0.0 if (v == 0.0) else 2 * (1.0 - l / v)
 
     if s == 0:
-        h = util.NaN
+        h = alg.NaN
 
     return [util.constrain_hue(h), s, v]
 
@@ -53,9 +55,8 @@ class HSV(Cylindrical, Space):
         "saturation": "s",
         "value": "v"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     GAMUT_CHECK = "srgb"
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutBound(0.0, 360.0, FLG_ANGLE),
@@ -73,7 +74,7 @@ class HSV(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -85,7 +86,7 @@ class HSV(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def v(self) -> float:
@@ -97,25 +98,26 @@ class HSV(Cylindrical, Space):
     def v(self, value: float) -> None:
         """Set value channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
+        coords = alg.no_nans(coords)
         if coords[1] == 0:
-            coords[0] = util.NaN
+            coords[0] = alg.NaN
 
-        return coords, alpha
+        return coords, alg.no_nan(alpha)
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To HSL from HSV."""
 
         return hsv_to_hsl(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From HSL to HSV."""
 
         return hsl_to_hsv(coords)

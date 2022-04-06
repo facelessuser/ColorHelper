@@ -1,10 +1,9 @@
 """Rec 2020 color class."""
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .srgb import SRGB
-from .. import util
-import re
 import math
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import cast
 
 ALPHA = 1.09929682680944
@@ -12,19 +11,19 @@ BETA = 0.018053968510807
 BETA45 = 0.018053968510807 * 4.5
 
 RGB_TO_XYZ = [
-    [6.3695804830129132e-01, 1.4461690358620838e-01, 1.6888097516417216e-01],
-    [2.6270021201126703e-01, 6.7799807151887104e-01, 5.9301716469861973e-02],
-    [4.9941065744660755e-17, 2.8072693049087438e-02, 1.0609850577107913e+00]
+    [0.6369580483012914, 0.14461690358620832, 0.16888097516417208],
+    [0.2627002120112671, 0.6779980715188708, 0.05930171646986195],
+    [4.994106574466076e-17, 0.028072693049087428, 1.0609850577107909]
 ]
 
 XYZ_TO_RGB = [
-    [1.7166511879712676, -0.3556707837763924, -0.2533662813736598],
-    [-0.6666843518324889, 1.6164812366349388, 0.01576854581391115],
-    [0.01763985744531078, -0.04277061325780851, 0.9421031212354736]
+    [1.7166511879712674, -0.35567078377639233, -0.25336628137365974],
+    [-0.6666843518324892, 1.6164812366349395, 0.015768545813911124],
+    [0.017639857445310787, -0.04277061325780853, 0.9421031212354739]
 ]
 
 
-def lin_2020(rgb: MutableVector) -> MutableVector:
+def lin_2020(rgb: Vector) -> Vector:
     """
     Convert an array of rec-2020 RGB values in the range 0.0 - 1.0 to linear light (un-corrected) form.
 
@@ -38,11 +37,11 @@ def lin_2020(rgb: MutableVector) -> MutableVector:
         if abs_i < BETA45:
             result.append(i / 4.5)
         else:
-            result.append(math.copysign(util.nth_root((abs_i + ALPHA - 1) / ALPHA, 0.45), i))
+            result.append(math.copysign(alg.nth_root((abs_i + ALPHA - 1) / ALPHA, 0.45), i))
     return result
 
 
-def gam_2020(rgb: MutableVector) -> MutableVector:
+def gam_2020(rgb: Vector) -> Vector:
     """
     Convert an array of linear-light rec-2020 RGB  in the range 0.0-1.0 to gamma corrected form.
 
@@ -60,7 +59,7 @@ def gam_2020(rgb: MutableVector) -> MutableVector:
     return result
 
 
-def lin_2020_to_xyz(rgb: MutableVector) -> MutableVector:
+def lin_2020_to_xyz(rgb: Vector) -> Vector:
     """
     Convert an array of linear-light rec-2020 values to CIE XYZ using  D65.
 
@@ -68,13 +67,13 @@ def lin_2020_to_xyz(rgb: MutableVector) -> MutableVector:
     http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
     """
 
-    return cast(MutableVector, util.dot(RGB_TO_XYZ, rgb))
+    return cast(Vector, alg.dot(RGB_TO_XYZ, rgb, dims=alg.D2_D1))
 
 
-def xyz_to_lin_2020(xyz: MutableVector) -> MutableVector:
+def xyz_to_lin_2020(xyz: Vector) -> Vector:
     """Convert XYZ to linear-light rec-2020."""
 
-    return cast(MutableVector, util.dot(XYZ_TO_RGB, xyz))
+    return cast(Vector, alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1))
 
 
 class Rec2020(SRGB):
@@ -82,17 +81,16 @@ class Rec2020(SRGB):
 
     BASE = "xyz-d65"
     NAME = "rec2020"
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space=NAME, channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To XYZ from Rec 2020."""
 
         return lin_2020_to_xyz(lin_2020(coords))
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From XYZ to Rec 2020."""
 
         return gam_2020(xyz_to_lin_2020(coords))

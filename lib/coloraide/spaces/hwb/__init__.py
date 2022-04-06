@@ -1,12 +1,13 @@
 """HWB class."""
-from ...spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
-from ... import util
-import re
-from ...util import MutableVector
+from ...spaces import Space, Cylindrical
+from ...cat import WHITES
+from ...gamut.bounds import GamutBound, FLG_ANGLE, FLG_PERCENT
+from ... import algebra as alg
+from ...types import Vector
 from typing import Tuple
 
 
-def hwb_to_hsv(hwb: MutableVector) -> MutableVector:
+def hwb_to_hsv(hwb: Vector) -> Vector:
     """HWB to HSV."""
 
     h, w, b = hwb
@@ -14,21 +15,21 @@ def hwb_to_hsv(hwb: MutableVector) -> MutableVector:
     wb = w + b
     if (wb >= 1):
         gray = w / wb
-        return [util.NaN, 0.0, gray]
+        return [alg.NaN, 0.0, gray]
 
     v = 1 - b
     s = 0 if v == 0 else 1 - w / v
     return [h, s, v]
 
 
-def hsv_to_hwb(hsv: MutableVector) -> MutableVector:
+def hsv_to_hwb(hsv: Vector) -> Vector:
     """HSV to HWB."""
 
     h, s, v = hsv
     w = v * (1 - s)
     b = 1 - v
     if w + b >= 1:
-        h = util.NaN
+        h = alg.NaN
     return [h, w, b]
 
 
@@ -44,14 +45,13 @@ class HWB(Cylindrical, Space):
         "whiteness": "w",
         "blackness": "b"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
     GAMUT_CHECK = "srgb"
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutBound(0.0, 360.0, FLG_ANGLE),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT)
+        GamutBound(0.0, 1.0, FLG_PERCENT),
+        GamutBound(0.0, 1.0, FLG_PERCENT)
     )
 
     @property
@@ -64,7 +64,7 @@ class HWB(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def w(self) -> float:
@@ -76,7 +76,7 @@ class HWB(Cylindrical, Space):
     def w(self, value: float) -> None:
         """Set whiteness channel."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def b(self) -> float:
@@ -88,24 +88,25 @@ class HWB(Cylindrical, Space):
     def b(self, value: float) -> None:
         """Set blackness channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
+        coords = alg.no_nans(coords)
         if coords[1] + coords[2] >= 1:
-            coords[0] = util.NaN
-        return coords, alpha
+            coords[0] = alg.NaN
+        return coords, alg.no_nan(alpha)
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To HSV from HWB."""
 
         return hwb_to_hsv(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From HSV to HWB."""
 
         return hsv_to_hwb(coords)

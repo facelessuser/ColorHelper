@@ -1,9 +1,8 @@
 """Oklab class."""
-import re
 from .. import oklab as base
-from ... import parse
-from ... import util
-from ...util import MutableVector
+from ...css import parse
+from ...css import serialize
+from ...types import Vector
 from typing import Union, Optional, Tuple, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -12,21 +11,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class Oklab(base.Oklab):
     """Oklab class."""
-
-    MATCH = re.compile(
-        r"""(?xi)
-        (?:
-            \bOklab\(\s*
-            (?:
-                # Space separated format
-                {percent}{space}{float}{space}{float}(?:{slash}(?:{percent}|{float}))? |
-                # comma separated format
-                {percent}{comma}{float}{comma}{float}(?:{comma}(?:{percent}|{float}))?
-            )
-            \s*\)
-        )
-        """.format(**parse.COLOR_PARTS)
-    )
 
     def to_string(
         self,
@@ -40,63 +24,16 @@ class Oklab(base.Oklab):
     ) -> str:
         """Convert to CSS."""
 
-        if precision is None:
-            precision = parent.PRECISION
-
-        options = kwargs
-        if options.get("color"):
-            return super().to_string(parent, alpha=alpha, precision=precision, fit=fit, none=none, **kwargs)
-
-        a = util.no_nan(self.alpha)
-        alpha = alpha is not False and (alpha is True or a < 1.0 or util.is_nan(a))
-        method = None if not isinstance(fit, str) else fit
-        coords = parent.fit(method=method).coords() if fit else self.coords()
-        if not none:
-            coords = util.no_nans(coords)
-
-        if alpha:
-            template = "oklab({}, {}, {}, {})" if options.get("comma") else "oklab({} {} {} / {})"
-            return template.format(
-                util.fmt_percent(coords[0] * 100, precision),
-                util.fmt_float(coords[1], precision),
-                util.fmt_float(coords[2], precision),
-                util.fmt_float(a, max(util.DEF_PREC, precision))
-            )
-        else:
-            template = "oklab({}, {}, {})" if options.get("comma") else "oklab({} {} {})"
-            return template.format(
-                util.fmt_percent(coords[0] * 100, precision),
-                util.fmt_float(coords[1], precision),
-                util.fmt_float(coords[2], precision)
-            )
-
-    @classmethod
-    def translate_channel(cls, channel: int, value: str) -> float:
-        """Translate channel string."""
-
-        if channel == 0:
-            return parse.norm_percent_channel(value) / 100
-        elif channel in (1, 2):
-            return parse.norm_float(value)
-        elif channel == -1:
-            return parse.norm_alpha_channel(value)
-        else:  # pragma: no cover
-            raise ValueError('{} is not a valid channel index'.format(channel))
-
-    @classmethod
-    def split_channels(cls, color: str) -> Tuple[MutableVector, float]:
-        """Split channels."""
-
-        start = 6
-        channels = []
-        alpha = 1.0
-        for i, c in enumerate(parse.RE_CHAN_SPLIT.split(color[start:-1].strip()), 0):
-            c = c.lower()
-            if i <= 2:
-                channels.append(cls.translate_channel(i, c))
-            else:
-                alpha = cls.translate_channel(-1, c)
-        return cls.null_adjust(channels, alpha)
+        return serialize.serialize_css(
+            parent,
+            func='oklab',
+            alpha=alpha,
+            precision=precision,
+            fit=fit,
+            none=none,
+            color=kwargs.get('color', False),
+            percent=True
+        )
 
     @classmethod
     def match(
@@ -104,13 +41,7 @@ class Oklab(base.Oklab):
         string: str,
         start: int = 0,
         fullmatch: bool = True
-    ) -> Optional[Tuple[Tuple[MutableVector, float], int]]:
+    ) -> Optional[Tuple[Tuple[Vector, float], int]]:
         """Match a CSS color string."""
 
-        match = super().match(string, start, fullmatch)
-        if match is not None:
-            return match
-        m = cls.MATCH.match(string, start)
-        if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return cls.split_channels(string[m.start(0):m.end(0)]), m.end(0)
-        return None  # pragma: no cover
+        return parse.parse_css(cls, string, start, fullmatch)

@@ -91,8 +91,9 @@ When done, simply select the `select` link to insert the color back into the doc
 Out of the box `hsl`, `hsv`, and `srgb` are spaces that are enabled when doing color picking. `srgb` just uses `hsl`
 with sRGB channel sliders.
 
-If desired, a couple additional color spaces can be used: `okhsl` and `okhsv` (HSL and HSV variants based on Oklab) or
-HWB (HSL picker with with HWB sliders). This can all be configured in the settings.
+If desired, a couple additional color spaces can be used: `okhsl` and `okhsv` (HSL and HSV variants based on Oklab),
+HSLuv (HSL variant derived from CIE Luv), or HWB (HSL picker with with HWB sliders). This can all be configured in the
+settings.
 
 Additionally, if you desire a certain color space to always be used, you can turn off the "auto" mode and even specify
 what your preferred color space for the color picker should be.

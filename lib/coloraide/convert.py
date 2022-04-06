@@ -1,6 +1,7 @@
 """Convert the color."""
-from . import util
-from .util import Vector
+from . import algebra as alg
+from . import cat
+from .types import Vector
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -39,8 +40,10 @@ def convert(color: 'Color', space: str) -> Vector:
                     )
                 )
 
-        # Start converting coordinates until we either match a space in the conversion chain or bottom out at XYZ
-        coords = util.no_nans(color.coords())
+        # Treat undefined channels as zero
+        coords = alg.no_nans(color.coords())
+
+        # Start converting coordinates until we either match a space in the conversion chain or bottom out at XYZ D65
         current = type(color._space)
         if current.NAME != ABSOLUTE_BASE:
             count = 0
@@ -51,7 +54,12 @@ def convert(color: 'Color', space: str) -> Vector:
 
                 # Convert to XYZ, make sure we chromatically adapt to the appropriate white point
                 if base_space.NAME == ABSOLUTE_BASE:
-                    coords = color.chromatic_adaptation(current.WHITE, base_space.WHITE, coords)
+                    coords = cat.chromatic_adaptation(
+                        current.WHITE,
+                        base_space.WHITE,
+                        coords,
+                        color.CHROMATIC_ADAPTATION
+                    )
 
                 # Get next color in the chain
                 current = base_space
@@ -71,7 +79,12 @@ def convert(color: 'Color', space: str) -> Vector:
 
             # Convert from XYZ, make sure we chromatically adapt from the appropriate white point
             if current.NAME == ABSOLUTE_BASE:
-                coords = color.chromatic_adaptation(current.WHITE, from_color[start].WHITE, coords)
+                coords = cat.chromatic_adaptation(
+                    current.WHITE,
+                    from_color[start].WHITE,
+                    coords,
+                    color.CHROMATIC_ADAPTATION
+                )
 
             for index in range(start, -1, -1):
                 current = from_color[index]

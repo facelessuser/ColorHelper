@@ -2,8 +2,10 @@
 import re
 from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
-from ..lib.coloraide import parse
+from ..lib.coloraide.css import parse, serialize
 from ..lib.coloraide import util
+from ..lib.coloraide import algebra as alg
+from ..lib.coloraide.spaces.hwb.css import HWB as HWBORIG
 from collections.abc import Mapping
 import functools
 import math
@@ -56,6 +58,19 @@ RE_BLEND_END = re.compile(r'(?i)\s+({strict_percent})(?:\s+(rgb|hsl|hwb))?\s*\)'
 RE_BRACKETS = re.compile(r'(?:(\()|(\))|[^()]+)')
 RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({strict_float})\s*\)'.format(**parse.COLOR_PARTS))
 RE_VARS = re.compile(r'(?i)(?:(?<=^)|(?<=[\s\t\(,/]))(var\(\s*([-\w][-\w\d]*)\s*\))(?!\()(?=[\s\t\),/]|$)')
+
+HWB_MATCH = re.compile(
+    r"""(?xi)
+    \b(hwb)\(\s*
+    (?:
+        # Space separated format
+        {angle}{space}{percent}{space}{percent}(?:{slash}(?:{percent}|{float}))? |
+        # comma separated format
+        {angle}{comma}{percent}{comma}{percent}(?:{comma}(?:{percent}|{float}))?
+    )
+    \s*\)
+    """.format(**parse.COLOR_PARTS)
+)
 
 
 def bracket_match(match, string, start, fullmatch):
@@ -159,6 +174,42 @@ def handle_vars(string, variables, parents=None):
     parent_vars = set() if parents is None else parents
 
     return RE_VARS.sub(functools.partial(_var_replace, var=temp_vars, parents=parent_vars), string)
+
+
+class HWB(HWBORIG):
+    """HWB class that allows commas."""
+
+    @classmethod
+    def match(cls, string, start=0, fullmatch=True):
+        """Match a CSS color string."""
+
+        m = HWB_MATCH.match(string, start)
+        if m is not None and (not fullmatch or m.end(0) == len(string)):
+            return parse.parse_channels(string[m.end(1) + 1:m.end(0) - 1], cls.BOUNDS), m.end(0)
+        return None
+
+    def to_string(
+        self,
+        parent,
+        *,
+        alpha=None,
+        precision=None,
+        fit=True,
+        none=False,
+        **kwargs
+    ) -> str:
+        """Convert to CSS."""
+
+        return serialize.serialize_css(
+            parent,
+            func='hwb',
+            alpha=alpha,
+            precision=precision,
+            fit=fit,
+            none=none,
+            color=kwargs.get('color', False),
+            legacy=kwargs.get('comma', False)
+        )
 
 
 class ColorMod:
@@ -368,7 +419,7 @@ class ColorMod:
         else:
             raise ValueError("Found unterminated or invalid 'blend('")
 
-        value = util.clamp(value, 0.0, 1.0)
+        value = alg.clamp(value, 0.0, 1.0)
         self.blend(color2, 1.0 - value, alpha, space=space)
         if not self._color.is_nan("hsl.hue"):
             hue = self._color.get("hsl.hue")
@@ -486,7 +537,7 @@ class ColorMod:
         # If we are lightening the color, then we'd like to round up to ensure we are over the luminance threshold
         # as sRGB will clip off decimals. If we are darkening, then we want to just floor the values as the algorithm
         # leans more to the light side.
-        rnd = util.round_half_up if is_dark else math.floor
+        rnd = alg.round_half_up if is_dark else math.floor
         final = Color("srgb", [rnd(c * 255.0) / 255.0 for c in final.coords()], final.alpha)
         color1.update(final)
 
@@ -545,33 +596,51 @@ class Color(ColorCSS):
 
         super().__init__(color, data, alpha, filters=None, variables=variables, **kwargs)
 
-    def _parse(self, color, data=None, alpha=util.DEF_ALPHA, filters=None, variables=None, **kwargs):
+    @classmethod
+    def _parse(
+        cls,
+        color,
+        data=None,
+        alpha=util.DEF_ALPHA,
+        *,
+        filters=None,
+        variables=None,
+        **kwargs
+    ):
         """Parse the color."""
 
         obj = None
-        if data is not None:
-            filters = set(filters) if filters is not None else set()
-            for space, space_class in self.CS_MAP.items():
+        if isinstance(color, str):
+            # Parse a color space name and coordinates
+            if data is not None:
                 s = color.lower()
-                if space == s and (not filters or s in filters):
-                    obj = space_class(data[:len(space_class.CHANNEL_NAMES)], alpha)
-                    return obj
+                space_class = cls.CS_MAP.get(s)
+                if space_class and (not filters or s in filters):
+                    num_channels = len(space_class.CHANNEL_NAMES)
+                    if len(data) < num_channels:
+                        data = list(data) + [alg.NaN] * (num_channels - len(data))
+                    obj = space_class(data[:num_channels], alpha)
+            # Parse a CSS string
+            else:
+                m = cls._match(color, fullmatch=True, filters=filters, variables=variables)
+                if m is None:
+                    raise ValueError("'{}' is not a valid color".format(color))
+                obj = m[0]
+        elif isinstance(color, ColorCSS):
+            # Handle a color instance
+            if not filters or color.space() in filters:
+                obj = cls.CS_MAP[color.space()](color._space)
         elif isinstance(color, Mapping):
+            # Handle a color dictionary
             space = color['space']
             if not filters or space in filters:
-                cs = self.CS_MAP[space]
-                coords = [color[name] for name in cs.CHANNEL_NAMES[:-1]]
-                alpha = color['alpha']
+                cs = cls.CS_MAP[space]
+                coords = [color[name] for name in cs.CHANNEL_NAMES]
+                alpha = color.get('alpha', 1)
                 obj = cs(coords, alpha)
-                return obj
-        elif isinstance(color, ColorCSS):
-            if not filters or color.space() in filters:
-                obj = self.CS_MAP[color.space()](color._space)
         else:
-            m = self._match(color, fullmatch=True, filters=filters, variables=variables)
-            if m is None:
-                raise ValueError("'{}' is not a valid color".format(color))
-            obj = m[0]
+            raise TypeError("'{}' is an unrecognized type".format(type(color)))
+
         if obj is None:
             raise ValueError("Could not process the provided color")
         return obj
@@ -610,24 +679,17 @@ class Color(ColorCSS):
             if obj is not None:
                 return obj._space, start, end if end is not None else match_end
         else:
-            filters = set(filters) if filters is not None else set()
-            for space, space_class in cls.CS_MAP.items():
-                if filters and space not in filters:
-                    continue
-                m = space_class.match(string, start, fullmatch)
-                if m is not None:
-                    color = space_class(*m[0])
-                    return color, start, end if end is not None else m[1]
+            return super()._match(string, start, fullmatch)
         return None
 
     @classmethod
     def match(cls, string, start=0, fullmatch=False, *, filters=None, variables=None):
         """Match color."""
 
-        obj = cls._match(string, start, fullmatch, filters=filters, variables=variables)
-        if obj is not None:
-            color = obj[0]
-            return ColorMatch(cls(color.NAME, color.coords(), color.alpha), obj[1], obj[2])
+        m = cls._match(string, start, fullmatch, filters=filters, variables=variables)
+        if m is not None:
+            color = m[0]
+            return ColorMatch(cls(color.NAME, color.coords(), color.alpha), m[1], m[2])
         return None
 
     def new(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
@@ -638,18 +700,19 @@ class Color(ColorCSS):
     def update(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Update the existing color space with the provided color."""
 
-        clone = self.clone()
-        obj = self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs)
-        clone._attach(obj)
-
-        if clone.space() != self.space():
-            clone.convert(self.space(), in_place=True)
-
-        self._attach(clone._space)
+        c = self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs)
+        space = self.space()
+        self._space = c
+        if c.NAME != space:
+            self.convert(space, in_place=True)
         return self
 
     def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
         """Mutate the current color to a new color."""
 
-        self._attach(self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs))
+        c = self._parse(color, data, alpha, filters=filters, variables=variables, **kwargs)
+        self._space = c
         return self
+
+
+Color.register(HWB, overwrite=True)

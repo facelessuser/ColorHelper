@@ -3,11 +3,10 @@ Din99o class.
 
 https://de.wikipedia.org/wiki/DIN99-Farbraum
 """
-from ..spaces import RE_DEFAULT_MATCH
+from ..cat import WHITES
 from .lab import Lab
-import re
 import math
-from ..util import MutableVector
+from ..types import Vector
 
 KE = 1
 KCH = 1
@@ -34,7 +33,7 @@ C3 = 0.075
 C4 = 0.0435
 
 
-def lab_to_din99o(lab: MutableVector) -> MutableVector:
+def lab_to_din99o(lab: Vector) -> Vector:
     """XYZ to Din99o."""
 
     l, a, b = lab
@@ -57,7 +56,7 @@ def lab_to_din99o(lab: MutableVector) -> MutableVector:
     return [l99o, a99o, b99o]
 
 
-def din99o_lab_to_lch(lab: MutableVector) -> MutableVector:
+def din99o_lab_to_lch(lab: Vector) -> Vector:
     """
     Convert Din99o Lab to Lch.
 
@@ -71,7 +70,7 @@ def din99o_lab_to_lch(lab: MutableVector) -> MutableVector:
     return [l99o, c99o, h99o]
 
 
-def din99o_to_lab(din99o: MutableVector) -> MutableVector:
+def din99o_to_lab(din99o: Vector) -> Vector:
     """Din99o to XYZ."""
 
     l99o, c99o, h99o = din99o_lab_to_lch(din99o)
@@ -96,17 +95,16 @@ class Din99o(Lab):
     BASE = 'xyz-d65'
     NAME = "din99o"
     SERIALIZE = ("--din99o",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To XYZ from Din99o."""
 
         return super().to_base(din99o_to_lab(coords))
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From XYZ to Din99o."""
 
         return lab_to_din99o(super().from_base(coords))

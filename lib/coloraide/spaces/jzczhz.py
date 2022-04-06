@@ -3,17 +3,19 @@ JzCzhz class.
 
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, Lchish, FLG_ANGLE, FLG_OPT_PERCENT
+from ..spaces import Space, Lchish
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
 from .. import util
-import re
 import math
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple
 
 ACHROMATIC_THRESHOLD = 0.0003
 
 
-def jzazbz_to_jzczhz(jzazbz: MutableVector) -> MutableVector:
+def jzazbz_to_jzczhz(jzazbz: Vector) -> Vector:
     """Jzazbz to JzCzhz."""
 
     jz, az, bz = jzazbz
@@ -24,21 +26,17 @@ def jzazbz_to_jzczhz(jzazbz: MutableVector) -> MutableVector:
     # Achromatic colors will often get extremely close, but not quite hit zero.
     # Essentially, we want to discard noise through rounding and such.
     if cz < ACHROMATIC_THRESHOLD:
-        hz = util.NaN
+        hz = alg.NaN
 
     return [jz, cz, util.constrain_hue(hz)]
 
 
-def jzczhz_to_jzazbz(jzczhz: MutableVector) -> MutableVector:
+def jzczhz_to_jzazbz(jzczhz: Vector) -> Vector:
     """JzCzhz to Jzazbz."""
 
     jz, cz, hz = jzczhz
-    hz = util.no_nan(hz)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if cz < 0.0:
-        cz = 0.0
+    if alg.is_nan(hz):  # pragma: no cover
+        return [jz, 0.0, 0.0]
 
     return [
         jz,
@@ -63,8 +61,7 @@ class JzCzhz(Lchish, Space):
         "chroma": "cz",
         "hue": "hz"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
         GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
@@ -82,7 +79,7 @@ class JzCzhz(Lchish, Space):
     def jz(self, value: float) -> None:
         """Set jz."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def cz(self) -> float:
@@ -94,7 +91,7 @@ class JzCzhz(Lchish, Space):
     def cz(self, value: float) -> None:
         """Set chroma."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = alg.clamp(value, 0.0)
 
     @property
     def hz(self) -> float:
@@ -106,16 +103,17 @@ class JzCzhz(Lchish, Space):
     def hz(self, value: float) -> None:
         """Set hue."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
+        coords = alg.no_nans(coords)
         if coords[1] < ACHROMATIC_THRESHOLD:
-            coords[2] = util.NaN
+            coords[2] = alg.NaN
 
-        return coords, alpha
+        return coords, alg.no_nan(alpha)
 
     @classmethod
     def hue_name(cls) -> str:
@@ -124,13 +122,13 @@ class JzCzhz(Lchish, Space):
         return "hz"
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To Jzazbz from JzCzhz."""
 
         return jzczhz_to_jzazbz(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From Jzazbz to JzCzhz."""
 
         return jzazbz_to_jzczhz(coords)

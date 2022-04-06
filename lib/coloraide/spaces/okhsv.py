@@ -25,26 +25,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, RE_DEFAULT_MATCH, FLG_ANGLE, FLG_OPT_PERCENT, GamutBound, Cylindrical
+from ..spaces import Space, Cylindrical
+from ..cat import WHITES
+from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
 from .. import util
 from .oklab import oklab_to_linear_srgb
 from .okhsl import toe, toe_inv, find_cusp, to_st
-import re
 import math
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple
 
 
-def okhsv_to_oklab(hsv: MutableVector) -> MutableVector:
+def okhsv_to_oklab(hsv: Vector) -> Vector:
     """Convert from Okhsv to Oklab."""
 
     h, s, v = hsv
-    h = util.no_nan(h) / 360.0
+    h = h / 360.0
 
     l = toe_inv(v)
     a = b = 0.0
 
-    if l != 0 and s != 0:
+    if l != 0 and s != 0 and not alg.is_nan(h):
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -72,7 +74,7 @@ def okhsv_to_oklab(hsv: MutableVector) -> MutableVector:
 
         # RGB scale
         rs, gs, bs = oklab_to_linear_srgb([l_vt, a_ * c_vt, b_ * c_vt])
-        scale_l = util.nth_root(1.0 / max(max(rs, gs), max(bs, 0.0)), 3)
+        scale_l = alg.nth_root(1.0 / max(max(rs, gs), max(bs, 0.0)), 3)
 
         l = l * scale_l
         c = c * scale_l
@@ -83,13 +85,13 @@ def okhsv_to_oklab(hsv: MutableVector) -> MutableVector:
     return [l, a, b]
 
 
-def oklab_to_okhsv(lab: MutableVector) -> MutableVector:
+def oklab_to_okhsv(lab: Vector) -> Vector:
     """Oklab to Okhsv."""
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
     l = lab[0]
 
-    h = util.NaN
+    h = alg.NaN
     s = 0.0
     v = toe(l)
 
@@ -114,7 +116,7 @@ def oklab_to_okhsv(lab: MutableVector) -> MutableVector:
 
         # we can then use these to invert the step that compensates for the toe and the curved top part of the triangle:
         rs, gs, bs = oklab_to_linear_srgb([l_vt, a_ * c_vt, b_ * c_vt])
-        scale_l = util.nth_root(1.0 / max(max(rs, gs), max(bs, 0.0)), 3)
+        scale_l = alg.nth_root(1.0 / max(max(rs, gs), max(bs, 0.0)), 3)
 
         l = l / scale_l
         c = c / scale_l
@@ -127,7 +129,7 @@ def oklab_to_okhsv(lab: MutableVector) -> MutableVector:
         s = (s_0 + t_max) * c_v / ((t_max * s_0) + t_max * k * c_v)
 
     if s == 0:
-        h = util.NaN
+        h = alg.NaN
 
     return [util.constrain_hue(h * 360), s, v]
 
@@ -144,8 +146,7 @@ class Okhsv(Cylindrical, Space):
         "saturation": "s",
         "value": "v"
     }
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D65"
+    WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
     BOUNDS = (
@@ -164,7 +165,7 @@ class Okhsv(Cylindrical, Space):
     def h(self, value: float) -> None:
         """Shift the hue."""
 
-        self._coords[0] = self._handle_input(value)
+        self._coords[0] = value
 
     @property
     def s(self) -> float:
@@ -176,7 +177,7 @@ class Okhsv(Cylindrical, Space):
     def s(self, value: float) -> None:
         """Saturate or unsaturate the color by the given factor."""
 
-        self._coords[1] = self._handle_input(value)
+        self._coords[1] = value
 
     @property
     def v(self) -> float:
@@ -188,24 +189,25 @@ class Okhsv(Cylindrical, Space):
     def v(self, value: float) -> None:
         """Set value channel."""
 
-        self._coords[2] = self._handle_input(value)
+        self._coords[2] = value
 
     @classmethod
-    def null_adjust(cls, coords: MutableVector, alpha: float) -> Tuple[MutableVector, float]:
+    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
         """On color update."""
 
+        coords = alg.no_nans(coords)
         if coords[1] == 0:
-            coords[0] = util.NaN
-        return coords, alpha
+            coords[0] = alg.NaN
+        return coords, alg.no_nan(alpha)
 
     @classmethod
-    def to_base(cls, okhsv: MutableVector) -> MutableVector:
+    def to_base(cls, okhsv: Vector) -> Vector:
         """To Oklab from Okhsv."""
 
         return okhsv_to_oklab(okhsv)
 
     @classmethod
-    def from_base(cls, oklab: MutableVector) -> MutableVector:
+    def from_base(cls, oklab: Vector) -> Vector:
         """From Oklab to Okhsv."""
 
         return oklab_to_okhsv(oklab)

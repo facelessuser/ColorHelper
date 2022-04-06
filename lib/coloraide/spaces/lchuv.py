@@ -1,13 +1,15 @@
 """LCH class."""
-from ..spaces import Space, RE_DEFAULT_MATCH, GamutUnbound, FLG_ANGLE, FLG_PERCENT
+from ..spaces import Space
+from ..cat import WHITES
+from ..gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
 from .lch import Lch, ACHROMATIC_THRESHOLD
 from .. import util
-import re
 import math
-from ..util import MutableVector
+from .. import algebra as alg
+from ..types import Vector
 
 
-def luv_to_lchuv(luv: MutableVector) -> MutableVector:
+def luv_to_lchuv(luv: Vector) -> Vector:
     """Luv to Lch(uv)."""
 
     l, u, v = luv
@@ -18,21 +20,17 @@ def luv_to_lchuv(luv: MutableVector) -> MutableVector:
     # Achromatic colors will often get extremely close, but not quite hit zero.
     # Essentially, we want to discard noise through rounding and such.
     if c < ACHROMATIC_THRESHOLD:
-        h = util.NaN
+        h = alg.NaN
 
     return [l, c, util.constrain_hue(h)]
 
 
-def lchuv_to_luv(lchuv: MutableVector) -> MutableVector:
+def lchuv_to_luv(lchuv: Vector) -> Vector:
     """Lch(uv) to Luv."""
 
     l, c, h = lchuv
-    h = util.no_nan(h)
-
-    # If, for whatever reason (mainly direct user input),
-    # if chroma is less than zero, clamp to zero.
-    if c < 0.0:
-        c = 0.0
+    if alg.is_nan(h):  # pragma: no cover
+        return [l, 0.0, 0.0]
 
     return [
         l,
@@ -47,23 +45,22 @@ class Lchuv(Lch, Space):
     BASE = "luv"
     NAME = "lchuv"
     SERIALIZE = ("--lchuv",)
-    DEFAULT_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='|'.join(SERIALIZE), channels=3))
-    WHITE = "D50"
+    WHITE = WHITES['2deg']['D65']
 
     BOUNDS = (
-        GamutUnbound(0, 100.0, FLG_PERCENT),
+        GamutUnbound(0, 100.0, FLG_OPT_PERCENT),
         GamutUnbound(0.0, 176.0),
         GamutUnbound(0.0, 360.0, FLG_ANGLE)
     )
 
     @classmethod
-    def to_base(cls, coords: MutableVector) -> MutableVector:
+    def to_base(cls, coords: Vector) -> Vector:
         """To Luv from Lch(uv)."""
 
         return lchuv_to_luv(coords)
 
     @classmethod
-    def from_base(cls, coords: MutableVector) -> MutableVector:
+    def from_base(cls, coords: Vector) -> Vector:
         """From Luv to Lch(uv)."""
 
         return luv_to_lchuv(coords)
