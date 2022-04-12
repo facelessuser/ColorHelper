@@ -62,10 +62,6 @@ markdown_extensions:
   - pymdownx.superfences:
   - pymdownx.highlight:
       extend_pygments_lang:
-        - name: php-inline
-          lang: php
-          options:
-            startinline: true
         - name: pycon3
           lang: pycon
           options:

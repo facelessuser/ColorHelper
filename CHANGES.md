@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 4.3.1
+
+- **NEW**: Upgrade underlying `coloraide` library to fix a color parsing
+  bug.
+
 ## 4.3.0
 
 - **NEW**: Upgrade `coloraide`, along with various improvements brings  
