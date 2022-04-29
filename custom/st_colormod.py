@@ -450,7 +450,7 @@ class ColorMod:
 
         this = self._color.convert("srgb")
         color2 = color2.convert("srgb")
-        color2.alpha = 1.0
+        color2[-1] = 1.0
 
         self.min_contrast(this, color2, value)
         self._color.update(this)
@@ -524,11 +524,11 @@ class ColorMod:
 
         # Use the best, last values
         coords = [
-            orig.hue,
+            orig['hue'],
             last_mix / 100,
             last_other / 100
         ] if is_dark else [
-            orig.hue,
+            orig['hue'],
             last_other / 100,
             last_mix / 100
         ]
@@ -538,7 +538,7 @@ class ColorMod:
         # as sRGB will clip off decimals. If we are darkening, then we want to just floor the values as the algorithm
         # leans more to the light side.
         rnd = alg.round_half_up if is_dark else math.floor
-        final = Color("srgb", [rnd(c * 255.0) / 255.0 for c in final.coords()], final.alpha)
+        final = Color("srgb", [rnd(c * 255.0) / 255.0 for c in final[:-1]], final[-1])
         color1.update(final)
 
     def blend(self, color, percent, alpha=False, space="srgb"):
@@ -556,7 +556,7 @@ class ColorMod:
 
         new_color = this.mix(color, percent, space=space)
         if not alpha:
-            new_color.alpha = color.alpha
+            new_color[-1] = color[-1]
         self._color.update(new_color)
 
     def alpha(self, value, op=""):
@@ -564,7 +564,7 @@ class ColorMod:
 
         this = self._color
         op = self.OP_MAP.get(op, self._op_null)
-        this.alpha = op(this.alpha, value)
+        this[-1] = op(this[-1], value)
         self._color.update(this)
 
     def lightness(self, value, op="", hue=None):
@@ -572,9 +572,9 @@ class ColorMod:
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
         if this.is_nan('hue') and hue is not None:
-            this.hue = hue
+            this['hue'] = hue
         op = self.OP_MAP.get(op, self._op_null)
-        this.lightness = op(this.lightness, value)
+        this['lightness'] = op(this['lightness'], value)
         self._color.update(this)
 
     def saturation(self, value, op="", hue=None):
@@ -582,9 +582,9 @@ class ColorMod:
 
         this = self._color.convert("hsl") if self._color.space() != "hsl" else self._color
         if this.is_nan("hue") and hue is not None:
-            this.hue = hue
+            this['hue'] = hue
         op = self.OP_MAP.get(op, self._op_null)
-        this.saturation = op(this.saturation, value)
+        this['saturation'] = op(this['saturation'], value)
         self._color.update(this)
 
 

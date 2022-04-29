@@ -2,6 +2,7 @@
 from .. import algebra as alg
 from .bounds import FLG_ANGLE, GamutBound
 from abc import ABCMeta, abstractmethod
+from ..types import Plugin
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -11,7 +12,7 @@ if TYPE_CHECKING:  # pragma: no cover
 def clip_channels(color: 'Color') -> None:
     """Clip channels."""
 
-    channels = alg.no_nans(color.coords())
+    channels = alg.no_nans(color[:-1])
     fit = []
 
     for i, value in enumerate(channels):
@@ -33,13 +34,13 @@ def clip_channels(color: 'Color') -> None:
 
         # Fit value in bounds.
         fit.append(alg.clamp(value, a, b))
-    color.update(color.space(), fit, color.alpha)
+    color._space._coords = fit
 
 
 def verify(color: 'Color', tolerance: float) -> bool:
     """Verify the values are in bound."""
 
-    channels = alg.no_nans(color.coords())
+    channels = alg.no_nans(color[:-1])
     for i, value in enumerate(channels):
         bounds = color._space.BOUNDS[i]
         a = bounds.lower  # type: Optional[float]
@@ -60,7 +61,7 @@ def verify(color: 'Color', tolerance: float) -> bool:
     return True
 
 
-class Fit(ABCMeta):
+class Fit(Plugin, metaclass=ABCMeta):
     """Fit plugin class."""
 
     NAME = ''

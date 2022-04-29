@@ -55,7 +55,7 @@ class MacPick(_ColorPicker):
         """Pick the color."""
 
         color = self.color.convert('srgb')
-        coords = [x * UINT for x in color.fit(in_place=True).coords()]
+        coords = [x * UINT for x in color.fit(in_place=True)[:-1]]
         try:
             p = subprocess.Popen(
                 ['osascript', '-e', MAC_CHOOSE_COLOR.format(*coords)],

@@ -419,7 +419,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                         mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
                         filters=util.CSS_SRGB_SPACES
                     ).convert("hsl")
-                    hsl.lightness = hsl.lightness + (0.3 if hsl.luminance() < 0.5 else -0.3)
+                    hsl['lightness'] = hsl['lightness'] + (0.3 if hsl.luminance() < 0.5 else -0.3)
                     preview_border = hsl.convert(self.gamut_space, fit=True).set('alpha', 1)
 
                     color = Color(obj.color)

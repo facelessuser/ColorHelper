@@ -54,7 +54,7 @@ class AssABGR(SRGB):
 
         # Always fit hex
         method = None if not isinstance(fit, str) else fit
-        coords = alg.no_nans(parent.fit(method=method).coords())
+        coords = alg.no_nans(parent.fit(method=method)[:-1])
         if show_alpha:
             value = template.format(
                 int(alg.round_half_up(a * 255.0)),

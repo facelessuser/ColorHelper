@@ -39,7 +39,7 @@ class Lerp:
     def __call__(self, a: float, b: float, t: float) -> float:
         """Interpolate with period."""
 
-        return a + (b - a) * (t if self.progress is None else self.progress(t))
+        return alg.lerp(a, b, t if self.progress is None else self.progress(t))
 
 
 class Piecewise(namedtuple('Piecewise', ['color', 'stop', 'progress', 'hue', 'premultiplied'])):
@@ -139,8 +139,8 @@ class InterpolateSingle(Interpolator):
                     progress = self.progress.get(name, self.progress.get('all'))
                 else:
                     progress = self.progress
-                lerp = progress if isinstance(progress, Lerp) else Lerp(progress)
-                value = lerp(c1, c2, p)
+                lerper = progress if isinstance(progress, Lerp) else Lerp(progress)
+                value = lerper(c1, c2, p)
             channels.append(value)
         color = self.create(self.space, channels[:-1], channels[-1])
         if self.premultiplied:
@@ -259,11 +259,11 @@ def calc_stops(stops: Dict[int, float], count: int) -> Dict[int, float]:
 def postdivide(color: 'Color') -> None:
     """Premultiply the given transparent color."""
 
-    if color.alpha >= 1.0:
+    if color[-1] >= 1.0:
         return
 
-    channels = color.coords()
-    alpha = color.alpha
+    channels = color[:-1]
+    alpha = color[-1]
     coords = []
     for i, value in enumerate(channels):
 
@@ -278,11 +278,11 @@ def postdivide(color: 'Color') -> None:
 def premultiply(color: 'Color') -> None:
     """Premultiply the given transparent color."""
 
-    if color.alpha >= 1.0:
+    if color[-1] >= 1.0:
         return
 
-    channels = color.coords()
-    alpha = color.alpha
+    channels = color[:-1]
+    alpha = color[-1]
     coords = []
     for i, value in enumerate(channels):
 
@@ -297,7 +297,6 @@ def premultiply(color: 'Color') -> None:
 def adjust_hues(color1: 'Color', color2: 'Color', hue: str) -> None:
     """Adjust hues."""
 
-    hue = hue.lower()
     if hue == "specified":
         return
 
@@ -480,9 +479,13 @@ def color_lerp(
     """Color interpolation."""
 
     # Convert to the color space and ensure the color fits inside
-    fit = not color1.CS_MAP[space].EXTENDED_RANGE
-    color1 = color1.convert(space, fit=fit)
-    color2 = color1._handle_color_input(color2).convert(space, fit=fit)
+    color1 = color1.convert(space)
+    color2 = color1._handle_color_input(color2).convert(space)
+    if not color1.CS_MAP[space].EXTENDED_RANGE:
+        if not color1.in_gamut():
+            color1.fit(in_place=True)
+        if not color2.in_gamut():
+            color2.fit(in_place=True)
 
     # Adjust hues if we have two valid hues
     if isinstance(color1._space, Cylindrical):
@@ -492,12 +495,12 @@ def color_lerp(
         premultiply(color1)
         premultiply(color2)
 
-    channels1 = color1.coords()
-    channels2 = color2.coords()
+    channels1 = color1[:-1]
+    channels2 = color2[:-1]
 
     # Include alpha
-    channels1.append(color1.alpha)
-    channels2.append(color2.alpha)
+    channels1.append(color1[-1])
+    channels2.append(color2[-1])
 
     return InterpolateSingle(
         names=color1._space.CHANNEL_NAMES + ('alpha',),

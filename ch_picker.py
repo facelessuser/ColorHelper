@@ -76,7 +76,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         # Ensure hue is between 0 - 360.
         self.color = color
         if self.color.space() != "srgb" and not self.color.is_nan("hue"):
-            self.color.hue = self.color.hue % 360
+            self.color['hue'] = self.color['hue'] % 360
 
     def setup_mode(self, color, specified):
         """Setup mode."""
@@ -110,7 +110,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, value = alg.no_nans(self.color.convert(mode).coords())
+        hue, saturation, value = alg.no_nans(self.color.convert(mode)[:-1])
 
         r_sat = saturation
         r_val = value
@@ -135,13 +135,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Each column will progress through hues.
             color = Color(mode, [r_hue, 0, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
-                color.hue = 0.0
+                color['hue'] = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
                 html_colors.append([])
                 for x in range(0, 17):
-                    this_sat = abs(color.saturation - r_sat) < 0.03125
-                    this_val = abs(color.value - r_val) < 0.03125
+                    this_sat = abs(color['saturation'] - r_sat) < 0.03125
+                    this_val = abs(color['value'] - r_val) < 0.03125
                     border_color = self.default_border
                     if this_sat and this_val:
                         lum = color.luminance()
@@ -183,16 +183,16 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                             )
                         )
                     )
-                    color.saturation = min(color.saturation + 0.0625, 1)
-                    color.hue = r_hue
-                color.value = max(color.value - 0.0625, 0)
-                color.saturation = 0
-                color.hue = r_hue
+                    color['saturation'] = min(color['saturation'] + 0.0625, 1)
+                    color['hue'] = r_hue
+                color['value'] = max(color['value'] - 0.0625, 0)
+                color['saturation'] = 0
+                color['hue'] = r_hue
 
             # Generate a hue bar.
             color = Color(mode, [0, 1, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
-                color.hue = 0.0
+                color['hue'] = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
                 value = color.convert(self.gamut_space)
@@ -200,7 +200,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
-                this_hue = color.hue == r_hue
+                this_hue = color['hue'] == r_hue
                 border_color = self.default_border
                 if this_hue:
                     lum = color.luminance()
@@ -216,8 +216,8 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     border_map = colorbox.LEFT | colorbox.RIGHT
                 kwargs["border_map"] = border_map
 
-                color.value = r_val
-                color.saturation = r_sat
+                color['value'] = r_val
+                color['saturation'] = r_sat
                 html_colors[y].append(
                     '<a href="{}">{}</a>'.format(
                         color.to_string(**COLOR_FULL_PREC),
@@ -227,9 +227,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         )
                     )
                 )
-                color.hue = color.hue + 22.4375
-                color.value = 1
-                color.saturation = 1
+                color['hue'] = color['hue'] + 22.4375
+                color['value'] = 1
+                color['saturation'] = 1
 
             color_map = (
                 ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors])
@@ -245,7 +245,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = alg.no_nans(self.color.convert(mode).coords())
+        hue, saturation, lightness = alg.no_nans(self.color.convert(mode)[:-1])
 
         r_sat = saturation
         r_lit = lightness
@@ -266,16 +266,16 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             # Each column will progress through hues.
             color = Color(mode, [0, 1 * scale, lightness], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
-                color.hue = 0.0
+                color['hue'] = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
                 html_colors.append([])
                 for x in range(0, 17):
                     this_hue = False
-                    this_sat = abs(color.saturation - r_sat) < (0.03125 * scale)
+                    this_sat = abs(color['saturation'] - r_sat) < (0.03125 * scale)
                     border_color = self.default_border
                     if this_sat:
-                        this_hue = abs(color.hue - hue) < 11.21875
+                        this_hue = abs(color['hue'] - hue) < 11.21875
                         if this_hue:
                             lum = color.luminance()
                             border_color = Color(
@@ -318,14 +318,14 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                             )
                         )
                     )
-                    color.hue = color.hue + 22.4375
-                color.hue = 0.0
-                color.saturation = color.saturation - (0.0625 * scale)
+                    color['hue'] = color['hue'] + 22.4375
+                color['hue'] = 0.0
+                color['saturation'] = color['saturation'] - (0.0625 * scale)
 
             # Generate a grayscale bar.
             color = Color(mode, [hue, saturation, 1 * scale], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
-                color.hue = 0.0
+                color['hue'] = 0.0
             check_size = self.check_size(self.height)
             for y in range(0, 17):
                 value = color.convert(self.gamut_space)
@@ -333,7 +333,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     "border_size": BORDER_SIZE, "height": self.height, "width": self.width, "check_size": check_size
                 }
 
-                this_lit = abs(color.lightness - r_lit) < (0.03125 * scale)
+                this_lit = abs(color['lightness'] - r_lit) < (0.03125 * scale)
                 border_color = self.default_border
                 if this_lit:
                     lum = color.luminance()
@@ -360,7 +360,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         )
                     )
                 )
-                color.lightness = color.lightness - (0.0625 * scale)
+                color['lightness'] = color['lightness'] - (0.0625 * scale)
 
             color_map = (
                 ''.join(['<span>{}</span><br>'.format(''.join([y1 for y1 in x1])) for x1 in html_colors])
@@ -452,10 +452,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color.set(color_filter, x / 255.0)
                 label = label.format(str(x))
             elif color_filter == 'alpha':
-                color.alpha = x / 100.0
+                color[-1] = x / 100.0
                 label = label.format("{:d}%".format(x))
             elif color_filter == 'hue':
-                color.hue = x
+                color['hue'] = x
                 label = label.format("{:d}\xb0".format(x))
             elif color_filter in ('saturation', 'lightness', 'whiteness', 'blackness', 'value'):
                 color.set(color_filter, x / (100 / scale))
