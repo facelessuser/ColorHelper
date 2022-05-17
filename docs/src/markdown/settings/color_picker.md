@@ -55,7 +55,7 @@ there are none enabled, `srgb` will be used as a last resort.
 
 ```js
     // If "auto" mode is disabled, or the "auto" mode could not determine a suitable picker,
-    // the preferrreed color picker space will be used. If the preferred is invalid, the
+    // the preferred color picker space will be used. If the preferred is invalid, the
     // first picker from `enabled_color_picker_modes` will be used, and if that is not valid,
     // `srgb` will be used.
     "preferred_color_picker_mode": "hsl",

@@ -74,7 +74,7 @@
     "auto_color_picker_mode": true,
 
     // If "auto" mode is disabled, or the "auto" mode could not determine a suitable picker,
-    // the preferrreed color picker space will be used. If the preferred is invalid, the
+    // the preferred color picker space will be used. If the preferred is invalid, the
     // first picker from `enabled_color_picker_modes` will be used, and if that is not valid,
     // `srgb` will be used.
     "preferred_color_picker_mode": "hsl",
@@ -263,7 +263,7 @@
     // - `color_class`:    A string defining the name of a color class to use for the associated views. Color class
     //                     name should be defined in `color_classes`.
     //
-    //                     If needed, you can define multiple color classes with a list of dicitionaries. Each
+    //                     If needed, you can define multiple color classes with a list of dictionaries. Each
     //                     dictionary in the list should contain a `class` and `scopes`:
     //
     //                     - `scopes`:    A string that defines a base scope that the color class applies to.
@@ -312,10 +312,10 @@
             //
             // All of this "could" lead to false positives. We do our best to limit scoping as
             // much as reasonable. HSV support is currently limited due to the fact the syntax
-            // is very non-spefic (floats separated by commas or spaces) and is likely to cause
+            // is very non-specific (floats separated by commas or spaces) and is likely to cause
             // the most false positives. If the GraphViz syntax were to scope colors with a
             // special scope, or at least properties that are likely to contain colors, we
-            // could greatly reduce/elliminate false positives and add HSV support with more
+            // could greatly reduce/eliminate false positives and add HSV support with more
             // confidence.
             "name": "Graphviz",
             "base_scopes": [
@@ -344,7 +344,7 @@
             ]
         },
         {
-            //Sass (based on: https://packagecontrol.io/packages/Sass)
+            // Sass (based on: https://packagecontrol.io/packages/Sass)
             "name": "Sass",
             "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
             "base_scopes": [
@@ -387,7 +387,7 @@
             ]
         },
         {
-            // Sass (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
+            // Sass (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
             "name": "PostCSS",
             "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
             "base_scopes": [
@@ -417,11 +417,11 @@
             ]
         },
         {
+            // Stylus (based on: https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage)
             "name": "Stylus",
             "base_scopes": ["source.stylus"],
             "color_class": "css-level-4",
             "scanning": [
-                // Based on https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage
                 "constant.other.color.rgb-value.stylus",
                 "constant.color.w3c-standard-color-name.stylus",
                 "meta.property-value.stylus"
@@ -438,7 +438,7 @@
             ]
         },
         {
-            // ASS ( based on: https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS) )
+            // ASS (based on: https://packagecontrol.io/packages/Advanced%20Substation%20Alpha%20(ASS))
             "name": "ASS",
             "base_scopes": ["text.ass"],
             "scanning": ["constant.other.color"],
@@ -449,11 +449,11 @@
 
     // User rules. These will be appended to the normal `color_rules` unless they
     // share the same name. In that case, a shallow merge will be performed allowing
-    // the values of top level keys to be overriden and new keys to be added.
+    // the values of top level keys to be overridden and new keys to be added.
     "user_color_rules": [],
 
     // User color classes. These will be added to the normal `color_classes` unless they
     // share the same name with an existing entry. In that case, a shallow merge will be performed allowing
-    // the values of top level keys to be overriden and new keys to be added.
+    // the values of top level keys to be overridden and new keys to be added.
     "user_color_classes": {}
 }
