@@ -1,4 +1,4 @@
-Thanks you for contributing to this project!  Make sure you've read: http://facelessuser.github.io/ColorHelper/contributing/.  Please follow the guidelines below.
+Thanks you for contributing to this project! Make sure you've read: https://facelessuser.github.io/ColorHelper/about/contributing/. Please follow the guidelines below.
 
 - Please describe the change in as much detail as possible so I can understand what is being added or modified.
 
@@ -6,4 +6,4 @@ Thanks you for contributing to this project!  Make sure you've read: http://face
 
 - Please reference and link related open bugs or feature requests in this pull if applicable.
 
-- Make sure you've documented or updated the existing documentation if introducing a new feature or modifying the behavior of an existing feature that a user needs to be aware of.  I will not accept new features if you have not provided documentation describing the feature.
+- Make sure you've documented or updated the existing documentation if introducing a new feature or modifying the behavior of an existing feature that a user needs to be aware of. I will not accept new features if you have not provided documentation describing the feature.
