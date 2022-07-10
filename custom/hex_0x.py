@@ -19,8 +19,9 @@ class HexSRGB(SRGB):
             return parse.parse_hex(m.group(0).replace('0x', '#', 1)), m.end(0)
         return None
 
+    @classmethod
     def to_string(
-        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
+        cls, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS."""
 

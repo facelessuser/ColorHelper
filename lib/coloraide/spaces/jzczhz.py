@@ -5,12 +5,11 @@ https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
 from ..spaces import Space, Lchish
 from ..cat import WHITES
-from ..gamut.bounds import GamutUnbound, FLG_ANGLE, FLG_OPT_PERCENT
+from ..channels import Channel, FLG_ANGLE
 from .. import util
 import math
 from .. import algebra as alg
 from ..types import Vector
-from typing import Tuple
 
 ACHROMATIC_THRESHOLD = 0.0003
 
@@ -55,7 +54,11 @@ class JzCzhz(Lchish, Space):
     BASE = "jzazbz"
     NAME = "jzczhz"
     SERIALIZE = ("--jzczhz",)
-    CHANNEL_NAMES = ("jz", "cz", "hz")
+    CHANNELS = (
+        Channel("jz", 0.0, 1.0),
+        Channel("cz", 0.0, 0.5, limit=(0.0, None)),
+        Channel("hz", 0.0, 360.0, flags=FLG_ANGLE)
+    )
     CHANNEL_ALIASES = {
         "lightness": "jz",
         "chroma": "cz",
@@ -63,57 +66,15 @@ class JzCzhz(Lchish, Space):
     }
     WHITE = WHITES['2deg']['D65']
 
-    BOUNDS = (
-        GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutUnbound(0.0, 1.0),
-        GamutUnbound(0.0, 360.0, FLG_ANGLE)
-    )
-
-    @property
-    def jz(self) -> float:
-        """Jz."""
-
-        return self._coords[0]
-
-    @jz.setter
-    def jz(self, value: float) -> None:
-        """Set jz."""
-
-        self._coords[0] = value
-
-    @property
-    def cz(self) -> float:
-        """Chroma."""
-
-        return self._coords[1]
-
-    @cz.setter
-    def cz(self, value: float) -> None:
-        """Set chroma."""
-
-        self._coords[1] = alg.clamp(value, 0.0)
-
-    @property
-    def hz(self) -> float:
-        """Hue."""
-
-        return self._coords[2]
-
-    @hz.setter
-    def hz(self, value: float) -> None:
-        """Set hue."""
-
-        self._coords[2] = value
-
     @classmethod
-    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
+    def normalize(cls, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
         if coords[1] < ACHROMATIC_THRESHOLD:
             coords[2] = alg.NaN
 
-        return coords, alg.no_nan(alpha)
+        return coords
 
     @classmethod
     def hue_name(cls) -> str:

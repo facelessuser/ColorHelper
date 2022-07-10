@@ -10,6 +10,7 @@ from . import filters
 from . import harmonies
 from . import util
 from . import algebra as alg
+from itertools import zip_longest as zipl
 from .css import parse
 from .types import VectorLike, Vector, ColorInput
 from .spaces import Space, Cylindrical
@@ -23,9 +24,14 @@ from .spaces.lch.css import Lch
 from .spaces.lab_d65 import LabD65
 from .spaces.lch_d65 import LchD65
 from .spaces.display_p3 import DisplayP3
+from .spaces.display_p3_linear import DisplayP3Linear
 from .spaces.a98_rgb import A98RGB
+from .spaces.a98_rgb_linear import A98RGBLinear
 from .spaces.prophoto_rgb import ProPhotoRGB
+from .spaces.prophoto_rgb_linear import ProPhotoRGBLinear
 from .spaces.rec2020 import Rec2020
+from .spaces.rec2020_linear import Rec2020Linear
+from .spaces.rec2100pq import Rec2100PQ
 from .spaces.xyz_d65 import XYZD65
 from .spaces.xyz_d50 import XYZD50
 from .spaces.oklab.css import Oklab
@@ -53,7 +59,6 @@ from .distance.delta_e_ok import DEOK
 from .gamut import Fit
 from .gamut.fit_lch_chroma import LchChroma
 from .gamut.fit_oklch_chroma import OklchChroma
-from .gamut.fit_css_color_4 import CssColor4
 from .cat import CAT, Bradford, VonKries, XYZScaling, CAT02, CMCCAT97, Sharp, CMCCAT2000, CAT16
 from .filters import Filter
 from .filters.w3c_filter_effects import Sepia, Brightness, Contrast, Saturate, Opacity, HueRotate, Grayscale, Invert
@@ -66,14 +71,15 @@ SUPPORTED_DE = (
 )
 
 SUPPORTED_SPACES = (
-    HSL, HWB, Lab, Lch, LabD65, LchD65, SRGB, SRGBLinear, HSV,
-    DisplayP3, A98RGB, ProPhotoRGB, Rec2020, XYZD65, XYZD50,
-    Oklab, Oklch, Jzazbz, JzCzhz, ICtCp, Din99o, Lch99o, Luv, Lchuv,
-    Okhsl, Okhsv, HSLuv
+    XYZD65, XYZD50, SRGB, SRGBLinear, DisplayP3, DisplayP3Linear,
+    Oklab, Oklch, Lab, Lch, LabD65, LchD65, HSV, HSL, HWB, Rec2020, Rec2020Linear,
+    A98RGB, A98RGBLinear, ProPhotoRGB, ProPhotoRGBLinear,
+    Rec2100PQ, Jzazbz, JzCzhz, ICtCp, Din99o, Lch99o,
+    Luv, Lchuv, Okhsl, Okhsv, HSLuv
 )
 
 SUPPORTED_FIT = (
-    LchChroma, OklchChroma, CssColor4
+    LchChroma, OklchChroma
 )
 
 SUPPORTED_CAT = (Bradford, VonKries, XYZScaling, CAT02, CMCCAT97, Sharp, CMCCAT2000, CAT16)
@@ -96,17 +102,6 @@ accessed with indexing.
 
 Please consider updating usage to utilize this new functionality as Color.coords()
 and all other dynamic properties will be removed sometime before the 1.0 release.
-
-These changes were made in an effort to remove unnecessary overhead on every class
-attribute get/set operation.
-"""
-
-WARN_DE = """
-Use of delta_e_<method> is deprecated. Users should use delta_e(color, method=name)
-instead.
-
-Please consider updating usage to adhere to this guidance as this functionality will be
-removed at some time befor the 1.0 release.
 
 These changes were made in an effort to remove unnecessary overhead on every class
 attribute get/set operation.
@@ -197,52 +192,44 @@ class Color(metaclass=ColorMeta):
     ) -> None:
         """Initialize."""
 
-        self._space = self._parse(color, data, alpha, filters=filters, **kwargs)
+        self._space, self._coords = self._parse(color, data, alpha, filters=filters, **kwargs)
 
     def __len__(self) -> int:
         """Get number of channels."""
 
-        return len(self._space.CHANNEL_NAMES) + 1
+        return len(self._space.CHANNELS) + 1
 
     @overload
     def __getitem__(self, i: Union[str, int]) -> float:  # noqa: D105
-        pass
+        ...
 
     @overload
     def __getitem__(self, i: slice) -> Vector:  # noqa: D105
-        pass
+        ...
 
     def __getitem__(self, i: Union[str, int, slice]) -> Union[float, Vector]:
         """Get channels."""
 
-        if isinstance(i, str):
-            return self._space.get(i)
-        return (self._space._coords + [self._space.alpha])[i]
+        return self._coords[self._space.get_channel_index(i)] if isinstance(i, str) else self._coords[i]
 
     @overload
     def __setitem__(self, i: Union[str, int], v: float) -> None:  # noqa: D105
-        pass
+        ...
 
     @overload
     def __setitem__(self, i: slice, v: Vector) -> None:  # noqa: D105
-        pass
+        ...
 
     def __setitem__(self, i: Union[str, int, slice], v: Union[float, Vector]) -> None:
         """Set channels."""
 
-        if not hasattr(v, '__len__'):
-            if isinstance(i, str):
-                return self._space.set(i, cast(float, v))
-            else:
-                setattr(
-                    self._space,
-                    cast(str, (self._space.CHANNEL_NAMES + ('alpha',))[i]),
-                    cast(float, v)
-                )
-                return
-
-        for e, name in enumerate((self._space.CHANNEL_NAMES + ('alpha',))[cast(int, i)]):
-            setattr(self._space, name, cast(Vector, v)[e])
+        space = self._space
+        if isinstance(i, slice):
+            for index, value in zip(range(len(self._coords))[i], cast(Vector, v)):
+                self._coords[index] = alg.clamp(float(value), *space.get_channel(index).limit)
+        else:
+            index = space.get_channel_index(i) if isinstance(i, str) else i
+            self._coords[index] = alg.clamp(float(cast(float, v)), *space.get_channel(index).limit)
 
     def __eq__(self, other: Any) -> bool:
         """Compare equal."""
@@ -262,38 +249,42 @@ class Color(metaclass=ColorMeta):
         *,
         filters: Optional[Sequence[str]] = None,
         **kwargs: Any
-    ) -> Space:
+    ) -> Tuple[Type[Space], List[float]]:
         """Parse the color."""
 
         obj = None
         if isinstance(color, str):
+
             # Parse a color space name and coordinates
             if data is not None:
                 s = color
                 space_class = cls.CS_MAP.get(s)
                 if space_class and (not filters or s in filters):
-                    num_channels = len(space_class.CHANNEL_NAMES)
+                    num_channels = len(space_class.CHANNELS)
                     if len(data) < num_channels:
                         data = list(data) + [alg.NaN] * (num_channels - len(data))
-                    obj = space_class(data[:num_channels], alpha)
+                    coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
+                    coords.append(alg.clamp(float(alpha), *space_class.get_channel(-1).limit))
+                    obj = space_class, coords
             # Parse a CSS string
             else:
                 m = cls._match(color, fullmatch=True, filters=filters)
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
-                obj = m[0]
+                coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(m[0].CHANNELS, m[1])]
+                coords.append(alg.clamp(float(m[2]), *m[0].get_channel(-1).limit))
+                obj = m[0], coords
         elif isinstance(color, Color):
             # Handle a color instance
             if not filters or color.space() in filters:
-                obj = cls.CS_MAP[color.space()](color._space)
+                space_class = cls.CS_MAP[color.space()]
+                obj = space_class, color[:]
         elif isinstance(color, Mapping):
             # Handle a color dictionary
             space = color['space']
-            if not filters or space in filters:
-                cs = cls.CS_MAP[space]
-                coords = [color[name] for name in cs.CHANNEL_NAMES]
-                alpha = color.get('alpha', 1)
-                obj = cs(coords, alpha)
+            coords = color['coords']
+            alpha = color.get('alpha', 1.0)
+            obj = cls._parse(space, coords, alpha)
         else:
             raise TypeError("'{}' is an unrecognized type".format(type(color)))
 
@@ -308,7 +299,7 @@ class Color(metaclass=ColorMeta):
         start: int = 0,
         fullmatch: bool = False,
         filters: Optional[Sequence[str]] = None
-    ) -> Optional[Tuple['Space', int, int]]:
+    ) -> Optional[Tuple[Type['Space'], Vector, float, int, int]]:
         """
         Match a color in a buffer and return a color object.
 
@@ -321,7 +312,7 @@ class Color(metaclass=ColorMeta):
         m = parse.parse_color(string, cls.CS_MAP, start, fullmatch)
         if m is not None:
             if not filter_set or m[0].NAME in filter_set:
-                return m[0](*m[1]), start, m[2]
+                return m[0], m[1][0], m[1][1], start, m[2]
             return None
 
         # Attempt color space specific match
@@ -330,8 +321,7 @@ class Color(metaclass=ColorMeta):
                 continue
             m2 = space_class.match(string, start, fullmatch)
             if m2 is not None:
-                color = space_class(*m2[0])
-                return color, start, m2[1]
+                return space_class, m2[0][0], m2[0][1], start, m2[1]
         return None
 
     @classmethod
@@ -347,8 +337,7 @@ class Color(metaclass=ColorMeta):
 
         m = cls._match(string, start, fullmatch, filters=filters)
         if m is not None:
-            space = m[0]
-            return ColorMatch(cls(space.NAME, space.coords(), space.alpha), m[1], m[2])
+            return ColorMatch(cls(m[0].NAME, m[1], m[2]), m[3], m[4])
         return None
 
     @classmethod
@@ -465,18 +454,13 @@ class Color(metaclass=ColorMeta):
     def to_dict(self) -> Mapping[str, Any]:
         """Return color as a data object."""
 
-        data = {'space': self.space()}  # type: Dict[str, Any]
-        coords = self[:-1]
-        for i, name in enumerate(self._space.CHANNEL_NAMES, 0):
-            data[name] = coords[i]
-        data['alpha'] = self[-1]
-        return data
+        return {'space': self.space(), 'coords': self[:-1], 'alpha': self[-1]}
 
     def normalize(self) -> 'Color':
         """Normalize the color."""
 
-        coords, alpha = self._space.null_adjust(self[:-1], self[-1])
-        return self.mutate(self.space(), coords, alpha)
+        self[:] = self._space.normalize(self[:])
+        return self
 
     def is_nan(self, name: str) -> bool:
         """Check if channel is NaN."""
@@ -523,14 +507,16 @@ class Color(metaclass=ColorMeta):
             method = None if not isinstance(fit, str) else fit
             if not self.in_gamut(space, tolerance=0.0):
                 converted = self.convert(space, in_place=in_place)
-                return converted.fit(space, method=method, in_place=True)
+                return converted.fit(space, method=method)
 
         if space == self.space():
             return self if in_place else self.clone()
 
-        c = convert.convert(self, space)
+        c, coords = convert.convert(self, space)
+        coords.append(self[-1])
         this = self if in_place else self.clone()
         this._space = c
+        this._coords = coords
 
         return this
 
@@ -545,8 +531,7 @@ class Color(metaclass=ColorMeta):
     ) -> 'Color':
         """Mutate the current color to a new color."""
 
-        c = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
-        self._space = c
+        self._space, self._coords = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
         return self
 
     def update(
@@ -560,10 +545,9 @@ class Color(metaclass=ColorMeta):
     ) -> 'Color':
         """Update the existing color space with the provided color."""
 
-        c = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
         space = self.space()
-        self._space = c
-        if c.NAME != space:
+        self._space, self._coords = self._parse(color, data=data, alpha=alpha, filters=filters, **kwargs)
+        if self._space.NAME != space:
             self.convert(space, in_place=True)
         return self
 
@@ -575,7 +559,11 @@ class Color(metaclass=ColorMeta):
     def __repr__(self) -> str:
         """Representation."""
 
-        return repr(self._space)
+        return 'color({} {} / {})'.format(
+            self._space._serialize()[0],
+            ' '.join([util.fmt_float(coord, util.DEF_PREC) for coord in self[:-1]]),
+            util.fmt_float(self[-1], util.DEF_PREC)
+        )
 
     __str__ = __repr__
 
@@ -624,7 +612,7 @@ class Color(metaclass=ColorMeta):
 
         return adapter.adapt(w1, w2, xyz)
 
-    def clip(self, space: Optional[str] = None, *, in_place: bool = False) -> 'Color':
+    def clip(self, space: Optional[str] = None) -> 'Color':
         """Clip the color channels."""
 
         orig_space = self.space()
@@ -632,11 +620,11 @@ class Color(metaclass=ColorMeta):
             space = self.space()
 
         # Convert to desired space
-        c = self.convert(space, in_place=in_place)
+        c = self.convert(space, in_place=True)
 
         # If we are perfectly in gamut, don't waste time clipping.
         if c.in_gamut(tolerance=0.0):
-            if isinstance(c._space, Cylindrical):
+            if issubclass(c._space, Cylindrical):
                 name = c._space.hue_name()
                 c.set(name, util.constrain_hue(c[name]))
         else:
@@ -650,7 +638,6 @@ class Color(metaclass=ColorMeta):
         space: Optional[str] = None,
         *,
         method: Optional[str] = None,
-        in_place: bool = False,
         **kwargs: Any
     ) -> 'Color':
         """Fit the gamut using the provided method."""
@@ -658,7 +645,7 @@ class Color(metaclass=ColorMeta):
         # Dedicated clip method.
         orig_space = self.space()
         if method == 'clip' or (method is None and self.FIT == "clip"):
-            return self.clip(space, in_place=in_place)
+            return self.clip(space)
 
         if space is None:
             space = self.space()
@@ -674,12 +661,12 @@ class Color(metaclass=ColorMeta):
             raise ValueError("'{}' gamut mapping is not currently supported".format(method))
 
         # Convert to desired space
-        c = self.convert(space, in_place=in_place)
+        c = self.convert(space, in_place=True)
 
         # If we are perfectly in gamut, don't waste time fitting, just normalize hues.
         # If out of gamut, apply mapping/clipping/etc.
         if c.in_gamut(tolerance=0.0):
-            if isinstance(c._space, Cylindrical):
+            if issubclass(c._space, Cylindrical):
                 name = c._space.hue_name()
                 c.set(name, util.constrain_hue(c[name]))
         else:
@@ -718,34 +705,10 @@ class Color(metaclass=ColorMeta):
         masks = set(
             [aliases.get(channel, channel)] if isinstance(channel, str) else [aliases.get(c, c) for c in channel]
         )
-        for name in (self._space.CHANNEL_NAMES + ('alpha',)):
+        for name in self._space.get_all_channels():
             if (not invert and name in masks) or (invert and name not in masks):
-                this.set(name, alg.NaN)
+                this[name] = alg.NaN
         return this
-
-    def steps(
-        self,
-        color: Union[Union[ColorInput, interpolate.Piecewise], Sequence[Union[ColorInput, interpolate.Piecewise]]],
-        *,
-        steps: int = 2,
-        max_steps: int = 1000,
-        max_delta_e: float = 0,
-        delta_e: Optional[str] = None,
-        **interpolate_args: Any
-    ) -> List['Color']:
-        """
-        Discrete steps.
-
-        This is built upon the interpolate function, and will return a list of
-        colors containing a minimum of colors equal to `steps` or steps as specified
-        derived from the `max_delta_e` parameter (whichever is greatest).
-
-        Number of colors can be capped with `max_steps`.
-
-        Default delta E method used is delta E 76.
-        """
-
-        return self.interpolate(color, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
 
     def mix(
         self,
@@ -762,22 +725,38 @@ class Color(metaclass=ColorMeta):
         The basic mixing logic is outlined in the CSS level 5 draft.
         """
 
-        if not self._is_color(color) and not isinstance(color, (str, interpolate.Piecewise, Mapping)):
+        if not self._is_color(color) and not isinstance(color, (str, Mapping)):
             raise TypeError("Unexpected type '{}'".format(type(color)))
-        mixed = self.interpolate(color, **interpolate_args)(percent)
+        mixed = self.interpolate([self, color], **interpolate_args)(percent)
         return self.mutate(mixed) if in_place else mixed
 
+    @classmethod
+    def steps(
+        cls,
+        colors: Sequence[Union[ColorInput, interpolate.common.stop, Callable[..., float]]],
+        *,
+        steps: int = 2,
+        max_steps: int = 1000,
+        max_delta_e: float = 0,
+        delta_e: Optional[str] = None,
+        **interpolate_args: Any
+    ) -> List['Color']:
+        """Discrete steps."""
+
+        return cls.interpolate(colors, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
+
+    @classmethod
     def interpolate(
-        self,
-        color: Union[Union[ColorInput, interpolate.Piecewise], Sequence[Union[ColorInput, interpolate.Piecewise]]],
+        cls,
+        colors: Sequence[Union[ColorInput, interpolate.common.stop, Callable[..., float]]],
         *,
         space: Optional[str] = None,
         out_space: Optional[str] = None,
-        stop: float = 0,
-        progress: Optional[Callable[..., float]] = None,
+        progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]] = None,
         hue: str = util.DEF_HUE_ADJ,
-        premultiplied: bool = False
-    ) -> interpolate.Interpolator:
+        premultiplied: bool = True,
+        method: str = "linear"
+    ) -> interpolate.common.Interpolator:
         """
         Return an interpolation function.
 
@@ -790,43 +769,15 @@ class Color(metaclass=ColorMeta):
         mixing occurs.
         """
 
-        if space is None:
-            space = self.INTERPOLATE
-
-        if out_space is None:
-            out_space = self.space()
-
-        # A piecewise object was provided, so treat it as such,
-        # or we've changed the stop of the base color, so run it through piecewise.
-        if (
-            isinstance(color, interpolate.Piecewise) or
-            (stop != 0 and (isinstance(color, (str, Mapping)) or self._is_color(color)))
-        ):
-            color = cast(Sequence[Union['Color', str, Mapping[str, Any], interpolate.Piecewise]], [color])
-
-        if not isinstance(color, str) and isinstance(color, Sequence):
-            # We have a sequence, so use piecewise interpolation
-            colors = list(color)
-            colors.insert(0, interpolate.Piecewise(self, stop=stop))
-            return interpolate.color_piecewise_lerp(
-                colors,
-                space,
-                out_space,
-                progress,
-                hue,
-                premultiplied
-            )
-        else:
-            # We have a sequence, so use piecewise interpolation
-            return interpolate.color_lerp(
-                self,
-                color,
-                space,
-                out_space,
-                progress,
-                hue,
-                premultiplied
-            )
+        return interpolate.get_interpolator(method)(
+            cls,
+            colors=colors,
+            space=space,
+            out_space=out_space,
+            progress=progress,
+            hue=hue,
+            premultiplied=premultiplied
+        )
 
     def filter(  # noqa: A003
         self,
@@ -930,9 +881,9 @@ class Color(metaclass=ColorMeta):
         if '.' in name:
             space, channel = name.split('.', 1)
             obj = self.convert(space)
-            return obj._space.get(channel)
+            return obj[channel]
 
-        return self._space.get(name)
+        return self[name]
 
     def set(  # noqa: A003
         self,
@@ -945,12 +896,11 @@ class Color(metaclass=ColorMeta):
         if '.' in name:
             space, channel = name.split('.', 1)
             obj = self.convert(space)
-            obj._space.set(channel, value(obj._space.get(channel)) if callable(value) else value)
+            obj[channel] = value(obj[channel]) if callable(value) else value
             return self.update(obj)
 
         # Handle a function that modifies the value or a direct value
-        self._space.set(name, value(self._space.get(name)) if callable(value) else value)
-
+        self[name] = value(self[name]) if callable(value) else value
         return self
 
     @util.deprecated(WARN_COORDS)
@@ -961,49 +911,7 @@ class Color(metaclass=ColorMeta):
         TODO: remove before release of 1.0
         """
 
-        return self[:-1]
-
-    def __getattr__(self, name: str) -> Any:  # pragma: no cover
-        """Get attribute."""
-
-        sc = super()
-
-        # Skip private/protected names
-        if not name.startswith('_'):
-            # Try color space properties
-            try:
-                value = sc.__getattribute__('_space').get(name)
-                util.warn_deprecated(WARN_COORDS, 3)
-                return value
-            except AttributeError:
-                pass
-
-            # Try delta E methods
-            if name.startswith('delta_e_'):
-                de = name[8:]
-                if de in sc.__getattribute__('DE_MAP'):
-                    util.warn_deprecated(WARN_DE, 3)
-                    return functools.partial(sc.__getattribute__('delta_e'), method=de)
-
-        # Do the Color class methods
-        sc.__getattribute__(name)
-
-    def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover
-        """Set attribute."""
-
-        sc = super()
-
-        if not name.startswith('_'):
-            try:
-                # See if we need to set the space specific channel attributes.
-                sc.__getattribute__('_space').set(name, value)
-                util.warn_deprecated(WARN_COORDS, 3)
-                return
-            except AttributeError:  # pragma: no cover
-                pass
-
-        # Set all attributes on the Color class.
-        sc.__setattr__(name, value)
+        return self._coords[:-1]
 
 
 Color.register(SUPPORTED_SPACES + SUPPORTED_DE + SUPPORTED_FIT + SUPPORTED_CAT + SUPPORTED_FILTERS)

@@ -6,23 +6,21 @@ https://www.w3.org/TR/compositing/
 from . import porter_duff
 from . import blend_modes
 from .. import algebra as alg
-from ..types import Vector
-from ..gamut.bounds import GamutBound, Bounds
+from ..channels import Channel
 from typing import Optional, Union, List, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
 
-def clip_channel(coord: float, bounds: Bounds) -> float:
+def clip_channel(coord: float, channel: Channel) -> float:
     """Clipping channel."""
 
-    a = bounds.lower  # type: Optional[float]
-    b = bounds.upper  # type: Optional[float]
-    is_bound = isinstance(bounds, GamutBound)
+    a = channel.low  # type: Optional[float]
+    b = channel.high  # type: Optional[float]
 
     # These parameters are unbounded
-    if not is_bound:  # pragma: no cover
+    if not channel.bound:  # pragma: no cover
         # Will not execute unless we have a space that defines some coordinates
         # as bound and others as not. We do not currently have such spaces.
         a = None
@@ -57,19 +55,17 @@ def apply_compositing(
         cra = compositor.ao()
 
     # Perform compositing
-    bounds = color1._space.BOUNDS
-    coords = []  # type: Vector
+    channels = color1._space.CHANNELS
 
     # Blend each channel. Afterward, clip and apply alpha compositing.
     i = 0
     for cb, cr in zip(coords2, blender.blend(coords2, coords1) if blender else coords1):
         cr = (1 - cba) * cr + cba * cr if blender else cr
-        cr = clip_channel(cr, bounds[i])
-        coords.append(compositor.co(cb, cr) if compositor else cr)
+        cr = clip_channel(cr, channels[i])
+        color1[i] = compositor.co(cb, cr) if compositor else cr
         i += 1
 
-    color1._space._coords = coords
-    color1._space.alpha = cra
+    color1[-1] = cra
     return color1
 
 

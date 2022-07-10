@@ -34,7 +34,7 @@ class _ColorMixin:
         if border_color is not None:
             try:
                 border_color = Color(border_color)
-                border_color.fit(self.gamut_space, in_place=True)
+                border_color.fit(self.gamut_space)
             except Exception:
                 border_color = None
 
@@ -44,7 +44,7 @@ class _ColorMixin:
                 self.view.style()['background'],
                 filters=util.CSS_SRGB_SPACES
             ).convert("hsl")
-            border_color.lightness = border_color.lightness + (0.3 if border_color.luminance() < 0.5 else -0.3)
+            border_color['lightness'] = border_color['lightness'] + (0.3 if border_color.luminance() < 0.5 else -0.3)
 
         self.default_border = border_color.convert(self.gamut_space, in_place=True)
         self.out_of_gamut = Color("transparent").convert(self.gamut_space, in_place=True)

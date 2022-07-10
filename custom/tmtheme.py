@@ -693,8 +693,9 @@ def name2hex(name):
 class SRGBX11(SRGB):
     """sRGB class."""
 
+    @classmethod
     def to_string(
-        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
+        cls, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS."""
 

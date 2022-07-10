@@ -115,16 +115,16 @@ def evaluate(string):
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
-            colors.append(first.fit('srgb', in_place=True))
+            colors.append(first.fit('srgb'))
         if second:
             if second.alpha < 1.0:
                 second.alpha = 1.0
-            colors.append(second.fit('srgb', in_place=True))
+            colors.append(second.fit('srgb'))
             if ratio:
                 if first.alpha < 1.0:
                     first = first.compose(second, space="srgb")
-                hwb_fg = first.convert('hwb').clip(in_place=True)
-                hwb_bg = second.convert('hwb').clip(in_place=True)
+                hwb_fg = first.convert('hwb').clip()
+                hwb_bg = second.convert('hwb').clip()
                 first.update(hwb_fg)
                 second.update(hwb_bg)
 

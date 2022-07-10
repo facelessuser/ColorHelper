@@ -26,7 +26,7 @@ SOFTWARE.
 """
 from ..spaces import Space, Cylindrical
 from ..cat import WHITES
-from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
+from ..channels import Channel, FLG_ANGLE
 from .lch import ACHROMATIC_THRESHOLD
 from .lab import EPSILON, KAPPA
 from .srgb_linear import XYZ_TO_RGB
@@ -34,7 +34,7 @@ import math
 from .. import util
 from .. import algebra as alg
 from ..types import Vector
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 
 def length_of_ray_until_intersect(theta: float, line: Dict[str, float]) -> float:
@@ -114,7 +114,11 @@ class HSLuv(Cylindrical, Space):
     BASE = 'lchuv'
     NAME = "hsluv"
     SERIALIZE = ("--hsluv",)
-    CHANNEL_NAMES = ("h", "s", "l")
+    CHANNELS = (
+        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("s", 0.0, 100.0, bound=True),
+        Channel("l", 0.0, 100.0, bound=True)
+    )
     CHANNEL_ALIASES = {
         "hue": "h",
         "saturation": "s",
@@ -123,56 +127,14 @@ class HSLuv(Cylindrical, Space):
     WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
-    BOUNDS = (
-        GamutBound(0.0, 360.0, FLG_ANGLE),
-        GamutBound(0.0, 100.0, FLG_OPT_PERCENT),
-        GamutBound(0.0, 100.0, FLG_OPT_PERCENT)
-    )
-
-    @property
-    def h(self) -> float:
-        """Hue channel."""
-
-        return self._coords[0]
-
-    @h.setter
-    def h(self, value: float) -> None:
-        """Shift the hue."""
-
-        self._coords[0] = value
-
-    @property
-    def s(self) -> float:
-        """Saturation channel."""
-
-        return self._coords[1]
-
-    @s.setter
-    def s(self, value: float) -> None:
-        """Saturate or unsaturate the color by the given factor."""
-
-        self._coords[1] = value
-
-    @property
-    def l(self) -> float:
-        """Lightness channel."""
-
-        return self._coords[2]
-
-    @l.setter
-    def l(self, value: float) -> None:
-        """Set lightness channel."""
-
-        self._coords[2] = value
-
     @classmethod
-    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
+    def normalize(cls, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
         if coords[1] == 0 or coords[2] > (100 - 1e-7) or coords[2] < 1e-08:
             coords[0] = alg.NaN
-        return coords, alg.no_nan(alpha)
+        return coords
 
     @classmethod
     def to_base(cls, coords: Vector) -> Vector:

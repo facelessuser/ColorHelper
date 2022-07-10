@@ -4,7 +4,7 @@ from .. import util
 from .. import algebra as alg
 from . import parse
 from .color_names import to_name
-from ..gamut.bounds import FLG_PERCENT, FLG_OPT_PERCENT
+from ..channels import FLG_PERCENT, FLG_OPT_PERCENT
 from ..types import Vector
 from typing import Optional, Union, Match, cast, TYPE_CHECKING
 
@@ -26,7 +26,7 @@ def named_color(obj: 'Color', alpha: Optional[bool], fit: Union[str, bool]) -> O
     if a is None:
         a = 1
     method = None if not isinstance(fit, str) else fit
-    coords = alg.no_nans(obj.fit(method=method)[:-1])
+    coords = alg.no_nans(obj.clone().fit(method=method)[:-1])
     return to_name(coords + [a])
 
 
@@ -49,14 +49,22 @@ def named_color_function(
 
     # Iterate the coordinates formatting them for percent, not percent, and even scaling them (sRGB).
     coords = get_coords(obj, fit, none, legacy)
+    channels = obj._space.CHANNELS
     for idx, value in enumerate(coords):
-        bound = obj._space.BOUNDS[idx]
-        use_percent = bound.flags & FLG_PERCENT or (percent and bound.flags & FLG_OPT_PERCENT)
+        channel = channels[idx]
+        use_percent = channel.flags & FLG_PERCENT or (percent and channel.flags & FLG_OPT_PERCENT)
         if not use_percent:
             value *= scale
         if idx != 0:
             string.append(COMMA if legacy else SPACE)
-        string.append(util.fmt_float(value, precision, bound.upper if use_percent else 0))
+        string.append(
+            util.fmt_float(
+                value,
+                precision,
+                channel.span if use_percent else 0.0,
+                channel.offset if use_percent else 0.0
+            )
+        )
 
     # Add alpha if needed
     if a is not None:
@@ -98,7 +106,7 @@ def get_coords(obj: 'Color', fit: Union[str, bool], none: bool, legacy: bool) ->
 def get_alpha(obj: 'Color', alpha: Optional[bool], none: bool) -> Optional[float]:
     """Get the alpha if required."""
 
-    a = alg.no_nan(obj._space.alpha) if not none else obj._space.alpha
+    a = alg.no_nan(obj[-1]) if not none else obj[-1]
     alpha = alpha is not False and (alpha is True or a < 1.0 or alg.is_nan(a))
     return None if not alpha else a
 

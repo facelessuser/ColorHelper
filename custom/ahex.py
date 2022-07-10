@@ -45,13 +45,14 @@ class ASRGB(SRGB):
             return split_channels(m.group(0)), m.end(0)
         return None
 
+    @classmethod
     def to_string(
-        self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs
+        cls, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to Hex format."""
 
         options = kwargs
-        a = alg.no_nan(self.alpha)
+        a = alg.no_nan(parent[-1])
         show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
@@ -60,7 +61,7 @@ class ASRGB(SRGB):
 
         # Always fit hex
         method = None if not isinstance(fit, str) else fit
-        coords = alg.no_nans(parent.fit(method=method)[:-1])
+        coords = alg.no_nans(parent.clone().fit(method=method)[:-1])
         if show_alpha:
             value = template.format(
                 int(alg.round_half_up(a * 255.0)),

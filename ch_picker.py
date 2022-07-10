@@ -70,9 +70,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_controls(controls)
         color.convert(self.mode, in_place=True)
         if not color.in_gamut():
-            color.fit(in_place=True)
+            color.fit()
         else:
-            color.clip(in_place=True)
+            color.clip()
         # Ensure hue is between 0 - 360.
         self.color = color
         if self.color.space() != "srgb" and not self.color.is_nan("hue"):

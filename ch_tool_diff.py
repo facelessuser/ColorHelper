@@ -185,7 +185,7 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                 else:
                     check_space = self.gamut_space
                 if not orig.in_gamut(check_space):
-                    orig.fit(self.gamut_space, in_place=True)
+                    orig.fit(self.gamut_space)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
                 orig.convert(self.gamut_space, fit=True, in_place=True)

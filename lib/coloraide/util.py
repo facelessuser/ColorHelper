@@ -42,11 +42,18 @@ C2 = 2413 / 128
 C3 = 2392 / 128
 
 
-def xy_to_xyz(xy: VectorLike, Y: float = 1) -> Vector:
-    """Convert `xyY` to `xyz`."""
+def xy_to_xyz(xy: VectorLike, Y: float = 1.0, scale: float = 1.0) -> Vector:
+    """
+    Convert `xyY` to `xyz`.
+
+    In many cases, we are dealing with chromaticity values with no Y value,
+    in this case, assume 1 unless otherwise specified. Generally, scale is
+    also assumed to be between 0 - 1, but allow changing scale if we are
+    dealing with things like 0 - 100, etc.
+    """
 
     x, y = xy
-    return [0, 0, 0] if y == 0 else [(x * Y) / y, Y, (1 - x - y) * Y / y]
+    return [0, 0, 0] if y == 0 else [(x * Y) / y, Y, (scale - x - y) * Y / y]
 
 
 def xy_to_uv(xy: VectorLike) -> Vector:
@@ -137,16 +144,16 @@ def pq_st2084_eotf(
     return adjusted
 
 
-def xyz_d65_to_absxyzd65(xyzd65: VectorLike) -> Vector:
+def xyz_d65_to_absxyzd65(xyzd65: VectorLike, yw: float = YW) -> Vector:
     """XYZ D65 to Absolute XYZ D65."""
 
-    return [max(c * YW, 0) for c in xyzd65]
+    return [max(c * yw, 0) for c in xyzd65]
 
 
-def absxyzd65_to_xyz_d65(absxyzd65: VectorLike) -> Vector:
+def absxyzd65_to_xyz_d65(absxyzd65: VectorLike, yw: float = YW) -> Vector:
     """Absolute XYZ D65 XYZ D65."""
 
-    return [max(c / YW, 0) for c in absxyzd65]
+    return [max(c / yw, 0) for c in absxyzd65]
 
 
 def constrain_hue(hue: float) -> float:
@@ -164,7 +171,7 @@ def cmp_coords(c1: VectorLike, c2: VectorLike) -> bool:
         return all(map(lambda a, b: (math.isnan(a) and math.isnan(b)) or a == b, c1, c2))
 
 
-def fmt_float(f: float, p: int = 0, percent: float = 0.0) -> str:
+def fmt_float(f: float, p: int = 0, percent: float = 0.0, offset: float = 0.0) -> str:
     """
     Set float precision and trim precision zeros.
 
@@ -176,7 +183,7 @@ def fmt_float(f: float, p: int = 0, percent: float = 0.0) -> str:
     if alg.is_nan(f):
         return "none"
 
-    value = alg.round_to(f / (percent * 0.01) if percent else f, p)
+    value = alg.round_to((f + offset) / (percent * 0.01) if percent else f, p)
     string = ('{{:{}f}}'.format('.53' if p == -1 else '.' + str(p))).format(value)
     s = string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
     return '{}%'.format(s) if percent else s

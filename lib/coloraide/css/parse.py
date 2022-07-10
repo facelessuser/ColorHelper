@@ -4,7 +4,7 @@ import math
 from .. import algebra as alg
 from ..types import Vector
 from . import color_names
-from ..gamut.bounds import Bounds, FLG_ANGLE, FLG_PERCENT, FLG_OPT_PERCENT
+from ..channels import Channel, FLG_ANGLE
 from typing import Optional, Tuple
 from typing import Dict, Type, TYPE_CHECKING
 
@@ -14,7 +14,6 @@ if TYPE_CHECKING:  # pragma: no cover
 RGB_CHANNEL_SCALE = 1.0 / 255.0
 HUE_SCALE = 1.0 / 360.0
 SCALE_PERCENT = 1 / 100.0
-PERCENT_CHANNEL = FLG_PERCENT | FLG_OPT_PERCENT
 
 CONVERT_TURN = 360
 CONVERT_GRAD = 90 / 100
@@ -24,12 +23,12 @@ RE_COMMA_SPlIT = re.compile(r'(?:\s*,\s*)')
 RE_SLASH_SPLIT = re.compile(r'(?:\s*/\s*)')
 
 COLOR_PARTS = {
-    "strict_percent": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?%)",
-    "strict_float": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?)",
-    "strict_angle": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?(?:deg|rad|turn|grad)?)",
-    "percent": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?%|none)",
-    "float": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?|none)",
-    "angle": r"(?:[+\-]?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)(?:e[-+]?[0-9]*)?(?:deg|rad|turn|grad)?|none)",
+    "strict_percent": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?%)",
+    "strict_float": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?)",
+    "strict_angle": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?(?:deg|rad|turn|grad)?)",
+    "percent": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?%|none)",
+    "float": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?|none)",
+    "angle": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]*)?(?:deg|rad|turn|grad)?|none)",
     "space": r"\s+",
     "comma": r"\s*,\s*",
     "slash": r"\s*/\s*",
@@ -98,7 +97,7 @@ CSS_MATCH = {
         \b(hwb)\(\s*
         (?:
             # Space separated format
-            {angle}{space}{percent}{space}{percent}(?:{slash}(?:{strict_percent}|{float}))?
+            {angle}(?:{space}{percent}){{2}}(?:{slash}(?:{strict_percent}|{float}))?
         )
         \s*\)
         """.format(**COLOR_PARTS)
@@ -109,7 +108,8 @@ CSS_MATCH = {
             \b(lab)\(\s*
             (?:
                 # Space separated format
-                {percent}{space}{float}{space}{float}(?:{slash}(?:{strict_percent}|{float}))?
+                (?:{strict_percent}|{float})(?:{space}(?:{strict_percent}|{float})){{2}}
+                (?:{slash}(?:{strict_percent}|{float}))?
             )
             \s*\)
         )
@@ -120,7 +120,7 @@ CSS_MATCH = {
         \b(lch)\(\s*
         (?:
             # Space separated format
-            {percent}{space}{float}{space}{angle}(?:{slash}(?:{strict_percent}|{float}))?
+            (?:(?:{strict_percent}|{float}){space}){{2}}{angle}(?:{slash}(?:{strict_percent}|{float}))?
         )
         \s*\)
         """.format(**COLOR_PARTS)
@@ -131,7 +131,8 @@ CSS_MATCH = {
             \b(oklab)\(\s*
             (?:
                 # Space separated format
-                {percent}{space}{float}{space}{float}(?:{slash}(?:{strict_percent}|{float}))?
+                (?:{strict_percent}|{float})(?:{space}(?:{strict_percent}|{float})){{2}}
+                (?:{slash}(?:{strict_percent}|{float}))?
             )
             \s*\)
         )
@@ -142,7 +143,7 @@ CSS_MATCH = {
         \b(oklch)\(\s*
         (?:
             # Space separated format
-            {percent}{space}{float}{space}{angle}(?:{slash}(?:{strict_percent}|{float}))?
+            (?:(?:{strict_percent}|{float}){space}){{2}}{angle}{angle}(?:{slash}(?:{strict_percent}|{float}))?
         )
         \s*\)
         """.format(**COLOR_PARTS)
@@ -166,24 +167,24 @@ def norm_hex_channel(string: str) -> float:
     return int(string, 16) * RGB_CHANNEL_SCALE
 
 
-def norm_percent_channel(string: str, scale: float = 100) -> float:
+def norm_percent_channel(string: str, scale: float = 100, offset: float = 0.0) -> float:
     """Normalize percent channel."""
 
     if string == 'none':  # pragma: no cover
         return norm_float(string)
     elif string.endswith('%'):
         value = norm_float(string[:-1])
-        return value * scale * 0.01 if scale != 100 else value
+        return (value * scale * 0.01) - offset if scale != 100 else value
     else:  # pragma: no cover
         # Should only occur internally if we are doing something wrong.
         raise ValueError("Unexpected value '{}'".format(string))
 
 
-def norm_color_channel(string: str, scale: float = 1) -> float:
+def norm_color_channel(string: str, scale: float = 1, offset: float = 0.0) -> float:
     """Normalize percent channel."""
 
     if string.endswith('%'):
-        return norm_percent_channel(string, scale)
+        return norm_percent_channel(string, scale, offset)
     else:
         return norm_float(string)
 
@@ -246,20 +247,20 @@ def parse_hex(color: str) -> Tuple[Vector, float]:
         )
 
 
-def parse_rgb_channels(color: str, boundry: Tuple[Bounds, ...]) -> Tuple[Vector, float]:
+def parse_rgb_channels(color: str, boundry: Tuple[Channel, ...]) -> Tuple[Vector, float]:
     """Parse CSS RGB format."""
     channels = []
     alpha = 1.0
     for i, c in enumerate(RE_CHAN_SPLIT.split(color.strip()), 0):
         c = c.lower()
         if i <= 2:
-            channels.append(norm_rgb_channel(c, boundry[i].upper))
+            channels.append(norm_rgb_channel(c, boundry[i].high))
         elif i == 3:
             alpha = norm_alpha_channel(c)
     return channels, alpha
 
 
-def parse_channels(color: str, boundry: Tuple[Bounds, ...]) -> Tuple[Vector, float]:
+def parse_channels(color: str, boundry: Tuple[Channel, ...]) -> Tuple[Vector, float]:
     """Parse CSS RGB format."""
 
     channels = []
@@ -272,7 +273,7 @@ def parse_channels(color: str, boundry: Tuple[Bounds, ...]) -> Tuple[Vector, flo
             if bound.flags & FLG_ANGLE:
                 channels.append(norm_angle_channel(c))
             else:
-                channels.append(norm_color_channel(c, bound.upper))
+                channels.append(norm_color_channel(c, bound.high))
         elif i == length:
             alpha = norm_alpha_channel(c)
     return channels, alpha
@@ -294,7 +295,7 @@ def parse_color(
         for space in spaces.values():
             if ident in space._serialize():
                 # Break channels up into a list
-                num_channels = len(space.CHANNEL_NAMES)
+                num_channels = len(space.CHANNELS)
                 split = RE_SLASH_SPLIT.split(m.group(2).strip(), maxsplit=1)
 
                 # Get alpha channel
@@ -303,12 +304,11 @@ def parse_color(
                 # Parse color channels
                 channels = []
                 i = -1
+                properties = space.CHANNELS
                 for i, c in enumerate(RE_CHAN_SPLIT.split(split[0]), 0):
                     if c and i < num_channels:
-                        bound = space.BOUNDS[i]
-                        # If the channel is a percentage, force it to scale from 0 - 100, not 0 - 1.
-                        scale = bound.upper if bound.flags & PERCENT_CHANNEL else 1
-                        channels.append(norm_color_channel(c.lower(), scale))
+                        channel = properties[i]
+                        channels.append(norm_color_channel(c.lower(), channel.span, channel.offset))
                     else:
                         # Not the right amount of channels
                         break
@@ -343,11 +343,14 @@ def parse_css(
                     return (value[:3], value[3]), m.end(0)
             else:
                 offset = m.start(0)
-                return parse_rgb_channels(string[m.end(1) - offset + 1:m.end(0) - offset - 1], cspace.BOUNDS), m.end(0)
+                return (
+                    parse_rgb_channels(string[m.end(1) - offset + 1:m.end(0) - offset - 1], cspace.CHANNELS),
+                    m.end(0)
+                )
     else:
         m = CSS_MATCH[cspace.NAME].match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return parse_channels(string[m.end(1) + 1:m.end(0) - 1], cspace.BOUNDS), m.end(0)
+            return parse_channels(string[m.end(1) + 1:m.end(0) - 1], cspace.CHANNELS), m.end(0)
 
     # If we wanted to support per color matching of this format, we could enable this.
     # It is much faster to generically match all `color(space ...)` instances and then

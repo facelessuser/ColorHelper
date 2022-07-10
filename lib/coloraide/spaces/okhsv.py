@@ -27,7 +27,7 @@ SOFTWARE.
 """
 from ..spaces import Space, Cylindrical
 from ..cat import WHITES
-from ..gamut.bounds import GamutBound, FLG_ANGLE, FLG_OPT_PERCENT
+from ..channels import FLG_ANGLE, Channel
 from .. import util
 from .oklab import oklab_to_linear_srgb
 from .okhsl import toe, toe_inv, find_cusp, to_st
@@ -35,7 +35,6 @@ from .oklch import ACHROMATIC_THRESHOLD
 import math
 from .. import algebra as alg
 from ..types import Vector
-from typing import Tuple
 
 
 def okhsv_to_oklab(hsv: Vector) -> Vector:
@@ -100,7 +99,7 @@ def oklab_to_okhsv(lab: Vector) -> Vector:
     if c < ACHROMATIC_THRESHOLD:
         c = 0
 
-    if c != 0:
+    if l not in (0.0, 1.0) and c != 0:
         a_ = lab[1] / c
         b_ = lab[2] / c
 
@@ -142,7 +141,11 @@ class Okhsv(Cylindrical, Space):
     BASE = "oklab"
     NAME = "okhsv"
     SERIALIZE = ("--okhsv",)
-    CHANNEL_NAMES = ("h", "s", "v")
+    CHANNELS = (
+        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("s", 0.0, 1.0, bound=True),
+        Channel("v", 0.0, 1.0, bound=True)
+    )
     CHANNEL_ALIASES = {
         "hue": "h",
         "saturation": "s",
@@ -151,56 +154,14 @@ class Okhsv(Cylindrical, Space):
     WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
-    BOUNDS = (
-        GamutBound(0.0, 360.0, FLG_ANGLE),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutBound(0.0, 1.0, FLG_OPT_PERCENT)
-    )
-
-    @property
-    def h(self) -> float:
-        """Hue channel."""
-
-        return self._coords[0]
-
-    @h.setter
-    def h(self, value: float) -> None:
-        """Shift the hue."""
-
-        self._coords[0] = value
-
-    @property
-    def s(self) -> float:
-        """Saturation channel."""
-
-        return self._coords[1]
-
-    @s.setter
-    def s(self, value: float) -> None:
-        """Saturate or unsaturate the color by the given factor."""
-
-        self._coords[1] = value
-
-    @property
-    def v(self) -> float:
-        """Value channel."""
-
-        return self._coords[2]
-
-    @v.setter
-    def v(self, value: float) -> None:
-        """Set value channel."""
-
-        self._coords[2] = value
-
     @classmethod
-    def null_adjust(cls, coords: Vector, alpha: float) -> Tuple[Vector, float]:
+    def normalize(cls, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
         if coords[2] == 0 or coords[1] == 0.0:
             coords[0] = alg.NaN
-        return coords, alg.no_nan(alpha)
+        return coords
 
     @classmethod
     def to_base(cls, okhsv: Vector) -> Vector:

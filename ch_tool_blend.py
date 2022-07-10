@@ -184,7 +184,7 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
                 else:
                     check_space = self.gamut_space
                 if not pcolor.in_gamut(check_space):
-                    pcolor.fit(self.gamut_space, in_place=True)
+                    pcolor.fit(self.gamut_space)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(pcolor.to_string())
                 pcolor.convert(self.gamut_space, fit=True, in_place=True)

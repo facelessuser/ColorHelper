@@ -12,8 +12,9 @@ if TYPE_CHECKING:  # pragma: no cover
 class Oklch(base.Oklch):
     """Oklch class."""
 
+    @classmethod
     def to_string(
-        self,
+        cls,
         parent: 'Color',
         *,
         alpha: Optional[bool] = None,
@@ -32,7 +33,7 @@ class Oklch(base.Oklch):
             fit=fit,
             none=none,
             color=kwargs.get('color', False),
-            percent=True
+            percent=kwargs.get('percent', False)
         )
 
     @classmethod
