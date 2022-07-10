@@ -9,7 +9,6 @@ import sublime_plugin
 import mdpopups
 from .lib import colorbox
 from html.parser import HTMLParser
-from .lib.coloraide import Color
 from .lib.coloraide import __version_info__ as color_ver
 from .ch_native_picker import pick as native_picker
 from .ch_mixin import _ColorMixin
@@ -120,7 +119,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def create_palette(self, palette_name, palette_type, color):
         """Add color to new color palette."""
 
-        color = Color(color).to_string(**util.COLOR_SERIALIZE)
+        color = self.base(color).to_string(**util.COLOR_SERIALIZE)
 
         if palette_type == '__global__':
             color_palettes = util.get_palettes()
@@ -143,7 +142,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def add_palette(self, color, palette_type, palette_name):
         """Add palette."""
 
-        color = Color(color).to_string(**util.COLOR_SERIALIZE)
+        color = self.base(color).to_string(**util.COLOR_SERIALIZE)
 
         if palette_type == "__special__":
             if palette_name == 'Favorites':
@@ -225,7 +224,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Add favorite."""
 
         favs = util.get_favs()['colors']
-        favs.append(Color(color).to_string(**util.COLOR_SERIALIZE))
+        favs.append(self.base(color).to_string(**util.COLOR_SERIALIZE))
         util.save_palettes(favs, favs=True)
         # For some reason if using update,
         # the convert divider will be too wide.
@@ -235,7 +234,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Remove favorite."""
 
         favs = util.get_favs()['colors']
-        favs.remove(Color(color).to_string(**util.COLOR_SERIALIZE))
+        favs.remove(self.base(color).to_string(**util.COLOR_SERIALIZE))
         util.save_palettes(favs, favs=True)
         # For some reason if using update,
         # the convert divider will be too wide.
@@ -246,7 +245,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.os_color_picker:
             self.view.hide_popup()
-            new_color = native_picker(Color(color).convert("srgb", fit=True))
+            new_color = native_picker(self.base(color).convert("srgb", fit=True))
             if new_color is not None:
                 sublime.set_timeout(
                     lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(
@@ -286,14 +285,14 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         is_color_mod = mod_name == "ColorHelper.custom.st_colormod.Color"
 
         if raw is None:
-            color = Color(obj.color).to_string(**util.DEFAULT)
+            color = self.base(obj.color).to_string(**util.DEFAULT)
             current = self.view.substr(sublime.Region(obj.start, obj.end))
         elif tool == '__colormod__':
             # We need this unaltered
             color = raw
             current = color
         else:
-            color = Color(raw).to_string(**util.DEFAULT)
+            color = self.base(raw).to_string(**util.DEFAULT)
             current = color
 
         if tool == "__edit__":
@@ -368,7 +367,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         color_box = []
         for color in color_list[:5]:
-            c = Color(color)
+            c = self.base(color)
             preview = self.get_preview(c)
             color_box.append(preview.preview2)
 
@@ -394,7 +393,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         width = self.width * 2
         check_size = self.check_size(height)
         for f in color_list:
-            color = Color(f)
+            color = self.base(f)
             if count != 0 and (count % 8 == 0):
                 colors.append('\n\n')
             elif count != 0:
@@ -494,7 +493,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Show insert panel."""
 
         original = color
-        color = Color(color)
+        color = self.base(color)
 
         sels = self.view.sel()
         if color is not None and len(sels) == 1:
@@ -579,7 +578,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         project_palettes = util.get_project_palettes(self.view.window())
 
         template_vars = {
-            "color": (Color(color if color else '#ffffffff').to_string(**util.DEFAULT)),
+            "color": (self.base(color if color else '#ffffffff').to_string(**util.DEFAULT)),
             "show_add_option": cursor_color is not None,
             "generic_color": cursor_color.color.to_string(**util.COLOR_FULL_PREC) if cursor_color is not None else '',
             "show_picker_menu": show_picker,
@@ -709,7 +708,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             if obj is not None:
                 obj.start = region.begin()
                 obj.end = region.end()
-                obj.color = Color(obj.color)
+                obj.color = self.base(obj.color)
         return obj
 
     def show_color_info(self, update=False):
@@ -752,6 +751,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
     def run(self, edit, mode, palette_name=None, color=None, insert_raw=None, result_type=None):
         """Run the specified tooltip."""
 
+        self.base = util.get_base_color()
         self.setup_gamut_style()
         self.setup_image_border()
         self.setup_sizes()
@@ -771,7 +771,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = Color("white", filters=util.EXTENDED_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
+                color = self.base("white", filters=util.EXTENDED_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
             else:
                 color = obj.color.to_string(**util.COLOR_FULL_PREC)
             self.color_picker(color)
@@ -788,8 +788,10 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         try:
             # This will throw an exception if there is no rule associated with the view.
             # Can't enable if the view has no color rules.
+            self.base = util.get_base_color()
             self.setup_color_class()
         except Exception:
+            print('what?')
             return False
 
         s = sublime.load_settings('color_helper.sublime-settings')

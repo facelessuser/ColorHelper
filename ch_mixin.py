@@ -33,22 +33,22 @@ class _ColorMixin:
         border_color = ch_settings.get('image_border_color')
         if border_color is not None:
             try:
-                border_color = Color(border_color)
+                border_color = self.base(border_color)
                 border_color.fit(self.gamut_space)
             except Exception:
                 border_color = None
 
         if border_color is None:
             # Calculate border color for images
-            border_color = Color(
+            border_color = self.base(
                 self.view.style()['background'],
                 filters=util.CSS_SRGB_SPACES
             ).convert("hsl")
             border_color['lightness'] = border_color['lightness'] + (0.3 if border_color.luminance() < 0.5 else -0.3)
 
         self.default_border = border_color.convert(self.gamut_space, in_place=True)
-        self.out_of_gamut = Color("transparent").convert(self.gamut_space, in_place=True)
-        self.out_of_gamut_border = Color(
+        self.out_of_gamut = self.base("transparent").convert(self.gamut_space, in_place=True)
+        self.out_of_gamut_border = self.base(
             self.view.style().get('redish', "red"),
             filters=util.CSS_SRGB_SPACES
         ).convert(self.gamut_space, in_place=True)
@@ -61,7 +61,7 @@ class _ColorMixin:
 
         # Check if the first point within the color matches our scope rules
         # and load up the appropriate color class
-        color_class = Color
+        color_class = self.base
         filters = []
         output = []
         edit_mode = "default"
@@ -88,7 +88,7 @@ class _ColorMixin:
                         edit_mode = 'default'
                     break
             except Exception:
-                color_class = Color
+                color_class = self.base
                 filters = []
                 output = []
                 edit_mode = 'default'
@@ -109,7 +109,7 @@ class _ColorMixin:
         self.custom_color_class = color_class
         self.filters = filters
         self.output_options = output
-        self.color_class = Color
+        self.color_class = self.base
         try:
             self.color_trigger = rule.get("color_trigger", util.RE_COLOR_START)
         except Exception:

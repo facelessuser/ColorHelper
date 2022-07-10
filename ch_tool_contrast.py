@@ -1,7 +1,6 @@
 """Color contrast tool."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 import mdpopups
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
@@ -42,7 +41,7 @@ of either **black** or **white** will be used.
 """
 
 
-def parse_color(string, start=0, second=False):
+def parse_color(base, string, start=0, second=False):
     """
     Parse colors.
 
@@ -56,7 +55,7 @@ def parse_color(string, start=0, second=False):
     more = None
     ratio = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False)
+    color = base.match(string, start=start, fullmatch=False)
     if color:
         start = color.end
         if color.end != length:
@@ -84,7 +83,7 @@ def parse_color(string, start=0, second=False):
     return color, ratio, more
 
 
-def evaluate(string):
+def evaluate(base, string):
     """Evaluate color."""
 
     colors = []
@@ -95,12 +94,12 @@ def evaluate(string):
         ratio = None
 
         # Try to capture the color or the two colors to mix
-        first, ratio, more = parse_color(color)
+        first, ratio, more = parse_color(base, color)
         if first and more is not None:
             if more is False:
                 first = None
             else:
-                second, ratio, more = parse_color(color, start=first.end, second=True)
+                second, ratio, more = parse_color(base, color, start=first.end, second=True)
                 if not second or more is False:
                     first = None
                     second = None
@@ -111,17 +110,17 @@ def evaluate(string):
         else:
             if first:
                 first = first.color
-                second = Color("white" if first.luminance() < 0.5 else "black")
+                second = base("white" if first.luminance() < 0.5 else "black")
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
             colors.append(first.fit('srgb'))
         if second:
-            if second.alpha < 1.0:
-                second.alpha = 1.0
+            if second[-1] < 1.0:
+                second[-1] = 1.0
             colors.append(second.fit('srgb'))
             if ratio:
-                if first.alpha < 1.0:
+                if first[-1] < 1.0:
                     first = first.compose(second, space="srgb")
                 hwb_fg = first.convert('hwb').clip()
                 hwb_bg = second.convert('hwb').clip()
@@ -136,10 +135,10 @@ def evaluate(string):
                         ratio
                     )
                 )
-                first.update(Color(color))
+                first.update(base(color))
                 colors[0] = first
 
-            if first.alpha < 1.0:
+            if first[-1] < 1.0:
                 # Contrasted with current color
                 colors.append(first.compose(second, space="srgb"))
                 # Contrasted with the two extremes min and max
@@ -147,7 +146,8 @@ def evaluate(string):
                 colors.append(first.compose("black", space="srgb"))
             else:
                 colors.append(first)
-    except Exception:
+    except Exception as e:
+        print(e)
         colors = []
     return colors
 
@@ -181,7 +181,7 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                 except Exception:
                     pass
                 if color is not None:
-                    color = Color(color)
+                    color = self.base(color)
                     return color.to_string(**util.DEFAULT)
         return ''
 
@@ -191,7 +191,7 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
-            colors = evaluate(text)
+            colors = evaluate(self.base, text)
             html = mdpopups.md2html(self.view, DEF_RATIO.format(style))
             if len(colors) >= 3:
                 lum2 = colors[1].luminance()
@@ -224,16 +224,20 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                     colors[1].convert('srgb').clip().to_string(**util.COMMA)
                 )
             return sublime.Html(style + html)
-        except Exception:
+        except Exception as e:
+            print('huh?')
+            print(e)
             return sublime.Html(mdpopups.md2html(self.view, DEF_RATIO.format(style)))
 
     def validate(self, color):
         """Validate."""
 
         try:
-            colors = evaluate(color)
+            colors = evaluate(self.base, color)
             return len(colors) > 0
-        except Exception:
+        except Exception as e:
+            print('what?')
+            print(e)
             return False
 
 
@@ -245,7 +249,8 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        colors = evaluate(color_helper_contrast_ratio)
+        self.base = util.get_base_color()
+        colors = evaluate(self.base, color_helper_contrast_ratio)
         color = None
         if colors:
             color = colors[0]

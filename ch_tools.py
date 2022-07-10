@@ -1,7 +1,6 @@
 """Color Helper tools."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 from . import ch_util as util
 from .ch_mixin import _ColorMixin
 import re
@@ -54,6 +53,7 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
     def __init__(self, view, on_cancel=None, **kwargs):
         """Initialize."""
 
+        self.base = util.get_base_color()
         self.view = view
         self.on_cancel = on_cancel
         self.setup_gamut_style()
@@ -76,7 +76,7 @@ class _ColorInputHandler(_ColorMixin, sublime_plugin.TextInputHandler):
         styles = self.view.style()
         fg = styles['foreground']
         bg = styles['background']
-        temp = Color(bg).convert("srgb")
+        temp = self.base(bg).convert("srgb")
         is_dark = temp.luminance() < 0.5
         bg = temp.mix("white" if is_dark else "black", 0.05, space="srgb").to_string(**util.HEX)
         code = temp.mix("white" if is_dark else "black", 0.15, space="srgb").to_string(**util.HEX)

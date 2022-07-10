@@ -1,8 +1,8 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
 from ..lib.coloraide.css import parse, serialize
 import re
+from ColorHelper.ch_util import get_base_color
 
 MATCH = re.compile(r"\b0x(?:[0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
 
@@ -37,7 +37,7 @@ class HexSRGB(SRGB):
         return h.replace('#', '0x', 1)
 
 
-class ColorHex(Color):
+class ColorHex(get_base_color()):
     """Color object whose sRGB color space looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 
 

@@ -8,7 +8,6 @@ import sublime
 import sublime_plugin
 import mdpopups
 from .lib import colorbox
-from .lib.coloraide import Color
 from .lib.coloraide import util as cutil
 from .lib.coloraide import algebra as alg
 from .lib.coloraide.css import color_names as css_names
@@ -61,7 +60,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.on_done = on_done
         self.on_cancel = on_cancel
         self.template_vars = {}
-        color = Color(color)
+        color = self.base(color)
         self.setup_gamut_style()
         self.setup_image_border()
         self.setup_sizes()
@@ -133,7 +132,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color(mode, [r_hue, 0, 1], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [r_hue, 0, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -145,7 +144,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                     border_color = self.default_border
                     if this_sat and this_val:
                         lum = color.luminance()
-                        border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                        border_color = self.base(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
                     value = color.convert(self.gamut_space)
                     kwargs = {
                         "border_size": BORDER_SIZE, "height": self.height, "width": self.width,
@@ -190,7 +189,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color['hue'] = r_hue
 
             # Generate a hue bar.
-            color = Color(mode, [0, 1, 1], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [0, 1, 1], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -204,7 +203,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 border_color = self.default_border
                 if this_hue:
                     lum = color.luminance()
-                    border_color = Color(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
+                    border_color = self.base(self.gamut_space, [1, 1, 1] if lum < 0.5 else [0, 0, 0])
 
                 if this_hue:
                     border_map = colorbox.TOP | colorbox.LEFT | colorbox.BOTTOM | colorbox.RIGHT
@@ -264,7 +263,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = Color(mode, [0, 1 * scale, lightness], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [0, 1 * scale, lightness], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -278,7 +277,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                         this_hue = abs(color['hue'] - hue) < 11.21875
                         if this_hue:
                             lum = color.luminance()
-                            border_color = Color(
+                            border_color = self.base(
                                 self.gamut_space, [1 * scale, 1 * scale, 1 * scale] if lum < 0.5 else [0, 0, 0]
                             )
                     value = color.convert(self.gamut_space)
@@ -323,7 +322,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color['saturation'] = color['saturation'] - (0.0625 * scale)
 
             # Generate a grayscale bar.
-            color = Color(mode, [hue, saturation, 1 * scale], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [hue, saturation, 1 * scale], filters=util.EXTENDED_SRGB_SPACES)
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -337,7 +336,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 border_color = self.default_border
                 if this_lit:
                     lum = color.luminance()
-                    border_color = Color(
+                    border_color = self.base(
                         self.gamut_space, [1 * scale, 1 * scale, 1 * scale] if lum < 0.5 else [0, 0, 0]
                     )
 
@@ -391,7 +390,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2val_map):
-            color = Color(name, filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(name, filters=util.EXTENDED_SRGB_SPACES)
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -698,7 +697,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.view.run_command(
                 cmd,
                 {
-                    "initial": Color(color, filters=util.EXTENDED_SRGB_SPACES)
+                    "initial": self.base(color, filters=util.EXTENDED_SRGB_SPACES)
                     .convert(convert, in_place=True)
                     .to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel
@@ -739,6 +738,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Run command."""
 
         # Setup
+        self.base = util.get_base_color()
         self.setup(color, mode, controls, on_done, on_cancel)
 
         # Show the appropriate dialog

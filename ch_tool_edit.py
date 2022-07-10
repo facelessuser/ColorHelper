@@ -1,7 +1,6 @@
 """Color edit tool."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 import mdpopups
 from .lib import colorbox
 from . import ch_util as util
@@ -38,7 +37,7 @@ color will use <code>1 - percent</code>.
 """
 
 
-def parse_color(string, start=0, second=False):
+def parse_color(base, string, start=0, second=False):
     """
     Parse colors.
 
@@ -53,7 +52,7 @@ def parse_color(string, start=0, second=False):
     percent = None
     space = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False)
+    color = base.match(string, start=start, fullmatch=False)
     if color:
         start = color.end
         if color.end != length:
@@ -97,7 +96,7 @@ def parse_color(string, start=0, second=False):
     return color, percent, more, space
 
 
-def evaluate(string):
+def evaluate(base, string):
     """Evaluate color."""
 
     colors = []
@@ -109,13 +108,13 @@ def evaluate(string):
         space = None
 
         # Try to capture the color or the two colors to mix
-        first, percent1, more, space = parse_color(color)
+        first, percent1, more, space = parse_color(base, color)
         if first and more is not None:
             percent2 = None
             if more is False:
                 first = None
             else:
-                second, percent2, more, space = parse_color(color, start=first.end, second=True)
+                second, percent2, more, space = parse_color(base, color, start=first.end, second=True)
                 if not second or more is False:
                     first = None
                     second = None
@@ -199,7 +198,7 @@ class ColorHelperEditInputHandler(tools._ColorInputHandler):
                 except Exception:
                     pass
                 if color is not None:
-                    color = Color(color)
+                    color = self.base(color)
                     return color.to_string(**util.DEFAULT)
         return ''
 
@@ -209,11 +208,11 @@ class ColorHelperEditInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
-            colors = evaluate(text)
+            colors = evaluate(self.base, text)
 
             html = ""
             for color in colors:
-                pcolor = Color(color)
+                pcolor = self.base(color)
                 message = ""
                 color_string = ""
                 if self.gamut_space == 'srgb':
@@ -229,7 +228,7 @@ class ColorHelperEditInputHandler(tools._ColorInputHandler):
                 preview = pcolor.clone().set('alpha', 1)
                 preview_alpha = pcolor
                 preview_border = self.default_border
-                temp = Color(preview_border)
+                temp = self.base(preview_border)
                 if temp.luminance() < 0.5:
                     second_border = temp.mix('white', 0.25, space=self.gamut_space, out_space=self.gamut_space)
                     second_border.set('alpha', 1)
@@ -263,7 +262,7 @@ class ColorHelperEditInputHandler(tools._ColorInputHandler):
         """Validate."""
 
         try:
-            color = evaluate(color)
+            color = evaluate(self.base, color)
             return len(color) > 0
         except Exception:
             return False
@@ -277,7 +276,8 @@ class ColorHelperEditCommand(_ColorMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        colors = evaluate(color_helper_edit)
+        self.base = util.get_base_color()
+        colors = evaluate(self.base, color_helper_edit)
         color = None
         if colors:
             color = colors[-1]

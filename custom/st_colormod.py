@@ -1,6 +1,5 @@
 """Color-mod."""
 import re
-from ..lib.coloraide import Color as ColorCSS
 from ..lib.coloraide import ColorMatch
 from ..lib.coloraide.css import parse, serialize
 from ..lib.coloraide import util
@@ -10,6 +9,7 @@ from collections.abc import Mapping
 from itertools import zip_longest as zipl
 import functools
 import math
+from ColorHelper.ch_util import get_base_color
 
 WHITE = [1.0] * 3
 BLACK = [0.0] * 3
@@ -590,7 +590,7 @@ class ColorMod:
         self._color.update(this)
 
 
-class Color(ColorCSS):
+class Color(get_base_color()):
     """Color modify class."""
 
     def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):

@@ -1,9 +1,9 @@
 """Custom color that looks for colors of format `&HAABBGGRR` as `#AARRGGBB`."""
-from ..lib.coloraide import Color
 from ..lib.coloraide import algebra as alg
 from ..lib.coloraide.css import parse
 from ..lib.coloraide.spaces.srgb.css import SRGB
 import re
+from ColorHelper.ch_util import get_base_color
 
 MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
 
@@ -72,7 +72,7 @@ class AssABGR(SRGB):
         return value
 
 
-class ColorAssABGR(Color):
+class ColorAssABGR(get_base_color()):
     """Color class for ASS `ABGR` colors."""
 
 

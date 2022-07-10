@@ -1,7 +1,6 @@
 """Color difference tool."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 from .lib import colorbox
 import mdpopups
 from . import ch_util as util
@@ -32,7 +31,7 @@ The first color will be returned on completion.
 """
 
 
-def parse_color(string, start=0, second=False):
+def parse_color(base, string, start=0, second=False):
     """
     Parse colors.
 
@@ -46,7 +45,7 @@ def parse_color(string, start=0, second=False):
     more = None
     method = None
     # First color
-    color = Color.match(string, start=start, fullmatch=False)
+    color = base.match(string, start=start, fullmatch=False)
     if color:
         start = color.end
         if color.end != length:
@@ -74,7 +73,7 @@ def parse_color(string, start=0, second=False):
     return color, method, more
 
 
-def evaluate(string):
+def evaluate(base, string):
     """Evaluate color."""
 
     colors = []
@@ -85,12 +84,12 @@ def evaluate(string):
         method = None
 
         # Try to capture the color or the two colors diff
-        first, method, more = parse_color(color)
+        first, method, more = parse_color(base, color)
         if first and more is not None:
             if more is False:
                 first = None
             else:
-                second, method, more = parse_color(color, start=first.end, second=True)
+                second, method, more = parse_color(base, color, start=first.end, second=True)
                 if not second or more is False:
                     first = None
                     second = None
@@ -159,7 +158,7 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                     except Exception:
                         pass
                     if color is not None:
-                        color = Color(color)
+                        color = self.base(color)
                         colors.append(color.to_string(**util.DEFAULT))
                 if len(texts) == len(colors):
                     return ' - '.join(colors)
@@ -171,13 +170,13 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
-            colors, delta = evaluate(text)
+            colors, delta = evaluate(self.base, text)
             if not colors:
                 raise ValueError('No colors')
             html = mdpopups.md2html(self.view, DEF_DIFF.format(style))
             html = ""
             for color in colors:
-                orig = Color(color)
+                orig = self.base(color)
                 message = ""
                 color_string = ""
                 if self.gamut_space == 'srgb':
@@ -193,7 +192,7 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                 preview = orig.clone().set('alpha', 1)
                 preview_alpha = orig
                 preview_border = self.default_border
-                temp = Color(preview_border)
+                temp = self.base(preview_border)
                 if temp.luminance() < 0.5:
                     second_border = temp.mix('white', 0.25, space=self.gamut_space, out_space=self.gamut_space)
                     second_border.set('alpha', 1)
@@ -224,7 +223,7 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
         """Validate."""
 
         try:
-            colors, _ = evaluate(color)
+            colors, _ = evaluate(self.base, color)
             return len(colors) > 0
         except Exception:
             return False
@@ -238,7 +237,8 @@ class ColorHelperDifferenceCommand(_ColorMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        colors, _ = evaluate(color_helper_difference)
+        self.base = util.get_base_color()
+        colors, _ = evaluate(self.base, color_helper_difference)
         color = None
         if colors:
             color = colors[0]

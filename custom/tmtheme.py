@@ -1,8 +1,8 @@
 """Custom color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide import Color
 from ..lib.coloraide.spaces.srgb.css import SRGB
 from ..lib.coloraide.css import parse, serialize
 import re
+from ColorHelper.ch_util import get_base_color
 
 RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**parse.COLOR_PARTS))
 
@@ -739,7 +739,7 @@ class SRGBX11(SRGB):
         return None
 
 
-class ColorSRGBX11(Color):
+class ColorSRGBX11(get_base_color()):
     """Hex SRGB with X11 color names."""
 
 

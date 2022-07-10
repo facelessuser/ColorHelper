@@ -112,6 +112,27 @@
     // Color Rules
     //////////////////
 
+    // This option requires a restart of Sublime Text.
+    // This allows a user to add NEW previously unincluded color spaces.
+    // This ensures that the new color space will work in palettes etc.
+    // Defined color spaces via the `class` attrinbute under `user_color_classes`
+    // Are mainly for overriding existing color spaces to change format behavior and matching,
+    // But brand new color classes should be added here.
+    "add_to_default_spaces": [
+        // "ColorHelper.lib.coloraide_extras.spaces.cmy.CMY",
+        // "ColorHelper.lib.coloraide_extras.spaces.cmyk.CMYK",
+        // "ColorHelper.lib.coloraide_extras.spaces.hsi.HSI",
+        // "ColorHelper.lib.coloraide_extras.spaces.hunter_lab.HunterLab",
+        // "ColorHelper.lib.coloraide_extras.spaces.igtgpg.IgTgPg",
+        // "ColorHelper.lib.coloraide_extras.spaces.itp.ITP",
+        // "ColorHelper.lib.coloraide_extras.spaces.orgb.ORGB",
+        // "ColorHelper.lib.coloraide_extras.spaces.prismatic.Prismatic",
+        // "ColorHelper.lib.coloraide_extras.spaces.rlab.RLAB",
+        // "ColorHelper.lib.coloraide_extras.spaces.ucs.UCS",
+        // "ColorHelper.lib.coloraide_extras.spaces.uvw.UVW",
+        // "ColorHelper.lib.coloraide_extras.spaces.xyy.XyY"
+    ],
+
     // If a there is no rule for the current file, commands will assume
     // the options specified here. This allows translate custom input color
     // formats to our defaults and back out again. Here you can also filter
