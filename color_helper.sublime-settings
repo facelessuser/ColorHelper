@@ -123,7 +123,6 @@
         // "ColorHelper.lib.coloraide.spaces.cmyk.CMYK",
         // "ColorHelper.lib.coloraide.spaces.din99o.Din99o",
         // "ColorHelper.lib.coloraide.spaces.hsi.HSI",
-        "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
         // "ColorHelper.lib.coloraide.spaces.hunter_lab.HunterLab",
         // "ColorHelper.lib.coloraide.spaces.ictcp.ICtCp",
         // "ColorHelper.lib.coloraide.spaces.igtgpg.IgTgPg",
@@ -131,18 +130,18 @@
         // "ColorHelper.lib.coloraide.spaces.jzazbz.Jzazbz",
         // "ColorHelper.lib.coloraide.spaces.jzczhz.JzCzhz",
         // "ColorHelper.lib.coloraide.spaces.lch99o.lch99o",
-        "ColorHelper.lib.coloraide.spaces.lchuv.Lchuv",
-        "ColorHelper.lib.coloraide.spaces.luv.Luv",
-        "ColorHelper.lib.coloraide.spaces.okhsl.Okhsl",
-        "ColorHelper.lib.coloraide.spaces.okhsv.Okhsv",
         // "ColorHelper.lib.coloraide.spaces.orgb.ORGB",
         // "ColorHelper.lib.coloraide.spaces.prismatic.Prismatic",
         // "ColorHelper.lib.coloraide.spaces.rec2100pq.Rec2100PQ",
         // "ColorHelper.lib.coloraide.spaces.rlab.RLAB",
         // "ColorHelper.lib.coloraide.spaces.ucs.UCS",
         // "ColorHelper.lib.coloraide.spaces.uvw.UVW",
-        // "ColorHelper.lib.coloraide.spaces.xyy.XyY"
-
+        // "ColorHelper.lib.coloraide.spaces.xyy.XyY",
+        "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
+        "ColorHelper.lib.coloraide.spaces.lchuv.Lchuv",
+        "ColorHelper.lib.coloraide.spaces.luv.Luv",
+        "ColorHelper.lib.coloraide.spaces.okhsl.Okhsl",
+        "ColorHelper.lib.coloraide.spaces.okhsv.Okhsv"
     ],
 
     // If a there is no rule for the current file, commands will assume
