@@ -11,7 +11,7 @@ Relative XYZ has Y=1 for media white
 BT.2048 says media white Y=203 at PQ 58
 This is confirmed here: https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-3-2019-PDF-E.pdf
 
-It is tough to tell who is correct as everything passes through the Matlab scripts fine as it
+It is tough to tell who is correct as everything passes through the MATLAB scripts fine as it
 just scales the results differently, so forward and backwards translation comes out great regardless,
 but looking at the images in the spec, it seems the scaling using Y=203 at PQ 58 may be correct. It
 is almost certain that some scaling is being applied and that applying none is almost certainly wrong.
@@ -20,11 +20,10 @@ If at some time that these assumptions are incorrect, we will be happy to alter 
 """
 from ..spaces import Space, Labish
 from ..cat import WHITES
-from ..gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
+from ..channels import Channel, FLG_MIRROR_PERCENT
 from .. import util
 from .. import algebra as alg
 from ..types import Vector
-from typing import cast
 
 B = 1.15
 G = 0.66
@@ -82,13 +81,13 @@ def jzazbz_to_xyz_d65(jzazbz: Vector) -> Vector:
     iz = (jz + D0) / (1 + D - D * (jz + D0))
 
     # Convert to LMS prime
-    pqlms = cast(Vector, alg.dot(izazbz_to_lms_p_mi, [iz, az, bz], dims=alg.D2_D1))
+    pqlms = alg.dot(izazbz_to_lms_p_mi, [iz, az, bz], dims=alg.D2_D1)
 
     # Decode PQ LMS to LMS
     lms = util.pq_st2084_eotf(pqlms, m2=M2)
 
     # Convert back to absolute XYZ D65
-    xm, ym, za = cast(Vector, alg.dot(lms_to_xyz_mi, lms, dims=alg.D2_D1))
+    xm, ym, za = alg.dot(lms_to_xyz_mi, lms, dims=alg.D2_D1)
     xa = (xm + ((B - 1) * za)) / B
     ya = (ym + ((G - 1) * xa)) / G
 
@@ -105,13 +104,13 @@ def xyz_d65_to_jzazbz(xyzd65: Vector) -> Vector:
     ym = (G * ya) - ((G - 1) * xa)
 
     # Convert to LMS
-    lms = cast(Vector, alg.dot(xyz_to_lms_m, [xm, ym, za], dims=alg.D2_D1))
+    lms = alg.dot(xyz_to_lms_m, [xm, ym, za], dims=alg.D2_D1)
 
     # PQ encode the LMS
     pqlms = util.pq_st2084_inverse_eotf(lms, m2=M2)
 
     # Calculate Izazbz
-    iz, az, bz = cast(Vector, alg.dot(lms_p_to_izazbz_m, pqlms, dims=alg.D2_D1))
+    iz, az, bz = alg.dot(lms_p_to_izazbz_m, pqlms, dims=alg.D2_D1)
 
     # Calculate Jz
     jz = ((1 + D) * iz) / (1 + (D * iz)) - D0
@@ -124,55 +123,17 @@ class Jzazbz(Labish, Space):
     BASE = "xyz-d65"
     NAME = "jzazbz"
     SERIALIZE = ("--jzazbz",)
-    CHANNEL_NAMES = ("jz", "az", "bz")
+    CHANNELS = (
+        Channel("jz", 0.0, 1.0),
+        Channel("az", -0.5, 0.5, flags=FLG_MIRROR_PERCENT),
+        Channel("bz", -0.5, 0.5, flags=FLG_MIRROR_PERCENT)
+    )
     CHANNEL_ALIASES = {
         "lightness": 'jz',
         "a": 'az',
         "b": 'bz'
     }
     WHITE = WHITES['2deg']['D65']
-
-    BOUNDS = (
-        GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutUnbound(-0.5, 0.5),
-        GamutUnbound(-0.5, 0.5)
-    )
-
-    @property
-    def jz(self) -> float:
-        """Jz channel."""
-
-        return self._coords[0]
-
-    @jz.setter
-    def jz(self, value: float) -> None:
-        """Set jz channel."""
-
-        self._coords[0] = value
-
-    @property
-    def az(self) -> float:
-        """Az axis."""
-
-        return self._coords[1]
-
-    @az.setter
-    def az(self, value: float) -> None:
-        """Az axis."""
-
-        self._coords[1] = value
-
-    @property
-    def bz(self) -> float:
-        """Bz axis."""
-
-        return self._coords[2]
-
-    @bz.setter
-    def bz(self, value: float) -> None:
-        """Set bz axis."""
-
-        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: Vector) -> Vector:

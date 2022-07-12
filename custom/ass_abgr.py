@@ -1,9 +1,9 @@
 """Custom color that looks for colors of format `&HAABBGGRR` as `#AARRGGBB`."""
-from ..lib.coloraide import Color
 from ..lib.coloraide import algebra as alg
 from ..lib.coloraide.css import parse
 from ..lib.coloraide.spaces.srgb.css import SRGB
 import re
+from ColorHelper.ch_util import get_base_color
 
 MATCH = re.compile(r"(?P<prefix>&H)?(?P<color>[0-9a-fA-F]{1,8})(?P<suffix>&|\b)")
 
@@ -41,11 +41,12 @@ class AssABGR(SRGB):
             return split_channels(m.group("color")), m.end(0)
         return None
 
-    def to_string(self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
+    @classmethod
+    def to_string(cls, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
         """Convert color to `&HAABBGGRR`."""
 
         options = kwargs
-        a = alg.no_nan(self.alpha)
+        a = alg.no_nan(parent[-1])
         show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "&H{:02x}{:02x}{:02x}{:02x}" if show_alpha else "&H{:02x}{:02x}{:02x}"
@@ -54,7 +55,7 @@ class AssABGR(SRGB):
 
         # Always fit hex
         method = None if not isinstance(fit, str) else fit
-        coords = alg.no_nans(parent.fit(method=method).coords())
+        coords = alg.no_nans(parent.clone().fit(method=method)[:-1])
         if show_alpha:
             value = template.format(
                 int(alg.round_half_up(a * 255.0)),
@@ -71,7 +72,7 @@ class AssABGR(SRGB):
         return value
 
 
-class ColorAssABGR(Color):
+class ColorAssABGR(get_base_color()):
     """Color class for ASS `ABGR` colors."""
 
 

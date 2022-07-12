@@ -1,7 +1,6 @@
 """ColorMod tool."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 import mdpopups
 from .lib import colorbox
 from . import ch_util as util
@@ -94,7 +93,7 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
             html = None
             color = self.color_mod_class(text.strip())
             if color is not None:
-                pcolor = Color(color)
+                pcolor = self.base(color)
                 preview_border = self.default_border
                 message = ""
                 if self.gamut_space == 'srgb':
@@ -107,7 +106,7 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
                 preview = pcolor.clone().set('alpha', 1)
                 preview_alpha = pcolor
                 preview_border = self.default_border
-                temp = Color(preview_border)
+                temp = self.base(preview_border)
                 if temp.luminance() < 0.5:
                     second_border = temp.mix('white', 0.25, space=self.gamut_space, out_space=self.gamut_space)
                     second_border.set('alpha', 1)
@@ -153,6 +152,7 @@ class ColorHelperSublimeColorModCommand(_ColorMixin, sublime_plugin.TextCommand)
     ):
         """Run command."""
 
+        self.base = util.get_base_color()
         text = color_helper_color_mod.strip()
         self.custom_color_class = util.import_color("ColorHelper.custom.st_colormod.Color")
         color = self.custom_color_class(text)

@@ -21,7 +21,7 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools
+        python -m pip install --upgrade pip setuptools build
         python -m pip install -r docs/src/requirements.txt
     - name: Deploy documents
       run: |

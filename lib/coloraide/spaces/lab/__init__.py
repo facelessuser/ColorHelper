@@ -1,11 +1,10 @@
 """Lab class."""
 from ...spaces import Space, Labish
 from ...cat import WHITES
-from ...gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
+from ...channels import Channel, FLG_OPT_PERCENT, FLG_MIRROR_PERCENT
 from ... import util
 from ... import algebra as alg
 from ...types import VectorLike, Vector
-from typing import cast
 
 EPSILON = 216 / 24389  # `6^3 / 29^3`
 EPSILON3 = 6 / 29  # Cube root of EPSILON
@@ -38,7 +37,7 @@ def lab_to_xyz(lab: Vector, white: VectorLike) -> Vector:
     ]
 
     # Compute XYZ by scaling `xyz` by reference `white`
-    return cast(Vector, alg.multiply(xyz, util.xy_to_xyz(white), dims=alg.D1))
+    return alg.multiply(xyz, util.xy_to_xyz(white), dims=alg.D1)
 
 
 def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
@@ -52,7 +51,7 @@ def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
     """
 
     # compute `xyz`, which is XYZ scaled relative to reference white
-    xyz = cast(Vector, alg.divide(xyz, util.xy_to_xyz(white), dims=alg.D1))
+    xyz = alg.divide(xyz, util.xy_to_xyz(white), dims=alg.D1)
     # Compute `fx`, `fy`, and `fz`
     fx, fy, fz = [alg.cbrt(i) if i > EPSILON else (KAPPA * i + 16) / 116 for i in xyz]
 
@@ -69,52 +68,15 @@ class Lab(Labish, Space):
     BASE = "xyz-d50"
     NAME = "lab"
     SERIALIZE = ("--lab",)
-    CHANNEL_NAMES = ("l", "a", "b")
+    CHANNELS = (
+        Channel("l", 0.0, 100.0, flags=FLG_OPT_PERCENT),
+        Channel("a", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT),
+        Channel("b", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT)
+    )
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
     WHITE = WHITES['2deg']['D50']
-    BOUNDS = (
-        GamutUnbound(0.0, 100.0, FLG_OPT_PERCENT),
-        GamutUnbound(-125, 125),
-        GamutUnbound(-125, 125)
-    )
-
-    @property
-    def l(self) -> float:
-        """L channel."""
-
-        return self._coords[0]
-
-    @l.setter
-    def l(self, value: float) -> None:
-        """Get true luminance."""
-
-        self._coords[0] = value
-
-    @property
-    def a(self) -> float:
-        """A channel."""
-
-        return self._coords[1]
-
-    @a.setter
-    def a(self, value: float) -> None:
-        """A axis."""
-
-        self._coords[1] = value
-
-    @property
-    def b(self) -> float:
-        """B channel."""
-
-        return self._coords[2]
-
-    @b.setter
-    def b(self, value: float) -> None:
-        """B axis."""
-
-        self._coords[2] = value
 
     @classmethod
     def to_base(cls, coords: Vector) -> Vector:

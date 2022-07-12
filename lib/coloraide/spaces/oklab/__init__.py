@@ -27,10 +27,9 @@ SOFTWARE.
 """
 from ...spaces import Space, Labish
 from ...cat import WHITES
-from ...gamut.bounds import GamutUnbound, FLG_OPT_PERCENT
+from ...channels import Channel, FLG_OPT_PERCENT, FLG_MIRROR_PERCENT
 from ... import algebra as alg
 from ...types import Vector
-from typing import cast
 
 # sRGB Linear to LMS
 SRGBL_TO_LMS = [
@@ -78,52 +77,40 @@ LMS_TO_XYZD65 = [
 def oklab_to_linear_srgb(lab: Vector) -> Vector:
     """Convert from Oklab to linear sRGB."""
 
-    return cast(
-        Vector,
-        alg.dot(
-            LMS_TO_SRGBL,
-            [c ** 3 for c in cast(Vector, alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1))],
-            dims=alg.D2_D1
-        )
+    return alg.dot(
+        LMS_TO_SRGBL,
+        [c ** 3 for c in alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
+        dims=alg.D2_D1
     )
 
 
 def linear_srgb_to_oklab(rgb: Vector) -> Vector:  # pragma: no cover
     """Linear sRGB to Oklab."""
 
-    return cast(
-        Vector,
-        alg.dot(
-            LMS3_TO_OKLAB,
-            [alg.cbrt(c) for c in cast(Vector, alg.dot(SRGBL_TO_LMS, rgb, dims=alg.D2_D1))],
-            dims=alg.D2_D1
-        )
+    return alg.dot(
+        LMS3_TO_OKLAB,
+        [alg.cbrt(c) for c in alg.dot(SRGBL_TO_LMS, rgb, dims=alg.D2_D1)],
+        dims=alg.D2_D1
     )
 
 
 def oklab_to_xyz_d65(lab: Vector) -> Vector:
     """Convert from Oklab to XYZ D65."""
 
-    return cast(
-        Vector,
-        alg.dot(
-            LMS_TO_XYZD65,
-            [c ** 3 for c in cast(Vector, alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1))],
-            dims=alg.D2_D1
-        )
+    return alg.dot(
+        LMS_TO_XYZD65,
+        [c ** 3 for c in alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
+        dims=alg.D2_D1
     )
 
 
 def xyz_d65_to_oklab(xyz: Vector) -> Vector:
     """XYZ D65 to Oklab."""
 
-    return cast(
-        Vector,
-        alg.dot(
-            LMS3_TO_OKLAB,
-            [alg.cbrt(c) for c in cast(Vector, alg.dot(XYZD65_TO_LMS, xyz, dims=alg.D2_D1))],
-            dims=alg.D2_D1
-        )
+    return alg.dot(
+        LMS3_TO_OKLAB,
+        [alg.cbrt(c) for c in alg.dot(XYZD65_TO_LMS, xyz, dims=alg.D2_D1)],
+        dims=alg.D2_D1
     )
 
 
@@ -133,53 +120,15 @@ class Oklab(Labish, Space):
     BASE = "xyz-d65"
     NAME = "oklab"
     SERIALIZE = ("--oklab",)
-    CHANNEL_NAMES = ("l", "a", "b")
+    CHANNELS = (
+        Channel("l", 0.0, 1.0, flags=FLG_OPT_PERCENT),
+        Channel("a", -0.4, 0.4, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT),
+        Channel("b", -0.4, 0.4, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT)
+    )
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
     WHITE = WHITES['2deg']['D65']
-
-    BOUNDS = (
-        GamutUnbound(0.0, 1.0, FLG_OPT_PERCENT),
-        GamutUnbound(-0.5, 0.5),
-        GamutUnbound(-0.5, 0.5)
-    )
-
-    @property
-    def l(self) -> float:
-        """L channel."""
-
-        return self._coords[0]
-
-    @l.setter
-    def l(self, value: float) -> None:
-        """Get true luminance."""
-
-        self._coords[0] = value
-
-    @property
-    def a(self) -> float:
-        """A channel."""
-
-        return self._coords[1]
-
-    @a.setter
-    def a(self, value: float) -> None:
-        """A axis."""
-
-        self._coords[1] = value
-
-    @property
-    def b(self) -> float:
-        """B channel."""
-
-        return self._coords[2]
-
-    @b.setter
-    def b(self, value: float) -> None:
-        """B axis."""
-
-        self._coords[2] = value
 
     @classmethod
     def to_base(cls, oklab: Vector) -> Vector:

@@ -1,7 +1,6 @@
 """Color edit tool."""
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 import mdpopups
 from .lib import colorbox
 from . import ch_util as util
@@ -36,7 +35,7 @@ Transparent backdrops will be <code>normal</code> blended with white.
 """
 
 
-def parse_color(string, start=0, second=False):
+def parse_color(base, string, start=0, second=False):
     """
     Parse colors.
 
@@ -51,7 +50,7 @@ def parse_color(string, start=0, second=False):
     space = None
     blend_mode = 'normal'
     # First color
-    color = Color.match(string, start=start, fullmatch=False)
+    color = base.match(string, start=start, fullmatch=False)
     if color:
         start = color.end
         if color.end != length:
@@ -98,7 +97,7 @@ def parse_color(string, start=0, second=False):
     return color, more, space, blend_mode
 
 
-def evaluate(string):
+def evaluate(base, string):
     """Evaluate color."""
 
     colors = []
@@ -110,12 +109,12 @@ def evaluate(string):
         space = None
 
         # Try to capture the color or the two colors to mix
-        first, more, space, blend_mode = parse_color(color)
+        first, more, space, blend_mode = parse_color(base, color)
         if first and more is not None:
             if more is False:
                 first = None
             else:
-                second, more, space, blend_mode = parse_color(color, start=first.end, second=True)
+                second, more, space, blend_mode = parse_color(base, color, start=first.end, second=True)
                 if not second or more is False:
                     first = None
                     second = None
@@ -162,7 +161,7 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
                 except Exception:
                     pass
                 if color is not None:
-                    color = Color(color)
+                    color = self.base(color)
                     return color.to_string(**util.DEFAULT)
         return ''
 
@@ -172,11 +171,11 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
-            colors = evaluate(text)
+            colors = evaluate(self.base, text)
 
             html = ""
             for color in colors:
-                pcolor = Color(color)
+                pcolor = self.base(color)
                 message = ""
                 color_string = ""
                 if self.gamut_space == 'srgb':
@@ -184,7 +183,7 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
                 else:
                     check_space = self.gamut_space
                 if not pcolor.in_gamut(check_space):
-                    pcolor.fit(self.gamut_space, in_place=True)
+                    pcolor.fit(self.gamut_space)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(pcolor.to_string())
                 pcolor.convert(self.gamut_space, fit=True, in_place=True)
@@ -192,7 +191,7 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
                 preview = pcolor.clone().set('alpha', 1)
                 preview_alpha = pcolor
                 preview_border = self.default_border
-                temp = Color(preview_border)
+                temp = self.base(preview_border)
                 if temp.luminance() < 0.5:
                     second_border = temp.mix('white', 0.25, space=self.gamut_space, out_space=self.gamut_space)
                     second_border.set('alpha', 1)
@@ -226,7 +225,7 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
         """Validate."""
 
         try:
-            color = evaluate(color)
+            color = evaluate(self.base, color)
             return len(color) > 0
         except Exception:
             return False
@@ -240,7 +239,8 @@ class ColorHelperBlendModeCommand(_ColorMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
-        colors = evaluate(color_helper_blend_mode)
+        self.base = util.get_base_color()
+        colors = evaluate(color_helper_blend_mode, self.base)
         color = None
         if colors:
             color = colors[-1]

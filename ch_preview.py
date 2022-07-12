@@ -6,7 +6,6 @@ License: MIT
 """
 import sublime
 import sublime_plugin
-from .lib.coloraide import Color
 import threading
 from time import time, sleep
 import re
@@ -251,13 +250,13 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     class_options = self.color_classes[view_id].get(item["class"])
                     if class_options is None:
                         continue
-                    module = class_options.get("class", "ColorHelper.lib.coloraide.Color")
+                    module = class_options.get("class", None)
                     if isinstance(module, str):
                         # Initialize the color module and cache it for this view
                         color_class = util.import_color(module)
                         class_options["class"] = color_class
                     else:
-                        color_class = module
+                        color_class = self.base
                     filters = class_options.get("filters", [])
                     break
             except Exception:
@@ -271,8 +270,8 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         self.gamut_space = ch_settings.get('gamut_space', 'srgb')
         if self.gamut_space not in util.GAMUT_SPACES:
             self.gamut_space = 'srgb'
-        self.out_of_gamut = Color("transparent").convert(self.gamut_space)
-        self.out_of_gamut_border = Color(self.view.style().get('redish', "red")).convert(self.gamut_space)
+        self.out_of_gamut = self.base("transparent").convert(self.gamut_space)
+        self.out_of_gamut_border = self.base(self.view.style().get('redish', "red")).convert(self.gamut_space)
 
     def do_search(self, force=False):
         """
@@ -415,14 +414,14 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                         continue
 
                     # Calculate a reasonable border color for our image at this location and get color strings
-                    hsl = Color(
+                    hsl = self.base(
                         mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
                         filters=util.CSS_SRGB_SPACES
                     ).convert("hsl")
-                    hsl.lightness = hsl.lightness + (0.3 if hsl.luminance() < 0.5 else -0.3)
+                    hsl['lightness'] = hsl['lightness'] + (0.3 if hsl.luminance() < 0.5 else -0.3)
                     preview_border = hsl.convert(self.gamut_space, fit=True).set('alpha', 1)
 
-                    color = Color(obj.color)
+                    color = self.base(obj.color)
                     title = ''
                     if self.gamut_space == 'srgb':
                         check_space = self.gamut_space if color.space() not in util.SRGB_SPACES else color.space()
@@ -508,6 +507,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
     def run(self, clear=False, force=False):
         """Run."""
 
+        self.base = util.get_base_color()
         self.view = self.window.active_view()
         ids = set([view.buffer_id() for view in self.window.views()])
         keys = set(self.previews.keys())

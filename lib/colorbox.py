@@ -45,12 +45,8 @@ def to_list(rgb, alpha=False):
     and convert to a list with format `[r, g, b]`.
     """
 
-    r, g, b = [process_channel(c) for c in rgb.coords()]
-    if alpha:
-        a = process_channel(rgb.alpha)
-        return [r, g, b, a]
-    else:
-        return [r, g, b]
+    r, g, b, a = [process_channel(c) for c in rgb[:]]
+    return [r, g, b, a] if alpha else [r, g, b]
 
 
 def checkered_color(color, background):

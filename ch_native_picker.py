@@ -1,7 +1,6 @@
 """OS specific color pickers."""
 import sublime
 import subprocess
-from .lib.coloraide import Color
 import time
 
 MAC_CHOOSE_COLOR = '''\
@@ -40,6 +39,7 @@ class _ColorPicker:
     def __init__(self, color):
         """Initialize the color."""
 
+        self.base = type(color)
         self.color = color
 
     def pick(self):
@@ -55,7 +55,7 @@ class MacPick(_ColorPicker):
         """Pick the color."""
 
         color = self.color.convert('srgb')
-        coords = [x * UINT for x in color.fit(in_place=True).coords()]
+        coords = [x * UINT for x in color.clone().fit()[:-1]]
         try:
             p = subprocess.Popen(
                 ['osascript', '-e', MAC_CHOOSE_COLOR.format(*coords)],
@@ -67,7 +67,7 @@ class MacPick(_ColorPicker):
             if returncode:
                 color = None
             else:
-                color = Color("srgb", [int(x) / UINT for x in out[0].split(b', ')])
+                color = self.base("srgb", [int(x) / UINT for x in out[0].split(b', ')])
                 self.color = color
         except Exception:
             color = None
@@ -95,7 +95,7 @@ class WinPick(_ColorPicker):
             colors.extend(['color(srgb 1 1 1)'] * delta)
         for index, color in enumerate(colors, 0):
             try:
-                hx = Color(color).to_string(hex=True, alpha=False)[1:]
+                hx = self.base(color).to_string(hex=True, alpha=False)[1:]
                 colors[index] = int(hx[4:6] + hx[2:4] + hx[0:2], 16)
             except Exception:
                 colors[index] = 0xffffff
@@ -108,7 +108,7 @@ class WinPick(_ColorPicker):
         for index in range(16):
             hx = '{:06x}'.format(colors[index])
             pcolors.append(
-                Color('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16))).to_string(
+                self.base('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16))).to_string(
                     color=True, fit=False, precision=-1
                 )
             )
@@ -132,7 +132,7 @@ class WinPick(_ColorPicker):
         time.sleep(1)
         if ChooseColorW(ctypes.pointer(picker)):
             hx = '{:06x}'.format(picker.rgbResult)
-            color = Color('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16)))
+            color = self.base('rgb({} {} {})'.format(int(hx[4:6], 16), int(hx[2:4], 16), int(hx[0:2], 16)))
             self.color = color
         else:
             color = None
@@ -163,7 +163,7 @@ class LinuxPick(_ColorPicker):
             if returncode:
                 color = None
             else:
-                color = Color(out[0].decode('utf-8').strip())
+                color = self.base(out[0].decode('utf-8').strip())
                 self.color = color
         except Exception:
             color = None

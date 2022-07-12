@@ -1,7 +1,8 @@
 """Gamut handling."""
 from .. import algebra as alg
-from .bounds import FLG_ANGLE, GamutBound
+from ..channels import FLG_ANGLE
 from abc import ABCMeta, abstractmethod
+from ..types import Plugin
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -11,47 +12,43 @@ if TYPE_CHECKING:  # pragma: no cover
 def clip_channels(color: 'Color') -> None:
     """Clip channels."""
 
-    channels = alg.no_nans(color.coords())
-    fit = []
+    channels = alg.no_nans(color[:-1])
 
     for i, value in enumerate(channels):
-        bounds = color._space.BOUNDS[i]
-        a = bounds.lower  # type: Optional[float]
-        b = bounds.upper  # type: Optional[float]
-        is_bound = isinstance(bounds, GamutBound)
+        chan = color._space.CHANNELS[i]
+        a = chan.low  # type: Optional[float]
+        b = chan.high  # type: Optional[float]
 
         # Wrap the angle. Not technically out of gamut, but we will clean it up.
-        if bounds.flags & FLG_ANGLE:
-            fit.append(value % 360.0)
+        if chan.flags & FLG_ANGLE:
+            color[i] = value % 360.0
             continue
 
         # These parameters are unbounded
-        if not is_bound:  # pragma: no cover
+        if not chan.bound:  # pragma: no cover
             # Will not execute unless we have a space that defines some coordinates
             # as bound and others as not. We do not currently have such spaces.
             a = b = None
 
         # Fit value in bounds.
-        fit.append(alg.clamp(value, a, b))
-    color.update(color.space(), fit, color.alpha)
+        color[i] = alg.clamp(value, a, b)
 
 
 def verify(color: 'Color', tolerance: float) -> bool:
     """Verify the values are in bound."""
 
-    channels = alg.no_nans(color.coords())
+    channels = alg.no_nans(color[:-1])
     for i, value in enumerate(channels):
-        bounds = color._space.BOUNDS[i]
-        a = bounds.lower  # type: Optional[float]
-        b = bounds.upper  # type: Optional[float]
-        is_bound = isinstance(bounds, GamutBound)
+        chan = color._space.CHANNELS[i]
+        a = chan.low  # type: Optional[float]
+        b = chan.high  # type: Optional[float]
 
         # Angles will wrap, so no sense checking them
-        if bounds.flags & FLG_ANGLE:
+        if chan.flags & FLG_ANGLE:
             continue
 
         # These parameters are unbounded
-        if not is_bound:
+        if not chan.bound:
             a = b = None
 
         # Check if bounded values are in bounds
@@ -60,7 +57,7 @@ def verify(color: 'Color', tolerance: float) -> bool:
     return True
 
 
-class Fit(ABCMeta):
+class Fit(Plugin, metaclass=ABCMeta):
     """Fit plugin class."""
 
     NAME = ''
