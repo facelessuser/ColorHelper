@@ -3,11 +3,11 @@ The xyY color space.
 
 https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
 """
-from ...coloraide.spaces import Space
-from ...coloraide.channels import Channel
-from ...coloraide.cat import WHITES
-from ...coloraide import util
-from ...coloraide.types import Vector
+from ..spaces import Space
+from ..channels import Channel
+from ..cat import WHITES
+from .. import util
+from ..types import Vector
 from typing import Tuple
 
 

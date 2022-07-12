@@ -3,11 +3,11 @@ The IgPgTg color space.
 
 https://www.ingentaconnect.com/content/ist/jpi/2020/00000003/00000002/art00002#
 """
-from ...coloraide.spaces import Space, Labish
-from ...coloraide.channels import Channel, FLG_MIRROR_PERCENT
-from ...coloraide.cat import WHITES
-from ...coloraide import algebra as alg
-from ...coloraide.types import Vector
+from ..spaces import Space, Labish
+from ..channels import Channel, FLG_MIRROR_PERCENT
+from ..cat import WHITES
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple
 
 XYZ_TO_LMS = [
@@ -67,8 +67,8 @@ class IgPgTg(Labish, Space):
     SERIALIZE = ("--igpgtg",)  # type: Tuple[str, ...]
     CHANNELS = (
         Channel("ig", 0.0, 1.0),
-        Channel("pg", -0.5, 0.5, flags=FLG_MIRROR_PERCENT),
-        Channel("tg", -0.5, 0.5, flags=FLG_MIRROR_PERCENT)
+        Channel("pg", -1.0, 1.0, flags=FLG_MIRROR_PERCENT),
+        Channel("tg", -1.0, 1.0, flags=FLG_MIRROR_PERCENT)
     )
     WHITE = WHITES['2deg']['D65']
 

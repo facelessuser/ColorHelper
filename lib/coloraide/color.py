@@ -46,6 +46,16 @@ from .spaces.lchuv import Lchuv
 from .spaces.hsluv import HSLuv
 from .spaces.okhsl import Okhsl
 from .spaces.okhsv import Okhsv
+from .spaces.hsi import HSI
+from .spaces.ipt import IPT
+from .spaces.igpgtg import IgPgTg
+from .spaces.cmy import CMY
+from .spaces.cmyk import CMYK
+from .spaces.xyy import XyY
+from .spaces.hunter_lab import HunterLab
+from .spaces.prismatic import Prismatic
+from .spaces.rlab import RLAB
+from .spaces.orgb import ORGB
 from .distance import DeltaE
 from .distance.delta_e_76 import DE76
 from .distance.delta_e_94 import DE94
@@ -67,15 +77,22 @@ from .types import Plugin
 from typing import overload, Union, Sequence, Dict, List, Optional, Any, cast, Callable, Set, Tuple, Type, Mapping
 
 SUPPORTED_DE = (
-    DE76, DE94, DECMC, DE2000, DEITP, DE99o, DEZ, DEHyAB, DEOK
+    DE76, DE94, DECMC, DE2000, DEHyAB, DEOK
+)
+
+EXTRA_DE = (
+    DEITP, DE99o, DEZ
 )
 
 SUPPORTED_SPACES = (
     XYZD65, XYZD50, SRGB, SRGBLinear, DisplayP3, DisplayP3Linear,
     Oklab, Oklch, Lab, Lch, LabD65, LchD65, HSV, HSL, HWB, Rec2020, Rec2020Linear,
-    A98RGB, A98RGBLinear, ProPhotoRGB, ProPhotoRGBLinear,
-    Rec2100PQ, Jzazbz, JzCzhz, ICtCp, Din99o, Lch99o,
-    Luv, Lchuv, Okhsl, Okhsv, HSLuv
+    A98RGB, A98RGBLinear, ProPhotoRGB, ProPhotoRGBLinear
+)
+
+EXTRA_SPACES = (
+    Rec2100PQ, Jzazbz, JzCzhz, ICtCp, Din99o, Lch99o, Luv, Lchuv, Okhsl, Okhsv, HSLuv,
+    HSI, IPT, IgPgTg, CMY, CMYK, XyY, HunterLab, Prismatic, RLAB, ORGB
 )
 
 SUPPORTED_FIT = (
@@ -87,25 +104,6 @@ SUPPORTED_CAT = (Bradford, VonKries, XYZScaling, CAT02, CMCCAT97, Sharp, CMCCAT2
 SUPPORTED_FILTERS = (
     Sepia, Brightness, Contrast, Saturate, Opacity, HueRotate, Grayscale, Invert, Protan, Deutan, Tritan
 )
-
-WARN_COORDS = """
-Color channel access has changed. Dynamic channel properties have been deprecated.
-Usage of Color.coords() has also been deprecated. All channels can now easily be
-accessed with indexing.
-
-- You can index with numbers: Color[0]
-- You can index with channel names: Color['red']
-- You can slice to get specific color coordinates: Color[:-1]
-- You can get all coordinates: Color[:] or list(Color)
-- You can even iterate coordinates: [c for c in Color]
-- Indexing also supports assignment: Color[0] = 1 or Color[:3] = [1, 1, 1]
-
-Please consider updating usage to utilize this new functionality as Color.coords()
-and all other dynamic properties will be removed sometime before the 1.0 release.
-
-These changes were made in an effort to remove unnecessary overhead on every class
-attribute get/set operation.
-"""
 
 
 class ColorMatch:
@@ -356,7 +354,8 @@ class Color(metaclass=ColorMeta):
     def register(
         cls,
         plugin: Union[Type[Plugin], Sequence[Type[Plugin]]],
-        overwrite: bool = False
+        overwrite: bool = False,
+        silent: bool = False
     ) -> None:
         """Register the hook."""
 
@@ -381,7 +380,9 @@ class Color(metaclass=ColorMeta):
                 if p.NAME == 'clip':
                     if reset_convert_cache:  # pragma: no cover
                         cls._get_convert_chain.cache_clear()
-                    raise ValueError("'{}' is a reserved name for gamut mapping/reduction and cannot be overridden")
+                    if not silent:
+                        raise ValueError("'{}' is a reserved name for gamut mapping/reduction and cannot be overridden")
+                    continue  # pragma: no cover
             else:
                 if reset_convert_cache:  # pragma: no cover
                     cls._get_convert_chain.cache_clear()
@@ -392,7 +393,7 @@ class Color(metaclass=ColorMeta):
 
             if name != "*" and name not in mapping or overwrite:
                 cast(Dict[str, Type[Plugin]], mapping)[name] = value
-            else:
+            elif not silent:
                 if reset_convert_cache:  # pragma: no cover
                     cls._get_convert_chain.cache_clear()
                 raise ValueError("A plugin with the name of '{}' already exists or is not allowed".format(name))
@@ -433,7 +434,9 @@ class Color(metaclass=ColorMeta):
                 if name == 'clip':
                     if reset_convert_cache:  # pragma: no cover
                         cls._get_convert_chain.cache_clear()
-                    raise ValueError("'{}' is a reserved name gamut mapping/reduction and cannot be removed")
+                    if not silent:
+                        raise ValueError("'{}' is a reserved name gamut mapping/reduction and cannot be removed")
+                    continue  # pragma: no cover
             else:
                 if reset_convert_cache:  # pragma: no cover
                     cls._get_convert_chain.cache_clear()
@@ -903,15 +906,12 @@ class Color(metaclass=ColorMeta):
         self[name] = value(self[name]) if callable(value) else value
         return self
 
-    @util.deprecated(WARN_COORDS)
-    def coords(self) -> Vector:  # pragma: no cover
-        """
-        Coordinates.
-
-        TODO: remove before release of 1.0
-        """
-
-        return self._coords[:-1]
-
 
 Color.register(SUPPORTED_SPACES + SUPPORTED_DE + SUPPORTED_FIT + SUPPORTED_CAT + SUPPORTED_FILTERS)
+
+
+class ColorAll(Color):
+    """Color derivative with all extra spaces."""
+
+
+ColorAll.register(EXTRA_DE + EXTRA_SPACES)

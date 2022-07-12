@@ -4,11 +4,11 @@ ORGB color space.
 https://graphics.stanford.edu/~boulos/papers/orgb_sig.pdf
 """
 import math
-from ...coloraide import algebra as alg
-from ...coloraide.spaces import Space, Labish
-from ...coloraide.types import Vector
-from ...coloraide.cat import WHITES
-from ...coloraide.channels import Channel, FLG_MIRROR_PERCENT
+from .. import algebra as alg
+from ..spaces import Space, Labish
+from ..types import Vector
+from ..cat import WHITES
+from ..channels import Channel, FLG_MIRROR_PERCENT
 
 RGB_TO_LC1C2 = [
     [0.2990, 0.5870, 0.1140],
@@ -64,6 +64,7 @@ class ORGB(Labish, Space):
     NAME = "orgb"
     SERIALIZE = ("--orgb",)
     WHITE = WHITES['2deg']['D65']
+    EXTENDED_RANGE = True
     CHANNELS = (
         Channel("l", 0.0, 1.0, bound=True),
         Channel("cyb", -1.0, 1.0, bound=True, flags=FLG_MIRROR_PERCENT),

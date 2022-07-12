@@ -4,11 +4,11 @@ The IPT color space.
 https://www.researchgate.net/publication/\
 221677980_Development_and_Testing_of_a_Color_Space_IPT_with_Improved_Hue_Uniformity.
 """
-from ...coloraide.spaces import Space, Labish
-from ...coloraide.channels import Channel, FLG_MIRROR_PERCENT
-from ...coloraide.cat import WHITES
-from ...coloraide import algebra as alg
-from ...coloraide.types import Vector
+from ..spaces import Space, Labish
+from ..channels import Channel, FLG_MIRROR_PERCENT
+from ..cat import WHITES
+from .. import algebra as alg
+from ..types import Vector
 from typing import Tuple
 
 # The IPT algorithm requires the use of the Hunt-Pointer-Estevez matrix,

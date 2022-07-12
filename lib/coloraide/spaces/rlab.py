@@ -4,11 +4,11 @@ RLAB.
 https://scholarworks.rit.edu/cgi/viewcontent.cgi?article=1153&context=article
 https://www.imaging.org/site/PDFS/Papers/1997/RP-0-67/2368.pdf
 """
-from ...coloraide.cat import WHITES
-from ...coloraide.spaces.lab import Lab
-from ...coloraide import algebra as alg
-from ...coloraide.types import Vector
-from ...coloraide.channels import Channel, FLG_MIRROR_PERCENT
+from ..cat import WHITES
+from ..spaces.lab import Lab
+from .. import algebra as alg
+from ..types import Vector
+from ..channels import Channel, FLG_MIRROR_PERCENT
 
 XYZ_TO_XYZ_REF = [
     [1.0521266389510715, 2.220446049250313e-16, 0.0],

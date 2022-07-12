@@ -2,7 +2,7 @@
 
 ## 5.0.0
 
-> **BREAKING CHANGE**: Newest `coloraide` was updated and approaching  
+> **BREAKING CHANGE**: Newest `coloraide` was updated. It is approaching  
 > a 1.0 release. In the path to a 1.0 release some refactoring and  
 > reworking caused custom color classes to break. All internal color  
 > classes should be fine, but any users that created custom local  
@@ -10,8 +10,12 @@
 > to work with the latest version.
 
 - **NEW**: Upgrade to latest `coloraide`.
-- **NEW**: Add `coloraide-extras` package which adds a lot of optional  
-  color spaces.
+- **NEW**: Many new color spaces have been added and can optionally  
+  be included via the new `add_to_default_spaces` option. Some that  
+  were available previously are no longer registered by default.  
+  See `add_to_default_spaces` in the settings file to enable more  
+  spaces. A restart of Sublime Text is required when changing this  
+  setting.
 - **NEW**: Add new `add_to_default_spaces` which allows a user to add  
   NEW color spaces to the default color space so that the new spaces  
   can be saved and recognized in palettes and other areas of ColorHelper.  

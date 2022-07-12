@@ -119,18 +119,30 @@
     // Are mainly for overriding existing color spaces to change format behavior and matching,
     // But brand new color classes should be added here.
     "add_to_default_spaces": [
-        // "ColorHelper.lib.coloraide_extras.spaces.cmy.CMY",
-        // "ColorHelper.lib.coloraide_extras.spaces.cmyk.CMYK",
-        // "ColorHelper.lib.coloraide_extras.spaces.hsi.HSI",
-        // "ColorHelper.lib.coloraide_extras.spaces.hunter_lab.HunterLab",
-        // "ColorHelper.lib.coloraide_extras.spaces.igtgpg.IgTgPg",
-        // "ColorHelper.lib.coloraide_extras.spaces.itp.ITP",
-        // "ColorHelper.lib.coloraide_extras.spaces.orgb.ORGB",
-        // "ColorHelper.lib.coloraide_extras.spaces.prismatic.Prismatic",
-        // "ColorHelper.lib.coloraide_extras.spaces.rlab.RLAB",
-        // "ColorHelper.lib.coloraide_extras.spaces.ucs.UCS",
-        // "ColorHelper.lib.coloraide_extras.spaces.uvw.UVW",
-        // "ColorHelper.lib.coloraide_extras.spaces.xyy.XyY"
+        // "ColorHelper.lib.coloraide.spaces.cmy.CMY",
+        // "ColorHelper.lib.coloraide.spaces.cmyk.CMYK",
+        // "ColorHelper.lib.coloraide.spaces.din99o.Din99o",
+        // "ColorHelper.lib.coloraide.spaces.hsi.HSI",
+        "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
+        // "ColorHelper.lib.coloraide.spaces.hunter_lab.HunterLab",
+        // "ColorHelper.lib.coloraide.spaces.ictcp.ICtCp",
+        // "ColorHelper.lib.coloraide.spaces.igtgpg.IgTgPg",
+        // "ColorHelper.lib.coloraide.spaces.itp.ITP",
+        // "ColorHelper.lib.coloraide.spaces.jzazbz.Jzazbz",
+        // "ColorHelper.lib.coloraide.spaces.jzczhz.JzCzhz",
+        // "ColorHelper.lib.coloraide.spaces.lch99o.lch99o",
+        "ColorHelper.lib.coloraide.spaces.lchuv.Lchuv",
+        "ColorHelper.lib.coloraide.spaces.luv.Luv",
+        "ColorHelper.lib.coloraide.spaces.okhsl.Okhsl",
+        "ColorHelper.lib.coloraide.spaces.okhsv.Okhsv",
+        // "ColorHelper.lib.coloraide.spaces.orgb.ORGB",
+        // "ColorHelper.lib.coloraide.spaces.prismatic.Prismatic",
+        // "ColorHelper.lib.coloraide.spaces.rec2100pq.Rec2100PQ",
+        // "ColorHelper.lib.coloraide.spaces.rlab.RLAB",
+        // "ColorHelper.lib.coloraide.spaces.ucs.UCS",
+        // "ColorHelper.lib.coloraide.spaces.uvw.UVW",
+        // "ColorHelper.lib.coloraide.spaces.xyy.XyY"
+
     ],
 
     // If a there is no rule for the current file, commands will assume

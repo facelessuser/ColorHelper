@@ -3,11 +3,11 @@ HSI class.
 
 https://en.wikipedia.org/wiki/HSL_and_HSV#Saturation
 """
-from ...coloraide.spaces import Space, Cylindrical, WHITES
-from ...coloraide.channels import Channel, FLG_ANGLE
-from ...coloraide import algebra as alg
-from ...coloraide import util
-from ...coloraide.types import Vector
+from ..spaces import Space, Cylindrical, WHITES
+from ..channels import Channel, FLG_ANGLE
+from .. import algebra as alg
+from .. import util
+from ..types import Vector
 
 
 def srgb_to_hsi(rgb: Vector) -> Vector:

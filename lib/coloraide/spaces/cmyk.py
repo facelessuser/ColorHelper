@@ -3,10 +3,10 @@ Uncalibrated, naive CMYK color space.
 
 https://www.w3.org/TR/css-color-5/#cmyk-rgb
 """
-from ...coloraide.spaces import Space
-from ...coloraide.channels import Channel
-from ...coloraide.cat import WHITES
-from ...coloraide.types import Vector
+from ..spaces import Space
+from ..channels import Channel
+from ..cat import WHITES
+from ..types import Vector
 from typing import Tuple
 
 
