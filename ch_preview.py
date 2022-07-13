@@ -250,13 +250,16 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     class_options = self.color_classes[view_id].get(item["class"])
                     if class_options is None:
                         continue
-                    module = class_options.get("class", None)
-                    if isinstance(module, str):
+                    module = class_options.get("class", "ColorHelper.lib.coloraide.Color")
+                    if module == "ColorHelper.lib.coloraide.Color":
+                        color_class = self.base
+                        class_options["class"] = color_class
+                    elif isinstance(module, str):
                         # Initialize the color module and cache it for this view
                         color_class = util.import_color(module)
                         class_options["class"] = color_class
                     else:
-                        color_class = self.base
+                        color_class = module
                     filters = class_options.get("filters", [])
                     break
             except Exception:
