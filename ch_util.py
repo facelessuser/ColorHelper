@@ -16,8 +16,10 @@ from .lib.coloraide.css.parse import RE_COLOR_MATCH
 from .lib.coloraide import __version_info__ as coloraide_version
 import functools
 
+
 class Color(Base):
     """Custom base."""
+
 
 PALETTE_CONFIG = 'color_helper.palettes'
 REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
