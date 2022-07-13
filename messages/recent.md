@@ -5,7 +5,7 @@ New release!
 See `Preferences->Package Settings->ColorHelper->Changelog` for more info on  
 prior releases.
 
-Restart of Sublime Text may be required.
+A restart of Sublime Text is **strongly** encouraged.
 
 # 5.0.0
 

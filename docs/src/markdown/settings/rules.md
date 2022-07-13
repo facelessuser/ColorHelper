@@ -1,5 +1,49 @@
 # Configuring ColorHelper
 
+## `add_to_default_spaces`
+
+ColorHelper uses the `coloraide` library to provide support for all the different color spaces. `coloraide` ships with
+a lot of color spaces, but only registers a select few in order to properly support CSS and a couple specific features.
+ColorHelper provides a way to register additional color spaces that ship with `coloraide` (or even custom color spaces
+written by a user) via the `add_to_default_spaces`.
+
+By default, ColorHelper does enable a few additional spaces, but a user can more if they have a need. It should be noted
+that a restart of Sublime Text is required for these changes to take affect as changes to this setting affect the plugin
+throughout.
+
+```js
+    // This option requires a restart of Sublime Text.
+    // This allows a user to add NEW previously unincluded color spaces.
+    // This ensures that the new color space will work in palettes etc.
+    // Then, custom color classes can override the space for special, file
+    // specific formatting via the `class` attribute under `user_color_classes`.
+    "add_to_default_spaces": [
+        // "ColorHelper.lib.coloraide.spaces.cmy.CMY",
+        // "ColorHelper.lib.coloraide.spaces.cmyk.CMYK",
+        // "ColorHelper.lib.coloraide.spaces.din99o.Din99o",
+        // "ColorHelper.lib.coloraide.spaces.hsi.HSI",
+        // "ColorHelper.lib.coloraide.spaces.hunter_lab.HunterLab",
+        // "ColorHelper.lib.coloraide.spaces.ictcp.ICtCp",
+        // "ColorHelper.lib.coloraide.spaces.igtgpg.IgTgPg",
+        // "ColorHelper.lib.coloraide.spaces.itp.ITP",
+        // "ColorHelper.lib.coloraide.spaces.jzazbz.Jzazbz",
+        // "ColorHelper.lib.coloraide.spaces.jzczhz.JzCzhz",
+        // "ColorHelper.lib.coloraide.spaces.lch99o.lch99o",
+        // "ColorHelper.lib.coloraide.spaces.orgb.ORGB",
+        // "ColorHelper.lib.coloraide.spaces.prismatic.Prismatic",
+        // "ColorHelper.lib.coloraide.spaces.rec2100pq.Rec2100PQ",
+        // "ColorHelper.lib.coloraide.spaces.rlab.RLAB",
+        // "ColorHelper.lib.coloraide.spaces.ucs.UCS",
+        // "ColorHelper.lib.coloraide.spaces.uvw.UVW",
+        // "ColorHelper.lib.coloraide.spaces.xyy.XyY",
+        "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
+        "ColorHelper.lib.coloraide.spaces.lchuv.Lchuv",
+        "ColorHelper.lib.coloraide.spaces.luv.Luv",
+        "ColorHelper.lib.coloraide.spaces.okhsl.Okhsl",
+        "ColorHelper.lib.coloraide.spaces.okhsv.Okhsv"
+    ],
+```
+
 ## `color_rules`
 
 The `color_rules` option configures how ColorHelper interacts with a given file. In order for ColorHelper to inject
@@ -187,17 +231,21 @@ accepts a string defining a single color class. It will not accept multiple colo
 ## `color_classes`
 
 ColorHelper uses the `Color` class from the [`coloraide`][coloraide] dependency to manage, manipulate, and translate
-colors. By default, these color classes accept inputs that match valid CSS. They also output colors in the form of valid
-CSS.
+colors. By default, this color class contains color spaces that accept inputs that match valid CSS. They also output
+colors in the form of valid CSS.
 
-It may be desirable to filter out certain color spaces, or even alter a color space to accept different input formats
-and generate different output formats. This can all be done by subclassing the `Color` class.
+For some file types, it may be desirable to filter out certain color spaces, alter the default output options, or even
+alter the input and output formats entirely.
 
-`color_classes` allows you to configure the `Color` class, or point to a custom `Color` class and configure it.
+`color_classes` is a dictionary of color profiles that link to a specific `Color` class and provides various options
+you can tweak related to the `Color` class.
 
-`color_classes` is a dictionary of color profiles that link to a specific `Color` class. You can tweak options
-specifically related to the `Color` class. The **key** is the name of the color profile  which can be referenced by
+The **key** of the dictionary is the name of the color profile  which can be referenced by
 [`color_rules`](#color_rules). The **value** is a dictionary of options.
+
+Generally, either the base color space should be used (`ColorHelper.lib.coloraide.Color`) or one of the available
+[custom color classes](https://github.com/facelessuser/ColorHelper/tree/master/custom). If none of these are sufficient,
+it is possible to create your own custom class.
 
 ### `output`
 
@@ -221,18 +269,40 @@ To learn more about available options, see [`coloraide`'s documentation][colorai
 
 ### `class`
 
-This allows a user to specify a custom color class derived from `coloraide.Color`. This could be used to reference
-a custom color class that can recognize different formats when scanning for colors. A custom color class will often also
-provide different string outputs and string output options.
+This allows a user to specify a custom color class derived from the default color class.
+
+The default color class is `ColorHelper.lib.coloraide.Color`. ColorHelper also provides some additional custom classes
+which are found [here](https://github.com/facelessuser/ColorHelper/tree/master/custom).
 
 The value should be the full import path for the `Color` class.
-
-ColorHelper provides a few custom color classes in `ColorHelper.custom`. You can check out those to see how to create
-your own.
 
 ```js
 "class": "ColorHelper.custom.tmtheme.ColorSRGBX11",
 ```
+
+If none of the provided color classes are sufficient, it is possible to create your own custom class. With that said,
+there are a few things to note:
+
+- Custom classes should be derived from the default base class, but there is a catch, ColorHelper handles the default
+  (`ColorHelper.lib.coloraide.Color`) special. This allows us to enable the users with the ability of defining what
+  color spaces the default class contains via the [`add_to_default_spaces`](#add_to_default_spaces) setting. In turn,
+  ensures all color spaces properly function in features like palettes, etc.
+
+    So, if creating a custom color space, the user should call `ColorHelper.ch_util.get_base_color()` to get the actual
+  default class to derive from. Users should **not** derive directly from `ColorHelper.lib.coloraide.Color`.
+
+- Colors are passed back and forth between custom color classes and the default color class. As long as both classes
+  know how to handle the color space, things should work without issue.
+
+    If a custom color class is using a color space that is not registered under the default class or is using a color
+  space derived from an unregistered color space, some features won't work.
+
+    In short, it is import to ensure that all color spaces that are actively used in custom color classes are
+  registered via [`add_to_default_spaces`](#add_to_default_spaces).
+
+    If you are creating a brand new color space, you must also register it, or a version of that color space, with the
+  default color class. The registered color space must support the `color(id ...)` input and output format as that
+  format is often used when passing a color around internally within ColorAide.
 
 ### `filters`
 

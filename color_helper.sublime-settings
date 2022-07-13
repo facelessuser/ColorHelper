@@ -115,9 +115,8 @@
     // This option requires a restart of Sublime Text.
     // This allows a user to add NEW previously unincluded color spaces.
     // This ensures that the new color space will work in palettes etc.
-    // Defined color spaces via the `class` attrinbute under `user_color_classes`
-    // Are mainly for overriding existing color spaces to change format behavior and matching,
-    // But brand new color classes should be added here.
+    // Then, custom color classes can override the space for special, file
+    // specific formatting via the `class` attribute under `user_color_classes`.
     "add_to_default_spaces": [
         // "ColorHelper.lib.coloraide.spaces.cmy.CMY",
         // "ColorHelper.lib.coloraide.spaces.cmyk.CMYK",
