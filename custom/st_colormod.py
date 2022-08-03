@@ -11,6 +11,8 @@ import functools
 import math
 from ColorHelper.ch_util import get_base_color
 
+BASE = get_base_color()
+
 WHITE = [1.0] * 3
 BLACK = [0.0] * 3
 
@@ -590,7 +592,7 @@ class ColorMod:
         self._color.update(this)
 
 
-class Color(get_base_color()):
+class Color(BASE):
     """Color modify class."""
 
     def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
@@ -633,7 +635,7 @@ class Color(get_base_color()):
                 coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(m[0].CHANNELS, m[1])]
                 coords.append(alg.clamp(float(m[2]), *m[0].get_channel(-1).limit))
                 obj = m[0], coords
-        elif isinstance(color, Color):
+        elif isinstance(color, BASE):
             # Handle a color instance
             if not filters or color.space() in filters:
                 space_class = cls.CS_MAP[color.space()]

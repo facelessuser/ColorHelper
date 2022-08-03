@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 5.1.0
+
+- **FIX**: Fix issue with Sublime ColorMod.
+
 ## 5.0.0
 
 > **BREAKING CHANGE**: Newest `coloraide` was updated. It is approaching  

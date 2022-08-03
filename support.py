@@ -5,7 +5,7 @@ import textwrap
 import webbrowser
 import re
 
-__version__ = "5.0.0"
+__version__ = "5.1.0"
 __pc_name__ = 'ColorHelper'
 
 CSS = '''
