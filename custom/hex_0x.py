@@ -7,7 +7,7 @@ from ColorHelper.ch_util import get_base_color
 MATCH = re.compile(r"\b0x(?:[0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
 
 
-class HexSRGB(SRGB):
+class HexSRGB(sRGB):
     """SRGB that looks for alpha first in hex format."""
 
     @classmethod
