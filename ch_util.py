@@ -11,10 +11,11 @@ import mdpopups
 import base64
 import importlib
 from .lib.coloraide import Color as Base
-from .lib.coloraide.color import SUPPORTED_SPACES
 from .lib.coloraide.css.parse import RE_COLOR_MATCH
 from .lib.coloraide import __version_info__ as coloraide_version
 import functools
+
+SUPPORTED_SPACES = list(Base.CS_MAP.values())
 
 
 class Color(Base):
@@ -185,7 +186,10 @@ def get_base_color():
     settings = sublime.load_settings("color_helper.sublime-settings")
     spaces = settings.get('add_to_default_spaces', [])
     for space in spaces:
-        Color.register(import_color(space))
+        try:
+            Color.register(import_color(space)())
+        except Exception:
+            log('Could not register: {}'.format(space))
     return Color
 
 

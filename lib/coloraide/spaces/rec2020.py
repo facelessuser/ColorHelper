@@ -1,6 +1,6 @@
 """Rec 2020 color class."""
 from ..cat import WHITES
-from .srgb import SRGB
+from .srgb import sRGB
 import math
 from .. import algebra as alg
 from ..types import Vector
@@ -46,21 +46,19 @@ def gam_2020(rgb: Vector) -> Vector:
     return result
 
 
-class Rec2020(SRGB):
+class Rec2020(sRGB):
     """Rec 2020 class."""
 
     BASE = "rec2020-linear"
     NAME = "rec2020"
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Rec 2020."""
 
         return lin_2020(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From XYZ to Rec 2020."""
 
         return gam_2020(coords)

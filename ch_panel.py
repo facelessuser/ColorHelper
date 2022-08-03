@@ -704,7 +704,9 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
         if (len(sels) == 1 and sels[0].size()):
             region = sels[0]
             bfr = self.view.substr(region)
-            obj = self.custom_color_class.match(bfr, fullmatch=True, filters=self.filters)
+            obj = self.custom_color_class.match(bfr, fullmatch=True)
+            if obj is not None and obj.color.space() not in self.filters:
+                obj is None
             if obj is not None:
                 obj.start = region.begin()
                 obj.end = region.end()
@@ -771,7 +773,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             self.no_info = True
             obj = self.get_cursor_color()
             if obj is None:
-                color = self.base("white", filters=util.EXTENDED_SRGB_SPACES).to_string(**util.COLOR_FULL_PREC)
+                color = self.base("white").to_string(**util.COLOR_FULL_PREC)
             else:
                 color = obj.color.to_string(**util.COLOR_FULL_PREC)
             self.color_picker(color)

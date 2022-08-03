@@ -1,5 +1,5 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.spaces.srgb.css import SRGB
+from ..lib.coloraide.spaces.srgb.css import sRGB
 from ..lib.coloraide.css import parse
 from ..lib.coloraide import algebra as alg
 import re
@@ -31,7 +31,7 @@ def split_channels(color):
         )
 
 
-class ASRGB(SRGB):
+class ASRGB(sRGB):
     """SRGB that looks for alpha first in hex format."""
 
     COLOR_FORMAT = False

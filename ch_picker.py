@@ -132,7 +132,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = self.base(mode, [r_hue, 0, 1], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [r_hue, 0, 1])
+            if color.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -189,7 +191,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color['hue'] = r_hue
 
             # Generate a hue bar.
-            color = self.base(mode, [0, 1, 1], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [0, 1, 1])
+            if color.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -263,7 +267,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
             # Generate the colors with each row being darker than the last.
             # Each column will progress through hues.
-            color = self.base(mode, [0, 1 * scale, lightness], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [0, 1 * scale, lightness])
+            if color.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -322,7 +328,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 color['saturation'] = color['saturation'] - (0.0625 * scale)
 
             # Generate a grayscale bar.
-            color = self.base(mode, [hue, saturation, 1 * scale], filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(mode, [hue, saturation, 1 * scale])
+            if color.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
             if color.is_nan("hue"):
                 color['hue'] = 0.0
             check_size = self.check_size(self.height)
@@ -390,7 +398,9 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         check_size = self.check_size(self.height)
         html = []
         for name in sorted(css_names.name2val_map):
-            color = self.base(name, filters=util.EXTENDED_SRGB_SPACES)
+            color = self.base(name)
+            if color.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
 
             html.append(
                 '[{}]({}) {}<br>'.format(
@@ -694,10 +704,13 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
                 cmd = 'color_helper_edit'
 
             # Call the edit input panel
+            initial = self.base(color)
+            if initial.space() not in util.EXTENDED_SRGB_SPACES:
+                raise ValueError('Space not in filters')
             self.view.run_command(
                 cmd,
                 {
-                    "initial": self.base(color, filters=util.EXTENDED_SRGB_SPACES)
+                    "initial": initial
                     .convert(convert, in_place=True)
                     .to_string(**DEFAULT),
                     "on_done": on_done, "on_cancel": on_cancel

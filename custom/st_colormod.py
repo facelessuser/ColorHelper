@@ -595,10 +595,10 @@ class ColorMod:
 class Color(BASE):
     """Color modify class."""
 
-    def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
+    def __init__(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):
         """Initialize."""
 
-        super().__init__(color, data, alpha, filters=None, variables=variables, **kwargs)
+        super().__init__(color, data, alpha, variables=variables, **kwargs)
 
     @classmethod
     def _parse(
@@ -607,7 +607,6 @@ class Color(BASE):
         data=None,
         alpha=util.DEF_ALPHA,
         *,
-        filters=None,
         variables=None,
         **kwargs
     ):
@@ -620,26 +619,28 @@ class Color(BASE):
             if data is not None:
                 s = color
                 space_class = cls.CS_MAP.get(s)
-                if space_class and (not filters or s in filters):
-                    num_channels = len(space_class.CHANNELS)
-                    if len(data) < num_channels:
-                        data = list(data) + [alg.NaN] * (num_channels - len(data))
-                    coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
-                    coords.append(alg.clamp(float(alpha), *space_class.get_channel(-1).limit))
-                    obj = space_class, coords
+                if not space_class:
+                    raise ValueError("'{}' is not a registered color space")
+                num_channels = len(space_class.CHANNELS)
+                if len(data) < num_channels:
+                    data = list(data) + [alg.NaN] * (num_channels - len(data))
+                coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
+                coords.append(alg.clamp(float(alpha), *space_class.channels[-1].limit))
+                obj = space_class, coords
             # Parse a CSS string
             else:
-                m = cls._match(color, fullmatch=True, filters=filters, variables=variables)
+                m = cls._match(color, fullmatch=True, variables=variables)
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
                 coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(m[0].CHANNELS, m[1])]
-                coords.append(alg.clamp(float(m[2]), *m[0].get_channel(-1).limit))
+                coords.append(alg.clamp(float(m[2]), *m[0].channels[-1].limit))
                 obj = m[0], coords
         elif isinstance(color, BASE):
             # Handle a color instance
-            if not filters or color.space() in filters:
-                space_class = cls.CS_MAP[color.space()]
-                obj = space_class, color[:]
+            space_class = cls.CS_MAP.get(color.space())
+            if not space_class:
+                raise ValueError("'{}' is not a registered color space")
+            obj = space_class, color[:]
         elif isinstance(color, Mapping):
             # Handle a color dictionary
             space = color['space']
@@ -654,7 +655,7 @@ class Color(BASE):
         return obj
 
     @classmethod
-    def _match(cls, string, start=0, fullmatch=False, filters=None, variables=None):
+    def _match(cls, string, start=0, fullmatch=False, variables=None):
         """
         Match a color in a buffer and return a color object.
 
@@ -695,40 +696,38 @@ class Color(BASE):
         cls,
         string: str,
         start: int = 0,
-        fullmatch: bool = False,
-        *,
-        filters=None
+        fullmatch: bool = False
     ):
         """Match color."""
 
-        m = cls._match(string, start, fullmatch, filters=filters, variables=None)
+        m = cls._match(string, start, fullmatch, variables=None)
         if m is not None:
             return ColorMatch(cls(m[0].NAME, m[1], m[2]), m[3], m[4])
         return None
 
-    def new(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
+    def new(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):
         """Create new color object."""
 
-        return type(self)(color, data, alpha, filters=filters, variables=variables, **kwargs)
+        return type(self)(color, data, alpha, variables=variables, **kwargs)
 
-    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
+    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):
         """Update the existing color space with the provided color."""
 
         space = self.space()
         self._space, self._coords = self._parse(
-            color, data=data, alpha=alpha, filters=filters, variables=variables, **kwargs
+            color, data=data, alpha=alpha, variables=variables, **kwargs
         )
         if self._space.NAME != space:
             self.convert(space, in_place=True)
         return self
 
-    def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, filters=None, variables=None, **kwargs):
+    def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):
         """Mutate the current color to a new color."""
 
         self._space, self._coords = self._parse(
-            color, data=data, alpha=alpha, filters=filters, variables=variables, **kwargs
+            color, data=data, alpha=alpha, variables=variables, **kwargs
         )
         return self
 
 
-Color.register(HWB, overwrite=True)
+Color.register(HWB(), overwrite=True)

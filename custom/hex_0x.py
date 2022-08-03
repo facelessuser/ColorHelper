@@ -1,5 +1,5 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.spaces.srgb.css import SRGB
+from ..lib.coloraide.spaces.srgb.css import sRGB
 from ..lib.coloraide.css import parse, serialize
 import re
 from ColorHelper.ch_util import get_base_color
@@ -7,7 +7,7 @@ from ColorHelper.ch_util import get_base_color
 MATCH = re.compile(r"\b0x(?:[0-9a-fA-f]{8}|[0-9a-fA-f]{6})\b")
 
 
-class HexSRGB(SRGB):
+class HexSRGB(sRGB):
     """SRGB that looks for alpha first in hex format."""
 
     @classmethod

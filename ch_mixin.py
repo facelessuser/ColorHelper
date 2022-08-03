@@ -42,7 +42,6 @@ class _ColorMixin:
             # Calculate border color for images
             border_color = self.base(
                 self.view.style()['background'],
-                filters=util.CSS_SRGB_SPACES
             ).convert("hsl")
             border_color['lightness'] = border_color['lightness'] + (0.3 if border_color.luminance() < 0.5 else -0.3)
 
@@ -50,7 +49,6 @@ class _ColorMixin:
         self.out_of_gamut = self.base("transparent").convert(self.gamut_space, in_place=True)
         self.out_of_gamut_border = self.base(
             self.view.style().get('redish', "red"),
-            filters=util.CSS_SRGB_SPACES
         ).convert(self.gamut_space, in_place=True)
 
     def get_color_options(self, pt, rule):

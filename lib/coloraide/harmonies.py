@@ -1,7 +1,7 @@
 """Color harmonies."""
 from . import algebra as alg
 from .spaces import Cylindrical
-from typing import Optional, Type, Dict, List, cast, TYPE_CHECKING
+from typing import Optional, Dict, List, cast, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
@@ -10,8 +10,7 @@ if TYPE_CHECKING:  # pragma: no cover
 class Harmony:
     """Color harmony."""
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
 
@@ -34,7 +33,7 @@ class Monochromatic(Harmony):
     The current `RANGE` was chosen as 12 as it seems to to provide OK contrast in most cases for the monochromatic
     colors. The one exception is with a target color of black or very near black which may return at least one color
     with very low contrast to black. Generally, extremely dark colors do not make a good target for color harmonies,
-    but it should be noted that Oklch's lightness tends to the more darker side. The poor contrast may be
+    but it should be noted that OkLCh's lightness tends to the more darker side. The poor contrast may be
     less with other color spaces.
     """
 
@@ -42,8 +41,7 @@ class Monochromatic(Harmony):
     RANGE = 12
     STEPS = 5
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
         if space is None:
@@ -52,7 +50,7 @@ class Monochromatic(Harmony):
         orig_space = color.space()
         color0 = color.convert(space).normalize()
 
-        if not issubclass(color0._space, Cylindrical):
+        if not isinstance(color0._space, Cylindrical):
             raise ValueError('Color space must be cylindrical')
 
         # Trim off black and white unless the color is achromatic,
@@ -68,42 +66,44 @@ class Monochromatic(Harmony):
         b = color.new('color(srgb 0 0 0 / none)').convert(space, in_place=True).mask(['hue', 'alpha'], in_place=True)
 
         # Calculate how many tints and shades we need to generate
-        db = b.delta_e(color0, method=cls.DELTA_E)
-        dw = w.delta_e(color0, method=cls.DELTA_E)
-        steps_w = int(alg.round_half_up((dw / (db + dw)) * cls.RANGE))
-        steps_b = cls.RANGE - steps_w
+        db = b.delta_e(color0, method=self.DELTA_E)
+        dw = w.delta_e(color0, method=self.DELTA_E)
+        steps_w = int(alg.round_half_up((dw / (db + dw)) * self.RANGE))
+        steps_b = self.RANGE - steps_w
 
         # Very close to black or is black, no need to interpolate from black to current color
         if steps_b <= 1:
             left = []
             if steps_b == 1:
-                left.extend(color.steps([b, color], steps=steps_b, space=space, out_space=orig_space))
-            steps = min(cls.RANGE - (1 + steps_b), steps_w)
-            right = color.steps([color0, w], steps=steps, space=space, out_space=orig_space)[rtrim]
+                left.extend(color.steps([b, color], steps=steps_b, space=space, out_space=orig_space, method='linear'))
+            steps = min(self.RANGE - (1 + steps_b), steps_w)
+            right = color.steps([color0, w], steps=steps, space=space, out_space=orig_space, method='linear')[rtrim]
 
         # Very close to white or is white, no need to interpolate from current color to white
         elif steps_w <= 1:
             right = []
             if steps_w == 1:
-                right.extend(color.steps([color0, w], steps=steps_w, space=space, out_space=orig_space))
-            steps = min(cls.RANGE - (1 + steps_w), steps_b)
+                right.extend(
+                    color.steps([color0, w], steps=steps_w, space=space, out_space=orig_space, method='linear')
+                )
+            steps = min(self.RANGE - (1 + steps_w), steps_b)
             right.insert(0, color.clone())
-            left = color.steps([b, color], steps=steps, space=space, out_space=orig_space)[ltrim]
+            left = color.steps([b, color], steps=steps, space=space, out_space=orig_space, method='linear')[ltrim]
 
         else:
             # Anything else in between
-            left = color.steps([b, color], steps=steps_b, space=space, out_space=orig_space)[ltrim]
-            right = color.steps([color0, w], steps=steps_w, space=space, out_space=orig_space)[rtrim]
+            left = color.steps([b, color], steps=steps_b, space=space, out_space=orig_space, method='linear')[ltrim]
+            right = color.steps([color0, w], steps=steps_w, space=space, out_space=orig_space, method='linear')[rtrim]
 
         # Extract a subset of the results
         len_l = len(left)
         len_r = len(right)
-        l = int(cls.STEPS // 2)
-        r = l + (1 if cls.STEPS % 2 else 0)
+        l = int(self.STEPS // 2)
+        r = l + (1 if self.STEPS % 2 else 0)
         if len_r < r:
-            return left[-cls.STEPS + len_r:] + right
+            return left[-self.STEPS + len_r:] + right
         elif len_l < l:
-            return left + right[:cls.STEPS - len_l]
+            return left + right[:self.STEPS - len_l]
         return left[-l:] + right[:r]
 
 
@@ -112,8 +112,7 @@ class Geometric(Harmony):
 
     COUNT = 0
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
         if space is None:
@@ -122,14 +121,14 @@ class Geometric(Harmony):
         orig_space = color.space()
         color0 = color.convert(space)
 
-        if not issubclass(color0._space, Cylindrical):
+        if not isinstance(color0._space, Cylindrical):
             raise ValueError('Color space must be cylindrical')
 
         name = color0._space.hue_name()
 
-        degree = current = 360 / cls.COUNT
+        degree = current = 360 / self.COUNT
         colors = [color]
-        for r in range(cls.COUNT - 1):
+        for r in range(self.COUNT - 1):
             colors.append(
                 color0.clone().set(
                     name,
@@ -161,8 +160,7 @@ class TetradicSquare(Geometric):
 class SplitComplementary(Harmony):
     """Split Complementary colors."""
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
         if space is None:
@@ -171,7 +169,7 @@ class SplitComplementary(Harmony):
         orig_space = color.space()
         color0 = color.convert(space)
 
-        if not issubclass(color0._space, Cylindrical):
+        if not isinstance(color0._space, Cylindrical):
             raise ValueError('Color space must be cylindrical')
 
         name = color0._space.hue_name()
@@ -190,8 +188,7 @@ class SplitComplementary(Harmony):
 class Analogous(Harmony):
     """Analogous colors."""
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
         if space is None:
@@ -200,7 +197,7 @@ class Analogous(Harmony):
         orig_space = color.space()
         color0 = color.convert(space)
 
-        if not issubclass(color0._space, Cylindrical):
+        if not isinstance(color0._space, Cylindrical):
             raise ValueError('Color space must be cylindrical')
 
         name = color0._space.hue_name()
@@ -219,8 +216,7 @@ class Analogous(Harmony):
 class TetradicRect(Harmony):
     """Tetradic (rectangular) colors."""
 
-    @classmethod
-    def harmonize(cls, color: 'Color', space: Optional[str]) -> List['Color']:
+    def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 
         if space is None:
@@ -229,7 +225,7 @@ class TetradicRect(Harmony):
         orig_space = color.space()
         color0 = color.convert(space)
 
-        if not issubclass(color0._space, Cylindrical):
+        if not isinstance(color0._space, Cylindrical):
             raise ValueError('Color space must be cylindrical')
 
         name = color0._space.hue_name()
@@ -249,14 +245,14 @@ class TetradicRect(Harmony):
 
 
 SUPPORTED = {
-    'complement': Complementary,
-    'split': SplitComplementary,
-    'triad': Triadic,
-    'square': TetradicSquare,
-    'rectangle': TetradicRect,
-    'analogous': Analogous,
-    'mono': Monochromatic
-}  # type: Dict[str, Type[Harmony]]
+    'complement': Complementary(),
+    'split': SplitComplementary(),
+    'triad': Triadic(),
+    'square': TetradicSquare(),
+    'rectangle': TetradicRect(),
+    'analogous': Analogous(),
+    'mono': Monochromatic()
+}  # type: Dict[str, Harmony]
 
 
 def harmonize(color: 'Color', name: str, space: Optional[str]) -> List['Color']:
