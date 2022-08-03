@@ -3,7 +3,7 @@ JzCzhz class.
 
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
-from ..spaces import Space, Lchish
+from ..spaces import Space, LChish
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
 from .. import util
@@ -44,7 +44,7 @@ def jzczhz_to_jzazbz(jzczhz: Vector) -> Vector:
     ]
 
 
-class JzCzhz(Lchish, Space):
+class JzCzhz(LChish, Space):
     """
     JzCzhz class.
 
@@ -66,8 +66,7 @@ class JzCzhz(Lchish, Space):
     }
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def normalize(cls, coords: Vector) -> Vector:
+    def normalize(self, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
@@ -76,20 +75,17 @@ class JzCzhz(Lchish, Space):
 
         return coords
 
-    @classmethod
-    def hue_name(cls) -> str:
+    def hue_name(self) -> str:
         """Hue name."""
 
         return "hz"
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To Jzazbz from JzCzhz."""
 
         return jzczhz_to_jzazbz(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From Jzazbz to JzCzhz."""
 
         return jzazbz_to_jzczhz(coords)

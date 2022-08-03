@@ -1,5 +1,5 @@
-"""Lch class."""
-from ...spaces import Space, Lchish
+"""LCh class."""
+from ...spaces import Space, LChish
 from ...cat import WHITES
 from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
 from ... import util
@@ -11,7 +11,7 @@ ACHROMATIC_THRESHOLD = 0.0000000002
 
 
 def lab_to_lch(lab: Vector) -> Vector:
-    """Lab to Lch."""
+    """Lab to LCh."""
 
     l, a, b = lab
 
@@ -27,7 +27,7 @@ def lab_to_lch(lab: Vector) -> Vector:
 
 
 def lch_to_lab(lch: Vector) -> Vector:
-    """Lch to Lab."""
+    """LCh to Lab."""
 
     l, c, h = lch
     if alg.is_nan(h):  # pragma: no cover
@@ -40,8 +40,8 @@ def lch_to_lab(lch: Vector) -> Vector:
     ]
 
 
-class Lch(Lchish, Space):
-    """Lch class."""
+class LCh(LChish, Space):
+    """LCh class."""
 
     BASE = "lab"
     NAME = "lch"
@@ -58,8 +58,7 @@ class Lch(Lchish, Space):
     }
     WHITE = WHITES['2deg']['D50']
 
-    @classmethod
-    def normalize(cls, coords: Vector) -> Vector:
+    def normalize(self, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
@@ -67,14 +66,12 @@ class Lch(Lchish, Space):
             coords[2] = alg.NaN
         return coords
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
-        """To Lab from Lch."""
+    def to_base(self, coords: Vector) -> Vector:
+        """To Lab from LCh."""
 
         return lch_to_lab(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
-        """From Lab to Lch."""
+    def from_base(self, coords: Vector) -> Vector:
+        """From Lab to LCh."""
 
         return lab_to_lch(coords)

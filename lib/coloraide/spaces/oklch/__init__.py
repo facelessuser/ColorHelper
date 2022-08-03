@@ -1,5 +1,5 @@
 """
-LCH class.
+OkLCh class.
 
 ---- License ----
 
@@ -23,7 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ...spaces import Space, Lchish
+from ...spaces import Space, LChish
 from ...cat import WHITES
 from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
 from ... import util
@@ -35,7 +35,7 @@ ACHROMATIC_THRESHOLD = 0.000002
 
 
 def oklab_to_oklch(oklab: Vector) -> Vector:
-    """Oklab to Oklch."""
+    """Oklab to OkLCh."""
 
     l, a, b = oklab
 
@@ -51,7 +51,7 @@ def oklab_to_oklch(oklab: Vector) -> Vector:
 
 
 def oklch_to_oklab(oklch: Vector) -> Vector:
-    """Oklch to Oklab."""
+    """OkLCh to Oklab."""
 
     l, c, h = oklch
     if alg.is_nan(h):  # pragma: no cover
@@ -64,8 +64,8 @@ def oklch_to_oklab(oklch: Vector) -> Vector:
     ]
 
 
-class Oklch(Lchish, Space):
-    """Oklch class."""
+class OkLCh(LChish, Space):
+    """OkLCh class."""
 
     BASE = "oklab"
     NAME = "oklch"
@@ -82,8 +82,7 @@ class Oklch(Lchish, Space):
     }
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def normalize(cls, coords: Vector) -> Vector:
+    def normalize(self, coords: Vector) -> Vector:
         """On color update."""
 
         coords = alg.no_nans(coords)
@@ -92,14 +91,12 @@ class Oklch(Lchish, Space):
 
         return coords
 
-    @classmethod
-    def to_base(cls, oklch: Vector) -> Vector:
+    def to_base(self, oklch: Vector) -> Vector:
         """To Lab."""
 
         return oklch_to_oklab(oklch)
 
-    @classmethod
-    def from_base(cls, oklab: Vector) -> Vector:
+    def from_base(self, oklab: Vector) -> Vector:
         """To Lab."""
 
         return oklab_to_oklch(oklab)

@@ -1,6 +1,6 @@
-"""SRGB Linear color class."""
+"""sRGB Linear color class."""
 from ..cat import WHITES
-from .srgb import SRGB
+from .srgb import sRGB
 from .. import algebra as alg
 from ..types import Vector
 
@@ -34,22 +34,20 @@ def xyz_to_lin_srgb(xyz: Vector) -> Vector:
     return alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
 
 
-class SRGBLinear(SRGB):
-    """SRGB linear."""
+class sRGBLinear(sRGB):
+    """sRGB linear."""
 
     BASE = 'xyz-d65'
     NAME = "srgb-linear"
     SERIALIZE = ("srgb-linear",)
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
-        """To XYZ from SRGB Linear."""
+    def to_base(self, coords: Vector) -> Vector:
+        """To XYZ from sRGB Linear."""
 
         return lin_srgb_to_xyz(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
-        """From XYZ to SRGB Linear."""
+    def from_base(self, coords: Vector) -> Vector:
+        """From XYZ to sRGB Linear."""
 
         return xyz_to_lin_srgb(coords)

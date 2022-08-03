@@ -157,7 +157,9 @@ class ColorHelperBlendModeInputHandler(tools._ColorInputHandler):
             if text:
                 color = None
                 try:
-                    color = self.custom_color_class(text, filters=self.filters)
+                    color = self.custom_color_class(text)
+                    if color.space() not in self.filters:
+                        raise ValueError('Space not in Filters')
                 except Exception:
                     pass
                 if color is not None:

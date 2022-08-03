@@ -6,7 +6,7 @@ from ..types import Vector
 from . import color_names
 from ..channels import Channel, FLG_ANGLE
 from typing import Optional, Tuple
-from typing import Dict, Type, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..spaces import Space
@@ -37,18 +37,17 @@ COLOR_PARTS = {
     "hex": r"[a-f0-9]"
 }
 
-# TODO: Before 1.0, merge this with the statement below as color spaces will not need this moving forward.
-RE_DEFAULT_MATCH = r"""(?xi)
-color\(\s*
-({{color_space}})
-((?:{space}(?:{strict_percent}|{float})){{{{{{channels}}}}}}(?:{slash}(?:{strict_percent}|{float}))?)
-\s*\)
-""".format(
-    **COLOR_PARTS
+# Allow 15 channels maximum. This should be able to handle any colors we throw at it.
+RE_COLOR_MATCH = re.compile(
+    r"""(?xi)
+    color\(\s*
+    (-{{0,2}}[a-z][-a-z0-9_]*)
+    ((?:{space}(?:{strict_percent}|{float})){{1,15}}(?:{slash}(?:{strict_percent}|{float}))?)
+    \s*\)
+    """.format(
+        **COLOR_PARTS
+    )
 )
-
-# Allow 10 channels maximum. This should be able to handle any colors we throw at it.
-RE_COLOR_MATCH = re.compile(RE_DEFAULT_MATCH.format(color_space='-{0,2}[a-z][-a-z0-9_]*', channels='1,10'))
 
 CSS_MATCH = {
     'srgb': re.compile(
@@ -281,10 +280,10 @@ def parse_channels(color: str, boundry: Tuple[Channel, ...]) -> Tuple[Vector, fl
 
 def parse_color(
     string: str,
-    spaces: Dict[str, Type['Space']],
+    spaces: Dict[str, 'Space'],
     start: int,
     fullmatch: bool = False
-) -> Optional[Tuple[Type['Space'], Tuple[Vector, float], int]]:
+) -> Optional[Tuple['Space', Tuple[Vector, float], int]]:
     """Perform default color matching."""
 
     m = RE_COLOR_MATCH.match(string, start)
@@ -322,7 +321,7 @@ def parse_color(
 
 
 def parse_css(
-    cspace: Type['Space'],
+    cspace: 'Space',
     string: str,
     start: int = 0,
     fullmatch: bool = True,

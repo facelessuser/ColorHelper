@@ -64,8 +64,8 @@ def calc_adaptation_matrices(
     return adapt, alg.inv(adapt)
 
 
-class CATMeta(ABCMeta):
-    """Meta class for CAT plugin."""
+class VonKriesMeta(ABCMeta):
+    """Meta class for Von Kries style CAT plugin."""
 
     def __init__(cls, name: str, bases: Tuple[object, ...], clsdict: Dict[str, Any]) -> None:
         """Cache best filter."""
@@ -73,7 +73,7 @@ class CATMeta(ABCMeta):
         @classmethod  # type: ignore[misc]
         @functools.lru_cache(maxsize=6)
         def get_adaptation_matrices(
-            cls: Type['CAT'],
+            cls: Type['VonKries'],
             w1: Tuple[float, float],
             w2: Tuple[float, float]
         ) -> Tuple[Matrix, Matrix]:
@@ -84,18 +84,17 @@ class CATMeta(ABCMeta):
         cls.get_adaptation_matrices = get_adaptation_matrices
 
 
-class CAT(Plugin, metaclass=CATMeta):
+class CAT(Plugin, metaclass=ABCMeta):
     """Chromatic adaptation."""
 
-    MATRIX = [[]]  # type: Matrix
+    NAME = ''
 
-    @classmethod
     @abstractmethod
-    def adapt(cls, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
+    def adapt(self, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
         """Adapt a given XYZ color using the provided white points."""
 
 
-class VonKries(CAT):
+class VonKries(CAT, metaclass=VonKriesMeta):
     """
     Von Kries CAT.
 
@@ -109,10 +108,9 @@ class VonKries(CAT):
         [0.4002400, 0.7076000, -0.0808100],
         [-0.2263000, 1.1653200, 0.0457000],
         [0.0000000, 0.0000000, 0.9182200]
-    ]
+    ]  # type: Matrix
 
-    @classmethod
-    def adapt(cls, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
+    def adapt(self, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
         """Adapt a given XYZ color using the provided white points."""
 
         # We are already using the correct white point
@@ -120,7 +118,7 @@ class VonKries(CAT):
             return list(xyz)
 
         a, b = sorted([w1, w2])
-        m, mi = cls.get_adaptation_matrices(a, b)
+        m, mi = cast(Type['VonKries'], self).get_adaptation_matrices(a, b)
         return alg.dot(mi if a != w2 else m, xyz, dims=alg.D2_D1)
 
 
@@ -233,7 +231,7 @@ class CAT16(VonKries):
     NAME = "cat16"
 
     MATRIX = [
-        [-0.401288, -0.250268, -0.002079],
-        [0.650173, 1.204414, 0.048952],
-        [-0.051461, -0.045854, -0.953127]
+        [0.401288, 0.650173, -0.051461],
+        [-0.250268, 1.204414, 0.045854],
+        [-0.002079, 0.048952, 0.953127]
     ]

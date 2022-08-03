@@ -1,6 +1,6 @@
 """Linear Rec 2020 color class."""
 from ..cat import WHITES
-from .srgb import SRGB
+from .srgb import sRGB
 from .. import algebra as alg
 from ..types import Vector
 
@@ -38,7 +38,7 @@ def xyz_to_lin_2020(xyz: Vector) -> Vector:
     return alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
 
 
-class Rec2020Linear(SRGB):
+class Rec2020Linear(sRGB):
     """Linear Rec 2020 class."""
 
     BASE = "xyz-d65"
@@ -46,14 +46,12 @@ class Rec2020Linear(SRGB):
     SERIALIZE = ('--rec2020-linear',)
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Linear Rec 2020."""
 
         return lin_2020_to_xyz(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From XYZ to Linear Rec 2020."""
 
         return xyz_to_lin_2020(coords)

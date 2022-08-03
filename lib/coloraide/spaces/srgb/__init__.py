@@ -1,4 +1,4 @@
-"""SRGB color class."""
+"""sRGB color class."""
 from ...spaces import Space
 from ...cat import WHITES
 from ...channels import Channel, FLG_OPT_PERCENT
@@ -43,8 +43,8 @@ def gam_srgb(rgb: Vector) -> Vector:
     return result
 
 
-class SRGB(Space):
-    """SRGB class."""
+class sRGB(Space):
+    """sRGB class."""
 
     BASE = "srgb-linear"
     NAME = "srgb"
@@ -62,14 +62,12 @@ class SRGB(Space):
 
     EXTENDED_RANGE = True
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From sRGB Linear to sRGB."""
 
         return gam_srgb(coords)
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To sRGB Linear from sRGB."""
 
         return lin_srgb(coords)

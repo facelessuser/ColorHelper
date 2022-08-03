@@ -42,7 +42,7 @@ def lab_to_xyz(lab: Vector, white: VectorLike) -> Vector:
 
 def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
     """
-    Assuming XYZ is relative to D50, convert to CIE Lab from CIE standard.
+    Assuming XYZ is relative to D50, convert to CIELab from CIE standard.
 
     http://www.brucelindbloom.com/Eqn_XYZ_to_Lab.html
 
@@ -78,14 +78,12 @@ class Lab(Labish, Space):
     }
     WHITE = WHITES['2deg']['D50']
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To XYZ D50 from Lab."""
 
-        return lab_to_xyz(coords, cls.white())
+        return lab_to_xyz(coords, self.white())
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From XYZ D50 to Lab."""
 
-        return xyz_to_lab(coords, cls.white())
+        return xyz_to_lab(coords, self.white())

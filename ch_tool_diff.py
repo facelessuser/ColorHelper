@@ -154,7 +154,9 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                 for text in texts:
                     color = None
                     try:
-                        color = self.custom_color_class(text, filters=self.filters)
+                        color = self.custom_color_class(text)
+                        if color.space() not in self.filters:
+                            raise ValueError('Space not in filters')
                     except Exception:
                         pass
                     if color is not None:

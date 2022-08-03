@@ -67,14 +67,18 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
                     # Basically, if the file already supports `color-mod` input,
                     # then we want to return the text raw if it parses.
                     try:
-                        color = self.color_mod_class(text, filters=util.CSS_SRGB_SPACES)
+                        color = self.color_mod_class(text)
+                        if color.space() not in util.CSS_SRGB_SPACES:
+                            raise ValueError('Space not in Filters')
                     except Exception:
                         pass
                 if color is None:
                     # Try to use the current file's input format and convert input
                     # to the default string output for the color.
                     try:
-                        color = self.custom_color_class(text, filters=self.filters)
+                        color = self.custom_color_class(text)
+                        if color.space() not in self.filters:
+                            raise ValueError('Space not in Filters')
                     except Exception:
                         pass
                     if color is not None:

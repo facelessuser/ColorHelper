@@ -1,5 +1,5 @@
 """Custon color that looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
-from ..lib.coloraide.spaces.srgb.css import SRGB
+from ..lib.coloraide.spaces.srgb.css import sRGB
 from ..lib.coloraide.css import parse, serialize
 import re
 from ColorHelper.ch_util import get_base_color

@@ -1,7 +1,7 @@
 """Custom color that looks for colors of format `&HAABBGGRR` as `#AARRGGBB`."""
 from ..lib.coloraide import algebra as alg
 from ..lib.coloraide.css import parse
-from ..lib.coloraide.spaces.srgb.css import SRGB
+from ..lib.coloraide.spaces.srgb.css import sRGB
 import re
 from ColorHelper.ch_util import get_base_color
 
@@ -29,7 +29,7 @@ def split_channels(color: str):
     raise RuntimeError("Something is wrong in code logics.")
 
 
-class AssABGR(SRGB):
+class AssABGR(sRGB):
     """ASS `ABGR` color space."""
 
     @classmethod

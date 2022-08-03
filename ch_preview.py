@@ -396,7 +396,9 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     except Exception:
                         continue
 
-                    obj = color_class.match(source, start=start, filters=filters)
+                    obj = color_class.match(source, start=start)
+                    if obj is not None and obj.color.space() not in filters:
+                        obj = None
                     if obj is not None:
                         # Calculate true start and end of the color source
                         src_end = src_region.begin() + obj.end
@@ -418,8 +420,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
                     # Calculate a reasonable border color for our image at this location and get color strings
                     hsl = self.base(
-                        mdpopups.scope2style(self.view, self.view.scope_name(pt))['background'],
-                        filters=util.CSS_SRGB_SPACES
+                        mdpopups.scope2style(self.view, self.view.scope_name(pt))['background']
                     ).convert("hsl")
                     hsl['lightness'] = hsl['lightness'] + (0.3 if hsl.luminance() < 0.5 else -0.3)
                     preview_border = hsl.convert(self.gamut_space, fit=True).set('alpha', 1)

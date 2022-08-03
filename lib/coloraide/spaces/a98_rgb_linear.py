@@ -1,6 +1,6 @@
 """Linear A98 RGB color class."""
 from ..cat import WHITES
-from .srgb import SRGB
+from .srgb import sRGB
 from .. import algebra as alg
 from ..types import Vector
 
@@ -36,7 +36,7 @@ def xyz_to_lin_a98rgb(xyz: Vector) -> Vector:
     return alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
 
 
-class A98RGBLinear(SRGB):
+class A98RGBLinear(sRGB):
     """Linear A98 RGB class."""
 
     BASE = "xyz-d65"
@@ -44,14 +44,12 @@ class A98RGBLinear(SRGB):
     SERIALIZE = ('--a98-rgb-linear',)
     WHITE = WHITES['2deg']['D65']
 
-    @classmethod
-    def to_base(cls, coords: Vector) -> Vector:
+    def to_base(self, coords: Vector) -> Vector:
         """To XYZ from A98 RGB."""
 
         return lin_a98rgb_to_xyz(coords)
 
-    @classmethod
-    def from_base(cls, coords: Vector) -> Vector:
+    def from_base(self, coords: Vector) -> Vector:
         """From XYZ to A98 RGB."""
 
         return xyz_to_lin_a98rgb(coords)
