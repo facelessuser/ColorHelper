@@ -1,6 +1,6 @@
 # ColorHelper
 
-## 5.1.0
+## 5.0.1
 
 - **FIX**: Fix issue with Sublime ColorMod.
 
