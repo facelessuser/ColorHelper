@@ -1,4 +1,4 @@
-# ColorHelper 5.0.0
+# ColorHelper 6.0.0
 
 New release!
 
@@ -7,25 +7,17 @@ prior releases.
 
 A restart of Sublime Text is **strongly** encouraged.
 
-# 5.0.0
+## 6.0.0
 
-> **BREAKING CHANGE**: Newest `coloraide` was updated. It is approaching  
-> a 1.0 release. In the path to a 1.0 release some refactoring and  
-> reworking caused custom color classes to break. All internal color  
-> classes should be fine, but any users that created custom local  
-> color classes will need to update the color classes and color spaces  
-> to work with the latest version.
+> **WARNING**: We finally made it to a stable `coloraide` 1.x.x release,  
+> but some more unforeseen changes had to be made. This has been a long  
+> road to get the underlying color library to a stable state.
+>
+> - User created custom plugins may need refactoring again.
+> - If you tweaked `add_to_default_spaces`, please compare against the  
+>   default list as some plugins were renamed. Color space plugins that  
+>   do not properly load should show log entries in the console.
 
-- **NEW**: Upgrade to latest `coloraide`.
-- **NEW**: Many new color spaces have been added and can optionally  
-  be included via the new `add_to_default_spaces` option. Some that  
-  were available previously are no longer registered by default.  
-  See `add_to_default_spaces` in the settings file to enable more  
-  spaces. A restart of Sublime Text is required when changing this  
-  setting.
-- **NEW**: Add new `add_to_default_spaces` which allows a user to add  
-  NEW color spaces to the default color space so that the new spaces  
-  can be saved and recognized in palettes and other areas of ColorHelper.  
-  Modifying this setting requires a restart of Sublime Text. Custom  
-  color classes should only be used to modifying previously added  
-  color spaces to add to recognized input and output formats.
+- **NEW**: Upgraded to the stable `coloraide` 1.1. This should hopefully  
+  eliminate API churn as it is now a stable release.
+- **NEW**: Log when default color space loading fails.
