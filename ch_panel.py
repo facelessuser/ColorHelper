@@ -706,7 +706,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
             bfr = self.view.substr(region)
             obj = self.custom_color_class.match(bfr, fullmatch=True)
             if obj is not None and obj.color.space() not in self.filters:
-                obj is None
+                obj = None
             if obj is not None:
                 obj.start = region.begin()
                 obj.end = region.end()
