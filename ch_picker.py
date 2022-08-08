@@ -502,20 +502,20 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone = self.color.clone()
         show_alpha = color_filter == 'alpha'
 
-        coord = alg.no_nan(getattr(clone, color_filter))
+        coord = alg.no_nan(clone[color_filter])
         if color_filter != 'hue':
             rounded = alg.round_half_up(coord, 2 if mode != 'hsluv' else 0)
-            setattr(clone, color_filter, rounded)
+            clone[color_filter] = rounded
             step = 0.01 * scale
         else:
             rounded = alg.round_half_up(coord / 359, 2) * 359
-            setattr(clone, color_filter, rounded)
+            clone[color_filter] = rounded
             step = 3.59
 
         first = True
         while count:
-            coord = alg.no_nan(getattr(clone, color_filter)) - step
-            setattr(clone, color_filter, coord)
+            coord = alg.no_nan(clone[color_filter]) - step
+            clone[color_filter] = coord
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
                 temp.append(self.get_spacer(width=count))
@@ -562,10 +562,10 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         count = 10
 
         clone.update(self.color)
-        setattr(clone, color_filter, rounded)
+        clone[color_filter] = rounded
         while count:
-            coord = alg.no_nan(getattr(clone, color_filter)) + step
-            setattr(clone, color_filter, coord)
+            coord = alg.no_nan(clone[color_filter]) + step
+            clone[color_filter] = coord
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
                 html.append(self.get_spacer(width=count))

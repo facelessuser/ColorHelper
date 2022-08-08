@@ -14,6 +14,7 @@
 - **NEW**: Upgraded to the stable `coloraide` 1.1. This should hopefully  
   eliminate API churn as it is now a stable release.
 - **NEW**: Log when default color space loading fails.
+- **FIX**: Fix color picker slider issue.
 
 ## 5.0.1
 
