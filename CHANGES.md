@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.0.1
+
+- **FIX**: Fix absolute import reference that should have been relative.
+
 ## 6.0.0
 
 > **WARNING**: We finally made it to a stable `coloraide` 1.x.x release,  
