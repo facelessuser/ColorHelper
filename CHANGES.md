@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.0.2
+
+- **FIX**: Fix issue where default, dynamic color class wasn't always  
+  properly.
+
 ## 6.0.1
 
 - **FIX**: Fix absolute import reference that should have been relative.
