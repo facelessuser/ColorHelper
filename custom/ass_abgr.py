@@ -76,4 +76,4 @@ class ColorAssABGR(get_base_color()):
     """Color class for ASS `ABGR` colors."""
 
 
-ColorAssABGR.register(AssABGR, overwrite=True)
+ColorAssABGR.register(AssABGR(), overwrite=True)

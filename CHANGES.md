@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.0.3
+
+- **FIX**: Fix registration of color spaces in custom color objects.
+
 ## 6.0.2
 
 - **FIX**: Fix issue where default, dynamic color class wasn't always  

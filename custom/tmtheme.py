@@ -743,4 +743,4 @@ class ColorSRGBX11(get_base_color()):
     """Hex SRGB with X11 color names."""
 
 
-ColorSRGBX11.register(SRGBX11, overwrite=True)
+ColorSRGBX11.register(SRGBX11(), overwrite=True)

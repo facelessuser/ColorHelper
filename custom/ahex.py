@@ -82,4 +82,4 @@ class ColorAlphaHex(get_base_color()):
     """Color object whose sRGB color space looks for colors of format `#RRGGBBAA` as `#AARRGGBB`."""
 
 
-ColorAlphaHex.register(ASRGB, overwrite=True)
+ColorAlphaHex.register(ASRGB(), overwrite=True)
