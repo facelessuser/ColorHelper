@@ -453,6 +453,14 @@
             ]
         },
         {
+            "name": "XML (Plist)",
+            "base_scopes": ["text.plist"],
+            "color_class": "css-level-4",
+            "scanning": [
+                "text.plist -meta.tag.xml -comment -string, string.unquoted.cdata.xml"
+            ]
+        },
+        {
             // Stylus (based on: https://github.com/billymoon/Stylus/blob/master/Stylus.tmLanguage)
             "name": "Stylus",
             "base_scopes": ["source.stylus"],
