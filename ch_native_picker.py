@@ -54,7 +54,7 @@ class MacPick(_ColorPicker):
     def pick(self):
         """Pick the color."""
 
-        color = self.color.convert('srgb')
+        color = self.color.convert('srgb').normalize()
         coords = [x * UINT for x in color.clone().fit()[:-1]]
         try:
             p = subprocess.Popen(
@@ -119,7 +119,7 @@ class WinPick(_ColorPicker):
     def pick(self):
         """Pick the color."""
 
-        color = self.color.convert('srgb')
+        color = self.color.convert('srgb').normalize()
         hx = color.to_string(hex=True, alpha=False)[1:]
         bgr = int(hx[4:6] + hx[2:4] + hx[0:2], 16)
 
@@ -150,7 +150,7 @@ class LinuxPick(_ColorPicker):
     def pick(self):
         """Pick the color."""
 
-        color = self.color.convert('srgb')
+        color = self.color.convert('srgb').normalize()
         hx = color.to_string(hex=True, alpha=False)
         try:
             p = subprocess.Popen(

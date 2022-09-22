@@ -1,8 +1,4 @@
-"""
-Catmull-Rom interpolation.
-
-http://www2.cs.uregina.ca/~anima/408/Notes/Interpolation/Parameterized-Curves-Summary.htm
-"""
+"""Monotone interpolation based on a Hermite interpolation spline."""
 from .bspline import InterpolatorBSpline
 from ..interpolate import Interpolator, Interpolate
 from .. import algebra as alg
@@ -13,20 +9,20 @@ if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
 
-class InterpolatorCatmullRom(InterpolatorBSpline):
-    """Interpolate with Catmull-Rom spline."""
+class InterpolatorMonotone(InterpolatorBSpline):
+    """Interpolate with monotone spline based on Hermite."""
 
     def setup(self) -> None:
         """Setup."""
 
         super().setup()
-        self.spline = alg.catrom
+        self.spline = alg.monotone
 
 
-class CatmullRom(Interpolate):
-    """Catmull-Rom interpolation plugin."""
+class Monotone(Interpolate):
+    """Monotone interpolation plugin."""
 
-    NAME = "catrom"
+    NAME = "monotone"
 
     def interpolator(
         self,
@@ -42,9 +38,9 @@ class CatmullRom(Interpolate):
         extrapolate: bool = False,
         **kwargs: Any
     ) -> Interpolator:
-        """Return the Catmull-Rom interpolator."""
+        """Return the monotone interpolator."""
 
-        return InterpolatorCatmullRom(
+        return InterpolatorMonotone(
             coordinates,
             channel_names,
             create,
