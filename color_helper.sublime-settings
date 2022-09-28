@@ -342,12 +342,12 @@
             "name": "JavaScript/JSX",
             "base_scopes": [
                 "source.js",
-                "source.jsx",
+                "source.jsx"
             ],
             "color_class": "css-level-4",
             "scanning": [
                 // Covers single and double quoted strings, as well as template strings
-                "string.quoted",
+                "string.quoted"
             ]
         },
         {
