@@ -108,8 +108,8 @@ class InterpolatorBSpline(Interpolator):
         # can properly evaluate the spline from start to finish. Additionally, when the extrapolating
         # past the 0 - 1 boundary, provide some linear behavior
         self.extrapolated = [
-            list(zip(self.coordinates[0], self.coordinates[0], self.coordinates[0], self.coordinates[1])),
-            list(zip(self.coordinates[-2], self.coordinates[-1], self.coordinates[-1], self.coordinates[-1]))
+            list(zip(self.coordinates[0], self.coordinates[1])),
+            list(zip(self.coordinates[-2], self.coordinates[-1]))
         ]
         self.coordinates.insert(0, [2 * a - b for a, b in zip(self.coordinates[0], self.coordinates[1])])
         self.coordinates.append([2 * a - b for a, b in zip(self.coordinates[-1], self.coordinates[-2])])
@@ -118,23 +118,9 @@ class InterpolatorBSpline(Interpolator):
         """Optional setup."""
 
         # Process undefined values
+        self.spline = alg.bspline
         self.handle_undefined()
         self.adjust_endpoints()
-
-    def calculate(self, p0: float, p1: float, p2: float, p3: float, t: float) -> float:
-        """Calculate the new point using the provided values."""
-
-        # Save some time calculating this once
-        t2 = t ** 2
-        t3 = t2 * t
-
-        # Insert control points to algorithm
-        return (
-            ((1 - t) ** 3) * p0 +  # B0
-            (3 * t3 - 6 * t2 + 4) * p1 +  # B1
-            (-3 * t3 + 3 * t2 + 3 * t + 1) * p2 +  # B2
-            t3 * p3  # B3
-        ) / 6
 
     def interpolate(
         self,
@@ -154,13 +140,14 @@ class InterpolatorBSpline(Interpolator):
 
             # If `t` ends up spilling out past our boundaries, we need to extrapolate
             if self.extrapolate and index == 1 and point < 0.0:
-                p0, p1, p2, p3 = self.extrapolated[0][i]
+                p0, p1 = self.extrapolated[0][i]
+                channels.append(alg.lerp(p0, p1, t))
             elif self.extrapolate and index == self.length - 1 and point > 1.0:
-                p0, p1, p2, p3 = self.extrapolated[1][i]
+                p0, p1 = self.extrapolated[1][i]
+                channels.append(alg.lerp(p0, p1, t))
             else:
                 p0, p1, p2, p3 = coords[i]
-
-            channels.append(self.calculate(p0, p1, p2, p3, t))
+                channels.append(self.spline(p0, p1, p2, p3, t))
 
         # Small adjustment for floating point math and alpha channels
         if 1 - channels[-1] < 1e-6:

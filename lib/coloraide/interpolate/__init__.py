@@ -204,7 +204,7 @@ class Interpolator(metaclass=ABCMeta):
 
             coords[i] = value / alpha
 
-    def begin(self, point: float, s: float, last: float, index: int) -> 'Color':
+    def begin(self, point: float, first: float, last: float, index: int) -> 'Color':
         """
         Begin interpolation.
 
@@ -215,13 +215,13 @@ class Interpolator(metaclass=ABCMeta):
         """
 
         # Adjust stop to be relative to the given stops
-        r = s - last
-        if point < last:
-            adjusted_time = point - last if self.extrapolate else 0
-        elif point > s:
-            adjusted_time = 1 + point - s if self.extrapolate else 1
+        r = last - first
+        if point < first:
+            adjusted_time = point - first if self.extrapolate else 0
+        elif point > last:
+            adjusted_time = 1 + point - last if self.extrapolate else 1
         else:
-            adjusted_time = (point - last) / r if r else 1
+            adjusted_time = (point - first) / r if r else 1
 
         # Do we have an easing function between these stops?
         self.current_easing = self.easings[index - 1]
@@ -261,19 +261,19 @@ class Interpolator(metaclass=ABCMeta):
 
         # See if point extends past either the first or last stop
         if point < self.start:
-            last, s = self.start, self.stops[1]
-            return self.begin(point, s, last, 1)
+            first, last = self.start, self.stops[1]
+            return self.begin(point, first, last, 1)
         elif point > self.end:
-            last, s = self.stops[self.length - 2], self.end
-            return self.begin(point, s, last, self.length - 1)
+            first, last = self.stops[self.length - 2], self.end
+            return self.begin(point, first, last, self.length - 1)
         else:
             # Iterate stops to find where our point falls between
-            last = self.start
+            first = self.start
             for i in range(1, self.length):
-                s = self.stops[i]
-                if point <= s:
-                    return self.begin(point, s, last, i)
-                last = s
+                last = self.stops[i]
+                if point <= last:
+                    return self.begin(point, first, last, i)
+                first = last
 
         # We shouldn't ever hit this, but provided for typing.
         # If we do hit this, it would be a bug.
@@ -378,11 +378,11 @@ def process_mapping(
     return {aliases.get(k, k): v for k, v in progress.items()}
 
 
-def normalize_color(color: 'Color', space: str) -> None:
+def normalize_color(color: 'Color') -> None:
     """Normalize color."""
 
     # Adjust to color to space and ensure it fits
-    if not color.CS_MAP[space].EXTENDED_RANGE:
+    if not color._space.EXTENDED_RANGE:
         if not color.in_gamut():
             color.fit()
 
@@ -511,7 +511,7 @@ def interpolator(
     current.convert(space, in_place=True)
     offset = 0.0
     hue_index = cast(Cylindrical, current._space).hue_index() if isinstance(current._space, Cylindrical) else -1
-    normalize_color(current, space)
+    normalize_color(current)
     norm = current[:]
     fallback = None
     if hue_index >= 0:
@@ -542,7 +542,7 @@ def interpolator(
 
         # Adjust to color to space and ensure it fits
         color = color.convert(space)
-        normalize_color(color, space)
+        normalize_color(color)
         norm = color[:]
         if hue_index >= 0:
             h = norm[hue_index]
