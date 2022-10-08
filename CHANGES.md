@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 6.1.0
+
+- **NEW**: Update to ColorAide 1.4.
+- **FIX**: Fix issue where if a view does not have a syntax it could  
+  cause an exception.
+
 ## 6.0.3
 
 - **FIX**: Fix registration of color spaces in custom color objects.

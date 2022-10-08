@@ -681,7 +681,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None
         s = sublime.load_settings('color_helper.sublime-settings')
         rules = util.get_settings_rules()
-        syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+        syntax = os.path.splitext(view.settings().get('syntax', '').replace('Packages/', '', 1))[0]
 
         # Check if view meets criteria for on of our rule sets
         matched = False
@@ -795,7 +795,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             old_ext = rules.get('current_ext')
             if ext != old_ext:
                 force_update = True
-            syntax = os.path.splitext(view.settings().get('syntax').replace('Packages/', '', 1))[0]
+            syntax = os.path.splitext(view.settings().get('syntax', '').replace('Packages/', '', 1))[0]
             old_syntax = rules.get("current_syntax")
             if old_syntax is None or old_syntax != syntax:
                 force_update = True
@@ -810,7 +810,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             settings = view.settings()
             rules = settings.get('color_helper.scan', None)
             if rules:
-                syntax = os.path.splitext(settings.get('syntax').replace('Packages/', '', 1))[0]
+                syntax = os.path.splitext(settings.get('syntax', '').replace('Packages/', '', 1))[0]
                 old_syntax = rules.get("current_syntax")
                 if old_syntax is None or old_syntax != syntax:
                     self.on_activated(view)
