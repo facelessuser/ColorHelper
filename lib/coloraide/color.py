@@ -15,7 +15,7 @@ from . import algebra as alg
 from itertools import zip_longest as zipl
 from .css import parse
 from .types import VectorLike, Vector, ColorInput
-from .spaces import Space, Cylindrical
+from .spaces import Space
 from .spaces.hsv import HSV
 from .spaces.srgb.css import sRGB
 from .spaces.srgb_linear import sRGBLinear
@@ -64,6 +64,8 @@ from typing import overload, Union, Sequence, Dict, List, Optional, Any, cast, C
 
 class ColorMatch:
     """Color match object."""
+
+    __slots__ = ('color', 'start', 'end')
 
     def __init__(self, color: 'Color', start: int, end: int) -> None:
         """Initialize."""
@@ -588,9 +590,8 @@ class Color(metaclass=ColorMeta):
     ) -> Vector:
         """Chromatic adaptation."""
 
-        try:
-            adapter = cls.CAT_MAP[method if method is not None else cls.CHROMATIC_ADAPTATION]
-        except KeyError:
+        adapter = cls.CAT_MAP.get(method if method is not None else cls.CHROMATIC_ADAPTATION)
+        if not adapter:
             raise ValueError("'{}' is not a supported CAT".format(method))
 
         return adapter.adapt(w1, w2, xyz)
@@ -604,14 +605,7 @@ class Color(metaclass=ColorMeta):
 
         # Convert to desired space
         c = self.convert(space, in_place=True)
-
-        # If we are perfectly in gamut, don't waste time clipping.
-        if c.in_gamut(tolerance=0.0):
-            if isinstance(c._space, Cylindrical):
-                name = c._space.hue_name()
-                c.set(name, util.constrain_hue(c[name]))
-        else:
-            gamut.clip_channels(c)
+        gamut.clip_channels(c)
 
         # Adjust "this" color
         return c.convert(orig_space, in_place=True)
@@ -625,39 +619,33 @@ class Color(metaclass=ColorMeta):
     ) -> 'Color':
         """Fit the gamut using the provided method."""
 
-        # Dedicated clip method.
-        orig_space = self.space()
-        if method == 'clip' or (method is None and self.FIT == "clip"):
-            return self.clip(space)
-
-        if space is None:
-            space = self.space()
-
         if method is None:
             method = self.FIT
 
+        # Dedicated clip method.
+        if method == 'clip':
+
+            return self.clip(space)
+
+        orig_space = self.space()
+        if space is None:
+            space = self.space()
+
         # Select appropriate mapping algorithm
-        if method in self.FIT_MAP:
-            func = self.FIT_MAP[method].fit
-        else:
+        mapping = self.FIT_MAP.get(method)
+        if not mapping:
+
             # Unknown fit method
             raise ValueError("'{}' gamut mapping is not currently supported".format(method))
 
         # Convert to desired space
-        c = self.convert(space, in_place=True)
+        self.convert(space, in_place=True)
 
-        # If we are perfectly in gamut, don't waste time fitting, just normalize hues.
-        # If out of gamut, apply mapping/clipping/etc.
-        if c.in_gamut(tolerance=0.0):
-            if isinstance(c._space, Cylindrical):
-                name = c._space.hue_name()
-                c.set(name, util.constrain_hue(c[name]))
-        else:
-            # Doesn't seem to be an easy way that `mypy` can know whether this is the ABC class or not
-            func(c, **kwargs)
+        # Call the appropriate gamut mapping algorithm
+        mapping.fit(self, **kwargs)
 
-        # Adjust "this" color
-        return c.convert(orig_space, in_place=True)
+        # Convert back to the original color space
+        return self.convert(orig_space, in_place=True)
 
     def in_gamut(self, space: Optional[str] = None, *, tolerance: float = util.DEF_FIT_TOLERANCE) -> bool:
         """Check if current color is in gamut."""
@@ -665,20 +653,14 @@ class Color(metaclass=ColorMeta):
         if space is None:
             space = self.space()
 
-        # Check gamut in the provided space
-        if space is not None and space != self.space():
-            c = self.convert(space)
-            return c.in_gamut(tolerance=tolerance)
+        # Check if gamut is in the provided space
+        c = self.convert(space) if space is not None and space != self.space() else self
 
         # Check the color space specified for gamut checking.
         # If it proves to be in gamut, we will then test if the current
         # space is constrained properly.
-        if self._space.GAMUT_CHECK is not None:
-            c = self.convert(self._space.GAMUT_CHECK)
-            if not c.in_gamut(tolerance=tolerance):
-                return False
-
-        return gamut.verify(self, tolerance)
+        if c._space.GAMUT_CHECK is not None and not c.convert(c._space.GAMUT_CHECK).in_gamut(tolerance=tolerance):
+            return False
 
     def mask(self, channel: Union[str, Sequence[str]], *, invert: bool = False, in_place: bool = False) -> 'Color':
         """Mask color channels."""
@@ -710,7 +692,11 @@ class Color(metaclass=ColorMeta):
 
         if not self._is_color(color) and not isinstance(color, (str, Mapping)):
             raise TypeError("Unexpected type '{}'".format(type(color)))
-        mixed = self.interpolate([self, color], **interpolate_args)(percent)
+        i = self.interpolate([self, color], **interpolate_args)
+        # Scale really needs to be between 0 and 1 as mix deals in percentages.
+        if i.domain:
+            i.domain = interpolate.normalize_domain(i.domain)
+        mixed = i(percent)
         return self.mutate(mixed) if in_place else mixed
 
     @classmethod
@@ -726,7 +712,11 @@ class Color(metaclass=ColorMeta):
     ) -> List['Color']:
         """Discrete steps."""
 
-        return cls.interpolate(colors, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
+        i = cls.interpolate(colors, **interpolate_args)
+        # Scale really needs to be between 0 and 1 or steps will break
+        if i.domain:
+            i.domain = interpolate.normalize_domain(i.domain)
+        return i.steps(steps, max_steps, max_delta_e, delta_e)
 
     @classmethod
     def interpolate(
@@ -739,6 +729,7 @@ class Color(metaclass=ColorMeta):
         hue: str = util.DEF_HUE_ADJ,
         premultiplied: bool = True,
         extrapolate: bool = False,
+        domain: Optional[List[float]] = None,
         method: str = "linear",
         **kwargs: Any
     ) -> Interpolator:
@@ -764,6 +755,7 @@ class Color(metaclass=ColorMeta):
             hue=hue,
             premultiplied=premultiplied,
             extrapolate=extrapolate,
+            domain=domain,
             **kwargs
         )
 
@@ -828,10 +820,10 @@ class Color(metaclass=ColorMeta):
         if method is None:
             method = self.DELTA_E
 
-        try:
-            return self.DE_MAP[method].distance(self, color, **kwargs)
-        except KeyError:
+        delta = self.DE_MAP.get(method)
+        if not delta:
             raise ValueError("'{}' is not currently a supported distancing algorithm.".format(method))
+        return delta.distance(self, color, **kwargs)
 
     def distance(self, color: ColorInput, *, space: str = "lab") -> float:
         """Delta."""
@@ -860,33 +852,84 @@ class Color(metaclass=ColorMeta):
         color = self._handle_color_input(color)
         return contrast.contrast(method, self, color)
 
-    def get(self, name: str) -> float:
+    @overload
+    def get(self, name: str) -> float:  # noqa: D105
+        ...
+
+    @overload
+    def get(self, name: Union[List[str], Tuple[str, ...]]) -> List[float]:  # noqa: D105
+        ...
+
+    def get(self, name: Union[str, List[str], Tuple[str, ...]]) -> Union[float, List[float]]:
         """Get channel."""
 
-        # Handle space.attribute
-        if '.' in name:
-            space, channel = name.split('.', 1)
-            obj = self.convert(space)
-            return obj[channel]
+        # Handle single channel
+        if isinstance(name, str):
+            # Handle space.channel
+            if '.' in name:
+                space, channel = name.split('.', 1)
+                return self.convert(space)[channel]
+            return self[name]
 
-        return self[name]
+        # Handle list of channels
+        else:
+            original_space = current_space = self.space()
+            obj = self
+            values = []
+
+            for n in name:
+                # Handle space.channel
+                space, channel = n.split('.', 1) if '.' in n else (original_space, n)
+                if space != current_space:
+                    obj = self if space == original_space else self.convert(space)
+                    current_space = space
+                values.append(obj[channel])
+            return values
 
     def set(  # noqa: A003
         self,
-        name: str,
-        value: Union[float, Callable[..., float]]
+        name: Union[str, Dict[str, Union[float, Callable[..., float]]]],
+        value: Optional[Union[float, Callable[..., float]]] = None
     ) -> 'Color':
         """Set channel."""
 
-        # Handle space.attribute
-        if '.' in name:
-            space, channel = name.split('.', 1)
-            obj = self.convert(space)
-            obj[channel] = value(obj[channel]) if callable(value) else value
-            return self.update(obj)
+        # Set all the channels in a dictionary.
+        # Sort by name to reduce how many times we convert
+        # when dealing with different color spaces.
+        if value is None:
+            if isinstance(name, str):
+                raise ValueError("Missing the positional 'value' argument for channel '{}'".format(name))
 
-        # Handle a function that modifies the value or a direct value
-        self[name] = value(self[name]) if callable(value) else value
+            original_space = current_space = self.space()
+            obj = self.clone()
+
+            for k, v in name.items():
+
+                # Handle space.channel
+                space, channel = k.split('.', 1) if '.' in k else (original_space, k)
+                if space != current_space:
+                    obj.convert(space, in_place=True)
+                    current_space = space
+                obj[channel] = v(obj[channel]) if callable(v) else v
+
+            # Update the original color
+            self.update(obj)
+
+        # Set a single channel value
+        else:
+            if isinstance(name, dict):
+                raise ValueError("A dict of channels and values cannot be used with the positional 'value' parameter")
+
+            # Handle space.channel
+            if '.' in name:
+                space, channel = name.split('.', 1)
+                obj = self.convert(space)
+                obj[channel] = value(obj[channel]) if callable(value) else value
+                return self.update(obj)
+
+            # Handle a function that modifies the value or a direct value
+            self[name] = value(self[name]) if callable(value) else value
+
         return self
 
 

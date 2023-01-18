@@ -1,4 +1,5 @@
 """Color harmonies."""
+from abc import ABCMeta, abstractmethod
 from . import algebra as alg
 from .spaces import Cylindrical
 from typing import Optional, Dict, List, cast, TYPE_CHECKING
@@ -7,9 +8,10 @@ if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
 
 
-class Harmony:
+class Harmony(metaclass=ABCMeta):
     """Color harmony."""
 
+    @abstractmethod
     def harmonize(self, color: 'Color', space: Optional[str]) -> List['Color']:
         """Get color harmonies."""
 

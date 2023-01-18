@@ -2,7 +2,7 @@
 
 ## 6.1.0
 
-- **NEW**: Update to ColorAide 1.4.
+- **NEW**: Update to ColorAide 1.5.
 - **FIX**: Fix issue where if a view does not have a syntax it could  
   cause an exception.
 
