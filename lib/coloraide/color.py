@@ -662,6 +662,8 @@ class Color(metaclass=ColorMeta):
         if c._space.GAMUT_CHECK is not None and not c.convert(c._space.GAMUT_CHECK).in_gamut(tolerance=tolerance):
             return False
 
+        return gamut.verify(c, tolerance)
+
     def mask(self, channel: Union[str, Sequence[str]], *, invert: bool = False, in_place: bool = False) -> 'Color':
         """Mask color channels."""
 
