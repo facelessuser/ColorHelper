@@ -27,4 +27,4 @@ class Rec2100PQ(sRGB):
     def from_base(self, coords: Vector) -> Vector:
         """From XYZ to Rec 2100 PQ."""
 
-        return util.pq_st2084_inverse_eotf(alg.multiply(coords, util.YW, dims=alg.D1_SC))
+        return util.pq_st2084_oetf(alg.multiply(coords, util.YW, dims=alg.D1_SC))

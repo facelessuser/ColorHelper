@@ -33,8 +33,7 @@ from .srgb_linear import XYZ_TO_RGB
 import math
 from .. import util
 from .. import algebra as alg
-from ..types import Vector
-from typing import List, Tuple
+from ..types import Vector, Tuple, List
 
 
 def distance_line_from_origin(line: Tuple[float, float]) -> float:
@@ -84,8 +83,8 @@ def hpluv_to_lch(hpluv: Vector) -> Vector:
     elif not alg.is_nan(h):
         _hx_max = max_safe_chroma_for_l(l)
         c = _hx_max / 100 * s
-        if c < ACHROMATIC_THRESHOLD:
-            h = alg.NaN
+    if c < ACHROMATIC_THRESHOLD:
+        h = alg.NaN
     return [l, c, util.constrain_hue(h)]
 
 
@@ -128,7 +127,7 @@ class HPLuv(Cylindrical, Space):
         """On color update."""
 
         coords = alg.no_nans(coords)
-        if coords[1] == 0 or coords[2] > (100 - 1e-7) or coords[2] < 1e-08:
+        if abs(coords[1]) < 1e-08 or coords[2] > (100 - 1e-7) or coords[2] < 1e-08:
             coords[0] = alg.NaN
         return coords
 

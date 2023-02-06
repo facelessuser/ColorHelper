@@ -12,6 +12,9 @@ from .. import algebra as alg
 from ..types import Vector
 
 ACHROMATIC_THRESHOLD = 0.0003
+# The transform consistently yields ~216 for achromatic hues for positive lightness
+# Replacing achromatic NaN hues with this hue gives us closer translations back.
+ACHROMATIC_HUE = 216.0777045520467
 
 
 def jzazbz_to_jzczhz(jzazbz: Vector) -> Vector:
@@ -34,6 +37,15 @@ def jzczhz_to_jzazbz(jzczhz: Vector) -> Vector:
     """JzCzhz to Jzazbz."""
 
     jz, cz, hz = jzczhz
+
+    # For better round tripping of achromatic colors,
+    # use the achromatic hue that occurs in forward transform.
+    # We use the one from white translation. It may vary slightly
+    # depending on the grayscale color, but only slightly,
+    # so this is close enough.
+    if cz < ACHROMATIC_THRESHOLD:
+        hz = ACHROMATIC_HUE
+
     if alg.is_nan(hz):  # pragma: no cover
         return [jz, 0.0, 0.0]
 
@@ -66,6 +78,11 @@ class JzCzhz(LChish, Space):
     }
     WHITE = WHITES['2deg']['D65']
     DYNAMIC_RANGE = 'hdr'
+
+    def achromatic_hue(self) -> float:
+        """Ideal achromatic hue."""
+
+        return ACHROMATIC_HUE
 
     def normalize(self, coords: Vector) -> Vector:
         """On color update."""

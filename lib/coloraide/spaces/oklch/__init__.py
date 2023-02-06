@@ -32,6 +32,11 @@ from ... import algebra as alg
 from ...types import Vector
 
 ACHROMATIC_THRESHOLD = 0.000002
+# The transform consistently yields ~90˚ for achromatic hues for positive lightness
+# Replacing achromatic NaN hues with this hue gives us closer translations back.
+# Negative lightness uses ~270, but not worth handling as real world colors don't
+# use inverse lightness.
+ACHROMATIC_HUE = 90.00000025580869
 
 
 def oklab_to_oklch(oklab: Vector) -> Vector:
@@ -54,6 +59,15 @@ def oklch_to_oklab(oklch: Vector) -> Vector:
     """OkLCh to Oklab."""
 
     l, c, h = oklch
+
+    # For better round tripping of achromatic colors,
+    # use the achromatic hue that occurs in forward transform.
+    # We use the one from white translation. It may or may not vary slightly
+    # depending on the grayscale color, but only slightly,
+    # so this is close enough.
+    if c < ACHROMATIC_THRESHOLD:
+        h = ACHROMATIC_HUE
+
     if alg.is_nan(h):  # pragma: no cover
         return [l, 0.0, 0.0]
 
@@ -81,6 +95,11 @@ class OkLCh(LChish, Space):
         "hue": "h"
     }
     WHITE = WHITES['2deg']['D65']
+
+    def achromatic_hue(self) -> float:
+        """Ideal achromatic hue."""
+
+        return ACHROMATIC_HUE
 
     def normalize(self, coords: Vector) -> Vector:
         """On color update."""
