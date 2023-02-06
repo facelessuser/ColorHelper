@@ -95,7 +95,7 @@ def xyz_to_xyY(xyz: VectorLike, white: VectorLike) -> Vector:
     return [white[0], white[1], y] if d == 0 else [x / d, y / d, y]
 
 
-def pq_st2084_inverse_eotf(
+def pq_st2084_oetf(
     values: VectorLike,
     c1: float = C1,
     c2: float = C2,

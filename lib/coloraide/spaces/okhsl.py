@@ -335,7 +335,7 @@ def okhsl_to_oklab(hsl: Vector) -> Vector:
     L = toe_inv(l)
     a = b = 0.0
 
-    if L not in (0.0, 1.0) and s != 0.0 and not alg.is_nan(h):
+    if L != 0.0 and abs(1 - L) >= 1e-08 and abs(s) >= ACHROMATIC_THRESHOLD and not alg.is_nan(h):
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -381,9 +381,9 @@ def oklab_to_okhsl(lab: Vector) -> Vector:
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
     if c < ACHROMATIC_THRESHOLD:
-        c = 0
+        c = 0.0
 
-    if l not in (0.0, 1.0) and c != 0:
+    if l != 0.0 and abs(1 - l) >= 1e-08 and c != 0:
         a_ = lab[1] / c
         b_ = lab[2] / c
 
@@ -408,6 +408,9 @@ def oklab_to_okhsl(lab: Vector) -> Vector:
 
             t = (c - k_0) / (k_1 + k_2 * (c - k_0))
             s = mid + 0.2 * t
+
+    if abs(s) < ACHROMATIC_THRESHOLD:
+        h = alg.NaN
 
     return [util.constrain_hue(h * 360), s, l]
 
@@ -435,7 +438,7 @@ class Okhsl(Cylindrical, Space):
         """On color update."""
 
         coords = alg.no_nans(coords)
-        if coords[2] in (0.0, 1.0) or coords[1] == 0.0:
+        if coords[2] == 0.0 or abs(1 - coords[2]) < 1e-08 or abs(coords[1]) < ACHROMATIC_THRESHOLD:
             coords[0] = alg.NaN
         return coords
 

@@ -16,6 +16,7 @@ License: MIT (As noted in https://github.com/LeaVerou/color.js/blob/master/packa
 import math
 import functools
 from abc import ABCMeta, abstractmethod
+from .. import util
 from .. import algebra as alg
 from ..spaces import Cylindrical
 from ..types import Vector, ColorInput, Plugin
@@ -510,7 +511,7 @@ def normalize_hue(
 
     # Probably the first hue
     if color2 is None:
-        color1[index] = color1[index] % 360
+        color1[index] = util.constrain_hue(color1[index])
         return color1, offset
 
     if hue == 'shorter':
@@ -525,7 +526,7 @@ def normalize_hue(
         raise ValueError("Unknown hue adjuster '{}'".format(hue))
 
     c1 = color1[index] + offset
-    c2 = (color2[index] % 360) + offset
+    c2 = util.constrain_hue(color2[index]) + offset
 
     # Adjust hue, handle gaps across `NaN`s
     c1_nan = alg.is_nan(c1)

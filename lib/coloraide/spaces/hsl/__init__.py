@@ -25,9 +25,9 @@ def srgb_to_hsl(rgb: Vector) -> Vector:
             h = (b - r) / c + 2.0
         else:
             h = (r - g) / c + 4.0
-        s = 0 if l == 0 or l == 1 else (mx - l) / min(l, 1 - l)
+        s = 0 if l == 0.0 or abs(1 - l) < 1e-08 else (mx - l) / min(l, 1 - l)
         h *= 60.0
-        if s == 0:
+        if abs(s) < 1e-08:
             h = alg.NaN
 
     return [util.constrain_hue(h), s, l]
@@ -41,7 +41,7 @@ def hsl_to_srgb(hsl: Vector) -> Vector:
     """
 
     h, s, l = hsl
-    h = h % 360
+    h = util.constrain_hue(h)
 
     def f(n: int) -> float:
         """Calculate the channels."""
@@ -75,7 +75,7 @@ class HSL(Cylindrical, Space):
         """On color update."""
 
         coords = alg.no_nans(coords)
-        if coords[1] == 0 or coords[2] in (0, 1):
+        if abs(coords[1]) < 1e-08 or coords[2] == 0 or abs(1 - coords[2]) < 1e-08:
             coords[0] = alg.NaN
 
         return coords

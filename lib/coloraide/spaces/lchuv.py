@@ -2,7 +2,7 @@
 from ..spaces import Space
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
-from .lch import LCh, ACHROMATIC_THRESHOLD
+from .lch import LCh, ACHROMATIC_THRESHOLD, ACHROMATIC_HUE
 from .. import util
 import math
 from .. import algebra as alg
@@ -29,6 +29,15 @@ def lchuv_to_luv(lchuv: Vector) -> Vector:
     """LChuv to Luv."""
 
     l, c, h = lchuv
+
+    # For better round tripping of achromatic colors,
+    # use the achromatic hue that occurs in forward transform.
+    # We use the one from white translation. It may vary slightly
+    # depending on the grayscale color, but only slightly,
+    # so this is close enough.
+    if c < ACHROMATIC_THRESHOLD:
+        h = ACHROMATIC_HUE
+
     if alg.is_nan(h):  # pragma: no cover
         return [l, 0.0, 0.0]
 
@@ -51,6 +60,11 @@ class LChuv(LCh, Space):
         Channel("c", 0.0, 220.0, limit=(0.0, None)),
         Channel("h", 0.0, 360.0, flags=FLG_ANGLE)
     )
+
+    def achromatic_hue(self) -> float:
+        """Ideal achromatic hue."""
+
+        return ACHROMATIC_HUE
 
     def to_base(self, coords: Vector) -> Vector:
         """To Luv from LChuv."""

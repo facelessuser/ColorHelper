@@ -158,6 +158,12 @@ def npow(base: float, exp: float) -> float:
     return math.copysign(abs(base) ** exp, base)
 
 
+def nlog(value: float) -> float:
+    """Perform `log` with a negative number."""
+
+    return math.copysign(1, value) * math.log(abs(value))
+
+
 ################################
 # Interpolation and splines
 ################################
@@ -502,12 +508,12 @@ def cross(a: VectorLike, b: VectorLike) -> Vector:
 
 
 @overload
-def cross(a: MatrixLike, b: Union[VectorLike, MatrixLike]) -> Matrix:
+def cross(a: MatrixLike, b: Any) -> Matrix:
     ...
 
 
 @overload
-def cross(a: Union[VectorLike, MatrixLike], b: MatrixLike) -> Matrix:
+def cross(a: Any, b: MatrixLike) -> Matrix:
     ...
 
 
@@ -859,47 +865,57 @@ def _vector_math(op: Callable[..., float], a: VectorLike, b: VectorLike) -> Vect
 
 
 @overload
-def _math(op: Callable[..., float], a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
+def _math(
+    op: Callable[..., float],
+    a: float,
+    b: float,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> float:
     ...
 
 
 @overload
-def _math(op: Callable[..., float], a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def _math(
+    op: Callable[..., float],
+    a: Union[float, VectorLike],
+    b: VectorLike,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Vector:
     ...
 
 
 @overload
-def _math(op: Callable[..., float], a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def _math(
+    op: Callable[..., float],
+    a: VectorLike,
+    b: Union[float, VectorLike],
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Vector:
     ...
 
 
 @overload
-def _math(op: Callable[..., float], a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def _math(
+    op: Callable[..., float],
+    a: MatrixLike,
+    b: Union[float, ArrayLike],
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Matrix:
     ...
 
 
 @overload
-def _math(op: Callable[..., float], a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def _math(op: Callable[..., float], a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def _math(op: Callable[..., float], a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def _math(op: Callable[..., float], a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def _math(op: Callable[..., float], a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def _math(
+    op: Callable[..., float],
+    a: Union[ArrayLike, float],
+    b: MatrixLike,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Matrix:
     ...
 
 
@@ -995,42 +1011,22 @@ def divide(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> flo
 
 
 @overload
-def divide(a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def divide(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def divide(a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def divide(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def divide(a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def divide(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
 @overload
-def divide(a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def divide(a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def divide(a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def divide(a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def divide(a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def divide(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
@@ -1051,42 +1047,22 @@ def multiply(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> f
 
 
 @overload
-def multiply(a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def multiply(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def multiply(a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def multiply(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def multiply(a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def multiply(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
 @overload
-def multiply(a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def multiply(a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def multiply(a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def multiply(a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def multiply(a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def multiply(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
@@ -1107,42 +1083,22 @@ def add(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
 
 
 @overload
-def add(a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def add(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def add(a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def add(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def add(a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def add(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
 @overload
-def add(a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def add(a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def add(a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def add(a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def add(a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def add(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
@@ -1163,42 +1119,22 @@ def subtract(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> f
 
 
 @overload
-def subtract(a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def subtract(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def subtract(a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def subtract(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
     ...
 
 
 @overload
-def subtract(a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def subtract(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
 @overload
-def subtract(a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def subtract(a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def subtract(a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def subtract(a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def subtract(a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def subtract(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
     ...
 
 
@@ -1211,6 +1147,76 @@ def subtract(
     """Subtract simple numbers, vectors, and 2D matrices."""
 
     return _math(operator.sub, a, b, dims=dims)
+
+
+@overload
+def apply(
+    fn: Callable[..., float],
+    a: float,
+    b: Optional[float] = None,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> float:
+    ...
+
+
+@overload
+def apply(
+    fn: Callable[..., float],
+    a: Union[float, VectorLike],
+    b: VectorLike,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Vector:
+    ...
+
+
+@overload
+def apply(
+    fn: Callable[..., float],
+    a: VectorLike,
+    b: Optional[Union[float, VectorLike]] = None,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Vector:
+    ...
+
+
+@overload
+def apply(
+    fn: Callable[..., float],
+    a: MatrixLike,
+    b: Optional[Union[float, ArrayLike]] = None,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Matrix:
+    ...
+
+
+@overload
+def apply(
+    fn: Callable[..., float],
+    a: Union[float, ArrayLike],
+    b: MatrixLike,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Matrix:
+    ...
+
+
+def apply(
+    fn: Callable[..., float],
+    a: Union[float, ArrayLike],
+    b: Optional[Union[float, ArrayLike]] = None,
+    *,
+    dims: Optional[Tuple[int, int]] = None
+) -> Union[float, Array]:
+    """Apply a given function over each element of the matrix."""
+
+    if b is None:
+        return reshape([fn(f) for f in flatiter(a)], shape(a))
+
+    return _math(fn, a, b, dims=dims)
 
 
 class BroadcastTo:
@@ -1777,7 +1783,7 @@ def diag(array: VectorLike, k: int = 0) -> Matrix:
 
 
 @overload
-def diag(array: Matrix, k: int = 0) -> Vector:
+def diag(array: MatrixLike, k: int = 0) -> Vector:
     ...
 
 
@@ -1871,7 +1877,7 @@ def inv(matrix: MatrixLike) -> Matrix:
     m = acopy(matrix)
 
     # Create an identity matrix of the same size as our provided vector
-    im = diag([1] * s[0])
+    im = identity(s[0])
 
     # Iterating through each row, we will scale each row by it's "focus diagonal".
     # Then using the scaled row, we will adjust the other rows.

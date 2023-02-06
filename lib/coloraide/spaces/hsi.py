@@ -20,7 +20,7 @@ def srgb_to_hsi(rgb: Vector) -> Vector:
     mx = max(rgb)
     mn = min(rgb)
     i = sum(rgb) * 1 / 3
-    s = 0 if i == 0 else 1 - (mn / i)
+    s = 0 if (-1e-08 < i <= 0.0) else 1 - (mn / i)
     c = mx - mn
 
     if c != 0.0:
@@ -32,6 +32,9 @@ def srgb_to_hsi(rgb: Vector) -> Vector:
             h = (r - g) / c + 4.0
         h *= 60.0
 
+    if abs(s) < 1e-08:
+        h = alg.NaN
+
     return [util.constrain_hue(h), s, i]
 
 
@@ -39,7 +42,7 @@ def hsi_to_srgb(hsi: Vector) -> Vector:
     """HSI to RGB."""
 
     h, s, i = hsi
-    h = h % 360
+    h = util.constrain_hue(h)
     h /= 60
     z = 1 - abs(h % 2 - 1)
     c = (3 * i * s) / (1 + z)
@@ -96,12 +99,12 @@ class HSI(Cylindrical, Space):
         """On color update."""
 
         h, s, i = alg.no_nans(coords[:-1])
-        h = h % 360
+        h = util.constrain_hue(h)
         h /= 60
         z = 1 - abs(h % 2 - 1)
         c = (3 * i * s) / (1 + z)
 
-        if c == 0:
+        if c == 0 or abs(s) < 1e-08:
             coords[0] = alg.NaN
 
         return coords
