@@ -10,7 +10,7 @@ import math
 import bisect
 from ..spaces import Space, Labish
 from ..cat import WHITES
-from ..channels import Channel
+from ..channels import Channel, FLG_MIRROR_PERCENT
 from .. import util
 from .. import algebra as alg
 from ..types import Vector, VectorLike
@@ -85,8 +85,8 @@ def adapt(coords: Vector, fl: float) -> Vector:
 
     adapted = []
     for c in coords:
-        x = math.pow(fl * abs(c) * 0.01, ADAPTED_COEF)
-        adapted.append(math.copysign(400 * x / (x + 27.13), c))
+        x = alg.npow(fl * c * 0.01, ADAPTED_COEF)
+        adapted.append(400 * math.copysign(x, c) / (x + 27.13))
     return adapted
 
 
@@ -97,7 +97,7 @@ def unadapt(adapted: Vector, fl: float) -> Vector:
     constant = 100 / fl * math.pow(27.13, ADAPTED_COEF_INV)
     for c in adapted:
         cabs = abs(c)
-        coords.append(math.copysign(constant * math.pow(cabs / (400 - cabs), ADAPTED_COEF_INV), c))
+        coords.append(math.copysign(constant * alg.npow(cabs / (400 - cabs), ADAPTED_COEF_INV), c))
     return coords
 
 
@@ -330,10 +330,6 @@ def cam16_jmh_to_xyz_d65(jmh: Vector, env: Environment) -> Vector:
     """CAM16 JMh to XYZ."""
 
     J, M, h = jmh
-
-    if alg.is_nan(h):  # pragma: no cover
-        h = 0
-
     return cam16_to_xyz_d65(J=J, M=M, h=h, env=env)
 
 
@@ -341,7 +337,6 @@ def cam16_jmh_to_cam16_jab(jmh: Vector) -> Vector:
     """Translate a CAM16 JMh to Jab of the same viewing conditions."""
 
     J, M, h = jmh
-
     return [
         J,
         M * math.cos(math.radians(h)),
@@ -353,6 +348,8 @@ def cam16_jab_to_cam16_jmh(jab: Vector) -> Vector:
     """Translate a CAM16 Jab to JMh of the same viewing conditions."""
 
     J, a, b = jab
+    if J <= 0.0:
+        J = a = b = 0.0
     M = math.sqrt(a ** 2 + b ** 2)
     h = math.degrees(math.atan2(b, a))
 
@@ -380,9 +377,9 @@ class CAM16(Labish, Space):
     NAME = "cam16"
     SERIALIZE = ("--cam16",)
     CHANNELS = (
-        Channel("j", 0.0, 100.0),
-        Channel("a", -90.0, 90.0),
-        Channel("b", -90.0, 90.0)
+        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("a", -90.0, 90.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -90.0, 90.0, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "lightness": "j"

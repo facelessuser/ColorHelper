@@ -79,7 +79,7 @@ def is_nan(obj: float) -> bool:
     return math.isnan(obj)
 
 
-def no_nans(value: VectorLike, default: float = 0.0) -> Vector:
+def no_nans(value: Union[VectorLike, Iterable[float]], default: float = 0.0) -> Vector:
     """Ensure there are no `NaN` values in a sequence."""
 
     return [(default if is_nan(x) else x) for x in value]
@@ -608,7 +608,7 @@ def _extract_dims(
             yield m
     else:
         for m2 in m:
-            yield from cast(ArrayLike, _extract_dims(cast(ArrayLike, m2), total - 1, target, depth + 1))
+            yield from _extract_dims(cast(ArrayLike, m2), total - 1, target, depth + 1)
 
 
 @overload

@@ -8,7 +8,7 @@ https://doi.org/10.1002/col.22131
 import math
 from . cam16 import CAM16
 from ..types import Vector
-from ..channels import Channel
+from ..channels import Channel, FLG_MIRROR_PERCENT
 
 COEFFICENTS = {
     'lcd': (0.77, 0.007, 0.0053),
@@ -79,9 +79,9 @@ class CAM16UCS(CAM16):
     SERIALIZE = ("--cam16-ucs",)
     MODEL = 'ucs'
     CHANNELS = (
-        Channel("j", 0.0, 100.0),
-        Channel("a", -50.0, 50.0),
-        Channel("b", -50.0, 50.0)
+        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("a", -50.0, 50.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -50.0, 50.0, flags=FLG_MIRROR_PERCENT)
     )
 
     def to_base(self, coords: Vector) -> Vector:
@@ -103,9 +103,9 @@ class CAM16LCD(CAM16UCS):
     ENV = ENV = CAM16.ENV
     MODEL = 'lcd'
     CHANNELS = (
-        Channel("j", 0.0, 100.0),
-        Channel("a", -70.0, 70.0),
-        Channel("b", -70.0, 70.0)
+        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("a", -70.0, 70.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -70.0, 70.0, flags=FLG_MIRROR_PERCENT)
     )
 
 
@@ -117,7 +117,7 @@ class CAM16SCD(CAM16UCS):
     ENV = ENV = CAM16.ENV
     MODEL = 'scd'
     CHANNELS = (
-        Channel("j", 0.0, 100.0),
-        Channel("a", -40.0, 40.0),
-        Channel("b", -40.0, 40.0)
+        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("a", -40.0, 40.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -40.0, 40.0, flags=FLG_MIRROR_PERCENT)
     )

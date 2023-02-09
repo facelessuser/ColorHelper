@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.1.2
+
+- **FIX**: Update to ColorAide 1.7.1.
+
 ## 6.1.1
 
 - **FIX**: Fix broken gamut mapping logic after recent port of latest
