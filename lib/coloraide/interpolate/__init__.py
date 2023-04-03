@@ -18,9 +18,9 @@ import functools
 from abc import ABCMeta, abstractmethod
 from .. import util
 from .. import algebra as alg
-from ..spaces import Cylindrical
+from .. spaces import HSVish, HSLish, Cylindrical, RGBish, LChish, Labish
 from ..types import Vector, ColorInput, Plugin
-from typing import Callable, Dict, Tuple, Optional, Type, Sequence, Union, Mapping, List, Any, cast, TYPE_CHECKING
+from typing import Callable, Dict, Tuple, Optional, Type, Sequence, Union, Mapping, List, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -98,9 +98,9 @@ class Interpolator(metaclass=ABCMeta):
         self.out_space = out_space
         self.extrapolate = extrapolate
         self.current_easing = None  # type: Optional[Union[Callable[..., float], Mapping[str, Callable[..., float]]]]
-        cs = self.create.CS_MAP[out_space]
+        cs = self.create.CS_MAP[space]
         if isinstance(cs, Cylindrical):
-            self.hue_index = cast(Cylindrical, cs).hue_index()
+            self.hue_index = cs.hue_index()
         else:
             self.hue_index = -1
         self.premultiplied = premultiplied
@@ -155,14 +155,14 @@ class Interpolator(metaclass=ABCMeta):
         if max_steps is not None:
             actual_steps = min(actual_steps, max_steps)
 
-        ret = []
+        ret = []  # type: List[Tuple[float, Color]]
         if actual_steps == 1:
-            ret = [{"p": 0.5, "color": self(0.5)}]
+            ret = [(0.5, self(0.5))]
         elif actual_steps > 1:
             step = 1 / (actual_steps - 1)
             for i in range(actual_steps):
                 p = i * step
-                ret.append({'p': p, 'color': self(p)})
+                ret.append((p, self(p)))
 
         # Iterate over all the stops inserting stops in between all colors
         # if we have any two colors with a max delta greater than what was requested.
@@ -173,8 +173,8 @@ class Interpolator(metaclass=ABCMeta):
             for i in range(1, len(ret)):
                 m_delta = max(
                     m_delta,
-                    cast('Color', ret[i - 1]['color']).delta_e(
-                        cast('Color', ret[i]['color']),
+                    ret[i - 1][1].delta_e(
+                        ret[i][1],
                         method=delta_e
                     )
                 )
@@ -190,18 +190,18 @@ class Interpolator(metaclass=ABCMeta):
                 while index < total:
                     prev = ret[index - 1]
                     cur = ret[index]
-                    p = (cast(float, cur['p']) + cast(float, prev['p'])) / 2
+                    p = (cur[0] + prev[0]) / 2
                     color = self(p)
                     m_delta = max(
                         m_delta,
-                        color.delta_e(cast('Color', prev['color']), method=delta_e),
-                        color.delta_e(cast('Color', cur['color']), method=delta_e)
+                        color.delta_e(prev[1], method=delta_e),
+                        color.delta_e(cur[1], method=delta_e)
                     )
-                    ret.insert(index, {'p': p, 'color': color})
+                    ret.insert(index, (p, color))
                     total += 1
                     index += 2
 
-        return [cast('Color', i['color']) for i in ret]
+        return [i[1] for i in ret]
 
     def premultiply(self, coords: Vector, alpha: Optional[float] = None) -> None:
 
@@ -268,10 +268,7 @@ class Interpolator(metaclass=ABCMeta):
 
         # Create the color and ensure it is in the correct color space.
         color = self.create(self.space, coords[:-1], coords[-1])
-        if self.out_space != color.space():
-            color.convert(self.out_space, in_place=True)
-
-        return color
+        return color.convert(self.out_space, in_place=True)
 
     def ease(self, t: float, channel_index: int) -> float:
         """Provide a progression time and channel index."""
@@ -443,15 +440,6 @@ def process_mapping(
     return {aliases.get(k, k): v for k, v in progress.items()}
 
 
-def normalize_color(color: 'Color') -> None:
-    """Normalize color."""
-
-    # Adjust to color to space and ensure it fits
-    if not color._space.EXTENDED_RANGE:
-        if not color.in_gamut():
-            color.fit()
-
-
 def adjust_shorter(h1: float, h2: float, offset: float) -> Tuple[float, float]:
     """Adjust the given hues."""
 
@@ -529,12 +517,85 @@ def normalize_hue(
     c2 = util.constrain_hue(color2[index]) + offset
 
     # Adjust hue, handle gaps across `NaN`s
-    c1_nan = alg.is_nan(c1)
-    if (not c1_nan or fallback is not None) and not alg.is_nan(c2):
-        c2, offset = adjuster(cast(float, fallback) if c1_nan else c1, c2, offset)
+    if not alg.is_nan(c2):
+        if not alg.is_nan(c1):
+            c2, offset = adjuster(c1, c2, offset)
+        elif fallback is not None:
+            c2, offset = adjuster(fallback, c2, offset)
 
     color2[index] = c2
     return color2, offset
+
+
+def carryforward_convert(color: 'Color', space: str) -> None:  # pragma: no cover
+    """Carry forward undefined values during conversion."""
+
+    cs1 = color._space
+    cs2 = color.CS_MAP[space]
+    channels = {'r': False, 'g': False, 'b': False, 'h': False, 'c': False, 'l': False, 'v': False}
+    carry = []
+
+    # Gather undefined channels
+    if isinstance(cs1, RGBish):
+        for i, name in zip(cs1.indexes(), ('r', 'g', 'b')):
+            if alg.is_nan(color[i]):
+                channels[name] = True
+    elif isinstance(cs1, LChish):
+        for i, name in zip(cs1.indexes(), ('l', 'c', 'h')):
+            if alg.is_nan(color[i]):
+                channels[name] = True
+    elif isinstance(cs1, Labish):
+        if alg.is_nan(color[cs1.indexes()[0]]):
+            channels['l'] = True
+    elif isinstance(cs1, HSLish):
+        for i, name in zip(cs1.indexes(), ('h', 'c', 'l')):
+            if alg.is_nan(color[i]):
+                channels[name] = True
+    elif isinstance(cs1, HSVish):
+        for i, name in zip(cs1.indexes(), ('h', 'c', 'v')):
+            if alg.is_nan(color[i]):
+                channels[name] = True
+    elif isinstance(cs1, Cylindrical):
+        if alg.is_nan(color[cs1.hue_index()]):
+            channels['h'] = True
+
+    # Carry alpha forward if undefined
+    if alg.is_nan(color[-1]):
+        carry.append(-1)
+
+    # Channels that need to be carried forward
+    if isinstance(cs2, RGBish):
+        indexes = cs2.indexes()
+        for e, name in enumerate(('r', 'g', 'b')):
+            if channels[name]:
+                carry.append(indexes[e])
+    elif isinstance(cs2, Labish):
+        indexes = cs2.indexes()
+        if channels['l']:
+            carry.append(indexes[0])
+    elif isinstance(cs2, LChish):
+        indexes = cs2.indexes()
+        for e, name in enumerate(('l', 'c', 'h')):
+            if channels[name]:
+                carry.append(indexes[e])
+    elif isinstance(cs2, HSLish):
+        indexes = cs2.indexes()
+        for e, name in enumerate(('h', 'c', 'l')):
+            if channels[name]:
+                carry.append(indexes[e])
+    elif isinstance(cs2, HSVish):
+        indexes = cs2.indexes()
+        for e, name in enumerate(('h', 'c', 'v')):
+            if channels[name]:
+                carry.append(indexes[e])
+    elif isinstance(cs2, Cylindrical):
+        if channels['h']:
+            carry.append(cs2.hue_index())
+
+    # Convert the color space
+    color.convert(space, in_place=True)
+    for i in carry:
+        color[i] = alg.NaN
 
 
 def interpolator(
@@ -572,23 +633,30 @@ def interpolator(
         raise ValueError('Cannot have an easing function as the first item in an interpolation list')
 
     if out_space is None:
-        out_space = current.space()
+        out_space = space
 
-    current.convert(space, in_place=True)
+    # Adjust to space
+    if space != current.space():
+        if kwargs.get('_carryforward', False):  # pragma: no cover
+            carryforward_convert(current, space)
+        else:
+            current.convert(space, in_place=True)
+
     offset = 0.0
-    hue_index = cast(Cylindrical, current._space).hue_index() if isinstance(current._space, Cylindrical) else -1
-    normalize_color(current)
-    norm = current[:]
+    hue_index = current._space.hue_index() if isinstance(current._space, Cylindrical) else -1
+
+    # Normalize hue
+    norm_coords = current[:]
     fallback = None
     if hue_index >= 0:
-        h = norm[hue_index]
-        norm, offset = normalize_hue(norm, None, hue_index, offset, hue, fallback)
+        h = norm_coords[hue_index]
+        norm_coords, offset = normalize_hue(norm_coords, None, hue_index, offset, hue, fallback)
         if not alg.is_nan(h):
             fallback = h
 
     easing = None  # type: Any
     easings = []  # type: Any
-    coords = [norm]
+    coords = [norm_coords]
 
     i = 0
     for x in colors[1:]:
@@ -606,18 +674,23 @@ def interpolator(
             color = current._handle_color_input(x)
             stops[i] = None
 
-        # Adjust to color to space and ensure it fits
-        color = color.convert(space)
-        normalize_color(color)
-        norm = color[:]
+        # Adjust color to space
+        if space != color.space():
+            if kwargs.get('_carryforward', False):  # pragma: no cover
+                carryforward_convert(color, space)
+            else:
+                color.convert(space, in_place=True)
+
+        # Normalize the hue
+        norm_coords = color[:]
         if hue_index >= 0:
-            h = norm[hue_index]
-            norm, offset = normalize_hue(current[:], norm, hue_index, offset, hue, fallback)
+            h = norm_coords[hue_index]
+            norm_coords, offset = normalize_hue(current[:], norm_coords, hue_index, offset, hue, fallback)
             if not alg.is_nan(h):
                 fallback = h
 
         # Create an entry interpolating the current color and the next color
-        coords.append(norm)
+        coords.append(norm_coords)
         easings.append(easing if easing is not None else progress)
 
         # The "next" color is now the "current" color

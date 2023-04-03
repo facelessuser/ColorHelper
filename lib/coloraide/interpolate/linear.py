@@ -118,5 +118,6 @@ class Linear(Interpolate):
             progress,
             premultiplied,
             extrapolate,
-            domain
+            domain,
+            **kwargs
         )

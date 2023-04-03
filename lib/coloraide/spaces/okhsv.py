@@ -25,13 +25,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from ..spaces import Space, Cylindrical
-from ..cat import WHITES
+from .hsv import HSV
 from ..channels import FLG_ANGLE, Channel
 from .. import util
-from .oklab import oklab_to_linear_srgb
-from .okhsl import toe, toe_inv, find_cusp, to_st
-from .oklch import ACHROMATIC_THRESHOLD
+from .okhsl import toe, toe_inv, find_cusp, to_st, oklab_to_linear_srgb
 import math
 from .. import algebra as alg
 from ..types import Vector
@@ -41,14 +38,14 @@ def okhsv_to_oklab(hsv: Vector) -> Vector:
     """Convert from Okhsv to Oklab."""
 
     h, s, v = hsv
-    h = alg.no_nan(h)
     h = h / 360.0
 
     l = toe_inv(v)
+
     a = b = 0.0
 
     # Avoid processing gray or colors with undefined hues
-    if l != 0.0 and abs(s) >= ACHROMATIC_THRESHOLD and not alg.is_nan(h):
+    if l != 0.0 and s != 0.0:
         a_ = math.cos(2.0 * math.pi * h)
         b_ = math.sin(2.0 * math.pi * h)
 
@@ -91,19 +88,15 @@ def oklab_to_okhsv(lab: Vector) -> Vector:
     """Oklab to Okhsv."""
 
     l = lab[0]
-    h = alg.NaN
     s = 0.0
     v = toe(l)
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
-    if c < ACHROMATIC_THRESHOLD:
-        c = 0.0
+    h = 0.5 + 0.5 * math.atan2(-lab[2], -lab[1]) / math.pi
 
-    if l != 0.0 and abs(1 - l) >= 1e-08 and c != 0:
+    if l != 0.0 and l != 1 and c != 0.0:
         a_ = lab[1] / c
         b_ = lab[2] / c
-
-        h = 0.5 + 0.5 * math.atan2(-lab[2], -lab[1]) / math.pi
 
         cusp = find_cusp(a_, b_)
         s_max, t_max = to_st(cusp)
@@ -132,13 +125,10 @@ def oklab_to_okhsv(lab: Vector) -> Vector:
         v = l / l_v
         s = (s_0 + t_max) * c_v / ((t_max * s_0) + t_max * k * c_v)
 
-    if abs(s) < ACHROMATIC_THRESHOLD or abs(v) < 1e-08:
-        h = alg.NaN
-
     return [util.constrain_hue(h * 360), s, v]
 
 
-class Okhsv(Cylindrical, Space):
+class Okhsv(HSV):
     """Okhsv class."""
 
     BASE = "oklab"
@@ -154,16 +144,6 @@ class Okhsv(Cylindrical, Space):
         "saturation": "s",
         "value": "v"
     }
-    WHITE = WHITES['2deg']['D65']
-    GAMUT_CHECK = "srgb"
-
-    def normalize(self, coords: Vector) -> Vector:
-        """On color update."""
-
-        coords = alg.no_nans(coords)
-        if abs(coords[2]) < ACHROMATIC_THRESHOLD or coords[1] == 0.0:
-            coords[0] = alg.NaN
-        return coords
 
     def to_base(self, okhsv: Vector) -> Vector:
         """To Oklab from Okhsv."""

@@ -10,6 +10,8 @@ from ..spaces import Space
 from ..channels import Channel
 from ..cat import WHITES
 from ..types import Vector
+from .. import algebra as alg
+import math
 from typing import Tuple
 
 
@@ -50,6 +52,18 @@ class Prismatic(Space):
         "blue": 'b'
     }
     WHITE = WHITES['2deg']['D65']
+
+    def is_achromatic(self, coords: Vector) -> bool:
+        """Test if color is achromatic."""
+
+        if math.isclose(0.0, coords[0], abs_tol=1e-4):
+            return True
+
+        white = [1, 1, 1]
+        for x in alg.vcross(coords, white):
+            if not math.isclose(0.0, x, abs_tol=1e-5):
+                return False
+        return True
 
     def to_base(self, coords: Vector) -> Vector:
         """To sRGB."""

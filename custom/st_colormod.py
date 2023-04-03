@@ -9,7 +9,9 @@ from collections.abc import Mapping
 from itertools import zip_longest as zipl
 import functools
 import math
-from ColorHelper.ch_util import get_base_color
+from ColorHelper.ch_util import get_base_color, COLOR_PARTS
+
+RE_CHAN_VALUE = re.compile(r'(?i)(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?(?:%|deg|rad|turn|grad)?|none)')
 
 BASE = get_base_color()
 
@@ -27,10 +29,10 @@ TOKENS = {
             \#(?:{hex}{{6}}(?:{hex}{{2}})?|{hex}{{3}}(?:{hex})?) |
             [\w][\w\d]*
         )
-        """.format(**parse.COLOR_PARTS)
+        """.format(**COLOR_PARTS)
     ),
     "functions": re.compile(r'(?i)[\w][\w\d]*\('),
-    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**parse.COLOR_PARTS))
+    "separators": re.compile(r'(?:{comma}|{space}|{slash})'.format(**COLOR_PARTS))
 }
 
 RE_ADJUSTERS = {
@@ -41,25 +43,25 @@ RE_ADJUSTERS = {
         (?:(\+\s+|\-\s+)?({strict_percent}|{strict_float})|(\*)?\s*({strict_percent}|{strict_float}))
         \s*\)
         """.format(
-            **parse.COLOR_PARTS
+            **COLOR_PARTS
         )
     ),
     "saturation": re.compile(
-        r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**parse.COLOR_PARTS)
+        r'(?i)\s+s(?:aturation)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**COLOR_PARTS)
     ),
     "lightness": re.compile(
-        r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**parse.COLOR_PARTS)
+        r'(?i)\s+l(?:ightness)?\((\+\s|\-\s|\*)?\s*({strict_percent})\s*\)'.format(**COLOR_PARTS)
     ),
     "min-contrast_start": re.compile(r'(?i)\s+min-contrast\(\s*'),
     "blend_start": re.compile(r'(?i)\s+blenda?\(\s*'),
     "end": re.compile(r'(?i)\s*\)')
 }
 
-RE_HUE = re.compile(r'(?i){angle}'.format(**parse.COLOR_PARTS))
+RE_HUE = re.compile(r'(?i){angle}'.format(**COLOR_PARTS))
 RE_COLOR_START = re.compile(r'(?i)color\(\s*')
-RE_BLEND_END = re.compile(r'(?i)\s+({strict_percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**parse.COLOR_PARTS))
+RE_BLEND_END = re.compile(r'(?i)\s+({strict_percent})(?:\s+(rgb|hsl|hwb))?\s*\)'.format(**COLOR_PARTS))
 RE_BRACKETS = re.compile(r'(?:(\()|(\))|[^()]+)')
-RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({strict_float})\s*\)'.format(**parse.COLOR_PARTS))
+RE_MIN_CONTRAST_END = re.compile(r'(?i)\s+({strict_float})\s*\)'.format(**COLOR_PARTS))
 RE_VARS = re.compile(r'(?i)(?:(?<=^)|(?<=[\s\t\(,/]))(var\(\s*([-\w][-\w\d]*)\s*\))(?!\()(?=[\s\t\),/]|$)')
 
 HWB_MATCH = re.compile(
@@ -67,12 +69,12 @@ HWB_MATCH = re.compile(
     \b(hwb)\(\s*
     (?:
         # Space separated format
-        {angle}{space}{percent}{space}{percent}(?:{slash}(?:{percent}|{float}))? |
+        {angle}{loose_space}{percent}{loose_space}{percent}(?:{slash}(?:{percent}|{float}))? |
         # comma separated format
         {angle}{comma}{percent}{comma}{percent}(?:{comma}(?:{percent}|{float}))?
     )
     \s*\)
-    """.format(**parse.COLOR_PARTS)
+    """.format(**COLOR_PARTS)
 )
 
 
@@ -188,7 +190,10 @@ class HWB(HWBORIG):
 
         m = HWB_MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
-            return parse.parse_channels(string[m.end(1) + 1:m.end(0) - 1], cls.BOUNDS), m.end(0)
+            return parse.parse_channels(
+                list(RE_CHAN_VALUE.findall(string[m.end(1) + 1:m.end(0) - 1])),
+                cls.CHANNELS, scaled=True
+            ), m.end(0)
         return None
 
     @classmethod
@@ -198,8 +203,10 @@ class HWB(HWBORIG):
         *,
         alpha=None,
         precision=None,
+        percent: bool = True,
         fit=True,
         none=False,
+        comma: bool = False,
         **kwargs
     ) -> str:
         """Convert to CSS."""
@@ -212,7 +219,9 @@ class HWB(HWBORIG):
             fit=fit,
             none=none,
             color=kwargs.get('color', False),
-            legacy=kwargs.get('comma', False)
+            percent=True if comma else percent,
+            scale=100,
+            legacy=comma
         )
 
 
@@ -349,7 +358,7 @@ class ColorMod:
 
         self._color = base
         pattern = "color({} {})".format(self._color.clone().clip().to_string(precision=-1), string)
-        color, start = self._adjust(pattern)
+        color, _ = self._adjust(pattern)
         if color is not None:
             self._color.update(color)
         else:
@@ -486,12 +495,12 @@ class ColorMod:
         if is_dark:
             primary = "whiteness"
             secondary = "blackness"
-            min_mix = orig.whiteness * 100
+            min_mix = orig[primary] * 100
             max_mix = 100
         else:
             primary = "blackness"
             secondary = "whiteness"
-            min_mix = orig.blackness * 100
+            min_mix = orig[primary] * 100
             max_mix = 100
         orig_ratio = ratio
         last_ratio = 0
@@ -620,13 +629,15 @@ class Color(BASE):
                 s = color
                 space_class = cls.CS_MAP.get(s)
                 if not space_class:
-                    raise ValueError("'{}' is not a registered color space")
+                    raise ValueError("'{}' is not a registered color space".format(s))
                 num_channels = len(space_class.CHANNELS)
-                if len(data) < num_channels:
-                    data = list(data) + [alg.NaN] * (num_channels - len(data))
+                num_data = len(data)
+                if num_data < num_channels:
+                    data = list(data) + [alg.NaN] * (num_channels - num_data)
                 coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
                 coords.append(alg.clamp(float(alpha), *space_class.channels[-1].limit))
                 obj = space_class, coords
+
             # Parse a CSS string
             else:
                 m = cls._match(color, fullmatch=True, variables=variables)
@@ -635,18 +646,18 @@ class Color(BASE):
                 coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(m[0].CHANNELS, m[1])]
                 coords.append(alg.clamp(float(m[2]), *m[0].channels[-1].limit))
                 obj = m[0], coords
+
+        # Handle a color instance
         elif isinstance(color, BASE):
-            # Handle a color instance
             space_class = cls.CS_MAP.get(color.space())
             if not space_class:
-                raise ValueError("'{}' is not a registered color space")
+                raise ValueError("'{}' is not a registered color space".format(color.space()))
             obj = space_class, color[:]
+
+        # Handle a color dictionary
         elif isinstance(color, Mapping):
-            # Handle a color dictionary
-            space = color['space']
-            coords = color['coords']
-            alpha = color.get('alpha', 1.0)
-            obj = cls._parse(space, coords, alpha)
+            obj = cls._parse(color['space'], color['coords'], color.get('alpha', 1.0))
+
         else:
             raise TypeError("'{}' is an unrecognized type".format(type(color)))
 
@@ -710,7 +721,7 @@ class Color(BASE):
 
         return type(self)(color, data, alpha, variables=variables, **kwargs)
 
-    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):
+    def update(self, color, data=None, alpha=util.DEF_ALPHA, *, norm=True, variables=None, **kwargs):
         """Update the existing color space with the provided color."""
 
         space = self.space()
@@ -718,7 +729,7 @@ class Color(BASE):
             color, data=data, alpha=alpha, variables=variables, **kwargs
         )
         if self._space.NAME != space:
-            self.convert(space, in_place=True)
+            self.convert(space, in_place=True, norm=norm)
         return self
 
     def mutate(self, color, data=None, alpha=util.DEF_ALPHA, *, variables=None, **kwargs):

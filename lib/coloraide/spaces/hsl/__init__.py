@@ -1,9 +1,8 @@
 """HSL class."""
-from ...spaces import Space, Cylindrical
+from ...spaces import Space, HSLish
 from ...cat import WHITES
-from ...channels import Channel, FLG_ANGLE, FLG_PERCENT
+from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
 from ... import util
-from ... import algebra as alg
 from ...types import Vector
 
 
@@ -13,7 +12,7 @@ def srgb_to_hsl(rgb: Vector) -> Vector:
     r, g, b = rgb
     mx = max(rgb)
     mn = min(rgb)
-    h = alg.NaN
+    h = 0.0
     s = 0.0
     l = (mn + mx) / 2
     c = mx - mn
@@ -25,10 +24,8 @@ def srgb_to_hsl(rgb: Vector) -> Vector:
             h = (b - r) / c + 2.0
         else:
             h = (r - g) / c + 4.0
-        s = 0 if l == 0.0 or abs(1 - l) < 1e-08 else (mx - l) / min(l, 1 - l)
+        s = 0 if l == 0.0 or l == 1.0 else (mx - l) / min(l, 1 - l)
         h *= 60.0
-        if abs(s) < 1e-08:
-            h = alg.NaN
 
     return [util.constrain_hue(h), s, l]
 
@@ -52,7 +49,7 @@ def hsl_to_srgb(hsl: Vector) -> Vector:
     return [f(0), f(8), f(4)]
 
 
-class HSL(Cylindrical, Space):
+class HSL(HSLish, Space):
     """HSL class."""
 
     BASE = "srgb"
@@ -60,8 +57,8 @@ class HSL(Cylindrical, Space):
     SERIALIZE = ("--hsl",)
     CHANNELS = (
         Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
-        Channel("s", 0.0, 1.0, bound=True, flags=FLG_PERCENT),
-        Channel("l", 0.0, 1.0, bound=True, flags=FLG_PERCENT)
+        Channel("s", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT),
+        Channel("l", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT)
     )
     CHANNEL_ALIASES = {
         "hue": "h",
@@ -71,14 +68,10 @@ class HSL(Cylindrical, Space):
     WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
 
-    def normalize(self, coords: Vector) -> Vector:
-        """On color update."""
+    def is_achromatic(self, coords: Vector) -> bool:
+        """Check if color is achromatic."""
 
-        coords = alg.no_nans(coords)
-        if abs(coords[1]) < 1e-08 or coords[2] == 0 or abs(1 - coords[2]) < 1e-08:
-            coords[0] = alg.NaN
-
-        return coords
+        return abs(coords[1]) < 1e-4 or coords[2] == 0.0 or abs(1 - coords[2]) < 1e-7
 
     def to_base(self, coords: Vector) -> Vector:
         """To sRGB from HSL."""

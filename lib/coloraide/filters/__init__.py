@@ -24,6 +24,7 @@ def filters(
     name: str,
     amount: Optional[float] = None,
     space: Optional[str] = None,
+    out_space: Optional[str] = None,
     in_place: bool = False,
     **kwargs: Any
 ) -> 'Color':
@@ -41,7 +42,9 @@ def filters(
             "The '{}' only supports filtering in the {} spaces, not '{}'".format(name, str(f.ALLOWED_SPACES), space)
         )
 
-    current = color.space()
-    c = color.convert(space, in_place=in_place)
+    if out_space is None:
+        out_space = space
+
+    c = color.convert(space, in_place=in_place, norm=False).normalize()
     f.filter(c, amount, **kwargs)
-    return c.convert(current, in_place=True)
+    return c.convert(out_space, in_place=True)

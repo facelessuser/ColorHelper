@@ -164,6 +164,22 @@ def nlog(value: float) -> float:
     return math.copysign(1, value) * math.log(abs(value))
 
 
+def rect_to_polar(a: float, b: float) -> Tuple[float, float]:
+    """Take rectangular coordinates and make them polar."""
+
+    c = math.sqrt(a ** 2 + b ** 2)
+    h = math.degrees(math.atan2(b, a)) % 360
+    return c, h
+
+
+def polar_to_rect(c: float, h: float) -> Tuple[float, float]:
+    """Take rectangular coordinates and make them polar."""
+
+    a = c * math.cos(math.radians(h))
+    b = c * math.sin(math.radians(h))
+    return a, b
+
+
 ################################
 # Interpolation and splines
 ################################
@@ -481,7 +497,7 @@ def _cross_pad(a: ArrayLike, s: Tuple[int, ...]) -> Array:
     m = acopy(a)
 
     # Initialize indexes so we can properly write our data
-    total = prod(cast(Iterator[int], s[:-1]))
+    total = prod(s[:-1])
     idx = [0] * (len(s) - 1)
 
     for c in range(total):

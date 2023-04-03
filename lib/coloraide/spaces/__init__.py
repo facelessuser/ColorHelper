@@ -2,9 +2,10 @@
 from abc import ABCMeta, abstractmethod
 from ..channels import Channel
 from ..css import serialize
-from .. import algebra as alg
+from ..util import deprecated
 from ..types import VectorLike, Vector, Plugin
-from typing import Tuple, Dict, Optional, Union, Any, List, cast, TYPE_CHECKING
+from typing import Tuple, Dict, Optional, Union, Any, List, TYPE_CHECKING
+import math
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -21,50 +22,101 @@ class Cylindrical:
     def hue_index(self) -> int:  # pragma: no cover
         """Get hue index."""
 
-        return cast('Space', self).get_channel_index(self.hue_name())
+        return self.get_channel_index(self.hue_name())  # type: ignore
 
-    def achromatic_hue(self) -> float:
-        """
-        Ideal achromatic hue.
 
-        Normally, we assume 0 when a cylindrical color space has a powerless hue.
-        For most color spaces, the hue has little affect when the color is achromatic,
-        but on rare occasions, a color space algorithm may require a specific hue
-        in order to more accurately translate an achromatic hue, CAM16 JMh (without
-        discounting) being an example. Color spaces internally handle this during
-        conversion, but there are times such as when plotting where knowing the
-        hue can be useful.
-        """
+class RGBish:
+    """RGB-ish space."""
 
-        return 0.0
+    def names(self) -> Tuple[str, ...]:
+        """Return RGB-ish names in order R G B."""
+
+        return self.channels[:-1]  # type: ignore
+
+    def indexes(self) -> List[int]:
+        """Return the index of RGB-ish channels."""
+
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+
+
+class HSLish(Cylindrical):
+    """HSL-ish space."""
+
+    def names(self) -> Tuple[str, ...]:
+        """Return HSL-ish names in order H S L."""
+
+        return self.channels[:-1]  # type: ignore
+
+    def indexes(self) -> List[int]:
+        """Return the index of HSL-ish channels."""
+
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+
+
+class HSVish(Cylindrical):
+    """HSV-ish space."""
+
+    def names(self) -> Tuple[str, ...]:
+        """Return HSV-ish names in order H S V."""
+
+        return self.channels[:-1]  # type: ignore
+
+    def indexes(self) -> List[int]:
+        """Return the index of HSV-ish channels."""
+
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
 
 
 class Labish:
     """Lab-ish color spaces."""
 
-    def labish_names(self) -> Tuple[str, ...]:
+    @deprecated("Please use 'names' instead.")
+    def labish_names(self) -> Tuple[str, ...]:  # pragma: no cover
         """Return Lab-ish names in the order L a b."""
 
-        return cast('Space', self).channels[:-1]
+        return self.names()
+
+    @deprecated("Please use 'indexes' instead.")
+    def labish_indexes(self) -> List[int]:  # pragma: no cover
+        """Return the index of the Lab-ish channels."""
+
+        return self.indexes()
+
+    def names(self) -> Tuple[str, ...]:
+        """Return Lab-ish names in the order L a b."""
+
+        return self.channels[:-1]  # type: ignore
 
     def labish_indexes(self) -> List[int]:  # pragma: no cover
         """Return the index of the Lab-ish channels."""
 
-        return [cast('Space', self).get_channel_index(name) for name in self.labish_names()]
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
 
 
 class LChish(Cylindrical):
     """LCh-ish color spaces."""
 
+    @deprecated("Please use 'names' instead.")
     def lchish_names(self) -> Tuple[str, ...]:  # pragma: no cover
         """Return LCh-ish names in the order L c h."""
 
-        return cast('Space', self).channels[:-1]
+        return self.names()
 
+    @deprecated("Please use 'indexes' instead.")
     def lchish_indexes(self) -> List[int]:  # pragma: no cover
         """Return the index of the Lab-ish channels."""
 
-        return [cast('Space', self).get_channel_index(name) for name in self.lchish_names()]
+        return self.indexes()
+
+    def names(self) -> Tuple[str, ...]:
+        """Return LCh-ish names in the order L c h."""
+
+        return self.channels[:-1]  # type: ignore
+
+    def indexes(self) -> List[int]:
+        """Return the index of the Lab-ish channels."""
+
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
 
 
 alpha_channel = Channel('alpha', 0.0, 1.0, bound=True, limit=(0.0, 1.0))
@@ -125,10 +177,21 @@ class Space(Plugin, metaclass=SpaceMeta):
 
         return self.channels.index(self.CHANNEL_ALIASES.get(name, name))
 
+    def resolve_channel(self, index: int, coords: Vector) -> float:
+        """Resolve channels."""
+
+        value = coords[index]
+        return self.channels[index].nans if math.isnan(value) else value
+
     def _serialize(self) -> Tuple[str, ...]:
         """Get the serialized name."""
 
         return self._color_ids
+
+    def is_achromatic(self, coords: Vector) -> Optional[bool]:  # pragma: no cover
+        """Check if color is achromatic."""
+
+        return None
 
     @classmethod
     def white(cls) -> VectorLike:
@@ -164,11 +227,6 @@ class Space(Plugin, metaclass=SpaceMeta):
             fit=fit,
             none=none
         )
-
-    def normalize(self, coords: Vector) -> Vector:
-        """Process coordinates and adjust any channels to null/NaN if required."""
-
-        return alg.no_nans(coords)
 
     def match(
         self,

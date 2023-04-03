@@ -52,7 +52,7 @@ class ASRGB(sRGB):
         """Convert to Hex format."""
 
         options = kwargs
-        a = alg.no_nan(parent[-1])
+        a = parent.alpha(nans=False)
         show_alpha = alpha is not False and (alpha is True or a < 1.0)
 
         template = "#{:02x}{:02x}{:02x}{:02x}" if show_alpha else "#{:02x}{:02x}{:02x}"
@@ -61,7 +61,7 @@ class ASRGB(sRGB):
 
         # Always fit hex
         method = None if not isinstance(fit, str) else fit
-        coords = alg.no_nans(parent.clone().fit(method=method)[:-1])
+        coords = parent.clone().fit(method=method).coords(nans=False)
         if show_alpha:
             value = template.format(
                 int(alg.round_half_up(a * 255.0)),

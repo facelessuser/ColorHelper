@@ -3,12 +3,16 @@ The IgPgTg color space.
 
 https://www.ingentaconnect.com/content/ist/jpi/2020/00000003/00000002/art00002#
 """
-from ..spaces import Space, Labish
+from .ipt import IPT
 from ..channels import Channel, FLG_MIRROR_PERCENT
 from ..cat import WHITES
 from .. import algebra as alg
+from .achromatic import Achromatic as _Achromatic
+from .srgb_linear import lin_srgb_to_xyz
+from .srgb import lin_srgb
 from ..types import Vector
-from typing import Tuple
+from typing import Tuple, Any
+import math
 
 XYZ_TO_LMS = [
     [2.968, 2.741, -0.649],
@@ -33,6 +37,14 @@ IGPGTG_TO_LMS = [
     [0.6345481937914158, -0.009437923746683553, -0.003270744675229782],
     [0.022656986516578225, -0.0047011518748263665, -0.030048158824914562]
 ]
+
+ACHROMATIC_RESPONSE = [
+    [0.01710472400677632, 7.497407788263028e-05, 289.00717276288583],
+    [0.022996189520032607, 0.00010079777395972956, 289.0071727628907],
+    [0.027343043084773415, 0.00011985106810106645, 289.0071727628969],
+    [0.030916881922897717, 0.00013551605464415584, 289.00717276289157],
+    [0.9741484960046701, 0.004269924798539691, 289.0071727629053],
+    [5.049390603804086, 0.022132681254573808, 289.00717276289043]]  # type: List[Vector]
 
 
 def xyz_to_igpgtg(xyz: Vector) -> Vector:
@@ -59,7 +71,19 @@ def igpgtg_to_xyz(itp: Vector) -> Vector:
     return alg.dot(LMS_TO_XYZ, lms_in, dims=alg.D2_D1)
 
 
-class IgPgTg(Labish, Space):
+class Achromatic(_Achromatic):
+    """Test if color is achromatic."""
+
+    def convert(self, coords: Vector, **kwargs: Any) -> Vector:
+        """Convert to the target color space."""
+
+        lab = xyz_to_igpgtg(lin_srgb_to_xyz(lin_srgb(coords)))
+        l = lab[0]
+        c, h = alg.rect_to_polar(*lab[1:])
+        return [l, c, h]
+
+
+class IgPgTg(IPT):
     """The IgPgTg class."""
 
     BASE = "xyz-d65"
@@ -71,11 +95,37 @@ class IgPgTg(Labish, Space):
         Channel("tg", -1.0, 1.0, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
-        "intensity": "i",
-        "protan": "cp",
-        "tritan": "ct"
+        "intensity": "ig",
+        "protan": "pg",
+        "tritan": "tg"
     }
     WHITE = WHITES['2deg']['D65']
+    # Precalculated from:
+    # [
+    #     (1, 5, 1, 1000.0),
+    #     (100, 101, 1, 100),
+    #     (520, 521, 1, 100)
+    # ]
+    ACHROMATIC = Achromatic(
+        ACHROMATIC_RESPONSE,
+        1e-5,
+        1e-5,
+        0.03126,
+        'linear',
+        mirror=True
+    )
+
+    def resolve_channel(self, index: int, coords: Vector) -> float:
+        """Resolve channels."""
+
+        if index in (1, 2):
+            if not math.isnan(coords[index]):
+                return coords[index]
+
+            return self.ACHROMATIC.get_ideal_ab(coords[0])[index - 1]
+
+        value = coords[index]
+        return self.channels[index].nans if math.isnan(value) else value
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ."""

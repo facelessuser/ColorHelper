@@ -121,7 +121,7 @@ def evaluate(base, string):
             colors.append(second.fit('srgb'))
             if ratio:
                 if first[-1] < 1.0:
-                    first = first.compose(second, space="srgb")
+                    first = first.compose(second, space="srgb", out_space=first.space())
                 hwb_fg = first.convert('hwb').clip()
                 hwb_bg = second.convert('hwb').clip()
                 first.update(hwb_fg)
@@ -140,10 +140,10 @@ def evaluate(base, string):
 
             if first[-1] < 1.0:
                 # Contrasted with current color
-                colors.append(first.compose(second, space="srgb"))
+                colors.append(first.compose(second, space="srgb", out_space=first.space()))
                 # Contrasted with the two extremes min and max
-                colors.append(first.compose("white", space="srgb"))
-                colors.append(first.compose("black", space="srgb"))
+                colors.append(first.compose("white", space="srgb", out_space=first.space()))
+                colors.append(first.compose("black", space="srgb", out_space=first.space()))
             else:
                 colors.append(first)
     except Exception as e:

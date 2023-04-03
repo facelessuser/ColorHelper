@@ -4,7 +4,9 @@ from ..lib.coloraide.css import parse, serialize
 import re
 from ColorHelper.ch_util import get_base_color
 
-RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(**parse.COLOR_PARTS))
+HEX = r'[a-f0-9]'
+
+RE_COMPRESS = re.compile(r'(?i)^#({hex})\1({hex})\2({hex})\3(?:({hex})\4)?$'.format(hex=HEX))
 
 MATCH = re.compile(
     r"""(?xi)
@@ -14,7 +16,7 @@ MATCH = re.compile(
         # Names
         \b(?<!\#)[a-z][a-z0-9]{{2,}}(?!\()\b
     )
-    """.format(**parse.COLOR_PARTS)
+    """.format(hex=HEX)
 )
 
 name2hex_map = {

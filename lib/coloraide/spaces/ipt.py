@@ -8,8 +8,11 @@ from ..spaces import Space, Labish
 from ..channels import Channel, FLG_MIRROR_PERCENT
 from ..cat import WHITES
 from .. import algebra as alg
+from .achromatic import Achromatic as _Achromatic
+from .srgb_linear import lin_srgb_to_xyz
+from .srgb import lin_srgb
 from ..types import Vector
-from typing import Tuple
+import math
 
 # The IPT algorithm requires the use of the Hunt-Pointer-Estevez matrix,
 # but it was originally calculated with the assumption of a slightly different
@@ -52,6 +55,14 @@ IPT_TO_LMS_P = [
     [1.0, 0.0326151099170664, -0.6768871830691793]
 ]
 
+ACHROMATIC_RESPONSE = [
+    [0.017066845239980113, 1.3218447776831226e-06, 329.7602673181543],
+    [0.022993026958471587, 1.7808336678784566e-06, 329.76026731797435],
+    [0.027372558329889066, 2.1200328924997904e-06, 329.76026731785475],
+    [0.030976977952230922, 2.399198912177825e-06, 329.7602673177659],
+    [0.9999910919149724, 7.745034210859942e-05, 329.7602673174851],
+    [5.243613106559706, 0.00040612324677300886, 329.7602673178901]]  # type: List[Vector]
+
 
 def xyz_to_ipt(xyz: Vector) -> Vector:
     """XYZ to IPT."""
@@ -67,6 +78,18 @@ def ipt_to_xyz(ipt: Vector) -> Vector:
     return alg.dot(LMS_TO_XYZ, lms, dims=alg.D2_D1)
 
 
+class Achromatic(_Achromatic):
+    """Test achromatic response."""
+
+    def convert(self, coords: Vector, **kwargs: Any) -> Vector:
+        """Convert to the target color space."""
+
+        lab = xyz_to_ipt(lin_srgb_to_xyz(lin_srgb(coords)))
+        l = lab[0]
+        c, h = alg.rect_to_polar(*lab[1:])
+        return [l, c, h]
+
+
 class IPT(Labish, Space):
     """The IPT class."""
 
@@ -80,10 +103,42 @@ class IPT(Labish, Space):
     )
     CHANNEL_ALIASES = {
         "intensity": "i",
-        "protan": "cp",
-        "tritan": "ct"
+        "protan": "p",
+        "tritan": "t"
     }
     WHITE = WHITES['2deg']['D65']
+    # Precalculated from:
+    # [
+    #     (1, 5, 1, 1000.0),
+    #     (100, 101, 1, 100),
+    #     (520, 521, 1, 100)
+    # ]
+    ACHROMATIC = Achromatic(
+        ACHROMATIC_RESPONSE,
+        1e-5,
+        1e-5,
+        0.00049,
+        'linear',
+        mirror=True
+    )  # type: _Achromatic
+
+    def resolve_channel(self, index: int, coords: Vector) -> float:
+        """Resolve channels."""
+
+        if index in (1, 2):
+            if not math.isnan(coords[index]):
+                return coords[index]
+
+            return self.ACHROMATIC.get_ideal_ab(coords[0])[index - 1]
+
+        value = coords[index]
+        return self.channels[index].nans if math.isnan(value) else value
+
+    def is_achromatic(self, coords: Vector) -> bool:
+        """Check if color is achromatic."""
+
+        m, h = alg.rect_to_polar(coords[1], coords[2])
+        return self.ACHROMATIC.test(coords[0], m, h)
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ."""
