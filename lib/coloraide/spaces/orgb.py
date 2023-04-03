@@ -9,7 +9,7 @@ from ..spaces import Space, Labish
 from ..types import Vector
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
-from typing import cast, Tuple
+from typing import Tuple
 
 RGB_TO_LC1C2 = [
     [0.2990, 0.5870, 0.1140],
@@ -75,14 +75,14 @@ class oRGB(Labish, Space):
         "luma": "l"
     }
 
-    def labish_names(self) -> Tuple[str, ...]:
+    def names(self) -> Tuple[str, ...]:
         """
         Return Lab-ish names in the order L a b.
 
         oRGB flips the `crg` and `cyb` equivalent (which corresponds to `a` and `b`).
         """
 
-        channels = cast(Space, self).channels
+        channels = self.channels
         return channels[0], channels[2], channels[1]
 
     def to_base(self, coords: Vector) -> Vector:

@@ -52,5 +52,6 @@ class Monotone(Interpolate):
             progress,
             premultiplied,
             extrapolate,
-            domain
+            domain,
+            **kwargs
         )

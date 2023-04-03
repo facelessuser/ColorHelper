@@ -127,9 +127,9 @@ def convert(color: 'Color', space: str) -> Tuple['Space', Vector]:
     chain = color._get_convert_chain(color._space, space)  # type: ignore[attr-defined]
 
     # Get coordinates and convert NaN values to 0
-    coords = alg.no_nans(color[:-1])
+    coords = color.coords(nans=False)
 
-    # Navigate the conversion chain translated the coordinates along the way.
+    # Navigate the conversion chain translating the coordinates along the way.
     # Perform chromatic adaption if needed (a conversion to or from XYZ D65).
     last = color._space
     for a, b, direction, adapt in chain:

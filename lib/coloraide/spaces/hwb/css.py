@@ -21,6 +21,7 @@ class HWB(base.HWB):
         fit: Union[str, bool] = True,
         none: bool = False,
         color: bool = False,
+        percent: bool = True,
         **kwargs: Any
     ) -> str:
         """Convert to CSS."""
@@ -32,7 +33,9 @@ class HWB(base.HWB):
             precision=precision,
             fit=fit,
             none=none,
-            color=color
+            color=color,
+            percent=percent,
+            scale=100
         )
 
     def match(

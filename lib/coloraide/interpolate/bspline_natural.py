@@ -66,5 +66,6 @@ class NaturalBSpline(Interpolate):
             progress,
             premultiplied,
             extrapolate,
-            domain
+            domain,
+            **kwargs
         )

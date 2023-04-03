@@ -11,9 +11,38 @@ import mdpopups
 import base64
 import importlib
 from .lib.coloraide import Color as Base
-from .lib.coloraide.css.parse import RE_COLOR_MATCH
 from .lib.coloraide import __version_info__ as coloraide_version
 import functools
+import re
+
+COLOR_PARTS = {
+    "strict_percent": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?%)",
+    "strict_float": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?)",
+    "strict_angle": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?(?:deg|rad|turn|grad)?)",
+    "percent": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?%|none)",
+    "float": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?|none)",
+    "angle": r"(?:[+\-]?(?:[0-9]*\.)?[0-9]+(?:e[-+]?[0-9]+)?(?:deg|rad|turn|grad)?|none)",
+    "space": r"\s+",
+    "loose_space": r"\s*",
+    "comma": r"\s*,\s*",
+    "slash": r"\s*/\s*",
+    "sep": r"(?:\s*,\s*|\s+)",
+    "asep": r"(?:\s*[,/]\s*|\s+)",
+    "hex": r"[a-f0-9]"
+}
+
+
+# Allow 15 channels maximum. This should be able to handle any colors we throw at it.
+RE_COLOR_MATCH = re.compile(
+    r"""(?xi)
+    color\(\s*
+    (-{{0,2}}[a-z][-a-z0-9_]*)(?=\s)
+    ((?:{loose_space}(?:{strict_percent}|{float})){{1,15}}(?:{slash}(?:{strict_percent}|{float}))?)
+    \s*\)
+    """.format(
+        **COLOR_PARTS
+    )
+)
 
 SUPPORTED_SPACES = list(Base.CS_MAP.values())
 

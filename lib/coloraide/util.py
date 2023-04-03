@@ -103,7 +103,7 @@ def pq_st2084_oetf(
     m1: float = M1,
     m2: float = M2
 ) -> Vector:
-    """Perceptual quantizer (SMPTE ST 2084) - inverse EOTF."""
+    """Perceptual quantizer (SMPTE ST 2084) - OETF."""
 
     adjusted = []
     for c in values:
@@ -147,7 +147,7 @@ def absxyzd65_to_xyz_d65(absxyzd65: VectorLike, yw: float = YW) -> Vector:
 
 
 def constrain_hue(hue: float) -> float:
-    """Constrain hue to 0 - 360."""
+    """Constrain hue to [0, 360)."""
 
     return hue % 360 if not alg.is_nan(hue) else hue
 

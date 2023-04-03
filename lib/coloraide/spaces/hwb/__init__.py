@@ -1,8 +1,7 @@
 """HWB class."""
 from ...spaces import Space, Cylindrical
 from ...cat import WHITES
-from ...channels import Channel, FLG_ANGLE, FLG_PERCENT
-from ... import algebra as alg
+from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
 from ...types import Vector
 
 
@@ -12,9 +11,9 @@ def hwb_to_hsv(hwb: Vector) -> Vector:
     h, w, b = hwb
 
     wb = w + b
-    if 1 - wb < 2e-08:
+    if 1 - wb < 2e-07:
         gray = w / wb
-        return [alg.NaN, 0.0, gray]
+        return [0.0, 0.0, gray]
 
     v = 1 - b
     s = 0 if v == 0 else 1 - w / v
@@ -28,8 +27,8 @@ def hsv_to_hwb(hsv: Vector) -> Vector:
     h, s, v = hsv
     w = v * (1 - s)
     b = 1 - v
-    if 1 - (w + b) < 2e-08:
-        h = alg.NaN
+    if 1 - (w + b) < 2e-07:
+        h = 0.0
     return [h, w, b]
 
 
@@ -41,8 +40,8 @@ class HWB(Cylindrical, Space):
     SERIALIZE = ("--hwb",)
     CHANNELS = (
         Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
-        Channel("w", 0.0, 1.0, bound=True, flags=FLG_PERCENT),
-        Channel("b", 0.0, 1.0, bound=True, flags=FLG_PERCENT)
+        Channel("w", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT),
+        Channel("b", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT)
     )
     CHANNEL_ALIASES = {
         "hue": "h",
@@ -52,13 +51,15 @@ class HWB(Cylindrical, Space):
     GAMUT_CHECK = "srgb"
     WHITE = WHITES['2deg']['D65']
 
-    def normalize(self, coords: Vector) -> Vector:
-        """On color update."""
+    def is_achromatic(self, coords: Vector) -> bool:
+        """Check if color is achromatic."""
 
-        coords = alg.no_nans(coords)
-        if 1 - (coords[1] + coords[2]) < 2e-08:
-            coords[0] = alg.NaN
-        return coords
+        if 1 - (coords[1] + coords[2]) < 2e-07:
+            return True
+
+        v = 1 - coords[2]
+        s = 0 if v == 0 else 1 - coords[1] / v
+        return abs(s) < 1e-4
 
     def to_base(self, coords: Vector) -> Vector:
         """To HSV from HWB."""

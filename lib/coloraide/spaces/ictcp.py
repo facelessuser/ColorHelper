@@ -3,13 +3,13 @@ ICtCp class.
 
 https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
 """
-from ..spaces import Space, Labish
+from .lab import Lab
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
 from .. import util
 from .. import algebra as alg
 from ..types import Vector
-from typing import cast, Tuple
+from typing import Tuple
 
 # All PQ Values are equivalent to defaults as stated in link below:
 # https://en.wikipedia.org/wiki/High-dynamic-range_video#Perceptual_quantizer
@@ -83,7 +83,7 @@ def xyz_d65_to_ictcp(xyzd65: Vector) -> Vector:
     return alg.dot(lms_p_to_ictcp_m, pqlms, dims=alg.D2_D1)
 
 
-class ICtCp(Labish, Space):
+class ICtCp(Lab):
     """ICtCp class."""
 
     BASE = "xyz-d65"
@@ -110,7 +110,7 @@ class ICtCp(Labish, Space):
         Interestingly, the polarity of tritan (yellow/blue) is also flipped.
         """
 
-        channels = cast(Space, self).channels
+        channels = self.channels
         return channels[0], channels[2], channels[1]
 
     def to_base(self, coords: Vector) -> Vector:

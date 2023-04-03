@@ -3,6 +3,7 @@ Compositing and RGB blend modes.
 
 https://www.w3.org/TR/compositing/
 """
+from .. spaces import RGBish
 from . import porter_duff
 from . import blend_modes
 from .. import algebra as alg
@@ -39,10 +40,10 @@ def apply_compositing(
     """Perform the actual blending."""
 
     # Get the color coordinates
-    csa = alg.no_nan(color1[-1])
-    cba = alg.no_nan(color2[-1])
-    coords1 = alg.no_nans(color1[:-1])
-    coords2 = alg.no_nans(color2[:-1])
+    csa = color1.alpha(nans=False)
+    cba = color2.alpha(nans=False)
+    coords1 = color1.coords(nans=False)
+    coords2 = color2.coords(nans=False)
 
     # Setup compositing
     compositor = None  # type: Optional[porter_duff.PorterDuff]
@@ -78,7 +79,8 @@ def compose(
     backdrop: List['Color'],
     blend: Union[str, bool] = True,
     operator: Union[str, bool] = True,
-    space: Optional[str] = None
+    space: Optional[str] = None,
+    out_space: Optional[str] = None
 ) -> 'Color':
     """Blend colors using the specified blend mode."""
 
@@ -88,12 +90,16 @@ def compose(
         blender = blend_modes.get_blender(blend)
     elif blend is True:
         blender = blend_modes.get_blender('normal')
-    is_seperable = blender is not None and isinstance(blender, blend_modes.NonSeperableBlend)
 
     # If we are doing non-separable, we are converting to a special space that
     # can only be done from sRGB, so we have to force sRGB anyway.
-    if space is None or is_seperable:
+    if space is None:
         space = 'srgb'
+    if out_space is None:
+        out_space = space
+
+    if not isinstance(color.CS_MAP[space], RGBish):
+        raise ValueError("Can only compose in an RGBish color space, not {}".format(type(color.CS_MAP[space])))
 
     if not backdrop:
         return color
@@ -108,4 +114,4 @@ def compose(
 
     src = color.convert(space)
 
-    return apply_compositing(src, dest, blender, operator)
+    return apply_compositing(src, dest, blender, operator).convert(out_space, in_place=True)

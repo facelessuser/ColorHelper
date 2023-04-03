@@ -9,6 +9,7 @@ import math
 from . cam16 import CAM16
 from ..types import Vector
 from ..channels import Channel, FLG_MIRROR_PERCENT
+from .. import algebra as alg
 
 COEFFICENTS = {
     'lcd': (0.77, 0.007, 0.0053),
@@ -84,6 +85,13 @@ class CAM16UCS(CAM16):
         Channel("b", -50.0, 50.0, flags=FLG_MIRROR_PERCENT)
     )
 
+    def is_achromatic(self, coords: Vector) -> bool:
+        """Check if color is achromatic."""
+
+        j, a, b = cam16_ucs_to_cam16(coords, self.MODEL)
+        m, h = alg.rect_to_polar(a, b)
+        return coords[0] == 0.0 or self.ACHROMATIC.test(j, m, h)
+
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from CAM16."""
 
@@ -100,7 +108,6 @@ class CAM16LCD(CAM16UCS):
 
     NAME = "cam16-lcd"
     SERIALIZE = ("--cam16-lcd",)
-    ENV = ENV = CAM16.ENV
     MODEL = 'lcd'
     CHANNELS = (
         Channel("j", 0.0, 100.0, limit=(0.0, None)),
@@ -114,7 +121,6 @@ class CAM16SCD(CAM16UCS):
 
     NAME = "cam16-scd"
     SERIALIZE = ("--cam16-scd",)
-    ENV = ENV = CAM16.ENV
     MODEL = 'scd'
     CHANNELS = (
         Channel("j", 0.0, 100.0, limit=(0.0, None)),
