@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 6.2.0
+
+- **NEW**: Upgrade ColorAide to 2.0.1.
+- **FIX**: Fix regression where contrast logic could not adjust to a  
+  given contrast due to a property access.
+
 ## 6.1.2
 
 - **FIX**: Update to ColorAide 1.7.1.
