@@ -23,6 +23,7 @@ class _ColorMixin:
         ch_settings = sublime.load_settings('color_helper.sublime-settings')
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
         self.gamut_space = ch_settings.get('gamut_space', 'srgb')
+        self.gamut_map = ch_settings.get('gamut_map', 'lch-chroma')
         if self.gamut_space not in GAMUT_SPACES:
             self.gamut_space = 'srgb'
 
@@ -34,7 +35,7 @@ class _ColorMixin:
         if border_color is not None:
             try:
                 border_color = self.base(border_color)
-                border_color.fit(self.gamut_space)
+                border_color.fit(self.gamut_space, method=self.gamut_map)
             except Exception:
                 border_color = None
 
@@ -187,7 +188,7 @@ class _ColorMixin:
         if not color.in_gamut(check_space):
             message = 'preview out of gamut'
             if self.show_out_of_gamut_preview:
-                pcolor = color.convert(self.gamut_space, fit=True)
+                pcolor = color.convert(self.gamut_space, fit=self.gamut_map)
                 preview1 = pcolor.clone().set('alpha', 1)
                 preview2 = pcolor
             else:
@@ -195,7 +196,7 @@ class _ColorMixin:
                 preview2 = self.out_of_gamut
                 preview_border = self.out_of_gamut_border
         else:
-            pcolor = color.convert(self.gamut_space, fit=True)
+            pcolor = color.convert(self.gamut_space, fit=self.gamut_map)
             preview1 = pcolor.clone().set('alpha', 1)
             preview2 = pcolor
 
