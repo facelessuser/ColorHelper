@@ -108,6 +108,11 @@
     // You should not change this.
     "gamut_space": "srgb",
 
+    // Gamut mapping approach
+    // Supported methods are: `lch-chroma`, `oklch-chroma`, and `clip` (default).
+    // `lch-chroma` was the original default before this was configurable.
+    "gamut_map": "clip",
+
     //////////////////
     // Color Rules
     //////////////////

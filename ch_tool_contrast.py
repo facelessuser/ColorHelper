@@ -83,7 +83,7 @@ def parse_color(base, string, start=0, second=False):
     return color, ratio, more
 
 
-def evaluate(base, string):
+def evaluate(base, string, gamut_map):
     """Evaluate color."""
 
     colors = []
@@ -114,11 +114,11 @@ def evaluate(base, string):
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
-            colors.append(first.fit('srgb'))
+            colors.append(first.fit('srgb', method=gamut_map))
         if second:
             if second[-1] < 1.0:
                 second[-1] = 1.0
-            colors.append(second.fit('srgb'))
+            colors.append(second.fit('srgb', method=gamut_map))
             if ratio:
                 if first[-1] < 1.0:
                     first = first.compose(second, space="srgb", out_space=first.space())
@@ -193,7 +193,7 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
         style = self.get_html_style()
 
         try:
-            colors = evaluate(self.base, text)
+            colors = evaluate(self.base, text, self.gamut_map)
             html = mdpopups.md2html(self.view, DEF_RATIO.format(style))
             if len(colors) >= 3:
                 lum2 = colors[1].luminance()

@@ -60,4 +60,18 @@ for sRGB, then you should not touch the below setting.
     "gamut_space": "srgb",
 ```
 
+## `gamut_map`
+
+!!! new "New in 6.2.0"
+
+Select the gamut mapping approach used when displaying previews or when cohering colors into a specific gamut anywhere
+else in the code.
+
+```js
+    // Gamut mapping approach
+    // Supported methods are: `lch-chroma`, `oklch-chroma`, and `clip` (default).
+    // `lch-chroma` was the original default before this was configurable.
+    "gamut_map": "clip",
+```
+
 --8<-- "refs.md"

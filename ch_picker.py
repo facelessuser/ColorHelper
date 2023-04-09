@@ -69,7 +69,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         self.setup_controls(controls)
         color.convert(self.mode, in_place=True)
         if not color.in_gamut():
-            color.fit()
+            color.fit(method=self.gamut_map)
         else:
             color.clip()
         # Ensure hue is between 0 - 360.

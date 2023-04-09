@@ -271,6 +271,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
 
         self.show_out_of_gamut_preview = ch_settings.get('show_out_of_gamut_preview', True)
         self.gamut_space = ch_settings.get('gamut_space', 'srgb')
+        self.gamut_map = ch_settings.get('gamut_map', 'lch-chroma')
         if self.gamut_space not in util.GAMUT_SPACES:
             self.gamut_space = 'srgb'
         self.out_of_gamut = self.base("transparent").convert(self.gamut_space)
@@ -423,7 +424,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                         mdpopups.scope2style(self.view, self.view.scope_name(pt))['background']
                     ).convert("hsl")
                     hsl['lightness'] = hsl['lightness'] + (0.3 if hsl.luminance() < 0.5 else -0.3)
-                    preview_border = hsl.convert(self.gamut_space, fit=True).set('alpha', 1)
+                    preview_border = hsl.convert(self.gamut_space, fit=self.gamut_map).set('alpha', 1)
 
                     color = self.base(obj.color)
                     title = ''
@@ -434,7 +435,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                     if not color.in_gamut(check_space):
                         title = ' title="Preview out of gamut"'
                         if self.show_out_of_gamut_preview:
-                            pcolor = color.convert(self.gamut_space, fit=True)
+                            pcolor = color.convert(self.gamut_space, fit=self.gamut_map)
                             preview1 = pcolor.clone().set('alpha', 1)
                             preview2 = pcolor
                         else:
@@ -442,7 +443,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
                             preview2 = self.out_of_gamut
                             preview_border = self.out_of_gamut_border
                     else:
-                        pcolor = color.convert(self.gamut_space, fit=True)
+                        pcolor = color.convert(self.gamut_space, fit=self.gamut_map)
                         preview1 = pcolor.clone().set('alpha', 1)
                         preview2 = pcolor
 

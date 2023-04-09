@@ -112,7 +112,7 @@ def evaluate(base, string):
             if method == 'euclidean':
                 delta = 'Distance: {}'.format(colors[0].distance(colors[1]))
             else:
-                delta = 'Delta E {}: {}'.format(method, colors[0].delta_e(colors[1].to_string(), method=method))
+                delta = 'Delta E {}: {}'.format(method, colors[0].delta_e(colors[1], method=method))
 
     except Exception:
         delta = 'Delta E 2000: 0'
@@ -186,10 +186,10 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                 else:
                     check_space = self.gamut_space
                 if not orig.in_gamut(check_space):
-                    orig.fit(self.gamut_space)
+                    orig.fit(self.gamut_space, method=self.gamut_map)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
-                orig.convert(self.gamut_space, fit=True, in_place=True)
+                orig.convert(self.gamut_space, fit=self.gamut_map, in_place=True)
                 color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
                 preview = orig.clone().set('alpha', 1)
                 preview_alpha = orig
