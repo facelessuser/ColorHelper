@@ -1,12 +1,11 @@
 """Tools for dynamic achromatic response."""
-from __future__ import annotations
 from .. import algebra as alg
 import bisect
 from typing import Any
-from ..types import Vector, VectorLike
+from ..types import Vector
 from abc import ABCMeta, abstractmethod
 import math
-from typing import List, Optional
+from typing import List, Tuple, Optional
 
 
 class Achromatic(metaclass=ABCMeta):

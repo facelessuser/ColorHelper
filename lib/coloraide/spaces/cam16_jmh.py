@@ -400,7 +400,7 @@ def cam16_to_xyz_d65(
     # Break hue into Cartesian components
     h_rad = 0.0
     if h is not None:
-        h_rad = math.radians(h)
+        h_rad = math.radians(h % 360)
     elif H is not None:
         h_rad = math.radians(inv_hue_quadrature(H))
     cos_h = math.cos(h_rad)
@@ -458,10 +458,10 @@ def xyz_d65_to_cam16(xyzd65: Vector, env: Environment) -> Vector:
         env.fl
     )
 
-    # Red-green and yellow-blue components
+    # Calculate hue from red-green and yellow-blue components
     a = rgb_a[0] + (-12 * rgb_a[1] + rgb_a[2]) / 11
     b = (rgb_a[0] + rgb_a[1] - 2 * rgb_a[2]) / 9
-    h_rad = math.atan2(b, a)
+    h_rad = math.atan2(b, a) % alg.TAU
 
     # Eccentricity
     et = 0.25 * (math.cos(h_rad + 2) + 3.8)
@@ -506,17 +506,13 @@ def xyz_d65_to_cam16_jmh(xyzd65: Vector, env: Environment) -> Vector:
 
     cam16 = xyz_d65_to_cam16(xyzd65, env)
     J, M, h = cam16[0], cam16[5], cam16[2]
-    if J <= 0.0:
-        J = M = h = 0.0
-    return [J, M, h]
+    return [max(0.0, J), max(0.0, M), h]
 
 
 def cam16_jmh_to_xyz_d65(jmh: Vector, env: Environment) -> Vector:
     """CAM16 JMh to XYZ."""
 
     J, M, h = jmh
-    if J <= 0.0:
-        J = M = h = 0.0
     return cam16_to_xyz_d65(J=J, M=M, h=h, env=env)
 
 

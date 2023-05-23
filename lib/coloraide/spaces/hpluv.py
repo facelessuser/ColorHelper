@@ -31,7 +31,8 @@ from .lab import EPSILON, KAPPA
 from .srgb_linear import XYZ_TO_RGB
 import math
 from .. import util
-from ..types import Vector, Tuple, List
+from ..types import Vector
+from typing import Tuple, List
 
 
 def distance_line_from_origin(line: Tuple[float, float]) -> float:
