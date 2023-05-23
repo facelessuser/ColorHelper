@@ -11,6 +11,7 @@ from . import interpolate
 from . import filters
 from . import contrast
 from . import harmonies
+from . import average
 from . import util
 from . import algebra as alg
 from itertools import zip_longest as zipl
@@ -61,7 +62,7 @@ from .interpolate.bspline import BSpline
 from .interpolate.bspline_natural import NaturalBSpline
 from .interpolate.monotone import Monotone
 from .types import Plugin
-from typing import overload, Union, Sequence, Dict, List, Optional, Any, Callable, Tuple, Type, Mapping
+from typing import overload, Union, Sequence, Iterable, Dict, List, Optional, Any, Callable, Tuple, Type, Mapping
 
 
 class ColorMatch:
@@ -131,6 +132,7 @@ class Color(metaclass=ColorMeta):
     INTERPOLATE = util.DEF_INTERPOLATE
     DELTA_E = util.DEF_DELTA_E
     HARMONY = util.DEF_HARMONY
+    AVERAGE = util.DEF_AVERAGE
     CHROMATIC_ADAPTATION = 'bradford'
     CONTRAST = 'wcag21'
 
@@ -657,7 +659,7 @@ class Color(metaclass=ColorMeta):
             space = self.space()
 
         # Convert to desired space
-        c = self.convert(space, in_place=True)
+        c = self.convert(space, in_place=True, norm=False)
         gamut.clip_channels(c)
 
         # Adjust "this" color
@@ -819,6 +821,26 @@ class Color(metaclass=ColorMeta):
             domain=domain,
             **kwargs
         )
+
+    @classmethod
+    def average(
+        cls,
+        colors: Iterable[ColorInput],
+        *,
+        space: Optional[str] = None,
+        out_space: Optional[str] = None,
+        premultiplied: bool = True,
+        **kwargs: Any
+    ) -> 'Color':
+        """Average the colors."""
+
+        if space is None:
+            space = cls.AVERAGE
+
+        if out_space is None:
+            out_space = space
+
+        return average.average(cls, colors, space, premultiplied).convert(out_space, in_place=True)
 
     def filter(  # noqa: A003
         self,

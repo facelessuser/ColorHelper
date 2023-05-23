@@ -676,7 +676,10 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.ignore_all = True
 
         view.settings().clear_on_change('color_helper.reload')
-        view.window().run_command("color_helper_preview", {"clear": True})
+        win = view.window()
+        if win is None:
+            return
+        win.run_command("color_helper_preview", {"clear": True})
 
         file_name = view.file_name()
         ext = os.path.splitext(file_name)[1].lower() if file_name is not None else None

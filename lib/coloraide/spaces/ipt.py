@@ -13,6 +13,7 @@ from .srgb_linear import lin_srgb_to_xyz
 from .srgb import lin_srgb
 from ..types import Vector
 import math
+from typing import Any, List
 
 # The IPT algorithm requires the use of the Hunt-Pointer-Estevez matrix,
 # but it was originally calculated with the assumption of a slightly different

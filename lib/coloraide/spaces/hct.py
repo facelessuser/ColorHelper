@@ -59,7 +59,7 @@ from .srgb_linear import lin_srgb_to_xyz
 from .srgb import lin_srgb
 from .lab import EPSILON, KAPPA, KE
 from ..types import Vector, VectorLike
-from typing import Any, List
+from typing import Any, List, Tuple
 import math
 
 ACHROMATIC_RESPONSE = [
@@ -139,63 +139,82 @@ def hct_to_xyz(coords: Vector, env: Environment) -> Vector:
     """
     Convert HCT to XYZ.
 
-    Utilize bisect to find the best J that fulfills the current XYZ Y while
-    keeping hue and chroma the same (assuming color is not achromatic).
-    Not the most efficient, especially if you want to provide the best round
-    trip possible. The official Material library that implements HCT, most
-    likely has a number of shortcuts to help resolve the color faster, some
-    may come at the cost of precision. Worth looking into in the future.
+    Use Newton Raphson method to try and converge as quick as possible or
+    converge as close as we can. If we don't converge in about 7 iterations,
+    we will instead correct the Y in XYZ and re-calculate the J. This will
+    incrementally get our J closer. If we do not converge, we will do a final
+    round with Newton Raphson one last time with a more accurate J.
+
+    If, for whatever reason, we cannot achieve the accuracy we seek in the
+    allotted iterations, just return the closest we were able to get.
     """
 
     # Threshold of how close is close enough
-    # Precision requires more iterations...maybe too many :)
-    threshold = 0.000000002
+    threshold = 2e-8
 
     h, c, t = coords[:]
 
+    # Shortcut out for black
     if t == 0:
         return [0.0, 0.0, 0.0]
-    elif t == 100.0:
-        return env.ref_white[:]
 
-    # Initialize J with our T, set our bisect bounds,
-    # and get our target XYZ Y from T
-    j = t
-    low = 0.0
-    # SDR or HDR, give a little room for SDR colors a little over the limit
-    high = 105.0 if t < 100.05 else 1000.0
+    # Calculate the Y we need to target
     y = lstar_to_y(t, env.ref_white)
 
+    # Try to start with a reasonable initial guess for J
+    if c < 142:
+        # Calculated by curve fitting J vs T. Works well with colors within a mid-sized gamut, but not ultra wide.
+        j = 0.00462403 * t ** 2 + 0.51460278 * t + 2.62845677
+    else:
+        # For ultra wide gamuts we can get a better J by correcting Y in XYZ and then calculating our J
+        xyz = cam16_to_xyz_d65(J=t, C=c, h=h, env=env)
+        xyz[1] = y
+        j = xyz_d65_to_cam16(xyz, env)[0]
+
     # Try to find a J such that the returned y matches the returned y of the L*
-    while (high - low) > threshold:
+    attempt = 0
+    last = alg.INF
+    best = j
+    while attempt < 16:
         xyz = cam16_to_xyz_d65(J=j, C=c, h=h, env=env)
 
-        delta = xyz[1] - y
+        # If we are within range, return XYZ
+        # If we are closer than last time, save the values
+        delta = abs(xyz[1] - y)
+        if delta < last:
+            if delta <= threshold:
+                return xyz
+            best = j
+            last = delta
 
-        # We are within range, so return XYZ
-        if abs(delta) <= threshold:
-            return xyz
+        # Use Newton Raphson method to see if we can quickly converge (or get as close as we can)
+        if (attempt < 7 or attempt >= 13) and xyz[1] != 0:
+            # ```
+            # f(j_root) = (j ** (1 / 2)) * 0.1
+            # f(j) = ((f(j_root) * 100) ** 2) / j - 1 = 0
+            # f(j_root) = Y = y / 100
+            # f(j) = (y ** 2) / j - 1
+            # f'(j) = (2 * y) / j
+            # ```
+            j = j - (xyz[1] - y) * j / (2 * xyz[1])
 
-        if delta < 0:
-            low = j
+        # Correct the lightness in XYZ and then re-calculate J
         else:
-            high = j
+            xyz[1] = y
+            j = xyz_d65_to_cam16(xyz, env)[0]
 
-        j = (high + low) * 0.5
+        attempt += 1
 
-    # Return the best that we have
-    return cam16_to_xyz_d65(J=j, C=coords[1], h=coords[0], env=env)  # pragma: no cover
+    # We could not acquire the precision we desired, return our closest attempt.
+    return cam16_to_xyz_d65(J=best, C=c, h=h, env=env)  # pragma: no cover
 
 
 def xyz_to_hct(coords: Vector, env: Environment) -> Vector:
     """Convert XYZ to HCT."""
 
     t = y_to_lstar(coords[1], env.ref_white)
-    if t <= 0.0:
-        t = c = h = 0.0
-    else:
-        c, h = xyz_d65_to_cam16(coords, env)[1:3]
-    return [h, c, alg.clamp(t, 0.0)]
+    c, h = xyz_d65_to_cam16(coords, env)[1:3]
+    return [h, max(0.0, c), max(0.0, t)]
 
 
 class Achromatic(_Achromatic):
