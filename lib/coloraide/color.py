@@ -3,6 +3,7 @@ import abc
 import functools
 import random
 import math
+from . import cat
 from . import distance
 from . import convert
 from . import gamut
@@ -12,12 +13,13 @@ from . import filters
 from . import contrast
 from . import harmonies
 from . import average
+from . import temperature
 from . import util
 from . import algebra as alg
 from itertools import zip_longest as zipl
 from .css import parse
 from .types import VectorLike, Vector, ColorInput
-from .spaces import Space
+from .spaces import Space, RGBish
 from .spaces.hsv import HSV
 from .spaces.srgb.css import sRGB
 from .spaces.srgb_linear import sRGBLinear
@@ -61,9 +63,13 @@ from .interpolate.continuous import Continuous
 from .interpolate.bspline import BSpline
 from .interpolate.bspline_natural import NaturalBSpline
 from .interpolate.monotone import Monotone
+from .temperature import CCT
+from .temperature.ohno_2013 import Ohno2013
+from .temperature.robertson_1968 import Robertson1968
 from .types import Plugin
 from typing import overload, Union, Sequence, Iterable, Dict, List, Optional, Any, Callable, Tuple, Type, Mapping
 
+SUPPORTED_CHROMATICITY_SPACES = set(('xyz', 'uv-1960', 'uv-1976', 'xy-1931'))
 
 class ColorMatch:
     """Color match object."""
@@ -127,14 +133,16 @@ class Color(metaclass=ColorMeta):
     CONTRAST_MAP = {}  # type: Dict[str, ColorContrast]
     FILTER_MAP = {}  # type: Dict[str, Filter]
     INTERPOLATE_MAP = {}  # type: Dict[str, Interpolate]
+    CCT_MAP = {}  # type: Dict[str, CCT]
     PRECISION = util.DEF_PREC
     FIT = util.DEF_FIT
     INTERPOLATE = util.DEF_INTERPOLATE
     DELTA_E = util.DEF_DELTA_E
     HARMONY = util.DEF_HARMONY
     AVERAGE = util.DEF_AVERAGE
-    CHROMATIC_ADAPTATION = 'bradford'
-    CONTRAST = 'wcag21'
+    CHROMATIC_ADAPTATION = util.DEF_CHROMATIC_ADAPTATION
+    CONTRAST = util.DEF_CONTRAST
+    CCT = util.DEF_CCT
 
     # It is highly unlikely that a user would ever need to override this, but
     # just in case, it is exposed, but undocumented.
@@ -343,6 +351,9 @@ class Color(metaclass=ColorMeta):
             elif isinstance(i, Interpolate):
                 mapping = cls.INTERPOLATE_MAP
                 p = i
+            elif isinstance(i, CCT):
+                mapping = cls.CCT_MAP
+                p = i
             elif isinstance(i, Fit):
                 mapping = cls.FIT_MAP
                 p = i
@@ -381,10 +392,12 @@ class Color(metaclass=ColorMeta):
             if p == '*':
                 cls.CS_MAP.clear()
                 cls.DE_MAP.clear()
-                cls.FIT_MAP.clear()
                 cls.CAT_MAP.clear()
+                cls.FILTER_MAP.clear()
                 cls.CONTRAST_MAP.clear()
                 cls.INTERPOLATE_MAP.clear()
+                cls.CCT_MAP.clear()
+                cls.FIT_MAP.clear()
                 return
 
             ptype, name = p.split(':', 1)
@@ -401,6 +414,8 @@ class Color(metaclass=ColorMeta):
                 mapping = cls.CONTRAST_MAP
             elif ptype == 'interpolate':
                 mapping = cls.INTERPOLATE_MAP
+            elif ptype == 'cct':
+                mapping = cls.CCT_MAP
             elif ptype == "fit":
                 mapping = cls.FIT_MAP
                 if name == 'clip':
@@ -458,6 +473,41 @@ class Color(metaclass=ColorMeta):
         if hasattr(obj._space, 'hue_index'):
             obj.normalize()
         return obj
+
+    @classmethod
+    def blackbody(
+        cls,
+        space: str,
+        temp: float,
+        duv: float = 0.0,
+        *,
+        scale: bool = True,
+        scale_space: Optional[str] = None,
+        method: Optional[str] = None,
+        **kwargs: Any
+    ) -> 'Color':
+        """
+        Get a color along the black body curve.
+
+        Colors are specified by temperature in Kelvin. Depending on the algorithm, the practical
+        range may differ.
+
+        Colors are returned and normalized to be within the specified RGB space (preferably linear).
+        The returned color, after normalization, is an approximation and may not exactly match the
+        temperature. If `space` is set to `None` the color will not be normalized and may not be in
+        the visible spectrum, but it should correlate with the specified temperature assuming it is
+        not too far from the locus.
+        """
+
+        cct = temperature.cct(method, cls)
+        color = cct.from_cct(cls, space, temp, duv, scale, scale_space, **kwargs)
+        return color
+
+    def cct(self, *, method: Optional[str] = None, **kwargs: Any) -> Vector:
+        """Get color temperature."""
+
+        cct = temperature.cct(method, self)
+        return cct.to_cct(self, **kwargs)
 
     def to_dict(self, *, nans: bool = True) -> Mapping[str, Any]:
         """Return color as a data object."""
@@ -607,38 +657,178 @@ class Color(metaclass=ColorMeta):
 
     __str__ = __repr__
 
-    def white(self) -> Vector:
+    def white(self, cspace: str = 'xyz') -> Vector:
         """Get the white point."""
 
-        return util.xy_to_xyz(self._space.white())
+        value = self.convert_chromaticity('xy-1931', cspace, self._space.WHITE)
+        return value if cspace == 'xyz' else value[:-1]
 
-    def uv(self, mode: str = '1976') -> Vector:
+    def uv(self, mode: str = '1976', *, white: Optional[VectorLike] = None) -> Vector:
         """Convert to `xy`."""
 
-        if mode == '1976':
-            uv = util.xy_to_uv(self.xy())
-        elif mode == '1960':
-            uv = util.xy_to_uv_1960(self.xy())
-        else:
-            raise ValueError("'mode' must be either '1960' or '1976' (default), not '{}'".format(mode))
-        return uv
+        return self.split_chromaticity('uv-' + mode)[:-1]
 
-    def xy(self) -> Vector:
+    def xy(self, *, white: Optional[VectorLike] = None) -> Vector:
         """Convert to `xy`."""
 
+        return self.split_chromaticity('xy-1931')[:-1]
+
+    def split_chromaticity(
+        self,
+        cspace: str = 'uv-1976',
+        *,
+        white: Optional[VectorLike] = None
+    ) -> Vector:
+        """
+        Split a color into chromaticity and luminance coordinates.
+
+        Colors are split under the XYZ color space using the current color's white point.
+        If results are desired relative to a different white point, one can be provided.
+        """
+
+        if white is None:
+            white = self._space.WHITE
+
+        # Convert to XYZ D65 as it is a color space that is always required.
+        # Chromatically adapt it to the XYZ color space with the current color's white point.
         xyz = self.convert('xyz-d65')
         coords = self.chromatic_adaptation(
             xyz._space.WHITE,
-            self._space.WHITE,
+            white,
             xyz.coords(nans=False)
         )
-        return util.xyz_to_xyY(coords, self._space.white())[:2]
+
+        # XYZ is not a chromaticity space
+        if cspace == 'xyz':
+            raise ValueError('XYZ is not a luminant-chromaticity color space.')
+
+        # Convert to the the requested uv color space if required.
+        return (
+            self.convert_chromaticity('xyz', cspace, coords, white=white) if cspace != 'xy_1931' else coords
+        )
+
+    @classmethod
+    def chromaticity(
+        cls,
+        space: str,
+        coords: VectorLike,
+        cspace: str = 'uv-1976',
+        *,
+        scale: bool = False,
+        scale_space: Optional[str] = None,
+        white: Optional[VectorLike] = None
+    ) -> 'Color':
+        """
+        Create a color from chromaticity coordinates.
+
+        A luminance of 1 will be assumed unless luminance is included with the coordinates.
+        The relative white point of the chromaticity coordinates will be assumed as the
+        targeted color space unless one is provided via `white`.
+
+        Lastly, colors can be scaled/normalized within a linear RGB space to normalize
+        luminance and provide a nice viewable color. This is useful when the luminance is
+        not accurate (such as when luminance is assumed 1). Colors that are out of the linear
+        RGB space's gamut will only be rough approximations of the color due to gamut
+        limitations. Default linear RGB space is linear sRGB.
+        """
+
+        if scale_space is None:
+            scale_space = 'srgb-linear'
+
+        # Use the white point of the target color space unless a white point is given.
+        if white is None:
+            white = cls.CS_MAP[space].WHITE
+
+        # XYZ is not a chromaticity space
+        if cspace == 'xyz':
+            raise ValueError('XYZ is not a luminant-chromaticity color space.')
+
+        coords = cls.convert_chromaticity(cspace, 'xyz', coords, white=white)
+
+        # Apply chromatic adaptation to match XYZ D65 white point
+        color = cls(
+            'xyz-d65',
+            cls.chromatic_adaptation(white, cls.CS_MAP['xyz-d65'].WHITE, coords)
+        )
+
+        # Normalize in the given RGB color space (ideally linear).
+        if scale and isinstance(cls.CS_MAP[scale_space], RGBish):
+            color.convert(scale_space, in_place=True)
+            color[:-1] = util.rgb_scale(color.coords())
+
+        # Convert to targeted color space
+        if space != color.space():
+            color.convert(space, in_place=True)
+
+        return color
+
+    @classmethod
+    def convert_chromaticity(
+        cls, cspace1: str,
+        cspace2: str,
+        coords: VectorLike,
+        *,
+        white: Optional[VectorLike] = None
+    ) -> Vector:
+        """
+        Convert to or from chromaticity coordinates or between other chromaticity coordinates.
+
+        When converting to or from chromaticity coordinates, the coordinates must be in the XYZ space.
+        A white point can be provided and only serves to align colors like black on the achromatic axis;
+        otherwise, black will be returned as [0, 0] for the two respective chromaticity points.
+        """
+
+        # Check that we know the requested spaces
+        if cspace1 not in SUPPORTED_CHROMATICITY_SPACES:
+            raise ValueError("Unexpected chromaticity space '{}'".format(cspace1))
+        if cspace2 not in SUPPORTED_CHROMATICITY_SPACES:
+            raise ValueError("Unexpected chromaticity space '{}'".format(cspace2))
+
+        # Return if there is nothing to convert
+        l = len(coords)
+        if (cspace1 == 'xyz' and l != 3) or l not in (2, 3):
+            raise ValueError('Unexpected number of coordinates ({}) for {}'.format(l, cspace1))
+
+        # Return if already in desired form
+        if cspace1 == cspace2:
+            return list(coords) + [1] if l == 2 else list(coords)
+
+        # If starting space is XYZ, then convert to xy
+        if cspace1 == 'xyz':
+            coords = util.xyz_to_xyY(coords, [0.0] * 2 if white is None else white)
+            cspace1 = 'xy-1931'
+
+            # If the end space is xy, we have nothing else to do
+            if cspace2 == cspace1:
+                return coords
+
+        # If we have no luminance, assume 1
+        pair, Y = (coords[:-1], coords[-1]) if l == 3 else (coords, 1.0)
+
+        # If we are targeting XYZ, force conversion to xy first.
+        target = cspace2
+        if cspace2 == 'xyz':
+            cspace2 = 'xy-1931'
+
+        # Perform conversion
+        if cspace1 == 'xy-1931' and cspace2 != 'xy-1931':
+            pair = util.xy_to_uv_1960(pair) if cspace2 == 'uv-1960' else util.xy_to_uv(pair)
+        elif cspace1 == 'uv-1960':
+            pair = util.uv_1960_to_xy(pair) if cspace2 == 'xy-1931' else util.xy_to_uv(util.uv_1960_to_xy(pair))
+        elif cspace1 == 'uv-1976':
+            pair = util.uv_to_xy(pair) if cspace2 == 'xy-1931' else util.xy_to_uv_1960(util.uv_to_xy(pair))
+
+        # Special case to convert to XYZ from xy
+        if target == 'xyz':
+            return util.xy_to_xyz(pair, Y)
+
+        return list(pair) + [Y]
 
     @classmethod
     def chromatic_adaptation(
         cls,
-        w1: Tuple[float, float],
-        w2: Tuple[float, float],
+        w1: VectorLike,
+        w2: VectorLike,
         xyz: VectorLike,
         *,
         method: Optional[str] = None
@@ -649,7 +839,7 @@ class Color(metaclass=ColorMeta):
         if not adapter:
             raise ValueError("'{}' is not a supported CAT".format(method))
 
-        return adapter.adapt(w1, w2, xyz)
+        return adapter.adapt(tuple(w1), tuple(w2), xyz)  # type: ignore[arg-type]
 
     def clip(self, space: Optional[str] = None) -> 'Color':
         """Clip the color channels."""
@@ -724,6 +914,16 @@ class Color(metaclass=ColorMeta):
             return False
 
         return gamut.verify(c, tolerance)
+
+    def in_pointer_gamut(self, *, tolerance: float = util.DEF_FIT_TOLERANCE) -> bool:
+        """Check if in pointer gamut."""
+
+        return gamut.pointer.in_pointer_gamut(self, tolerance)
+
+    def fit_pointer_gamut(self) -> 'Color':
+        """Check if in pointer gamut."""
+
+        return gamut.pointer.fit_pointer_gamut(self)
 
     def mask(self, channel: Union[str, Sequence[str]], *, invert: bool = False, in_place: bool = False) -> 'Color':
         """Mask color channels."""
@@ -927,10 +1127,22 @@ class Color(metaclass=ColorMeta):
 
         return distance.closest(self, colors, method=method, **kwargs)
 
-    def luminance(self) -> float:
+    def luminance(self, *, white: Optional[VectorLike] = cat.WHITES['2deg']['D65']) -> float:
         """Get color's luminance."""
 
-        return self.convert("xyz-d65").get('y', nans=False)
+        if white is None:
+            white = self._space.WHITE
+
+        # Convert to XYZ D65 as it is a color space that is always required.
+        # Chromatically adapt it to the XYZ color space with the current color's white point.
+        xyz = self.convert('xyz-d65')
+        coords = self.chromatic_adaptation(
+            xyz._space.WHITE,
+            white,
+            xyz.coords(nans=False)
+        )
+
+        return coords[1]
 
     def contrast(self, color: ColorInput, method: Optional[str] = None) -> float:
         """Compare the contrast ratio of this color and the provided color."""
@@ -1122,6 +1334,10 @@ Color.register(
         Continuous(),
         BSpline(),
         NaturalBSpline(),
-        Monotone()
+        Monotone(),
+
+        # CCT
+        Robertson1968(),
+        Ohno2013()
     ]
 )

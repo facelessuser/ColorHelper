@@ -5,12 +5,14 @@ from abc import ABCMeta, abstractmethod
 from ..types import Plugin
 from typing import TYPE_CHECKING, Any
 from .. import util
+from . import pointer
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
+__all__ = ('clip_channels', 'verify', 'Fit', 'pointer')
 
-def clip_channels(color: 'Color') -> None:
+def clip_channels(color: 'Color', nans: bool = True) -> None:
     """Clip channels."""
 
     for i, value in enumerate(color[:-1]):
