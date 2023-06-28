@@ -7,7 +7,7 @@
   configurable. Use clipping by default to match browsers as this is  
   likely what people expect even if it is not an ideal approach. Use  
   `gamut_map` in settings option to manually control the approach.
-- **NEW**: Upgrade ColorAide to 2.3.
+- **NEW**: Upgrade ColorAide to 2.4.
 - **FIX**: Fix regression where contrast logic could not adjust to a  
   given contrast due to a property access.
 

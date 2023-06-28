@@ -16,6 +16,9 @@ DEF_FIT = "lch-chroma"
 DEF_HARMONY = "oklch"
 DEF_DELTA_E = "76"
 DEF_AVERAGE = 'srgb-linear'
+DEF_CHROMATIC_ADAPTATION = "bradford"
+DEF_CONTRAST = "wcag21"
+DEF_CCT = "robertson-1968"
 
 # Maximum luminance in PQ is 10,000 cd/m^2
 # Relative XYZ has Y=1 for media white
@@ -44,7 +47,19 @@ def xy_to_xyz(xy: VectorLike, Y: float = 1.0, scale: float = 1.0) -> Vector:
     """
 
     x, y = xy
-    return [0, 0, 0] if y == 0 else [(x * Y) / y, Y, (scale - x - y) * Y / y]
+    return [0.0, 0.0, 0.0] if y == 0 else [(x * Y) / y, Y, (scale - x - y) * Y / y]
+
+
+def xyz_to_xyY(xyz: VectorLike, white: VectorLike = (0.0, 0.0)) -> Vector:
+    """
+    XYZ to `xyY`.
+
+    If a white point chromaticity pair is given, black will be aligned with the achromatic axis.
+    """
+
+    x, y, z = xyz
+    d = x + y + z
+    return [white[0], white[1], y] if d == 0 else [x / d, y / d, y]
 
 
 def xy_to_uv(xy: VectorLike) -> Vector:
@@ -88,14 +103,6 @@ def uv_1960_to_xy(uv: VectorLike) -> Vector:
     return [x, y]
 
 
-def xyz_to_xyY(xyz: VectorLike, white: VectorLike) -> Vector:
-    """XYZ to `xyY`."""
-
-    x, y, z = xyz
-    d = x + y + z
-    return [white[0], white[1], y] if d == 0 else [x / d, y / d, y]
-
-
 def pq_st2084_oetf(
     values: VectorLike,
     c1: float = C1,
@@ -112,6 +119,26 @@ def pq_st2084_oetf(
         r = (c1 + c2 * c) / (1 + c3 * c)
         adjusted.append(alg.npow(r, m2))
     return adjusted
+
+
+def rgb_scale(vec: VectorLike) -> Vector:
+    """
+    Scale the RGB vector.
+
+    If minimum is less than zero, behaves like min/max normalization.
+    If minimum is not less than zero, behaves like maximum normalization.
+    """
+
+    # `(v - min_v)`
+    w = min(vec)
+    if w < 0.0:
+        vec = [v - w for v in vec]
+
+    # `(max_v - min_v)`
+    m = max(vec)
+
+    # `(v - min_v) / (max_v - min_v)`
+    return [v / m if m else v for v in vec]
 
 
 def pq_st2084_eotf(
