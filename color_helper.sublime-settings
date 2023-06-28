@@ -101,6 +101,14 @@
     // color by using gamut mapping.
     "show_out_of_gamut_preview": true,
 
+    // Define padding around sliding preview window
+    // Extend the range previews processed by ColorHelper.
+    // Value should be positive integers and represent the rows and columns
+    // to extend the range by. Padding is applied on both sides. So padding
+    // by 20 rows pads by 20 on the top and 20 on the bottom. Large padding
+    // could cause lag with typing or scrolling.
+    "preview_window_padding": [20, 20],
+
     // The gamut space to render previews in.
     // Supported spaces are: `srgb`, `display-p3`, `rec2020`,
     //                       `a98-rgb`, and `prophoto-rgb`.
