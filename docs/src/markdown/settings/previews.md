@@ -55,9 +55,11 @@ Controls whether previews will attempt to gamut map a color that is out of the p
 
 ## `gamut_space`
 
-!!! warning "Experimental Feature"
+/// warning | Experimental Feature
+///
 
-!!! new "New in 3.8.0"
+/// new | New in 3.8.0
+///
 
 Select the gamut space used for color previews. You should only pick a space that matches your system. If you happen
 to have a display that does not align with one of the spaces below, you may just have to pick whatever is closest.
@@ -78,7 +80,8 @@ for sRGB, then you should not touch the below setting.
 
 ## `gamut_map`
 
-!!! new "New in 6.2.0"
+/// new | New in 6.2.0
+///
 
 Select the gamut mapping approach used when displaying previews or when cohering colors into a specific gamut anywhere
 else in the code.

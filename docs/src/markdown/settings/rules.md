@@ -78,9 +78,10 @@ A rule will define what kind of colors ColorHelper should look for, and where in
 `color_rules` is a list of rule sets, where each rule is a dictionary of options. Only one rule set can apply to a
 given view at a time.
 
-!!! tip
-    New rules and rule overrides should be added to [`user_color_rules`](#user_color_rules) instead of modifying
-    `color_rules` directly.
+/// tip
+New rules and rule overrides should be added to [`user_color_rules`](#user_color_rules) instead of modifying
+`color_rules` directly.
+///
 
 ### `name`
 
@@ -144,9 +145,9 @@ defined in [`color_classes`](#color_classes).
 If needed, you can define multiple color classes with a list of dictionaries. Each dictionary in the list should
 contain a `class` and `scopes`:
 
-- `scopes`: A string that defines a base scope that the color class applies to.
+-   `scopes`: A string that defines a base scope that the color class applies to.
 
-- `class`:  The name of the color class profile to use (defined in [`color_classes`](#color_classes)).
+-   `class`:  The name of the color class profile to use (defined in [`color_classes`](#color_classes)).
 
 ```js
     "color_class": [
@@ -283,26 +284,26 @@ The value should be the full import path for the `Color` class.
 If none of the provided color classes are sufficient, it is possible to create your own custom class. With that said,
 there are a few things to note:
 
-- Custom classes should be derived from the default base class, but there is a catch, ColorHelper handles the default
-  (`ColorHelper.lib.coloraide.Color`) special. This allows us to enable the users with the ability of defining what
-  color spaces the default class contains via the [`add_to_default_spaces`](#add_to_default_spaces) setting. In turn,
-  ensures all color spaces properly function in features like palettes, etc.
+-   Custom classes should be derived from the default base class, but there is a catch, ColorHelper handles the default
+    (`ColorHelper.lib.coloraide.Color`) special. This allows us to enable the users with the ability of defining what
+    color spaces the default class contains via the [`add_to_default_spaces`](#add_to_default_spaces) setting. In turn,
+    ensures all color spaces properly function in features like palettes, etc.
 
     So, if creating a custom color space, the user should call `ColorHelper.ch_util.get_base_color()` to get the actual
-  default class to derive from. Users should **not** derive directly from `ColorHelper.lib.coloraide.Color`.
+    default class to derive from. Users should **not** derive directly from `ColorHelper.lib.coloraide.Color`.
 
-- Colors are passed back and forth between custom color classes and the default color class. As long as both classes
-  know how to handle the color space, things should work without issue.
+-   Colors are passed back and forth between custom color classes and the default color class. As long as both classes
+    know how to handle the color space, things should work without issue.
 
     If a custom color class is using a color space that is not registered under the default class or is using a color
-  space derived from an unregistered color space, some features won't work.
+    space derived from an unregistered color space, some features won't work.
 
     In short, it is import to ensure that all color spaces that are actively used in custom color classes are
-  registered via [`add_to_default_spaces`](#add_to_default_spaces).
+    registered via [`add_to_default_spaces`](#add_to_default_spaces).
 
     If you are creating a brand new color space, you must also register it, or a version of that color space, with the
-  default color class. The registered color space must support the `color(id ...)` input and output format as that
-  format is often used when passing a color around internally within ColorAide.
+    default color class. The registered color space must support the `color(id ...)` input and output format as that
+    format is often used when passing a color around internally within ColorAide.
 
 ### `filters`
 

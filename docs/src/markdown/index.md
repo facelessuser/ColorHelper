@@ -10,12 +10,12 @@ in color palettes.  It even provides tools for calculating color contrast, inter
 
 ## Features
 
-- Inline color previews.
-- Useful tooltip popups that show the previews of selected colors.
-- Support colors in CSS, SCSS, SASS, HTML attributes, and more.
-- Allow saving, accessing, and managing colors in named color palettes all from the tooltip.
-- Select and insert colors from the color palettes via the tooltip.
-- Convert between color spaces. Supports `rgb`, `hsl`, `hwb`, `lch`, `lab`, and more!
-- Color picker, color interpolating, and color contrast tool.
+-   Inline color previews.
+-   Useful tooltip popups that show the previews of selected colors.
+-   Support colors in CSS, SCSS, SASS, HTML attributes, and more.
+-   Allow saving, accessing, and managing colors in named color palettes all from the tooltip.
+-   Select and insert colors from the color palettes via the tooltip.
+-   Convert between color spaces. Supports `rgb`, `hsl`, `hwb`, `lch`, `lab`, and more!
+-   Color picker, color interpolating, and color contrast tool.
 
 --8<-- "refs.md"

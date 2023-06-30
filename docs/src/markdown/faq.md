@@ -9,6 +9,7 @@ Often, the duplicate colors may have a slightly different style, and when you cl
 ColorHelper dialog.
 
 ### LSP
+
 Two such examples are [`LSP-css`](https://packagecontrol.io/packages/LSP-css) and
 [`LSP-json`](https://packagecontrol.io/packages/LSP-json).
 

@@ -5,8 +5,9 @@
 ColorHelper is a plugin for generating color previews. It also provides a couple of useful tools. ColorHelper provides
 support for a number of color spaces: sRGB, HSL, HWB, LCH, LAB, and more.
 
-!!! note "Note"
-    Popups are provided by the [`mdpopups`][mdpopups] dependency.
+/// note | Note
+Popups are provided by the [`mdpopups`][mdpopups] dependency.
+///
 
 ## Color Previews
 
@@ -20,11 +21,20 @@ If desired, previews can be configured to only show when a color is selected.
 
 ![Preview Select](images/preview_select.png)
 
+### Forcing Previews
+
+ColorHelper has rules to determine when and where color previews are allowed. If you need to force previews, you can by
+running the command `Color Helper: Override View's Scanning` from the command palette. Overrides can be disabled in a
+similar manner.
+
 ### Color Gamut and Previews
 
-Colors that are out of the preview gamut space (the default being sRGB) will be gamut mapped. If on ST4, hovering over
-the color previews will show a tooltip mentioning that the color is out of gamut. This is to remind the user that the
-color they see has been "fit" to the preview color space.
+Colors that are out of the preview gamut space (the default being sRGB) will be gamut mapped. As browsers gamut map
+by clipping, ColorHelper also gamut maps by clipping by default, but you can use other methods via the `gamut_map`
+option.
+
+If on ST4, hovering over the color previews will show a tooltip mentioning that the color is out of gamut. This is to
+remind the user that the color they see has been "fit" to the preview color space.
 
 ![Preview Select](images/gamut_mapped.png)
 
@@ -45,12 +55,19 @@ both sRGB colors **and** Display P3 colors without needing to perform gamut mapp
 should not be changed to a gamut space your monitor does not support or is not currently using or your previews will,
 likely be distorted.
 
-!!! new "New in 3.8.0"
-    `gamut_space` is a new experimental option added in 3.8.0.
+/// new | New in 6.2.0
+`gamut_map` was introduced in 6.2.0. The default gamut mapping was changed from `lch-chroma` to `clip` to match actual,
+real-world browsers.
+///
 
-!!! warning "Gamut Space Option is Experimental"
-    The `gamut_space` option is experimental, and at some future time may no longer function properly if Sublime ever
-    addresses the color gamut issues.
+/// new | New in 3.8.0
+`gamut_space` is a new experimental option added in 3.8.0.
+///
+
+/// warning | Gamut Space Option is Experimental
+The `gamut_space` option is experimental, and at some future time may no longer function properly if Sublime ever
+addresses the color gamut issues.
+///
 
 ## Color Info
 
@@ -62,9 +79,10 @@ in other [palettes](#palette-panel) than can be accessed later.
 
 ## Color Picker
 
-!!! tip "Native Color Picker?"
-    Some people prefer native color pickers, if you'd like to use your operating system's built-in color picker,
-    see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
+/// tip | Native Color Picker?
+Some people prefer native color pickers, if you'd like to use your operating system's built-in color picker,
+see the [`use_os_color_picker`](settings/color_picker.md#use_os_color_picker) option.
+///
 
 The internal color picker can be launched from the view's context menu, the command palette, or from the
 [Color Info Panel](#color_info).  By default, when launched, it will use the current selected color. The internal color
@@ -102,18 +120,19 @@ what your preferred color space for the color picker should be.
 
 ![Edit Tool](images/edit_tool.gif)
 
-!!! warning "Experimental Color Interpolation"
-    This is an experimental feature, and syntax and behavior is subject to change.
+/// warning | Experimental Color Interpolation
+This is an experimental feature, and syntax and behavior is subject to change.
 
-    The current logic for interpolating is based on the [CSS Level 5 Specification][css-5], particularly the recent
-    drafts. While the syntax does not follow the specification, the basic logic does.
+The current logic for interpolating is based on the [CSS Level 5 Specification][css-5], particularly the recent
+drafts. While the syntax does not follow the specification, the basic logic does.
 
-    The only logical issue is that if a percentage is applied to both colors, and the sum of those percentages add up to
-    zero, it is unclear what to do as this behavior is currently undefined in the specification and will causes a divide
-    by zero in the percent normalization algorithm. If this case occurs, we currently perform no interpolation and
-    return nothing for this case. In all honestly, it should be rare for someone to try do this as it can only be
-    achieved by either setting both percentages to zero, or to use two opposing percentages, such as 50% and -50%.
-    Neither of these cases are practical.
+The only logical issue is that if a percentage is applied to both colors, and the sum of those percentages add up to
+zero, it is unclear what to do as this behavior is currently undefined in the specification and will causes a divide
+by zero in the percent normalization algorithm. If this case occurs, we currently perform no interpolation and
+return nothing for this case. In all honestly, it should be rare for someone to try do this as it can only be
+achieved by either setting both percentages to zero, or to use two opposing percentages, such as 50% and -50%.
+Neither of these cases are practical.
+///
 
 The edit tool allows for the editing and mixing (by interpolation) of colors. While editing, the panel will display a
 live preview.
@@ -136,10 +155,11 @@ color picker if launched from there.
 
 ![Contrast Tool](images/contrast_tool.gif)
 
-!!! warning "Contrast and Colors Outside the sRGB gamut"
-    Composition of transparent colors are defaulted to the sRGB color space. The contrast ration targeting algorithm is
-    also specific to the sRGB color gamut. For this reason, all colors that are outside of the sRGB gamut are gamut
-    mapped to be within the sRGB color space.
+/// warning | Contrast and Colors Outside the sRGB gamut
+Composition of transparent colors are defaulted to the sRGB color space. The contrast ration targeting algorithm is
+also specific to the sRGB color gamut. For this reason, all colors that are outside of the sRGB gamut are gamut
+mapped to be within the sRGB color space.
+///
 
 The contrast tool allows for viewing a color's contrast ratio or quickly adjusting a color to meet a minimum contrast
 ratio (if the ratio is achievable).
