@@ -18,5 +18,8 @@ related to the upgrade to stable `coloraide`.
   likely what people expect even if it is not an ideal approach. Use  
   `gamut_map` in settings option to manually control the approach.
 - **NEW**: Upgrade ColorAide to 2.4.
+- **NEW**: Previews now run immediately on view activation.
+- **NEW**: The sliding preview window has configurable padding to scan  
+  a larger region.
 - **FIX**: Fix regression where contrast logic could not adjust to a  
   given contrast due to a property access.

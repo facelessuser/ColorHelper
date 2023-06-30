@@ -336,7 +336,20 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
             force = True
 
         # Get viewable bounds so we can constrain both vertically and horizontally.
+        padding = ch_settings.get('preview_window_padding', [0, 0])
+        row_pad = int(padding[0])
+        col_pad = int(padding[1])
+        last_row = self.view.rowcol(self.view.size())[0]
         visible_region = self.view.visible_region()
+        if row_pad or col_pad:
+            row1, col1 = self.view.rowcol(visible_region.begin())
+            row2, col2 = self.view.rowcol(visible_region.end())
+            row1 = max(0, row1 - int(row_pad))
+            row2 = min(last_row, row2 + int(row_pad))
+            col1 = max(0, col1 - col_pad)
+            col2 = col2 + col_pad
+            visible_region = sublime.Region(self.view.text_point(row1, col1), self.view.text_point(row2, col2))
+
         position = self.view.viewport_position()
         dimensions = self.view.viewport_extent()
         bounds = Dimensions(
@@ -665,9 +678,8 @@ class ColorHelperListener(sublime_plugin.EventListener):
             return
 
         if self.should_update(view):
-            ch_preview_thread.modified = True
-            ch_preview_thread.time = time()
             self.set_file_scan_rules(view)
+            view.window().run_command('color_helper_preview', {"clear": False, "force": True})
 
     def set_file_scan_rules(self, view):
         """Set the scan rules for the current view."""
