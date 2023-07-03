@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.2.1
+
+- **FIX**: Fix issue where recent changes for "on activated" caused  
+  a regression.
+
 ## 6.2.0
 
 - **NEW**: Since browsers do not and may not introduce Color Level 4  
