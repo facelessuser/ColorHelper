@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.2.2
+
+- **FIX**: Remove regression fix that was fixing a false issue.
+
 ## 6.2.1
 
 - **FIX**: Fix issue where recent changes for "on activated" caused  

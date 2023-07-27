@@ -671,7 +671,7 @@ class ColorHelperListener(sublime_plugin.EventListener):
             ch_preview_thread.time = time()
             ch_preview_thread.modified = True
 
-    def on_activated_async(self, view):
+    def on_activated(self, view):
         """On activated."""
 
         if self.ignore_event(view):
