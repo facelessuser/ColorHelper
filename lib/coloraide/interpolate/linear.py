@@ -1,8 +1,9 @@
 """Piecewise linear interpolation."""
+import math
 from .. import algebra as alg
 from ..interpolate import Interpolator, Interpolate
 from ..types import Vector
-from typing import Optional, Callable, Mapping, Union, Any, Type, Sequence, List, Dict, TYPE_CHECKING
+from typing import Optional, Callable, Mapping, Union, Any, Type, Sequence, List, Tuple, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -32,7 +33,7 @@ class InterpolatorLinear(Interpolator):
             # to now premultiply that coordinate set.
             if self.premultiplied:
                 a, b = c1[-1], c2[-1]
-                a_nan, b_nan = alg.is_nan(a), alg.is_nan(b)
+                a_nan, b_nan = math.isnan(a), math.isnan(b)
 
                 # Premultiply the alpha
                 if not a_nan:
@@ -63,17 +64,17 @@ class InterpolatorLinear(Interpolator):
         channels = []
         i = (index - 1) * 2
 
-        for i, values in enumerate(zip(*self.coordinates[i:i + 2])):
+        for i, values in enumerate(zip(*self.coordinates[i:i + 2])):  # noqa: B020
             a, b = values
 
             # Both values are undefined, so return undefined
-            if alg.is_nan(a) and alg.is_nan(b):
-                value = alg.NaN
+            if math.isnan(a) and math.isnan(b):
+                value = alg.nan
 
             # One channel is undefined, take the one that is not
-            elif alg.is_nan(a):
+            elif math.isnan(a):
                 value = b
-            elif alg.is_nan(b):
+            elif math.isnan(b):
                 value = a
 
             # Using linear interpolation between the two points
@@ -103,6 +104,7 @@ class Linear(Interpolate):
         premultiplied: bool,
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs: Any
     ) -> Interpolator:
         """Return the linear interpolator."""
@@ -119,5 +121,6 @@ class Linear(Interpolate):
             premultiplied,
             extrapolate,
             domain,
+            padding,
             **kwargs
         )

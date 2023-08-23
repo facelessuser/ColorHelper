@@ -1,6 +1,6 @@
 """String serialization."""
-import math
 import re
+import math
 from .. import util
 from .. import algebra as alg
 from .color_names import to_name

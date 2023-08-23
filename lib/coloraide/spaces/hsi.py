@@ -3,16 +3,16 @@ HSI class.
 
 https://en.wikipedia.org/wiki/HSL_and_HSV#Saturation
 """
+import math
 from .hsv import HSV
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
-from .. import algebra as alg
 from .. import util
 from ..types import Vector
 
 
 def srgb_to_hsi(rgb: Vector) -> Vector:
-    """sRGB to HSI."""
+    """Convert sRGB to HSI."""
 
     r, g, b = rgb
     h = 0.0
@@ -44,7 +44,7 @@ def hsi_to_srgb(hsi: Vector) -> Vector:
     c = (3 * i * s) / (1 + z)
     x = c * z
 
-    if alg.is_nan(h):  # pragma: no cover
+    if math.isnan(h):  # pragma: no cover
         # In our current setup, this will not occur. If colors are naturally achromatic,
         # they will resolve to zeros automatically even without this check. This case
         # would be a shortcut normally.

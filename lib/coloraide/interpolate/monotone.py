@@ -3,7 +3,7 @@ from .bspline import InterpolatorBSpline
 from ..interpolate import Interpolator, Interpolate
 from .. import algebra as alg
 from ..types import Vector
-from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Any, Type, TYPE_CHECKING
+from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Tuple, Any, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -37,6 +37,7 @@ class Monotone(Interpolate):
         premultiplied: bool,
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs: Any
     ) -> Interpolator:
         """Return the monotone interpolator."""
@@ -53,5 +54,6 @@ class Monotone(Interpolate):
             premultiplied,
             extrapolate,
             domain,
+            padding,
             **kwargs
         )

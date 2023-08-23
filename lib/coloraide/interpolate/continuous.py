@@ -1,9 +1,10 @@
 """Continuous interpolation."""
+import math
 from .. import algebra as alg
 from ..interpolate import Interpolator, Interpolate
 from ..types import Vector
 from typing import Callable, Mapping, Sequence, Any, TYPE_CHECKING
-from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Any, Type, TYPE_CHECKING
+from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Tuple, Any, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -38,7 +39,7 @@ class InterpolatorContinuous(Interpolator):
             for x in range(1, len(coords)):
                 c1, c2 = coords[x - 1:x + 1]
                 a, b = c1[i], c2[i]
-                a_nan, b_nan = alg.is_nan(a), alg.is_nan(b)
+                a_nan, b_nan = math.isnan(a), math.isnan(b)
 
                 # Two good values, store the last good value and continue
                 if not a_nan and not b_nan:
@@ -110,9 +111,9 @@ class InterpolatorContinuous(Interpolator):
 
         # Interpolate between the values of the two colors for each channel.
         channels = []
-        i = index - 2 if index == self.length else index - 1
+        idx = index - 2 if index == self.length else index - 1
 
-        for i, values in enumerate(zip(*self.coordinates[i:i + 2])):
+        for i, values in enumerate(zip(*self.coordinates[idx:idx + 2])):
             a, b = values
 
             # Interpolate
@@ -140,6 +141,7 @@ class Continuous(Interpolate):
         premultiplied: bool,
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs: Any
     ) -> Interpolator:
         """Return the B-spline interpolator."""
@@ -156,5 +158,6 @@ class Continuous(Interpolate):
             premultiplied,
             extrapolate,
             domain,
+            padding,
             **kwargs
         )

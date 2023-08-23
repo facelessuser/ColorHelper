@@ -1,7 +1,6 @@
 """Delta E CAM16."""
 import math
 from ..distance import DeltaE
-from .. import algebra as alg
 from ..spaces.cam16_ucs import COEFFICENTS
 from ..types import Vector
 from typing import Any, TYPE_CHECKING

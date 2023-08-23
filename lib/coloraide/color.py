@@ -69,7 +69,7 @@ from .temperature.robertson_1968 import Robertson1968
 from .types import Plugin
 from typing import overload, Union, Sequence, Iterable, Dict, List, Optional, Any, Callable, Tuple, Type, Mapping
 
-SUPPORTED_CHROMATICITY_SPACES = set(('xyz', 'uv-1960', 'uv-1976', 'xy-1931'))
+SUPPORTED_CHROMATICITY_SPACES = {'xyz', 'uv-1960', 'uv-1976', 'xy-1931'}
 
 class ColorMatch:
     """Color match object."""
@@ -106,6 +106,7 @@ class ColorMeta(abc.ABCMeta):
             cls.FILTER_MAP = cls.FILTER_MAP.copy()  # type: Dict[str, Filter]
             cls.CONTRAST_MAP = cls.CONTRAST_MAP.copy()  # type: Dict[str, ColorContrast]
             cls.INTERPOLATE_MAP = cls.INTERPOLATE_MAP.copy()  # type: Dict[str, Interpolate]
+            cls.CCT_MAP = cls.CCT_MAP.copy()  # type: Dict[str, CCT]
 
         # Ensure each derived class tracks its own conversion paths for color spaces
         # relative to the installed color space plugins.
@@ -143,6 +144,8 @@ class Color(metaclass=ColorMeta):
     CHROMATIC_ADAPTATION = util.DEF_CHROMATIC_ADAPTATION
     CONTRAST = util.DEF_CONTRAST
     CCT = util.DEF_CCT
+    POWERLESS = False
+    CARRYFORWARD = False
 
     # It is highly unlikely that a user would ever need to override this, but
     # just in case, it is exposed, but undocumented.
@@ -233,7 +236,7 @@ class Color(metaclass=ColorMeta):
                 num_channels = len(space_class.CHANNELS)
                 num_data = len(data)
                 if num_data < num_channels:
-                    data = list(data) + [alg.NaN] * (num_channels - num_data)
+                    data = list(data) + [alg.nan] * (num_channels - num_data)
                 coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
                 coords.append(alg.clamp(float(alpha), *space_class.channels[-1].limit))
                 obj = space_class, coords
@@ -286,7 +289,7 @@ class Color(metaclass=ColorMeta):
                     return space_class, m[0][0], m[0][1], start, m[1]
 
         # Attempt color space specific match
-        for _, space_class in cls.CS_MAP.items():
+        for space_class in cls.CS_MAP.values():
             m2 = space_class.match(string, start, fullmatch)
             if m2 is not None:
                 return space_class, m2[0][0], m2[0][1], start, m2[1]
@@ -520,8 +523,9 @@ class Color(metaclass=ColorMeta):
         self[:-1] = self.coords(nans=False)
         if nans and hasattr(self._space, 'hue_index') and self.is_achromatic():
             i = self._space.hue_index()
-            self[i] = alg.NaN
-        self[-1] = alg.no_nan(self[-1])
+            self[i] = alg.nan
+        alpha = self[-1]
+        self[-1] = 0.0 if math.isnan(alpha) else alpha
         return self
 
     def is_nan(self, name: str) -> bool:  # pragma: no cover
@@ -589,7 +593,7 @@ class Color(metaclass=ColorMeta):
 
         # Normalize achromatic colors, but skip if we internally don't need this.
         if norm and hasattr(this._space, 'hue_index') and this.is_achromatic():
-            this[this._space.hue_index()] = alg.NaN
+            this[this._space.hue_index()] = alg.nan
 
         return this
 
@@ -935,7 +939,7 @@ class Color(metaclass=ColorMeta):
         )
         for name in self._space.channels:
             if (not invert and name in masks) or (invert and name not in masks):
-                this[name] = alg.NaN
+                this[name] = alg.nan
         return this
 
     def mix(
@@ -953,13 +957,14 @@ class Color(metaclass=ColorMeta):
         The basic mixing logic is outlined in the CSS level 5 draft.
         """
 
+        # Mix really needs to be between 0 and 1 or steps will break
+        domain = interpolate_args.get('domain')
+        if domain is not None:
+            interpolate_args['domain'] = interpolate.normalize_domain(domain)
+
         if not self._is_color(color) and not isinstance(color, (str, Mapping)):
             raise TypeError("Unexpected type '{}'".format(type(color)))
-        i = self.interpolate([self, color], **interpolate_args)
-        # Scale really needs to be between 0 and 1 as mix deals in percentages.
-        if i.domain:
-            i.domain = interpolate.normalize_domain(i.domain)
-        mixed = i(percent)
+        mixed = self.interpolate([self, color], **interpolate_args)(percent)
         return self._hotswap(mixed) if in_place else mixed
 
     @classmethod
@@ -975,11 +980,39 @@ class Color(metaclass=ColorMeta):
     ) -> List['Color']:
         """Discrete steps."""
 
-        i = cls.interpolate(colors, **interpolate_args)
         # Scale really needs to be between 0 and 1 or steps will break
-        if i.domain:
-            i.domain = interpolate.normalize_domain(i.domain)
-        return i.steps(steps, max_steps, max_delta_e, delta_e)
+        domain = interpolate_args.get('domain')
+        if domain is not None:
+            interpolate_args['domain'] = interpolate.normalize_domain(domain)
+
+        return cls.interpolate(colors, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
+
+    @classmethod
+    def discrete(
+        cls,
+        colors: Sequence[Union[ColorInput, interpolate.stop, Callable[..., float]]],
+        *,
+        space: Union[str, None] = None,
+        out_space: Union[str, None] = None,
+        steps: Union[int, None] = None,
+        max_steps: int = 1000,
+        max_delta_e: float = 0,
+        delta_e: Union[str, None] = None,
+        domain: Optional[List[float]] = None,
+        **interpolate_args: Any
+    ) -> Interpolator:
+        """Create a discrete interpolation."""
+
+        # If no steps were provided, use the number of colors provided
+        num = sum((not callable(c) or not isinstance(c, interpolate.stop)) for c in colors) if steps is None else steps
+        i = cls.interpolate(colors, space=space, **interpolate_args)
+        # Convert the interpolation into a discretized interpolation with the requested number of steps
+        i.discretize(num, max_steps, max_delta_e, delta_e)
+        if domain is not None:
+            i.domain(domain)
+        if out_space is not None:
+            i.out_space(out_space)
+        return i
 
     @classmethod
     def interpolate(
@@ -994,6 +1027,9 @@ class Color(metaclass=ColorMeta):
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
         method: str = "linear",
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
+        carryforward: Optional[bool] = None,
+        powerless: Optional[bool] = None,
         **kwargs: Any
     ) -> Interpolator:
         """
@@ -1019,6 +1055,9 @@ class Color(metaclass=ColorMeta):
             premultiplied=premultiplied,
             extrapolate=extrapolate,
             domain=domain,
+            padding=padding,
+            carryforward=carryforward if carryforward is not None else cls.CARRYFORWARD,
+            powerless=powerless if powerless is not None else cls.POWERLESS,
             **kwargs
         )
 
@@ -1071,7 +1110,7 @@ class Color(metaclass=ColorMeta):
         if out_space is None:
             out_space = space
 
-        return [c.convert(out_space, in_place=True) for c in harmonies.harmonize(self, name, space)]
+        return [c.convert(out_space, in_place=True) for c in harmonies.harmonize(self, name, space, **kwargs)]
 
     def compose(
         self,
@@ -1151,11 +1190,11 @@ class Color(metaclass=ColorMeta):
         return contrast.contrast(method, self, color)
 
     @overload
-    def get(self, name: str, *, nans: bool = True) -> float:  # noqa: D105
+    def get(self, name: str, *, nans: bool = True) -> float:
         ...
 
     @overload
-    def get(self, name: Union[List[str], Tuple[str, ...]], *, nans: bool = True) -> List[float]:  # noqa: D105
+    def get(self, name: Union[List[str], Tuple[str, ...]], *, nans: bool = True) -> List[float]:
         ...
 
     def get(self, name: Union[str, List[str], Tuple[str, ...]], *, nans: bool = True) -> Union[float, List[float]]:

@@ -1,5 +1,6 @@
 """Average colors together."""
 import math
+from . import algebra as alg
 from .types import ColorInput
 from typing import Iterable, TYPE_CHECKING, Type
 
@@ -26,7 +27,11 @@ def average(create: Type['Color'], colors: Iterable[ColorInput], space: str, pre
     # Sum channel values
     i = -1
     for c in colors:
-        coords = obj.update(c)[:]
+        obj.update(c)
+        # If cylindrical color is achromatic, ensure hue is undefined
+        if hue_index >= 0 and not math.isnan(obj[hue_index]) and obj.is_achromatic():
+            obj[hue_index] = alg.nan
+        coords = obj[:]
         alpha = coords[-1]
         if math.isnan(alpha):
             alpha = 1.0
@@ -48,14 +53,14 @@ def average(create: Type['Color'], colors: Iterable[ColorInput], space: str, pre
     # Get the mean
     alpha = sums[-1]
     alpha_t = totals[-1]
-    sums[-1] = float('nan') if not alpha_t else alpha / alpha_t
+    sums[-1] = alg.nan if not alpha_t else alpha / alpha_t
     alpha = sums[-1]
     if math.isnan(alpha) or alpha in (0.0, 1.0):
         alpha = 1.0
     for i in range(chan_count - 1):
         total = totals[i]
         if not total:
-            sums[i] = float('nan')
+            sums[i] = alg.nan
         elif i == hue_index:
             sums[i] = math.degrees(math.atan2(sin / total, cos / total))
         else:

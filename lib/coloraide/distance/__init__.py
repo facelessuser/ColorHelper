@@ -19,7 +19,7 @@ def closest(color: 'Color', colors: Sequence[ColorInput], method: Optional[str] 
     if not algorithm:
         raise ValueError("'{}' is not currently a supported distancing algorithm.".format(method))
 
-    lowest = alg.INF
+    lowest = alg.inf
     closest = None
     for c in colors:
         color2 = color._handle_color_input(c)

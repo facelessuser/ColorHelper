@@ -34,6 +34,8 @@ from .spaces.cam16_ucs import CAM16UCS, CAM16LCD, CAM16SCD
 from .spaces.hct import HCT
 from .spaces.ucs import UCS
 from .spaces.rec709 import Rec709
+from .spaces.ryb import RYB, RYBBiased
+from .spaces.cubehelix import Cubehelix
 from .distance.delta_e_itp import DEITP
 from .distance.delta_e_99o import DE99o
 from .distance.delta_e_z import DEZ
@@ -93,6 +95,9 @@ ColorAll.register(
         CAM16LCD(),
         HCT(),
         UCS(),
+        RYB(),
+        RYBBiased(),
+        Cubehelix(),
 
         # Delta E
         DEITP(),

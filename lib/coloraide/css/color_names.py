@@ -163,13 +163,13 @@ name2val_map = {
     'transparent': (0.0, 0.0, 0.0, 0.0)
 }  # type: Dict[str, Tuple[float, ...]]
 
-val2name_map = dict([(v, k) for k, v in name2val_map.items()])  # type: Dict[Tuple[float, ...], str]
+val2name_map = {v: k for k, v in name2val_map.items()}  # type: Dict[Tuple[float, ...], str]
 
 
 def to_name(value: Vector) -> Optional[str]:
     """Convert CSS hex to webcolor name."""
 
-    return val2name_map.get(tuple([alg.round_half_up(c * 255) for c in value]), None)
+    return val2name_map.get(tuple(alg.round_half_up(c * 255) for c in value), None)
 
 
 def from_name(name: str) -> Optional[Vector]:

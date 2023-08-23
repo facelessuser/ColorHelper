@@ -1,5 +1,5 @@
 """HWB class."""
-from ...spaces import Space, Cylindrical
+from ...spaces import Space, HWBish
 from ...cat import WHITES
 from ... import util
 from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
@@ -17,7 +17,6 @@ def hwb_to_hsv(hwb: Vector) -> Vector:
 
     v = 1 - b
     s = 0 if v == 0 else 1 - w / v
-
     return [util.constrain_hue(h), s, v]
 
 
@@ -28,7 +27,7 @@ def hsv_to_hwb(hsv: Vector) -> Vector:
     return [util.constrain_hue(h), v * (1 - s), 1 - v]
 
 
-class HWB(Cylindrical, Space):
+class HWB(HWBish, Space):
     """HWB class."""
 
     BASE = "hsv"

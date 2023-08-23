@@ -9,7 +9,7 @@ from .. import algebra as alg
 from .continuous import InterpolatorContinuous
 from ..interpolate import Interpolator, Interpolate
 from ..types import Vector
-from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Any, Type, TYPE_CHECKING
+from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Any, Tuple, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -92,6 +92,7 @@ class BSpline(Interpolate):
         premultiplied: bool,
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs: Any
     ) -> Interpolator:
         """Return the B-spline interpolator."""
@@ -108,5 +109,6 @@ class BSpline(Interpolate):
             premultiplied,
             extrapolate,
             domain,
+            padding,
             **kwargs
         )
