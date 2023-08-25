@@ -226,20 +226,16 @@ class ColorHelperContrastRatioInputHandler(tools._ColorInputHandler):
                     colors[1].convert('srgb').clip().to_string(**util.COMMA)
                 )
             return sublime.Html(style + html)
-        except Exception as e:
-            print('huh?')
-            print(e)
+        except Exception:
             return sublime.Html(mdpopups.md2html(self.view, DEF_RATIO.format(style)))
 
     def validate(self, color):
         """Validate."""
 
         try:
-            colors = evaluate(self.base, color)
+            colors = evaluate(self.base, color, self.gamut_map)
             return len(colors) > 0
-        except Exception as e:
-            print('what?')
-            print(e)
+        except Exception:
             return False
 
 
@@ -251,8 +247,9 @@ class ColorHelperContrastRatioCommand(_ColorMixin, sublime_plugin.TextCommand):
     ):
         """Run command."""
 
+        self.setup_gamut_style()
         self.base = util.get_base_color()
-        colors = evaluate(self.base, color_helper_contrast_ratio)
+        colors = evaluate(self.base, color_helper_contrast_ratio, self.gamut_map)
         color = None
         if colors:
             color = colors[0]

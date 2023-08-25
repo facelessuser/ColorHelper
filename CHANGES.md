@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.3.0
+
+- **NEW**: Upgrade to ColorAide 2.9.
+- **FIX**: Fix some issues with blend and contrast tool.
+
 ## 6.2.2
 
 - **FIX**: Remove regression fix that was fixing a false issue.
