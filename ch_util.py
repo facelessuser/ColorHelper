@@ -56,7 +56,8 @@ REQUIRED_COLOR_VERSION = (0, 1, 0, 'alpha', 19)
 UPDATE_COLORS = RE_COLOR_MATCH
 COLOR_FMT_1_0 = (0, 1, 0, 'alpha', 19)
 COLOR_FMT_2_0 = (0, 3, 0, 'final')
-PALETTE_FMT = (2, 0)
+COLOR_FMT_2_9 = (2, 9, 0, 'final')
+PALETTE_FMT = (3, 0)
 
 RE_COLOR_START = r"""(?xi)
 (?:
@@ -298,6 +299,23 @@ def get_scope(view, rules, skip_sel_check=False):
     return scopes
 
 
+def update_colors_3_0(colors):
+    """Update colors for version 3.0."""
+
+    base = get_base_color()
+    new_colors = []
+    for c in colors:
+        try:
+            m = UPDATE_COLORS.match(c)
+            if m:
+                new_colors.append(base(m.group(0)).to_string(**COLOR_SERIALIZE))
+            else:
+                new_colors.append(c)
+        except Exception:
+            pass
+    return new_colors
+
+
 def update_colors_2_0(colors):
     """Update colors for version 2.0."""
 
@@ -356,6 +374,19 @@ def update_colors_1_0(colors):
     return new_colors
 
 
+def update_format(palettes, version, callback):
+    """Update the format."""
+
+    favs = callback(palettes.get('favorites', []))
+    palettes.set('favorites', favs)
+    all_pallets = palettes.get('palettes', [])
+    for p in all_pallets:
+        p['colors'] = callback(p['colors'])
+    palettes.set('palettes', all_pallets)
+    palettes.set('__format__', version)
+    sublime.save_settings(PALETTE_CONFIG)
+
+
 def _get_palettes(window=None):
     """Get palettes."""
 
@@ -364,25 +395,17 @@ def _get_palettes(window=None):
         fmt = tuple([int(x) for x in palettes.get('__format__', '0.0').split('.')])
         if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_1_0:
             if fmt == (0, 0):
-                favs = update_colors_1_0(palettes.get('favorites', []))
-                palettes.set('favorites', favs)
-                all_pallets = palettes.get('palettes', [])
-                for p in all_pallets:
-                    p['colors'] = update_colors_1_0(p['colors'])
-                palettes.set('palettes', all_pallets)
-                palettes.set('__format__', '1.0')
-                sublime.save_settings(PALETTE_CONFIG)
+                update_format(palettes, '1.0', update_colors_1_0)
                 fmt = (1, 0)
         if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_2_0:
             if fmt == (1, 0):
-                favs = update_colors_2_0(palettes.get('favorites', []))
-                palettes.set('favorites', favs)
-                all_pallets = palettes.get('palettes', [])
-                for p in all_pallets:
-                    p['colors'] = update_colors_1_0(p['colors'])
-                palettes.set('palettes', all_pallets)
-                palettes.set('__format__', '2.0')
-                sublime.save_settings(PALETTE_CONFIG)
+                update_format(palettes, '2.0', update_colors_2_0)
+                fmt = (2, 0)
+        if fmt != PALETTE_FMT and coloraide_version >= COLOR_FMT_2_9:
+            if fmt == (2, 0):
+                update_format(palettes, '3.0', update_colors_3_0)
+                fmt = (3, 0)
+
     else:
         data = window.project_data()
         if data is None:

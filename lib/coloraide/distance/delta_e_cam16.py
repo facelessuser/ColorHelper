@@ -5,7 +5,6 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9698626/pdf/sensors-22-08869.pdf
 """
 import math
 from ..distance import DeltaE
-from .. import algebra as alg
 from typing import Any, TYPE_CHECKING
 from ..spaces.cam16_ucs import COEFFICENTS
 

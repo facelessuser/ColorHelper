@@ -30,7 +30,7 @@ def rotate(v: Vector, d: float) -> Vector:
 
 
 def srgb_to_orgb(rgb: Vector) -> Vector:
-    """sRGB to oRGB."""
+    """Convert sRGB to oRGB."""
 
     lcc = alg.dot(RGB_TO_LC1C2, rgb, dims=alg.D2_D1)
     theta = math.atan2(lcc[2], lcc[1])
@@ -45,7 +45,7 @@ def srgb_to_orgb(rgb: Vector) -> Vector:
 
 
 def orgb_to_srgb(lcc: Vector) -> Vector:
-    """oRGB to sRGB."""
+    """Convert oRGB to sRGB."""
 
     theta0 = math.atan2(lcc[2], lcc[1])
     theta = theta0
@@ -55,7 +55,7 @@ def orgb_to_srgb(lcc: Vector) -> Vector:
     elif (math.pi / 2) <= atheta0 <= math.pi:
         theta = math.copysign((math.pi / 3) + (4 / 3) * (atheta0 - math.pi / 2), theta0)
 
-    return alg.dot(LC1C2_TO_RGB, rotate(lcc, theta - theta0))
+    return alg.dot(LC1C2_TO_RGB, rotate(lcc, theta - theta0), dims=alg.D2_D1)
 
 
 class oRGB(Labish, Space):
@@ -74,16 +74,6 @@ class oRGB(Labish, Space):
     CHANNEL_ALIASES = {
         "luma": "l"
     }
-
-    def names(self) -> Tuple[str, ...]:
-        """
-        Return Lab-ish names in the order L a b.
-
-        oRGB flips the `crg` and `cyb` equivalent (which corresponds to `a` and `b`).
-        """
-
-        channels = self.channels
-        return channels[0], channels[2], channels[1]
 
     def to_base(self, coords: Vector) -> Vector:
         """To base from oRGB."""

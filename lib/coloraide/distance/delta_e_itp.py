@@ -5,7 +5,6 @@ https://kb.portrait.com/help/ictcp-color-difference-metric
 """
 from ..distance import DeltaE
 import math
-from .. import algebra as alg
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:  # pragma: no cover

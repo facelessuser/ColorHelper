@@ -3,38 +3,49 @@ Math related methods.
 
 Includes various math related functions to aid in color translation and manipulation.
 
-Matrix methods are implemented to mimic `numpy`. We've cherry picked what we think is the
-most useful for what we do with colors. We basically implement each function according to
-the API description and then verify our tested inputs and outputs match `numpy`.
+Matrix method APIs are implemented often to mimic the familiar `numpy` library or `scipy`.
+The API for a given function may look very similar to those found in either of the two
+scientific libraries. Our intent is not implement a full matrix library, but mainly the
+parts that are most useful for what we do with colors. Functions may not have all the
+features as found in the aforementioned libraries, but the API should be similar.
 
 We actually really like `numpy`, and have only done this to keep dependencies lightweight
-and available on non C Python based implementations. If we ever decide to swap out `numpy`,
-we should be able to relatively easily.
+and available on non C Python based implementations. If we ever decide to switch to `numpy`,
+we should be able to relatively easily as most of our API is modeled after `numpy` or `scipy`.
 
 Some liberties are taken here and there. For instance, we are not as fast as `numpy`, so
 we add some shortcuts to things that are used a lot (`dot`, `multiply`, `divide`, etc.).
 In these cases, we provide new input to instruct the operation as to the dimensions of the
 matrix so we don't waste time analyzing the matrix.
 
-There is no requirement that color space plugins (or really any plugin) need to use
-anything here, `numpy` could be used as long as the final results are converted to normal
-types.
+There is no requirement that external plugins need to use `algebra`, `numpy` could be
+used as long as the final results are converted to normal types. It is certainly possible
+that we could switch to using `numpy` in a major release in the future.
 """
 import sys
 import math
 import operator
 import functools
-from itertools import zip_longest as zipl
-from .types import ArrayLike, MatrixLike, VectorLike, Array, Matrix, Vector, SupportsFloatOrInt
+import itertools as it
+from .deprecate import deprecated
+from .types import (
+    ArrayLike, MatrixLike, VectorLike, Array, Matrix,
+    Vector, Shape, ShapeLike, DimHints, SupportsFloatOrInt, MathType
+)
 from typing import Optional, Callable, Sequence, List, Union, Iterator, Tuple, Any, Iterable, overload, Dict
 
 NaN = float('nan')
 INF = float('inf')
-EPSILON = sys.float_info.epsilon
+nan = NaN
+inf = INF
+tau = 2 * math.pi
+
 PY38 = (3, 8) <= sys.version_info
-TAU = math.pi * 2
+_all = all
+_any = any
 
 if sys.version_info >= (3, 8):
+    # Keeping for backwards compatibility
     prod = math.prod
 else:
     def prod(values: Iterable[SupportsFloatOrInt]) -> SupportsFloatOrInt:
@@ -75,18 +86,21 @@ M141 = [1, 4, 1]
 ################################
 # General math
 ################################
+@deprecated("Please use math.isnan or alg.isnan for a generic approach for vectors and matrices")
 def is_nan(obj: float) -> bool:
     """Check if "not a number"."""
 
     return math.isnan(obj)
 
 
+@deprecated("This will be removed at a future time")
 def no_nans(value: Union[VectorLike, Iterable[float]], default: float = 0.0) -> Vector:
     """Ensure there are no `NaN` values in a sequence."""
 
     return [(default if is_nan(x) else x) for x in value]
 
 
+@deprecated("This will be removed at a future time")
 def no_nan(value: float, default: float = 0.0) -> float:
     """Convert list of numbers or single number to valid numbers."""
 
@@ -149,7 +163,7 @@ def nth_root(n: float, p: float) -> float:
     """Calculate nth root while handling negative numbers."""
 
     if p == 0:  # pragma: no cover
-        return float('inf')
+        return inf
 
     if n == 0:
         # Can't do anything with zero
@@ -162,12 +176,6 @@ def npow(base: float, exp: float) -> float:
     """Perform `pow` with a negative number."""
 
     return math.copysign(abs(base) ** exp, base)
-
-
-def nlog(value: float) -> float:
-    """Perform `log` with a negative number."""
-
-    return math.copysign(1, value) * math.log(abs(value))
 
 
 def rect_to_polar(a: float, b: float) -> Tuple[float, float]:
@@ -193,6 +201,231 @@ def lerp(p0: float, p1: float, t: float) -> float:
     """Linear interpolation."""
 
     return p0 + (p1 - p0) * t
+
+
+def ilerp(p0: float, p1: float, t: float) -> float:
+    """Inverse interpolation."""
+
+    d = (p1 - p0)
+    return (t - p0) / d if d else 0
+
+
+def bilerp(p0: float, p1: float, p2: float, p3: float, tx: float, ty: float) -> float:
+    """Bilinear interpolation."""
+
+    return lerp(lerp(p0, p1, tx), lerp(p2, p3, tx), ty)
+
+
+def lerp2d(vertices: Matrix, t: Vector) -> Vector:
+    """
+    Interpolate in 2D.
+
+    Vertices should be in column form [[x...], [y...]].
+    """
+
+    return [bilerp(*(vertices[i] + t)) for i in range(2)]
+
+
+def ilerp2d(
+    vertices: Matrix,
+    point: Vector,
+    *,
+    vertices_t: Optional[Matrix] = None,
+    max_iter: int = 20,
+    tol: float = 1e-14
+) -> Vector:
+    """
+    Inverse interpolation of a 2D point.
+
+    Same algorithm as `ilerp3d` just for a 2D point. Based off the forward transform below.
+
+    ```
+    vxy = v00 (1 - x) (1 - y) +
+        v10 x (1 - y) +
+        v01 (1 - x) y +
+        v11 x y
+    ```
+    """
+
+    if vertices_t is None:  # pragma: no cover
+        vertices_t = transpose(vertices)
+
+    # Initial guess
+    xy = [0.5, 0.5]
+
+    try:
+        for _ in range(max_iter):
+
+            # Calculate the residual by using our guess to calculate the what should be the input and compare
+            residual = subtract(lerp2d(vertices, xy), point, dims=D1)
+
+            # If we are close enough to our input, we can quit
+            if math.sqrt(residual[0] ** 2 + residual[1] ** 2) < tol:
+                break
+
+            # Build up the Jacobian matrix so we can solve for the next, closer guess.
+            x, y = xy
+            _x = [-(1 - y), 1 - y, -y, y]
+            jx = [sum(i) for i in zip(*[[xi * c for c in ci] for ci, xi in zip(vertices_t, _x)])]
+
+            _y = [-(1 - x), -x, x, 1 - x]
+            jy = [sum(i) for i in zip(*[[yi * c for c in ci] for ci, yi in zip(vertices_t, _y)])]
+
+            # Create the Jacobian matrix, but we need it in column form
+            j = transpose([jx, jy])
+
+            # Solve for new guess
+            xy = subtract(xy, solve(j, residual), dims=D1)
+    except ValueError:  # pragma: no cover
+        # The Jacobian matrix shouldn't fail inversion if we are in gamut.
+        # Out of gamut may give us one we cannot invert. There are potential
+        # ways to handle this to try and get moving again, but currently, we
+        # just give up. We do not guarantee out of gamut conversions.
+        pass
+
+    return xy
+
+
+def trilerp(
+    p0: float,
+    p1: float,
+    p2: float,
+    p3: float,
+    p4: float,
+    p5: float,
+    p6: float,
+    p7: float,
+    tx: float,
+    ty: float,
+    tz: float
+) -> float:
+    """Trilinear interpolation."""
+
+    return lerp(bilerp(p0, p1, p2, p3, tx, ty), bilerp(p4, p5, p6, p7, tx, ty), tz)
+
+
+def lerp3d(
+    vertices: Matrix,
+    t: Vector
+) -> Vector:
+    """
+    Interpolation in 3D.
+
+    Vertices should be in column form [[x...], [y...], [z...]].
+    """
+
+    return [trilerp(*(vertices[i] + t)) for i in range(3)]
+
+
+def ilerp3d(
+    vertices: Matrix,
+    point: Vector,
+    *,
+    vertices_t: Optional[Matrix] = None,
+    max_iter: int = 20,
+    tol: float = 1e-14
+) -> Vector:
+    """
+    Inverse trilinear interpolation.
+
+    Uses Gauss-Newton method to compute the inverse of the trilinear interpolation.
+
+    Original code by Nick Alger https://stackoverflow.com/a/18332009/3609487
+    and adapted for our purposes. As stated in the link:
+
+    > I release the 3D code to the public domain as well if anyone wants to use it.
+    > - Nick Alger Jun 27, 2014 at 7:30
+
+    Utilizes the trilinear interpolation method found here to get the inverse:
+    http://paulbourke.net/miscellaneous/interpolation/. Results are the same as
+    what we do in the forward, but easier to use for the inverse calculations.
+    Forward transform found below with vertices ordered to match the order we store our
+    vertices in.
+
+    ```
+    Vxyz = V000 (1 - x) (1 - y) (1 - z) +
+        V100 x (1 - y) (1 - z) +
+        V010 (1 - x) y (1 - z) +
+        V110 x y (1 - z) +
+        V001 (1 - x) (1 - y) z +
+        V101 x (1 - y) z +
+        V011 (1 - x) y z +
+        V111 x y z
+    ```
+
+    NOTE: It does seem that selected vertices can have an impact on how well the
+    reverse translation is. Certain combinations can cause us to fall short of
+    resolving the interpolation all the way to 1 when it should. In some cases, it
+    will just stop at `0.9xxxx`, etc. Some sets of vertices have no issues at all.
+    """
+
+    if vertices_t is None:  # pragma: no cover
+        vertices_t = transpose(vertices)
+
+    # Initial guess.
+    xyz = [0.5, 0.5, 0.5]
+
+    try:
+        for _ in range(max_iter):
+
+            # Calculate the residual by using our guess to calculate the what should be the input and compare
+            residual = subtract(lerp3d(vertices, xyz), point, dims=D1)
+
+            # If we are close enough to our input, we can quit
+            if math.sqrt(residual[0] ** 2 + residual[1] ** 2 + residual[2] ** 2) < tol:
+                break
+
+            # Build up the Jacobian matrix so we can solve for the next, closer guess
+            x, y, z = xyz
+            _x = [
+                 -(1 - y) * (1 - z),
+                (1 - y) * (1 - z),
+                -y * (1 - z),
+                y * (1 - z),
+                -(1 - y) * z,
+                (1 - y) * z,
+                -y * z,
+                y * z
+            ]
+            jx = [sum(i) for i in zip(*[[xi * c for c in ci] for ci, xi in zip(vertices_t, _x)])]
+
+            _y = [
+                -(1 - x) * (1 - z),
+                -x * (1 - z),
+                (1 - x) * (1 - z),
+                x * (1 - z),
+                -(1 - x) * z,
+                -x * z,
+                (1 - x) * z,
+                x * z,
+            ]
+            jy = [sum(i) for i in zip(*[[yi * c for c in ci] for ci, yi in zip(vertices_t, _y)])]
+
+            _z = [
+                -(1 - x) * (1 - y),
+                -x * (1 - y),
+                -(1 - x) * y,
+                -x * y,
+                (1 - x) * (1 - y),
+                x * (1 - y),
+                (1 - x) * y,
+                x * y
+            ]
+            jz = [sum(i) for i in zip(*[[zi * c for c in ci] for ci, zi in zip(vertices_t, _z)])]
+
+            # Create the Jacobian matrix, but we need it in column form
+            j = transpose([jx, jy, jz])
+
+            # Solve for new guess
+            xyz = subtract(xyz, solve(j, residual), dims=D1)
+    except ValueError:  # pragma: no cover
+        # The Jacobian matrix shouldn't fail inversion if we are in gamut.
+        # Out of gamut may give us one we cannot invert. There are potential
+        # ways to handle this to try and get moving again, but currently, we
+        # just give up. We do not guarantee out of gamut conversions.
+        pass
+
+    return xyz
 
 
 @functools.lru_cache(maxsize=10)
@@ -366,7 +599,7 @@ class Interpolate:
 
     def __init__(
         self,
-        points: List[Vector],
+        points: Sequence[VectorLike],
         callback: Callable[..., float],
         length: int,
         linear: bool = False
@@ -442,11 +675,45 @@ def interpolate(points: List[Vector], method: str = 'linear') -> Interpolate:
 ################################
 # Matrix/linear algebra math
 ################################
+def pretty(value: Union[Array, float], *, _depth: int = 0, _shape: Optional[Shape] = None) -> str:
+    """Format the print output."""
+
+    if _shape is None:
+        _shape = shape(value)
+
+    nl = len(_shape) - _depth - 1
+    if isinstance(value, Sequence):
+        seq = len(value) and isinstance(value[0], Sequence)
+        values = [pretty(v, _depth=_depth + 1, _shape=_shape) for v in value]
+        spacing = _depth + 1
+        return '[{}]'.format((',{}{}'.format('\n' * nl, ' ' * spacing) if seq else ', ').join(values))
+
+    return str(value)
+
+
+def pprint(value: Union[Array, float]) -> None:
+    """Print the matrix or value."""
+
+    print(pretty(value))
+
+
+def all(a: Union[float, ArrayLike]) -> bool:  # noqa: A001
+    """Return true if all elements are "true"."""
+
+    return _all(flatiter(a))
+
+
+def any(a: Union[float, ArrayLike]) -> bool:  # noqa: A001
+    """Return true if all elements are "true"."""
+
+    return _any(flatiter(a))
+
+
 def vdot(a: VectorLike, b: VectorLike) -> float:
     """Dot two vectors."""
 
     s = 0.0
-    for x, y in zipl(a, b):
+    for x, y in it.zip_longest(a, b):
         s += x * y
     return s
 
@@ -461,14 +728,20 @@ def vcross(v1: VectorLike, v2: VectorLike) -> Vector:  # pragma: no cover
     you don't need broadcasting of any kind.
     """
 
-    if len(v1) == len(v2) == 2:
+    l1 = len(v1)
+    if l1 != len(v2):
+        raise ValueError('Incompatible dimensions for cross product,')
+
+    if l1 == 2:
         return [v1[0] * v2[1] - v1[1] * v2[0]]
-    else:
+    elif l1 == 3:
         return [
             v1[1] * v2[2] - v1[2] * v2[1],
             v1[2] * v2[0] - v2[2] * v1[0],
             v1[0] * v2[1] - v1[1] * v2[0]
         ]
+    else:
+        raise ValueError('Expected vectors of shape (2,) or (3,) but got ({},) ({},)'.format(l1, len(v2)))
 
 
 @overload
@@ -488,16 +761,16 @@ def acopy(a: ArrayLike) -> Array:
 
 
 @overload
-def _cross_pad(a: VectorLike, s: Tuple[int, ...]) -> Vector:
+def _cross_pad(a: VectorLike, s: Shape) -> Vector:
     ...
 
 
 @overload
-def _cross_pad(a: MatrixLike, s: Tuple[int, ...]) -> Matrix:
+def _cross_pad(a: MatrixLike, s: Shape) -> Matrix:
     ...
 
 
-def _cross_pad(a: ArrayLike, s: Tuple[int, ...]) -> Array:
+def _cross_pad(a: ArrayLike, s: Shape) -> Array:
     """Pad an array with 2-D vectors."""
 
     m = acopy(a)
@@ -571,7 +844,7 @@ def cross(a: ArrayLike, b: ArrayLike) -> Array:
         else:
             # Cross a vector and an N-D matrix
             return reshape(  # type: ignore[return-value]
-                [vcross(a, r) for r in _extract_dims(b, dims_b, dims_b - 1)],  # type: ignore[arg-type]
+                [vcross(a, r) for r in _extract_rows(b, shape_b)],  # type: ignore[arg-type]
                 shape_b
             )
     elif dims_a == 2:
@@ -581,7 +854,7 @@ def cross(a: ArrayLike, b: ArrayLike) -> Array:
     elif dims_b == 1:
         # Cross an N-D matrix and a vector
         return reshape(  # type: ignore[return-value]
-            [vcross(r, b) for r in _extract_dims(a, dims_a, dims_a - 1)],  # type: ignore[arg-type]
+            [vcross(r, b) for r in _extract_rows(a, shape_a)],  # type: ignore[arg-type]
             shape_a
         )
 
@@ -604,71 +877,70 @@ def cross(a: ArrayLike, b: ArrayLike) -> Array:
     return reshape(data, bcast.shape)  # type: ignore[return-value]
 
 
-def _extract_dims(
-    m: ArrayLike,
-    total: int,
-    target: int,
-    depth: int = 0
-) -> Iterator[ArrayLike]:
-    """
-    Extract the requested dimension.
+def _extract_rows(m: ArrayLike, s: ShapeLike, depth: int = 0) -> Iterator[Vector]:
+    """Extract rows from an array."""
 
-    Mainly used only to extract the last two dimensions of a matrix.
-    As not really generalized for "any" dimension, not really good to expose publicly.
-    """
-
-    if depth == target:
-        if total != 1:
-            yield [[x[r] for x in m] for r in range(len(m[0]))]  # type: ignore[index, arg-type]
-        else:
-            yield m
+    if len(s) > 1 and s[1]:
+        for m1 in m:
+            yield from _extract_rows(m1, s[1:], depth + 1)  # type: ignore[arg-type]
     else:
-        for m2 in m:
-            yield from _extract_dims(m2, total - 1, target, depth + 1)  # type: ignore[arg-type]
+        yield m  # type: ignore[misc]
+
+
+def _extract_cols(m: ArrayLike, s: ShapeLike, depth: int = 0) -> Iterator[Vector]:
+    """Extract columns from an array."""
+
+    if len(s) > 2 and s[2]:
+        for m1 in m:
+            yield from _extract_cols(m1, s[1:], depth + 1)  # type: ignore[arg-type]
+    elif not depth:
+        yield m  # type: ignore[misc]
+    else:
+        yield from [[x[r] for x in m] for r in range(len(m[0]))]  # type: ignore[arg-type, index]
 
 
 @overload
-def dot(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
+def dot(a: float, b: float, *, dims: Optional[DimHints] = None) -> float:
     ...
 
 
 @overload
-def dot(a: float, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def dot(a: float, b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
     ...
 
 
 @overload
-def dot(a: VectorLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def dot(a: VectorLike, b: float, *, dims: Optional[DimHints] = None) -> Vector:
     ...
 
 
 @overload
-def dot(a: float, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def dot(a: float, b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
     ...
 
 
 @overload
-def dot(a: MatrixLike, b: float, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def dot(a: MatrixLike, b: float, *, dims: Optional[DimHints] = None) -> Matrix:
     ...
 
 
 @overload
-def dot(a: VectorLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> float:
+def dot(a: VectorLike, b: VectorLike, *, dims: Optional[DimHints] = None) -> float:
     ...
 
 
 @overload
-def dot(a: VectorLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def dot(a: VectorLike, b: MatrixLike, *, dims: Optional[DimHints] = None) -> Vector:
     ...
 
 
 @overload
-def dot(a: MatrixLike, b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
+def dot(a: MatrixLike, b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
     ...
 
 
 @overload
-def dot(a: MatrixLike, b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
+def dot(a: MatrixLike, b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
     ...
 
 
@@ -676,7 +948,7 @@ def dot(
     a: Union[float, ArrayLike],
     b: Union[float, ArrayLike],
     *,
-    dims: Optional[Tuple[int, int]] = None
+    dims: Optional[DimHints] = None
 ) -> Union[float, Array]:
     """
     Get dot product of simple numbers, vectors, and matrices.
@@ -700,26 +972,21 @@ def dot(
         if dims_a and dims_b and dims_a > 2 or dims_b > 2:
             if dims_a == 1:
                 # Dot product of vector and a M-D matrix
-                cols1 = list(_extract_dims(b, dims_b, dims_b - 2))  # type: ignore[arg-type]
                 shape_c = shape_b[:-2] + shape_b[-1:]
-                return reshape([[vdot(a, c) for c in col] for col in cols1], shape_c)  # type: ignore[arg-type]
+                return reshape([vdot(a, col) for col in _extract_cols(b, shape_b)], shape_c)  # type: ignore[arg-type]
             else:
                 # Dot product of N-D and M-D matrices
                 # Resultant size: `dot(xy, yz) = xz` or `dot(nxy, myz) = nxmz`
-                cols2 = (
-                    list(_extract_dims(b, dims_b, dims_b - 2))  # type: ignore[arg-type]
-                    if dims_b > 1
-                    else [[b]]  # type: ignore[list-item]
-                )
-                rows = list(_extract_dims(a, dims_a, dims_a - 1))  # type: ignore[arg-type]
+
+                rows = list(_extract_rows(a, shape_a))  # type: ignore[arg-type]
                 m2 = [
-                    [[sum(multiply(row, c)) for c in col] for col in cols2]  # type: ignore[arg-type]
+                    [sum(multiply(row, col)) for col in _extract_cols(b, shape_b)]  # type: ignore[arg-type]
                     for row in rows
                 ]
                 shape_c = shape_a[:-1]
                 if dims_b != 1:
                     shape_c += shape_b[:-2] + shape_b[-1:]
-                return reshape(m2, shape_c)  # type: ignore[arg-type]
+                return reshape(m2, shape_c)
 
     else:
         dims_a, dims_b = dims
@@ -731,7 +998,7 @@ def dot(
             return vdot(a, b)  # type: ignore[arg-type]
         elif dims_b == 2:
             # Dot product of vector and a matrix
-            return [vdot(a, col) for col in zipl(*b)]  # type: ignore[arg-type, misc]
+            return [vdot(a, col) for col in it.zip_longest(*b)]  # type: ignore[arg-type, misc]
 
     elif dims_a == 2:
         if dims_b == 1:
@@ -739,13 +1006,15 @@ def dot(
             return [vdot(row, b) for row in a]  # type: ignore[arg-type, union-attr]
         elif dims_b == 2:
             # Dot product of two matrices
-            return [[vdot(row, col) for col in zipl(*b)] for row in a]  # type: ignore[arg-type, misc, union-attr]
+            return [
+                [vdot(row, col) for col in it.zip_longest(*b)] for row in a  # type: ignore[arg-type, misc, union-attr]
+            ]
 
     # Trying to dot a number with a vector or a matrix, so just multiply
     return multiply(a, b, dims=(dims_a, dims_b))
 
 
-def _matrix_chain_order(dims: List[Tuple[int, int]]) -> List[List[int]]:
+def _matrix_chain_order(shapes: Sequence[Shape]) -> List[List[int]]:
     """
     Calculate chain order.
 
@@ -762,15 +1031,15 @@ def _matrix_chain_order(dims: List[Tuple[int, int]]) -> List[List[int]]:
     I can't see why though, so we've adjusted it to work from 1 - n.
     """
 
-    n = len(dims)
+    n = len(shapes)
     m = full((n, n), 0)  # type: Any
     s = full((n, n), 0)  # type: List[List[int]] # type: ignore[assignment]
-    p = [a[0] for a in dims] + [dims[-1][1]]
+    p = [a[0] for a in shapes] + [shapes[-1][1]]
 
     for d in range(1, n):
         for i in range(n - d):
             j = i + d
-            m[i][j] = INF
+            m[i][j] = inf
             for k in range(i, j):
                 cost = m[i][k] + m[k + 1][j] + p[i] * p[k + 1] * p[j + 1]
                 if cost < m[i][j]:
@@ -779,19 +1048,19 @@ def _matrix_chain_order(dims: List[Tuple[int, int]]) -> List[List[int]]:
     return s
 
 
-def _multi_dot(a: List[ArrayLike], s: List[List[int]], i: int, j: int) -> ArrayLike:
+def _multi_dot(arrays: Sequence[ArrayLike], indexes: List[List[int]], i: int, j: int) -> ArrayLike:
     """Recursively dot the matrices in the array."""
 
     if i != j:
         return dot(  # type: ignore[return-value]
-            _multi_dot(a, s, i, int(s[i][j])),
-            _multi_dot(a, s, int(s[i][j]) + 1, j),
+            _multi_dot(arrays, indexes, i, int(indexes[i][j])),
+            _multi_dot(arrays, indexes, int(indexes[i][j]) + 1, j),
             dims=D2
         )
-    return a[i]
+    return arrays[i]
 
 
-def multi_dot(arrays: Sequence[ArrayLike]) -> Union[float, Array]:
+def multi_dot(arrays: Sequence[ArrayLike]) -> Any:
     """
     Multi-dot.
 
@@ -833,7 +1102,7 @@ def multi_dot(arrays: Sequence[ArrayLike]) -> Union[float, Array]:
             is_vector = True
 
     # Make sure everything is a 2-D matrix as the next calculations only work for 2-D.
-    if not all([len(s) == 2 for s in shapes]):
+    if not _all(len(s) == 2 for s in shapes):
         raise ValueError('All arrays must be 2-D matrices')
 
     # No need to do the expensive and complicated chain order algorithm for only 3.
@@ -850,383 +1119,19 @@ def multi_dot(arrays: Sequence[ArrayLike]) -> Union[float, Array]:
             value = dot(arrays[0], dot(arrays[1], arrays[2], dims=D2), dims=D2)
 
     # Calculate the fastest ordering with dynamic programming using memoization
-    s = _matrix_chain_order([shape(a) for a in arrays])  # type: ignore[misc]
+    s = _matrix_chain_order([shape(a) for a in arrays])
     value = _multi_dot(arrays, s, 0, count - 1)
 
     # `numpy` returns the shape differently depending on if there is a row and/or column vector
     if is_scalar:
-        return value[0][0]  # type: ignore[no-any-return]
+        return value[0][0]
     elif is_vector:
         return ravel(value)
     else:
-        return value  # type: ignore[no-any-return]
+        return value
 
 
-def _vector_math(op: Callable[..., float], a: VectorLike, b: VectorLike) -> Vector:
-    """Divide two vectors."""
-
-    # Broadcast the vector
-    if len(a) == 1:
-        a = [a[0]] * len(b)
-    elif len(b) == 1:
-        b = [b[0]] * len(a)
-
-    return [op(x, y) for x, y in zipl(a, b)]
-
-
-@overload
-def _math(
-    op: Callable[..., float],
-    a: float,
-    b: float,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> float:
-    ...
-
-
-@overload
-def _math(
-    op: Callable[..., float],
-    a: Union[float, VectorLike],
-    b: VectorLike,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Vector:
-    ...
-
-
-@overload
-def _math(
-    op: Callable[..., float],
-    a: VectorLike,
-    b: Union[float, VectorLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Vector:
-    ...
-
-
-@overload
-def _math(
-    op: Callable[..., float],
-    a: MatrixLike,
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Matrix:
-    ...
-
-
-@overload
-def _math(
-    op: Callable[..., float],
-    a: Union[ArrayLike, float],
-    b: MatrixLike,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Matrix:
-    ...
-
-
-def _math(
-    op: Callable[..., float],
-    a: Union[float, ArrayLike],
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """
-    Reuse same logic for basic, multiplication, division, addition and subtraction.
-
-    Optimized methods are provided for:
-    - equal size matrices
-    - operations between two inputs whose number of dimensions are below 2
-    - operations involving at least one scalar
-
-    Matrices will be detected and the appropriate logic applied
-    unless `dims` is provided. `dims` should simply describe the
-    number of dimensions of `a` and `b`: (2, 1) for a 2D and 1D array.
-    Providing `dims` will sidestep analyzing the matrix for a more
-    performant operation. Anything dimensions above 2 will be treated
-    as an ND x MD scenario and the actual dimensions will be extracted
-    regardless due to necessity.
-    """
-
-    if not dims or dims[0] > 2 or dims[1] > 2:
-        shape_a = shape(a)
-        shape_b = shape(b)
-        dims_a = len(shape_a)
-        dims_b = len(shape_b)
-
-        # Handle matrices of N-D and M-D size
-        if dims_a > 2 or dims_b > 2:
-            if dims_a == dims_b:
-                # Apply math to two N-D matrices
-                return reshape(
-                    [op(x, y) for x, y in zip(flatiter(a), flatiter(b))],
-                    shape_a
-                )
-            elif not dims_a or not dims_b:
-                if not dims_a:
-                    # Apply math to a number and an N-D matrix
-                    return reshape([op(a, x) for x in flatiter(b)], shape_b)
-                # Apply math to an N-D matrix and a number
-                return reshape([op(x, b) for x in flatiter(a)], shape_a)
-
-            # Apply math to an N-D matrix and an M-D matrix by broadcasting to a common shape.
-            bcast = broadcast(a, b)  # type: ignore[arg-type]
-            return reshape([op(x, y) for x, y in bcast], bcast.shape)
-    else:
-        dims_a, dims_b = dims
-
-    # Inputs are of equal size and shape
-    if dims_a == dims_b:
-        if dims_a == 1:
-            # Apply math to two vectors
-            return _vector_math(op, a, b)  # type: ignore[arg-type]
-        elif dims_a == 2:
-            # Apply math to two 2-D matrices
-            return [_vector_math(op, ra, rb) for ra, rb in zipl(a, b)]  # type: ignore[arg-type]
-        return op(a, b)
-
-    # Inputs containing a scalar on either side
-    elif not dims_a or not dims_b:
-        if dims_a == 1:
-            # Apply math to a vector and number
-            return [op(i, b) for i in a]  # type: ignore[union-attr]
-        elif dims_b == 1:
-            # Apply math to a number and a vector
-            return [op(a, i) for i in b]  # type: ignore[union-attr]
-        elif dims_a == 2:
-            # Apply math to 2-D matrix and number
-            return [[op(i, b) for i in row] for row in a]  # type: ignore[union-attr]
-        # Apply math to a number and a matrix
-        return [[op(a, i) for i in row] for row in b]  # type: ignore[union-attr]
-
-    # Inputs are at least 2-D dimensions or below on both sides
-    if dims_a == 1:
-        # Apply math to vector and 2-D matrix
-        return [_vector_math(op, a, row) for row in b]  # type: ignore[arg-type, union-attr]
-    # Apply math to 2-D matrix and a vector
-    return [_vector_math(op, row, b) for row in a]  # type: ignore[arg-type, union-attr]
-
-
-@overload
-def divide(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
-    ...
-
-
-@overload
-def divide(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def divide(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def divide(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def divide(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-def divide(
-    a: Union[float, ArrayLike],
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """Divide simple numbers, vectors, and 2D matrices."""
-
-    return _math(operator.truediv, a, b, dims=dims)
-
-
-@overload
-def multiply(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
-    ...
-
-
-@overload
-def multiply(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def multiply(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def multiply(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def multiply(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-def multiply(
-    a: Union[float, ArrayLike],
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """Multiply simple numbers, vectors, and 2D matrices."""
-
-    return _math(operator.mul, a, b, dims=dims)
-
-
-@overload
-def add(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
-    ...
-
-
-@overload
-def add(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def add(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def add(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def add(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-def add(
-    a: Union[float, ArrayLike],
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """Add simple numbers, vectors, and 2D matrices."""
-
-    return _math(operator.add, a, b, dims=dims)
-
-
-@overload
-def subtract(a: float, b: float, *, dims: Optional[Tuple[int, int]] = None) -> float:
-    ...
-
-
-@overload
-def subtract(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def subtract(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[Tuple[int, int]] = None) -> Vector:
-    ...
-
-
-@overload
-def subtract(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-@overload
-def subtract(a: Union[float, ArrayLike], b: MatrixLike, *, dims: Optional[Tuple[int, int]] = None) -> Matrix:
-    ...
-
-
-def subtract(
-    a: Union[float, ArrayLike],
-    b: Union[float, ArrayLike],
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """Subtract simple numbers, vectors, and 2D matrices."""
-
-    return _math(operator.sub, a, b, dims=dims)
-
-
-@overload
-def apply(
-    fn: Callable[..., float],
-    a: float,
-    b: Optional[float] = None,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> float:
-    ...
-
-
-@overload
-def apply(
-    fn: Callable[..., float],
-    a: Union[float, VectorLike],
-    b: VectorLike,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Vector:
-    ...
-
-
-@overload
-def apply(
-    fn: Callable[..., float],
-    a: VectorLike,
-    b: Optional[Union[float, VectorLike]] = None,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Vector:
-    ...
-
-
-@overload
-def apply(
-    fn: Callable[..., float],
-    a: MatrixLike,
-    b: Optional[Union[float, ArrayLike]] = None,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Matrix:
-    ...
-
-
-@overload
-def apply(
-    fn: Callable[..., float],
-    a: Union[float, ArrayLike],
-    b: MatrixLike,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Matrix:
-    ...
-
-
-def apply(
-    fn: Callable[..., float],
-    a: Union[float, ArrayLike],
-    b: Optional[Union[float, ArrayLike]] = None,
-    *,
-    dims: Optional[Tuple[int, int]] = None
-) -> Union[float, Array]:
-    """Apply a given function over each element of the matrix."""
-
-    if b is None:
-        return reshape([fn(f) for f in flatiter(a)], shape(a))
-
-    return _math(fn, a, b, dims=dims)
-
-
-class BroadcastTo:
+class _BroadcastTo:
     """
     Broadcast to a shape.
 
@@ -1239,7 +1144,7 @@ class BroadcastTo:
     - The new shape.
     """
 
-    def __init__(self, array: ArrayLike, old: Tuple[int, ...], new: Tuple[int, ...]) -> None:
+    def __init__(self, array: ArrayLike, old: Shape, new: Shape) -> None:
         """Initialize."""
 
         self._loop1 = 0
@@ -1254,10 +1159,16 @@ class BroadcastTo:
         self.data = ravel(array)
         self.shape = new
 
+        # One of the common dimensions makes this result empty
+        self.empty = 0 in new
+
         # Is the new shape actually different than the original?
         self.different = old != new
 
-        if self.different:
+        if self.empty:
+            # There is no data
+            self.amount = self.length = self.expand = self.repeat = 0
+        elif self.different:
             # Calculate the shape of the data.
             if len(old) > 1:
                 self.amount = prod(old[:-1])
@@ -1298,19 +1209,13 @@ class BroadcastTo:
         self._chunk_subindex = 0
         self._chunk_max = self.amount * self.length
         self._chunk_index = 0
-        self._chunk = self._chunk_data()
-
-    def _chunk_data(self) -> List[float]:
-        """Chunk the source data using are pre-calculated understanding of data amounts and length."""
-
-        return self.data[self._chunk_index:self._chunk_index + self.length]
 
     def __next__(self) -> float:
         """Next."""
 
         if self._loop1:
             # Get the data.
-            d = self._chunk[self._chunk_subindex]
+            d = self.data[self._chunk_index + self._chunk_subindex]
 
             self._chunk_subindex += 1
             if self._chunk_subindex >= self.length:
@@ -1330,10 +1235,6 @@ class BroadcastTo:
                         if self._loop1:
                             # We need to keep going
                             self._chunk_index = 0
-                            self._chunk = self._chunk_data()
-                    else:
-                        # Still not at the end of the data, so get the next chunk
-                        self._chunk = self._chunk_data()
 
             # Return the current data
             return d
@@ -1347,10 +1248,132 @@ class BroadcastTo:
         return self
 
 
+class _SimpleBroadcast:
+    """
+    Special broadcast of less than 2 arrays or 2 small dimension arrays that is faster than the generalized approach.
+
+    A single array can have any dimensions, but two arrays must have dimensions less than 2.
+    """
+
+    def __init__(
+        self,
+        arrays: Sequence[Union[ArrayLike, float]],
+        shapes: Sequence[Shape],
+        new: ShapeLike
+    ) -> None:
+        """Initialize."""
+
+        self.empty = 0 in new
+
+        total = len(arrays)
+        if total == 0:
+            a, b = None, None  # type: Tuple[Any, Any]
+        elif total == 1:
+            a, b = arrays[0], None
+        else:
+            a, b = arrays
+
+        self.a = a
+        self.dims_a = len(shapes[0]) if a is not None else 0
+
+        self.b = b
+        self.dims_b = len(shapes[1]) if b is not None else 0
+
+        self.reset()
+
+    def vector_broadcast(self, a: VectorLike, b: VectorLike) -> Iterator[Tuple[float, ...]]:
+        """Broadcast two vectors."""
+
+        # Broadcast the vector
+        if len(a) == 1:
+            a = [a[0]] * len(b)
+        elif len(b) == 1:
+            b = [b[0]] * len(a)
+
+        yield from it.zip_longest(a, b)
+
+    def broadcast(
+        self,
+        a: Optional[Union[ArrayLike, float]],
+        b: Optional[Union[ArrayLike, float]],
+        dims_a: int, dims_b: int
+    ) -> Iterator[Tuple[float, ...]]:
+        """Simple broadcast of a single array or two arrays with dimensions less than 2."""
+
+        # One of the common dimensions makes this result empty
+        if self.empty:
+            return
+
+        # Broadcast a single array case or empty set of arrays.
+        if b is None:
+            if a is not None:
+                yield from ((i,) for i in flatiter(a))
+            return
+
+        # Inputs have matching dimensions.
+        if dims_a == dims_b:
+            if dims_a == 1:
+                # Broadcast two vectors
+                yield from self.vector_broadcast(a, b)  # type: ignore[arg-type]
+            elif dims_a == 2:
+                # Broadcast two 2-D matrices
+                for ra, rb in it.zip_longest(a, b):  # type: ignore[arg-type]
+                    yield from self.vector_broadcast(ra, rb)  # type: ignore[arg-type]
+            else:
+                yield a, b  # type: ignore[misc]
+
+        # Inputs containing a scalar on either side
+        elif not dims_a or not dims_b:
+            if dims_a == 1:
+                # Apply math to a vector and number
+                for i in a:  # type: ignore[union-attr]
+                    yield i, b  # type: ignore[misc]
+            elif dims_b == 1:
+                # Apply math to a number and a vector
+                for i in b:  # type: ignore[union-attr]
+                    yield a, i  # type: ignore[misc]
+            elif dims_a == 2:
+                # Apply math to 2-D matrix and number
+                for row in a:  # type: ignore[union-attr]
+                    for i in row:  # type: ignore[union-attr]
+                        yield i, b  # type: ignore[misc]
+            else:
+                for row in b:  # type: ignore[union-attr]
+                    for i in row:  # type: ignore[union-attr]
+                        yield a, i  # type: ignore[misc]
+
+        # Inputs are at least 2-D dimensions or below on both sides
+        elif dims_a == 1:
+            # Broadcast a vector and 2-D matrix
+            for row in b:  # type: ignore[union-attr]
+                yield from self.vector_broadcast(a, row)  # type: ignore[arg-type]
+        else:
+            # Broadcast a 2-D matrix and a vector
+            for row in a:  # type: ignore[union-attr]
+                yield from self.vector_broadcast(row, b)  # type: ignore[arg-type]
+
+    def reset(self) -> None:
+        """Reset."""
+
+        self._iter = self.broadcast(self.a, self.b, self.dims_a, self.dims_b)
+
+    def __next__(self) -> Tuple[float, ...]:
+        """Next."""
+
+        # Get the next chunk of data
+        return next(self._iter)
+
+    def __iter__(self) -> Iterator[Tuple[float, ...]]:  # pragma: no cover
+        """Iterate."""
+
+        # Setup and and return the iterator.
+        return self
+
+
 class Broadcast:
     """Broadcast."""
 
-    def __init__(self, *arrays: ArrayLike) -> None:
+    def __init__(self, *arrays: Union[ArrayLike, float]) -> None:
         """Broadcast."""
 
         # Determine maximum dimensions
@@ -1358,8 +1381,6 @@ class Broadcast:
         max_dims = 0
         for a in arrays:
             s = shape(a)
-            if not s:
-                s = (1,)
             dims = len(s)
             if dims > max_dims:
                 max_dims = dims
@@ -1369,24 +1390,27 @@ class Broadcast:
         stage1_shapes = []
         for s in shapes:
             dims = len(s)
-            if dims < max_dims:
-                stage1_shapes.append(((1,) * (max_dims - dims)) + s)
-            else:
-                stage1_shapes.append(s)
+            stage1_shapes.append(((1,) * (max_dims - dims)) + s if dims < max_dims else s)
 
         # Determine a common shape, if possible
         s2 = []
         for dim in zip(*stage1_shapes):
-            maximum = max(dim)
-            if not all([d == 1 or d == maximum for d in dim]):
-                raise ValueError("Could not broadcast arrays as shapes are incompatible")
-            s2.append(maximum)
+            mx = 1
+            for d in dim:
+                if d != 1 and (d != mx and mx != 1):
+                    raise ValueError("Could not broadcast arrays as shapes are incompatible")
+                if d != 1:
+                    mx = d
+            s2.append(mx)
         common = tuple(s2)
 
         # Create iterators to "broadcast to"
-        self.iters = []
-        for a, s1 in zip(arrays, stage1_shapes):
-            self.iters.append(BroadcastTo(a, s1, common))
+        total = len(arrays)
+        self.simple = total < 2 or (total == 2 and len(common) <= 2)
+        if self.simple:
+            self.iters = [_SimpleBroadcast(arrays, shapes, common)]  # type: Union[List[_BroadcastTo], List[_SimpleBroadcast]]
+        else:
+            self.iters = [_BroadcastTo(a, s1, common) for a, s1 in zip(arrays, stage1_shapes)]
 
         # I don't think this is done the same way as `numpy`.
         # But shouldn't matter for what we do.
@@ -1398,7 +1422,7 @@ class Broadcast:
     def _init(self) -> None:
         """Setup main iterator."""
 
-        self._iter = zipl(*self.iters)
+        self._iter = self.iters[0] if self.simple else it.zip_longest(*self.iters)
 
     def reset(self) -> None:
         """Reset iterator."""
@@ -1427,7 +1451,7 @@ def broadcast(*arrays: ArrayLike) -> Broadcast:
     return Broadcast(*arrays)
 
 
-def broadcast_to(a: ArrayLike, s: Union[int, Sequence[int]]) -> Array:
+def broadcast_to(a: Union[ArrayLike, float], s: Union[int, ShapeLike]) -> Array:
     """Broadcast array to a shape."""
 
     if not isinstance(s, Sequence):
@@ -1450,14 +1474,503 @@ def broadcast_to(a: ArrayLike, s: Union[int, Sequence[int]]) -> Array:
         if d1 != d2 and (d1 != 1 or d1 > d2):
             raise ValueError("Cannot broadcast {} to {}".format(s_orig, s))
 
-    return reshape(list(BroadcastTo(a, tuple(s1), tuple(s))), s)  # type: ignore[return-value]
+    m = list(_BroadcastTo(a, tuple(s1), tuple(s)))
+    return reshape(m, s) if len(s) > 1 else m  # type: ignore[return-value]
 
 
-def full(array_shape: Union[int, Sequence[int]], fill_value: Union[float, ArrayLike]) -> Array:
+class vectorize:
+    """
+    Vectorize a call.
+
+    We do not currently support signatures, caching, and none of our functions allow specifying output
+    types. All are assumed floats. Specialized methods will be far more performant than using vectorize,
+    but vectorize can be quick to use as far as convenience is concerned.
+
+    There is no optimization for small matrices or matrices that are already the same size. This
+    assumes worst case: N x M matrices of unknown quantity.
+
+    Inputs and outputs are currently assumed to be scalars. We do not detect alternate sizes nor
+    do we allow specifying function signatures to change it at this time.
+    """
+
+    def __init__(
+        self,
+        pyfunc: Callable[..., Any],
+        doc: Optional[str] = None,
+        excluded: Optional[Sequence[Union[str, int]]] = None
+    ) -> None:
+        """Initialize."""
+
+        # Save the function and the exclude list
+        self.func = pyfunc
+        self.excluded = set() if excluded is None else set(excluded)
+
+        # Setup function name and docstring
+        self.__name__ = self.func.__name__
+        self.__doc__ = self.func.__doc__ if doc is None else doc
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Call the function after once arguments are vectorized."""
+
+        # No arguments to process, just call the function.
+        if not args and not kwargs:
+            return self.func()
+
+        # Determine which keys and indexes we want to vectorize
+        indexes = [a for a in range(len(args)) if a not in self.excluded]
+        keys = [k for k in kwargs if k not in self.excluded]
+        size = len(indexes)
+
+        # Cast to a list so we can update the input arguments with vectorized inputs
+        inputs = list(args)
+
+        # Gather all the input values we need to vectorize so we can broadcast them together
+        vinputs = [inputs[i] for i in indexes] + [kwargs[k] for k in keys]
+
+        if vinputs:
+            # We need to broadcast together the inputs for vectorization.
+            # Once vectorized, use the wrapper function to replace each argument
+            # with the vectorized iteration. Reshape the output to match the input shape.
+            bcast = broadcast(*vinputs)
+            m = []
+            for vargs in bcast:
+                # Update arguments with vectorized arguments
+                for e, i in enumerate(indexes):
+                    inputs[i] = vargs[e]
+
+                # Update keyword arguments with vectorized keyword argument
+                kwargs.update(zip(keys, vargs[size:]))
+
+                # Call the function with vectorized inputs
+                m.append(self.func(*inputs, **kwargs))
+
+            # Reshape return to match input shape
+            return reshape(m, bcast.shape) if len(bcast.shape) != 1 else m
+
+        # Nothing to vectorize, just run the function with the arguments
+        return self.func(*inputs, **kwargs)
+
+
+class vectorize2:
+    """
+    A special version of vectorize that only broadcasts the first two inputs.
+
+    This approach is faster than vectorize because it limits the inputs and allows us
+    to skip a lot of the generalized code that can slow the things down. Additionally,
+    we allow a `dims` keyword that allows you to specify the dimensions of the inputs
+    that can fast track a decision on how to process in the inputs.
+
+    If desired, a function that takes either one or two positional arguments is allowed,
+    no more no less. The second positional argument can be optional. The positional
+    arguments are always vectorized and are expected to be numbers.
+
+    For more flexibility, use `vectorize` which allows arbitrary vectorization of any and
+    all inputs at the cost of speed.
+    """
+
+    def __init__(self, pyfunc: Callable[..., Any], doc: Optional[str] = None):
+        """Initialize."""
+
+        self.func = pyfunc
+
+        # Setup function name and docstring
+        self.__name__ = self.func.__name__
+        self.__doc__ = self.func.__doc__ if doc is None else doc
+
+    def _vector_apply(self, a: VectorLike, b: VectorLike, **kwargs: Any) -> Vector:
+        """Apply a function to two vectors."""
+
+        # Broadcast the vector
+        if len(a) == 1:
+            a = [a[0]] * len(b)
+        elif len(b) == 1:
+            b = [b[0]] * len(a)
+
+        return [self.func(x, y, **kwargs) for x, y in it.zip_longest(a, b)]
+
+    def __call__(
+        self,
+        *args: Union[ArrayLike, float],
+        dims: Optional[DimHints] = None,
+        **kwargs: Any
+    ) -> Any:
+        """Call the vectorized function."""
+
+        if len(args) == 1:
+            a, = args
+            if dims and 0 <= dims[0] <= 2:
+                dims_a = dims[0]
+                # Shape doesn't matter as we will utilize a fast path
+                shape_a = (0,)  # type: Shape
+            else:
+                shape_a = shape(a)
+                dims_a = len(shape(a))
+
+            # Fast paths for scalar, vectors, and 2D matrices
+            # Scalar
+            if dims_a == 0:
+                return self.func(a, **kwargs)
+            # Vector
+            elif dims_a == 1:
+                return [self.func(i, **kwargs) for i in a]  # type: ignore[union-attr]
+            # 2D matrix
+            elif dims_a == 2:
+                return [[self.func(c, **kwargs) for c in r] for r in a]  # type: ignore[union-attr]
+
+            # Unknown size or larger than 2D (slow)
+            return reshape([self.func(f, **kwargs) for f in flatiter(a)], shape_a)
+
+        a, b = args
+
+        if not dims or dims[0] > 2 or dims[1] > 2:
+            shape_a = shape(a)
+            shape_b = shape(b)
+            dims_a = len(shape_a)
+            dims_b = len(shape_b)
+
+            # Handle matrices of N-D and M-D size
+            if dims_a > 2 or dims_b > 2:
+                if dims_a == dims_b:
+                    # Apply math to two N-D matrices
+                    return reshape(
+                        [self.func(x, y, **kwargs) for x, y in zip(flatiter(a), flatiter(b))],
+                        shape_a
+                    )
+                elif not dims_a or not dims_b:
+                    if not dims_a:
+                        # Apply math to a number and an N-D matrix
+                        return reshape([self.func(a, x, **kwargs) for x in flatiter(b)], shape_b)
+                    # Apply math to an N-D matrix and a number
+                    return reshape([self.func(x, b, **kwargs) for x in flatiter(a)], shape_a)
+
+                # Apply math to an N-D matrix and an M-D matrix by broadcasting to a common shape.
+                bcast = broadcast(a, b)
+                return reshape([self.func(x, y, **kwargs) for x, y in bcast], bcast.shape)
+        else:
+            dims_a, dims_b = dims
+
+        # Inputs are of equal size and shape
+        if dims_a == dims_b:
+            if dims_a == 1:
+                # Apply math to two vectors
+                return self._vector_apply(a, b, **kwargs)  # type: ignore[arg-type]
+            elif dims_a == 2:
+                # Apply math to two 2-D matrices
+                return [
+                    self._vector_apply(ra, rb, **kwargs) for ra, rb in it.zip_longest(a, b)  # type: ignore[arg-type]
+                ]
+            return self.func(a, b, **kwargs)
+
+        # Inputs containing a scalar on either side
+        elif not dims_a or not dims_b:
+            if dims_a == 1:
+                # Apply math to a vector and number
+                return [self.func(i, b, **kwargs) for i in a]  # type: ignore[union-attr]
+            elif dims_b == 1:
+                # Apply math to a number and a vector
+                return [self.func(a, i, **kwargs) for i in b]  # type: ignore[union-attr]
+            elif dims_a == 2:
+                # Apply math to 2-D matrix and number
+                return [[self.func(i, b, **kwargs) for i in row] for row in a]  # type: ignore[union-attr]
+            # Apply math to a number and a matrix
+            return [[self.func(a, i, **kwargs) for i in row] for row in b]  # type: ignore[union-attr]
+
+        # Inputs are at least 2-D dimensions or below on both sides
+        if dims_a == 1:
+            # Apply math to vector and 2-D matrix
+            return [self._vector_apply(a, row, **kwargs) for row in b]  # type: ignore[arg-type, union-attr]
+        # Apply math to 2-D matrix and a vector
+        return [self._vector_apply(row, b, **kwargs) for row in a]  # type: ignore[arg-type, union-attr]
+
+
+@overload
+def linspace(start: float, stop: float) -> Vector:
+    ...
+
+
+@overload
+def linspace(start: VectorLike, stop: Union[VectorLike, float]) -> Matrix:
+    ...
+
+
+@overload
+def linspace(start: Union[VectorLike, float], stop: VectorLike) -> Matrix:
+    ...
+
+
+@overload
+def linspace(start: MatrixLike, stop: ArrayLike) -> Matrix:
+    ...
+
+
+@overload
+def linspace(start: ArrayLike, stop: MatrixLike) -> Matrix:
+    ...
+
+
+def linspace(start: Union[ArrayLike, float], stop: Union[ArrayLike, float], num: int = 50, endpoint: bool = True) -> Array:
+    """Create a series of points in a linear space."""
+
+    if num < 0:
+        raise ValueError('Cannot return a negative amount of values')
+
+    # Return empty results over all the inputs for a request of 0
+    if num == 0:
+        return full(broadcast(start, stop).shape + (0,), [])
+
+    # Calculate denominator
+    d = float(num - 1 if endpoint else num)
+
+    s1 = shape(start)
+    s2 = shape(stop)
+    dim1 = len(s1)
+    dim2 = len(s2)
+
+    # Scalar case (faster)
+    if dim1 == 0 and dim2 == 0:
+        return [lerp(start, stop, r / d if d != 0 else 0.0) for r in range(num)]  # type: ignore[arg-type]
+
+    # Vector case
+    if dim1 <= 1 and dim2 <= 1:
+        # Broadcast scalars to match vectors
+        if dim1 == 0:
+            start = [start] * s2[0]  # type: ignore[assignment]
+            s1 = s2
+        if dim2 == 0:
+            stop = [stop] * s1[0]  # type: ignore[assignment]
+            s2 = s1
+
+        # Broadcast length 1 vectors to match other vector
+        if s1[0] != s2[0]:
+            if s1[0] == 1:
+                start = start * s2[0]  # type: ignore[operator]
+            elif s2[0] == 1:
+                stop = stop * s1[0]  # type: ignore[operator]
+            else:
+                raise ValueError('Cannot broadcast start ({}) and stop ({})'.format(s1, s2))
+
+        # Apply linear interpolation steps across the vectors
+        values = list(zip(start, stop))  # type: ignore[arg-type]
+        m1 = []  # type: Matrix
+        for r in range(num):
+            m1.append([])
+            for a, b in values:
+                m1[-1].append(lerp(a, b, r / d if d != 0 else 0.0))  # type: ignore[arg-type]
+        return m1
+
+    # To apply over N x M inputs, apply the steps over the broadcasted results (slower)
+    m = []
+    bcast = broadcast(start, stop)
+    for r in range(num):
+        bcast.reset()
+        for a, b in bcast:
+            m.append(lerp(a, b, r / d if d != 0 else 0.0))
+
+    # Reshape to the expected shape
+    return reshape(m, (num,) + bcast.shape)  # type: ignore[return-value]
+
+
+def _isclose(a: float, b: float, *, equal_nan: bool = False, **kwargs: Any) -> bool:
+    """Check if values are close."""
+
+    close = math.isclose(a, b, **kwargs)
+    return (math.isnan(a) and math.isnan(b)) if not close and equal_nan else close
+
+
+@overload  # type: ignore[no-overload-impl]
+def isclose(a: float, b: float, *, dims: Optional[DimHints] = None, **kwargs: Any) -> bool:
+    ...
+
+
+@overload
+def isclose(a: VectorLike, b: VectorLike, *, dims: Optional[DimHints] = None, **kwargs: Any) -> List[bool]:
+    ...
+
+
+@overload
+def isclose(a: MatrixLike, b: MatrixLike, *, dims: Optional[DimHints] = None, **kwargs: Any) -> List[List[bool]]:
+    ...
+
+
+isclose = vectorize2(_isclose)  # type: ignore[assignment]
+
+
+@overload  # type: ignore[no-overload-impl]
+def isnan(a: float, *, dims: Optional[DimHints] = None, **kwargs: Any) -> bool:
+    ...
+
+
+@overload
+def isnan(a: VectorLike, *, dims: Optional[DimHints] = None, **kwargs: Any) -> List[bool]:
+    ...
+
+
+@overload
+def isnan(a: MatrixLike, *, dims: Optional[DimHints] = None, **kwargs: Any) -> List[List[bool]]:
+    ...
+
+
+isnan = vectorize2(math.isnan)  # type: ignore[assignment]
+
+
+def allclose(a: MathType, b: MathType, **kwargs: Any) -> bool:
+    """Test if all are close."""
+
+    return all(isclose(a, b, **kwargs))
+
+
+@overload  # type: ignore[no-overload-impl]
+def multiply(a: float, b: float, *, dims: Optional[DimHints] = None) -> float:
+    ...
+
+
+@overload
+def multiply(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def multiply(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def multiply(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+@overload
+def multiply(a: Union[ArrayLike, float], b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+multiply = vectorize2(operator.mul, doc="Multiply two arrays or floats.")  # type: ignore[assignment]
+
+@overload  # type: ignore[no-overload-impl]
+def divide(a: float, b: float, *, dims: Optional[DimHints] = None) -> float:
+    ...
+
+
+@overload
+def divide(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def divide(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def divide(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+@overload
+def divide(a: Union[ArrayLike, float], b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+divide = vectorize2(operator.truediv, doc="Divide two arrays or floats.")  # type: ignore[assignment]
+
+
+@overload  # type: ignore[no-overload-impl]
+def add(a: float, b: float, *, dims: Optional[DimHints] = None) -> float:
+    ...
+
+
+@overload
+def add(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def add(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def add(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+@overload
+def add(a: Union[ArrayLike, float], b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+add = vectorize2(operator.add, doc="Add two arrays or floats.")  # type: ignore[assignment]
+
+
+@overload  # type: ignore[no-overload-impl]
+def subtract(a: float, b: float, *, dims: Optional[DimHints] = None) -> float:
+    ...
+
+
+@overload
+def subtract(a: Union[float, VectorLike], b: VectorLike, *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def subtract(a: VectorLike, b: Union[float, VectorLike], *, dims: Optional[DimHints] = None) -> Vector:
+    ...
+
+
+@overload
+def subtract(a: MatrixLike, b: Union[float, ArrayLike], *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+@overload
+def subtract(a: Union[ArrayLike, float], b: MatrixLike, *, dims: Optional[DimHints] = None) -> Matrix:
+    ...
+
+
+subtract = vectorize2(operator.sub, doc="Subtract two arrays or floats.")  # type: ignore[assignment]
+
+
+@overload
+def apply(fn: Callable[..., float], a: float, b: Optional[float] = None) -> float:
+    ...
+
+
+@overload
+def apply(fn: Callable[..., float], a: Union[float, VectorLike], b: VectorLike) -> Vector:
+    ...
+
+
+@overload
+def apply(fn: Callable[..., float], a: VectorLike, b: Optional[Union[float, VectorLike]] = None) -> Vector:
+    ...
+
+
+@overload
+def apply(fn: Callable[..., float], a: MatrixLike, b: Optional[Union[float, ArrayLike]] = None) -> Matrix:
+    ...
+
+
+@overload
+def apply(fn: Callable[..., float], a: Union[ArrayLike, float], b: MatrixLike) -> Matrix:
+    ...
+
+
+@deprecated("Please use vectorize2 (comparable in speed and features) or vectorize (more general purpose)")
+def apply(
+    fn: Callable[..., float],
+    *args: Union[ArrayLike, float],
+    dims: Optional[DimHints] = None
+) -> Union[float, Array]:
+    """Apply a given function over each element of the matrix."""
+
+    return vectorize2(fn)(*args, dims=dims)  # type: ignore[no-any-return]
+
+
+def full(array_shape: Union[int, ShapeLike], fill_value: Union[float, ArrayLike]) -> Array:
     """Create and fill a shape with the given values."""
 
     # Ensure `shape` is a sequence of sizes
-    array_shape = tuple([array_shape]) if not isinstance(array_shape, Sequence) else tuple(array_shape)
+    array_shape = (array_shape,) if not isinstance(array_shape, Sequence) else tuple(array_shape)
 
     # Normalize `fill_value` to be an array.
     if not isinstance(fill_value, Sequence):
@@ -1470,42 +1983,35 @@ def full(array_shape: Union[int, Sequence[int]], fill_value: Union[float, ArrayL
     return reshape(fill_value, array_shape)  # type: ignore[return-value]
 
 
-def ones(array_shape: Union[int, Sequence[int]]) -> Array:
+def ones(array_shape: Union[int, ShapeLike]) -> Array:
     """Create and fill a shape with ones."""
 
     return full(array_shape, 1.0)
 
 
-def zeros(array_shape: Union[int, Sequence[int]]) -> Array:
+def zeros(array_shape: Union[int, ShapeLike]) -> Array:
     """Create and fill a shape with zeros."""
 
     return full(array_shape, 0.0)
 
 
-def identity(size: int) -> Matrix:
-    """Create an identity matrix."""
+def ndindex(*s: ShapeLike) -> Iterator[Tuple[int, ...]]:
+    """Iterate dimensions."""
 
-    return eye(size)
+    yield from it.product(
+        *(range(d) for d in (s[0] if not isinstance(s[0], int) and len(s) == 1 else s))  # type: ignore[call-overload]
+    )
 
-
-def _flatiter(array: ArrayLike, array_shape: Tuple[int, ...]) -> Iterator[float]:
-    """Iterate and return values based on shape."""
-
-    nested = len(array_shape) > 1
-    for a in array:
-        if nested:
-            yield from _flatiter(a, array_shape[1:])  # type: ignore[arg-type]
-        else:
-            yield a  # type: ignore[misc]
 
 
 def flatiter(array: Union[float, ArrayLike]) -> Iterator[float]:
     """Traverse an array returning values."""
 
-    if not isinstance(array, Sequence):
-        yield array
-    else:
-        yield from _flatiter(array, shape(array))
+    for indices in ndindex(shape(array)):
+        m = array  # type: Any
+        for i in indices:
+            m = m[i]
+        yield m
 
 
 def ravel(array: Union[float, ArrayLike]) -> Vector:
@@ -1548,6 +2054,11 @@ def arange(
 
 
 @overload
+def transpose(array: float) -> float:
+    ...
+
+
+@overload
 def transpose(array: VectorLike) -> Vector:
     ...
 
@@ -1557,7 +2068,7 @@ def transpose(array: Matrix) -> Matrix:
     ...
 
 
-def transpose(array: ArrayLike) -> Array:
+def transpose(array: Union[ArrayLike, float]) -> Array:
     """
     A simple transpose of a matrix.
 
@@ -1565,8 +2076,15 @@ def transpose(array: ArrayLike) -> Array:
     we don't have a need for that, nor the desire to figure it out :).
     """
 
-    s = list(reversed(shape(array)))
-    total = prod(s)
+    s = tuple(reversed(shape(array)))
+    if not s:
+        return array  # type: ignore[return-value]
+
+    if s and s[0] == 0:
+        s = s[1:] + (0,)
+        total = prod(s[:-1])
+    else:
+        total = prod(s)
 
     # Create the array
     m = []  # type: Any
@@ -1577,18 +2095,19 @@ def transpose(array: ArrayLike) -> Array:
 
     # Initialize indexes so we can properly write our data
     idx = [0] * dims
+    data = flatiter(array)
 
     # Traverse the provided array filling our new array
-    for i, v in enumerate(flatiter(array), 0):
+    for i in range(total):
 
         # Navigate to the proper index to start writing data.
         # If the dimension hasn't been created yet, create it.
         t = m  # type: Any
-        for d, x in enumerate(range(dims - 1)):
+        for d in range(dims - 1):
             if not t:
                 for _ in range(s[d]):
-                    t.append([])
-            t = t[idx[x]]
+                    t.append([])  # noqa: PERF401
+            t = t[idx[d]]
 
         # Initialize the last dimension
         # so we can index at the correct position
@@ -1596,7 +2115,8 @@ def transpose(array: ArrayLike) -> Array:
             t[:] = [0] * length
 
         # Write the data
-        t[idx[-1]] = v
+        if length:
+            t[idx[-1]] = next(data)
 
         # Update the current indexes if we aren't done copying data.
         if i < (total - 1):
@@ -1611,8 +2131,12 @@ def transpose(array: ArrayLike) -> Array:
     return m  # type: ignore[no-any-return]
 
 
-def reshape(array: ArrayLike, new_shape: Union[int, Sequence[int]]) -> Union[float, Array]:
+def reshape(array: ArrayLike, new_shape: Union[int, ShapeLike]) -> Union[float, Array]:
     """Change the shape of an array."""
+
+    # Ensure floats are arrays
+    if not isinstance(array, Sequence):
+        array = [array]
 
     # Normalize shape specifier to a sequence
     if not isinstance(new_shape, Sequence):
@@ -1623,12 +2147,21 @@ def reshape(array: ArrayLike, new_shape: Union[int, Sequence[int]]) -> Union[flo
         v = ravel(array)
         if len(v) == 1:
             return v[0]
-        else:
+        elif v:
+            # Kick out if the requested shape doesn't match the data
             raise ValueError('Shape {} does not match the data total of {}'.format(new_shape, shape(array)))
 
-    # Kick out if the requested shape doesn't match the data
-    total = prod(new_shape)
-    if total != prod(shape(array)):
+    current_shape = shape(array)
+
+    # Copy the array and quit if we are already the requested shape
+    if current_shape == new_shape:
+        return acopy(array)
+
+    empty = (not new_shape or 0 in new_shape) and (not current_shape or 0 in current_shape)
+
+    # Make sure we can actually reshape.
+    total = prod(new_shape) if not empty else prod(new_shape[:-1])
+    if not empty and total != prod(current_shape):
         raise ValueError('Shape {} does not match the data total of {}'.format(new_shape, shape(array)))
 
     # Create the array
@@ -1636,95 +2169,63 @@ def reshape(array: ArrayLike, new_shape: Union[int, Sequence[int]]) -> Union[flo
 
     # Calculate data sizes
     dims = len(new_shape)
-    length = new_shape[-1]
-    count = int(total // length)
 
-    # Initialize indexes so we can properly write our data
-    idx = [0] * (dims - 1)
+    # Create an iterator to traverse the data
+    data = flatiter(array) if len(current_shape) > 1 else iter(array)  # type: ignore[arg-type]
 
-    # Traverse the provided array filling our new array
-    data = flatiter(array)
-    for i in range(count):
-
+    # Build the new array
+    for idx in ndindex(new_shape[:-1] if new_shape and not new_shape[-1] else new_shape):
         # Navigate to the proper index to start writing data.
         # If the dimension hasn't been created yet, create it.
         t = m  # type: Any
-        for d, x in enumerate(range(dims - 1)):
+        for d in range(dims - 1):
             if not t:
                 for _ in range(new_shape[d]):
-                    t.append([])
-            t = t[idx[x]]
+                    t.append([])  # noqa: PERF401
+            t = t[idx[d]]
 
         # Create the final dimension, writing all the data
-        t[:] = [next(data) for _ in range(length)]
-
-        # Update the current indexes if we aren't done copying data.
-        if i < (count - 1):
-            for x in range(-1, -(dims), -1):
-                if idx[x] + 1 == new_shape[x - 1]:
-                    idx[x] = 0
-                    x += -1
-                else:
-                    idx[x] += 1
-                    break
+        if not empty:
+            t.append(next(data))
 
     return m  # type: ignore[no-any-return]
 
 
-def _shape(array: ArrayLike, size: int) -> Tuple[int, ...]:
-    """Iterate the array ensuring that all dimensions are consistent and return the sizes if they are."""
+def _shape(a: Any, s: Shape) -> Shape:
+    """
+    Get the shape of the array.
 
-    s = (size,)
-    s2 = tuple()  # type: Tuple[int, ...]
-    size2 = -1
-    deeper = True
-    for a in array:
-        if not isinstance(a, Sequence) or size != len(a):
-            raise ValueError('Ragged lists are not supported')
-        elif deeper:
-            if a and isinstance(a[0], Sequence):
-                if size2 < 0:
-                    size2 = len(a[0])
-                s2 = _shape(a, size2)
-            else:
-                deeper = False
-                s2 = tuple()
-    return s + s2 if s2 else s
+    We only test the first index at each depth for speed.
+    """
 
+    # Found a scalar input
+    if not isinstance(a, Sequence):
+        return s
 
-def shape(array: Union[float, ArrayLike]) -> Tuple[int, ...]:
-    """Get the shape of an array."""
+    # Get the length
+    size = len(a)
 
-    if isinstance(array, Sequence):
-        s = (len(array),)
+    # Array is empty, return the shape
+    if not size:
+        return (size,)
 
-        # Zero length vector
-        if not s[0]:
-            return s
-
-        # Handle scalars
-        is_scalar = False
-        all_scalar = True
-        for a in array:
-            if not isinstance(a, Sequence):
-                is_scalar = True
-                if not all_scalar:
-                    break
-            else:
-                all_scalar = False
-        if is_scalar:
-            if all_scalar:
-                return s
+    # Recursively get the shape of the first entry and compare against the others
+    first = _shape(a[0], s)
+    for r in range(1, size):
+        if _shape(a[r], s) != first:
             raise ValueError('Ragged lists are not supported')
 
-        # Looks like we only have sequences
-        return s + _shape(array, len(array[0]))  # type: ignore[arg-type]
-    else:
-        # Scalar
-        return tuple()
+    # Construct the final shape
+    return (size,) + first
 
 
-def fill_diagonal(matrix: MatrixLike, val: Union[float, ArrayLike] = 0.0, wrap: bool = False) -> None:
+def shape(a: Union[ArrayLike, float]) -> Shape:
+    """Get the shape of a list."""
+
+    return _shape(a, ())
+
+
+def fill_diagonal(matrix: MatrixLike, val: Union[float, ArrayLike], wrap: bool = False) -> None:
     """Fill an N-D matrix diagonal."""
 
     s = shape(matrix)
@@ -1784,6 +2285,12 @@ def eye(n: int, m: Optional[int] = None, k: int = 0) -> Matrix:
     return a
 
 
+def identity(size: int) -> Matrix:
+    """Create an identity matrix."""
+
+    return [[1.0 if i == j else 0.0 for j in range(size)] for i in range(size)]
+
+
 @overload
 def diag(array: VectorLike, k: int = 0) -> Matrix:
     ...
@@ -1830,176 +2337,529 @@ def diag(array: ArrayLike, k: int = 0) -> Array:
         return d
 
 
+def lu(
+    matrix: MatrixLike,
+    *,
+    permute_l: bool = False,
+    p_indices: bool = False,
+    _shape: Optional[Shape] = None
+) ->  Any:
+    """
+    Calculate `LU` decomposition.
+
+    P is returned as `PA = UL` or `A = P'UL` which follows `Matlab` and `Octave` opposed to `Scipy` which returns P as
+    `A = PUL` or `P'A = UL`. For matrix inverse, we need P such that `PA = UL` and it is faster not having to invert
+    P, even if we can invert it fairly fast as it is just a shuffled identity matrix.
+
+    P is returned as a permutation matrix unless `p_indices` is true, in which case `P` would be returned as
+    a vector containing the indexes such that `A[P,:] = L*U`.
+
+    If `permute_l` is true, only L and U will be returned such that `P = LU`.
+
+    Reference: https://www.statlect.com/matrix-algebra/Gaussian-elimination
+               https://www.sciencedirect.com/topics/mathematics/partial-pivoting
+    """
+
+    s = shape(matrix) if _shape is None else _shape
+    size = s[0]
+    dims = len(s)
+
+    # We need a rectangular N x M matrix
+    if dims < 2:
+        raise ValueError('LU decomposition requires an array larger than a vector')
+    elif dims > 2:
+        last = s[-2:]
+        first = s[:-2]
+        rows = list(_extract_rows(matrix, s))
+        step = last[-2]
+        results = []
+        zipped = zip(
+            *(
+                lu(rows[r:r + step], permute_l=permute_l, p_indices=p_indices, _shape=last)
+                for r in range(0, len(rows), step)
+            )
+        )
+        for parts in zipped:
+            results.append(reshape(parts, first + shape(parts[0])))  # noqa: PERF401
+        return tuple(results)
+
+    # Wide or tall matrices
+    wide = tall = False
+    diff = s[0] - s[1]
+    if diff:
+        matrix = acopy(matrix)
+
+        # Wide
+        if diff < 0:
+            diff = abs(diff)
+            size = s[1]
+            wide = True
+            for _ in range(diff):
+                matrix.append([0.0] * size)  # noqa: PERF401
+        # Tall
+        else:
+            tall = True
+            for row in matrix:
+                row.extend([0.0] * diff)
+
+    # Initialize the triangle matrices along with the permutation matrix.
+    if p_indices or permute_l:
+        p = list(range(size))  # type: Any
+        l = identity(size)
+    else:
+        p = identity(size)
+        l = [list(row) for row in p]
+    u = [list(row) for row in matrix]
+
+    # Create upper and lower triangle in 'u' and 'l'. 'p' tracks the permutation (relative position of rows)
+    for i in range(size - 1):
+
+        # Partial pivoting: identify the row with the maximal value in the column
+        j = i
+        maximum = abs(u[i][i])
+        for k in range(i + 1, size):
+            a = abs(u[k][i])
+            if a > maximum:
+                j = k
+                maximum = a
+
+        # Partial pivoting: Swap rows
+        if j != i:
+            # Exchange current upper triangle row with row with maximal value at pivot
+            # Update permutation matrix as well
+            u[i], u[j] = u[j], u[i]
+            p[i], p[j] = p[j], p[i]
+
+            # Only swap columns up to the pivot for the lower triangle,
+            # if on first row, there is nothing to swap
+            if i:
+                l[i][:i], l[j][:i] = l[j][:i], l[i][:i]
+
+        # Zero at pivot point, nothing to do
+        elif not maximum:
+            continue
+
+        # We have a pivot point, let's zero out everything above and below
+        # the 'l' and 'u' diagonal respectively
+        for j in range(i + 1, size):
+            scalar = u[j][i] / u[i][i]
+            for k in range(i, size):
+                u[j][k] += -u[i][k] * scalar
+                l[j][k] += l[i][k] * scalar
+
+    # Clean up the wide and tall matrices
+    if tall:
+        l = [r[:-diff] for r in l]
+        u = [r[:-diff] for r in u][:-diff]
+    elif wide:
+        l = [r[:-diff] for r in l][:-diff]
+        u = u[:-diff]
+        p = p[:-diff] if p_indices else [r[:-diff] for r in p][:-diff]
+
+    # Transpose the indexes and return LU after permuting L
+    if permute_l:
+        pt = [0] * size
+        for e, i in enumerate(p):
+            pt[i] = e
+        p = pt
+
+        return [l[i] for i in pt], u
+
+    return p, l, u
+
+
+def _forward_sub_vector(a: Matrix, b: Vector, size: int) -> Vector:
+    """Forward substitution for solution of `L x = b`."""
+
+    for i in range(size):
+        v = b[i]
+        for j in range(i):
+            v -= a[i][j] * b[j]
+        b[i] = v / a[i][i]
+    return b
+
+
+def _forward_sub_matrix(a: Matrix, b: Matrix, s: Shape) -> Matrix:
+    """Forward substitution for solution of `L x = b` where `b` is a matrix."""
+
+    size1, size2 = s
+    for i in range(size1):
+        v = b[i]
+        for j in range(i):
+            for k in range(size2):
+                v[k] -= a[i][j] * b[j][k]
+        for j in range(size2):
+            v[j] /= a[i][i]
+    return b
+
+
+def _back_sub_vector(a: Matrix, b: Vector, size: int) -> Vector:
+    """Back substitution for solution of `U x = b`."""
+
+    for i in range(size - 1, -1, -1):
+        v = b[i]
+        for j in range(i + 1, size):
+            v -= a[i][j] * b[j]
+        b[i] = v / a[i][i]
+    return b
+
+
+def _back_sub_matrix(a: Matrix, b: Matrix, s: Shape) -> Matrix:
+    """Back substitution for solution of `U x = b`."""
+
+    size1, size2 = s
+    for i in range(size1 - 1, -1, -1):
+        v = b[i]  # type: Any
+        for j in range(i + 1, size1):
+            for k in range(size2):
+                v[k] -= a[i][j] * b[j][k]
+        for j in range(size2):
+            b[i][j] /= a[i][i]
+    return b
+
+
+@overload
+def solve(a: MatrixLike, b: VectorLike) -> Vector:
+    ...
+
+
+@overload
+def solve(a: MatrixLike, b: MatrixLike) -> Matrix:
+    ...
+
+
+def solve(a: MatrixLike, b: ArrayLike) -> Array:
+    """
+    Solve the system of equations.
+
+    The return value always matches the shape of 'b' and `a' must be square
+    in the last two dimensions.
+
+    Broadcasting is not quite done in the traditional way.
+
+    1. [M, M] and [M] will solve a set of linear equations against a vector
+       of dependent variables.
+
+    2. If we have [..., M, M] and [..., M, M] and it we have multiple sets of linear
+       equations it will be treated as as multiple [M, M] and [M] cases as described in 1).
+
+       If we have only one set of linear equations, it will be treated as a [..., M, M] and
+       [..., M, K] case as described in 3).
+
+    3. If we have [..., M, M] and [..., M, K], we will either solve a single set of linear
+       equations against multiple matrices of containing K dependent variable sets.
+
+    4. Lastly, if we have [..., M, M] and [..., M], where we have N vectors that matches N [M, M]
+       equation sets, then we will solve one matrix with one vector.
+
+    Anything else "should" fail, one way or another.
+    """
+
+    s = shape(a)
+    size = s[-1]
+    dims = len(s)
+    if len(s) < 2 or s[-1] != s[-2]:
+        raise ValueError('Last two dimension must be square')
+
+    # Fast simple cases: two 2 dimensional matrices or one 2 dimensional matrix and a vector
+    dim1 = not isinstance(b[0], Sequence)
+    dim2 = not dim1 and not isinstance(b[0][0], Sequence)  # type: ignore[index]
+    if dims == 2 and (dim1 or dim2):
+        # Get the LU decomposition
+        p, l, u = lu(a, p_indices=True, _shape=s)
+
+        # If determinant is zero, we can't solve. Really small determinant may give bad results.
+        if prod(l[i][i] * u[i][i] for i in range(size)) == 0.0:
+            raise ValueError('Matrix is singular')
+
+        # Solve for x using forward substitution on U and back substitution on L
+        if dim2:
+            # Two matrices
+            size2 = len(b[0])  # type: ignore[arg-type]
+            if size != len(b):
+                raise ValueError('Mismatched dimensions')
+
+            ordered = []
+            for i in p:
+                r = b[i]
+                if len(r) != size2:
+                    raise ValueError('Mismatched dimensions')
+                ordered.append(list(r))
+            s2 = (size, size2)  # type: Shape
+            return _back_sub_matrix(u, _forward_sub_matrix(l, ordered, s2), s2)
+
+        # Matrix and one vector
+        if len(b) != s[-2]:
+            raise ValueError('Mismatched dimensions')
+        b = [b[i] for i in p]
+        return _back_sub_vector(u, _forward_sub_vector(l, b, size), size)  # type: ignore[arg-type]
+
+    # More complex, deeply nested cases that require more analyzing
+    s2 = shape(b)
+    sol_m = sol_v = False
+    x = []  # type: Any
+
+    # Broadcast the solving
+    if s2[-2] == size:
+        if s2[-1] == size:
+            p1 = prod(s)
+            p2 = prod(s2)
+            # One matrix of equations with multiple series of M dependent variable sets (matrix)
+            sol_m = not p2 % p1
+            # Multiple equations sets with a single series of dependent variables per equation set (vectors)
+            sol_v = not sol_m and not p1 % p2
+        elif s2[-2] == size:
+            # One matrix of equations with multiple series of K dependent variable sets (matrix)
+            p1 = prod(s[:-1])
+            p2 = prod(s2[:-1])
+            sol_m = not p2 % p1
+    elif s2[-1] == size:
+        # Multiple equations sets with a single series of dependent variables per equation set (vectors)
+        p1 = prod(s[:-2])
+        p2 = prod(s2[:-1])
+        sol_v = p1 == p2
+
+    # Matrix and matrices
+    if sol_m:
+        rows_equ = list(_extract_rows(a, s))
+        ma = [rows_equ[r:r + size] for r in range(0, len(rows_equ), size)]
+        rows_sol = list(_extract_rows(b, s2))
+        mb = [rows_sol[r:r + size] for r in range(0, len(rows_sol), size)]
+        ai_shape = s[-2:]
+
+        p, l, u = lu(ma[0], p_indices=True, _shape=ai_shape)
+
+        if prod(l[i][i] * u[i][i] for i in range(size)) == 0.0:
+            raise ValueError('Matrix is singular')
+
+        for bi in mb:
+            bi = [list(bi[i]) for i in p]
+            s3 = (size, len(bi[0]))
+            x.append(_back_sub_matrix(u, _forward_sub_matrix(l, bi, s3), s3))
+        return reshape(x, s2)  # type: ignore[return-value]
+
+    # Matrices and vectors
+    elif sol_v:
+        rows_equ = list(_extract_rows(a, s))
+        ma = [rows_equ[r:r + size] for r in range(0, len(rows_equ), size)]
+        mv = list(_extract_rows(b, s2))
+        ai_shape = s[-2:]
+
+        for ai, vi in zip(ma, mv):
+            p, l, u = lu(ai, p_indices=True, _shape=ai_shape)
+
+            if prod(l[i][i] * u[i][i] for i in range(size)) == 0.0:
+                raise ValueError('Matrix is singular')
+
+            x.append(_back_sub_vector(u, _forward_sub_vector(l, [vi[i] for i in p], size), size))
+        return reshape(x, s2)  # type: ignore[return-value]
+
+    raise ValueError("Could not broadcast {} and {}".format(s, s2))
+
+
+def trace(matrix: Matrix) -> float:
+    """Sum the diagonal."""
+
+    return sum(diag(matrix))
+
+
+def det(matrix: MatrixLike) -> Any:
+    """Get the determinant."""
+
+    s = shape(matrix)
+    if len(s) < 2 or s[-1] != s[-2]:
+        raise ValueError('Last two dimensions must be square')
+    if len(s) == 2:
+        size = s[0]
+        p, l, u = lu(matrix, _shape=s)
+        swaps = size - trace(p)
+        sign = (-1) ** (swaps - 1) if swaps else 1
+        dt = sign * prod(l[i][i] * u[i][i] for i in range(size))
+        return 0.0 if not dt else dt
+    else:
+        last = s[-2:]
+        rows = list(_extract_rows(matrix, s))
+        step = last[-2]
+        return [det(rows[r:r + step]) for r in range(0, len(rows), step)]
+
+
 def inv(matrix: MatrixLike) -> Matrix:
-    """
-    Invert the matrix.
-
-    Derived from https://github.com/ThomIves/MatrixInverse.
-
-    This is free and unencumbered software released into the public domain.
-
-    Anyone is free to copy, modify, publish, use, compile, sell, or
-    distribute this software, either in source code form or as a compiled
-    binary, for any purpose, commercial or non-commercial, and by any
-    means.
-
-    In jurisdictions that recognize copyright laws, the author or authors
-    of this software dedicate any and all copyright interest in the
-    software to the public domain. We make this dedication for the benefit
-    of the public at large and to the detriment of our heirs and
-    successors. We intend this dedication to be an overt act of
-    relinquishment in perpetuity of all present and future rights to this
-    software under copyright law.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-    IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-    OTHER DEALINGS IN THE SOFTWARE.
-
-    For more information, please refer to <http://unlicense.org/>
-
-    ---
-
-    Modified to handle greater than 2 x 2 dimensions.
-    """
+    """Invert the matrix using `LU` decomposition."""
 
     # Ensure we have a square matrix
     s = shape(matrix)
     dims = len(s)
-    if dims < 2 or min(s) != max(s):
+    last = s[-2:]
+    if dims < 2 or min(last) != max(last):
         raise ValueError('Matrix must be a N x N matrix')
 
     # Handle dimensions greater than 2 x 2
     elif dims > 2:
         invert = []
-        cols = list(_extract_dims(matrix, dims, dims - 2))
-        for c in cols:
-            invert.append(transpose(inv(c)))  # type: ignore[arg-type]
-        return reshape(invert, s)  # type: ignore[return-value]
+        rows = list(_extract_rows(matrix, s))
+        step = last[-2]
+        invert = [inv(rows[r:r + step]) for r in range(0, len(rows), step)]
+        return reshape(invert, s)  # type: ignore [arg-type, return-value]
 
-    indices = list(range(s[0]))
-    m = acopy(matrix)
+    # Calculate the LU decomposition.
+    size = s[0]
+    p, l, u = lu(matrix, _shape=s)
 
-    # Create an identity matrix of the same size as our provided vector
-    im = identity(s[0])
+    # Floating point math will produce very small, non-zero determinants for singular matrices.
+    # This occurs with Numpy as well.
+    # Don't bother calculating sign as we only care about how close to zero we are.
+    if prod(l[i][i] * u[i][i] for i in range(size)) == 0.0:
+        raise ValueError('Matrix is singular')
 
-    # Iterating through each row, we will scale each row by it's "focus diagonal".
-    # Then using the scaled row, we will adjust the other rows.
-    # ```
-    # [[fd, 0,  0 ]
-    #  [0,  fd, 0 ]
-    #  [0,  0,  fd]]
-    # ```
-    for fd in indices:
-        # We will divide each value in the row by the "focus diagonal" value.
-        # If the we have a zero for the given `fd` value, we cannot invert.
-        denom = m[fd][fd]
-        if denom == 0:
-            raise ValueError('Matrix is not invertable')
-
-        # We are converting the matrix to the identity and vice versa,
-        # So scale the diagonal such that it will now equal 1.
-        # Additionally, the same operations will be applied to the identity matrix
-        # and will turn it into `m ** -1` (what we are looking for)
-        fd_scalar = 1.0 / denom
-        for j in indices:
-            m[fd][j] *= fd_scalar
-            im[fd][j] *= fd_scalar
-
-        # Now, using the value found at the index `fd` in the remaining rows (excluding `row[fd]`),
-        # Where `cr` is the current row under evaluation, subtract `row[cr][fd] * row[fd] from row[cr]`.
-        for cr in indices[0:fd] + indices[fd + 1:]:
-            # The scalar for the current row
-            cr_scalar = m[cr][fd]
-
-            # Scale each item in the `row[fd]` and subtract it from the current row `row[cr]`
-            for j in indices:
-                m[cr][j] -= cr_scalar * m[fd][j]
-                im[cr][j] -= cr_scalar * im[fd][j]
-
-    # The identify matrix is now the inverse matrix and vice versa.
-    return im
+    # Solve for the identity matrix (will give us inverse)
+    # Permutation matrix is the identity matrix, even if shuffled.
+    s2 = (size, size)
+    return _back_sub_matrix(u, _forward_sub_matrix(l, p, s2), s2)
 
 
-def vstack(arrays: Tuple[ArrayLike, ...]) -> Array:
+def vstack(arrays: Sequence[ArrayLike]) -> Array:
     """Vertical stack."""
 
     m = []  # type: List[Array]
-    first = True
     dims = 0
-    for i in arrays:
-        cs = shape(i)
-        if first:
-            dims = len(cs)
-            first = False
-            if dims == 0:
-                return reshape(arrays, (len(arrays), 1))  # type: ignore[return-value, arg-type]
-            elif dims == 1:
-                return reshape(arrays, (len(arrays), cs[-1]))  # type: ignore[return-value, arg-type]
-        m.append(reshape(i, (prod(cs[:1 - dims]),) + cs[1 - dims:-1] + cs[-1:]))  # type: ignore[arg-type]
 
-    if first:
+    # Array tracking for verification
+    axis = 0
+    last = ()  # type: Shape
+    last_dims = 0
+
+    for a in arrays:
+        s = shape(a)
+        dims = len(s)
+
+        # We need to be working with at least a 2D array
+        if dims == 0:
+            a = [[a]]  # type: ignore[assignment]
+            s = (1, 1)
+            dims = 2
+        elif dims == 1:
+            a = [a]  # type: ignore[assignment]
+            s = (1, s[0])
+            dims = 2
+
+        # Verify that we can apply the stacking
+        if last:
+            end2 = min(last_dims, dims)
+            end1 = min(end2, axis)
+            start = 1
+            start2 = min(end1 + 1, end2)
+            # All axes must match except for the concatenation axis
+            if s[start:end1] + s[start2:end2] != last[start:end1] + last[start2:end2]:
+                raise ValueError('All the input array dimensions except for the concatenation axis must match exactly')
+
+        # Stack the arrays
+        m.extend(reshape(a, (prod(s[:1 - dims]),) + s[1 - dims:-1] + s[-1:]))  # type: ignore[arg-type]
+
+        # Update the last array tracker
+        if not last or len(last) > len(s):
+            last = s
+            last_dims = dims
+
+    # Fail if we have nothing to stack
+    if not m:
         raise ValueError("'vstack' requires at least one array")
 
-    return sum(m, [])  # type: ignore[arg-type]
+    return m
 
 
-def _hstack_extract(a: ArrayLike, s: Sequence[int]) -> Iterator[Vector]:
-    """Extract data from the second dimension."""
+def _hstack_extract(a: Union[ArrayLike, float], s: ShapeLike) -> Iterator[Array]:
+    """Extract data from the second axis."""
 
     data = flatiter(a)
     length = prod(s[1:])
+
     for _ in range(s[0]):
         yield [next(data) for _ in range(length)]
 
 
-def hstack(arrays: Tuple[ArrayLike, ...]) -> Array:
+def hstack(arrays: Sequence[Union[ArrayLike, float]]) -> Array:
     """Horizontal stack."""
 
     # Gather up shapes
     columns = 0
     shapes = []
-    first = None  # type: Optional[Tuple[int, ...]]
+
+    # Array tracking for verification
+    axis = 1
+    last = ()  # type: Shape
+    last_dims = 0
+    largest = ()  # type: Shape
+    largest_length = 0
+
+    arrs = []
     for a in arrays:
-        cs = shape(a)
+        s = shape(a)
+        dims = len(s)
 
-        # Shortcut out for simple list of numbers or 1-D arrays
-        if first is None:
-            first = cs
-            if not cs:
-                return reshape(arrays, (len(arrays),))  # type: ignore[return-value, arg-type]
-            elif len(cs) == 1:
-                m1 = []  # type: Vector
-                for a1 in arrays:
-                    m1.extend(ravel(a1))
-                return reshape(m1, (len(m1),))  # type: ignore[return-value]
+        # Ensure we are at least 1-D
+        if dims == 0:
+            a = [a]  # type: ignore[assignment]
+            s = (1,)
+            dims = 1
 
-        # Gather up shapes and tally the size of the new second dimension
-        columns += cs[1]
-        shapes.append(cs)
+        # Store modified arrays to use later
+        arrs.append(a)
 
-    if first is None:
+        # Get the largest
+        l = len(s)
+        if l > largest_length:
+            largest = s
+            largest_length = l
+
+        # Verify that we can apply the stacking
+        if last:
+            end2 = min(last_dims, dims)
+            end1 = min(end2, axis)
+            start = 0
+            start2 = min(end1 + 1, end2)
+            max_dims = max(last_dims, dims)
+            # All axes must match except for the concatenation axis. 1-D arrays can have different lengths.
+            if (max_dims > 1 and s[start:end1] + s[start2:end2] != last[start:end1] + last[start2:end2]):
+                raise ValueError('All the input array dimensions except for the concatenation axis must match exactly')
+
+        # Gather up shapes and tally the size of axis 1, 1-D arrays do not need this.
+        if dims > 1:
+            columns += s[axis]
+
+        shapes.append(s)
+
+        # Update the last array tracker
+        if not last or len(last) > len(s):
+            last = s
+            last_dims = dims
+
+    # Fail if we have nothing to stack
+    if not shapes:
         raise ValueError("'hstack' requires at least one array")
 
-    # Iterate the arrays returning the content per second dimension
+    # Handle 1-D vector cases
+    if largest_length == 1:
+        m1 = []  # type: Vector
+        for a in arrays:
+            m1.extend(ravel(a))
+        return m1
+
+    # Iterate the arrays returning the content per second axis
     m = []  # type: List[Any]
-    for data in zipl(*[_hstack_extract(a, s) for a, s in zipl(arrays, shapes)]):
-        m.extend(sum(data, []))
+    for data in it.zip_longest(*[_hstack_extract(a, s) for a, s in it.zip_longest(arrs, shapes) if s != (0,)]):
+        for d in data:
+            m.extend(d)
 
     # Shape the data to the new shape
-    new_shape = first[:1] + tuple([columns]) + first[2:]
+    new_shape = largest[:axis] + (columns,) + largest[axis + 1:] if len(largest) > 1 else (columns,)
     return reshape(m, new_shape)  # type: ignore[return-value]
 
 
 def outer(a: Union[float, ArrayLike], b: Union[float, ArrayLike]) -> Matrix:
     """Compute the outer product of two vectors (or flattened matrices)."""
 
-    v1 = ravel(a)
     v2 = ravel(b)
-    return [[x * y for y in v2] for x in v1]
+    return [[x * y for y in v2] for x in flatiter(a)]
 
 
 def inner(a: Union[float, ArrayLike], b: Union[float, ArrayLike]) -> Union[float, Array]:
@@ -2024,19 +2884,19 @@ def inner(a: Union[float, ArrayLike], b: Union[float, ArrayLike]) -> Union[float
     if dims_a == 1:
         first = [a]  # type: Any
     elif dims_a > 2:
-        first = list(_extract_dims(a, dims_a, dims_a - 1))  # type: ignore[arg-type]
+        first = list(_extract_rows(a, shape_a))  # type: ignore[arg-type]
     else:
         first = a
 
     if dims_b == 1:
         second = [b]  # type: Any
     elif dims_b > 2:
-        second = list(_extract_dims(b, dims_b, dims_b - 1))  # type: ignore[arg-type]
+        second = list(_extract_rows(b, shape_b))  # type: ignore[arg-type]
     else:
         second = b
 
     # Perform the actual inner product
-    m = [[sum([x * y for x, y in zipl(r1, r2)]) for r2 in second] for r1 in first]
+    m = [[sum([x * y for x, y in it.zip_longest(r1, r2)]) for r2 in second] for r1 in first]
     new_shape = shape_a[:-1] + shape_b[:-1]
 
     # Shape the data.

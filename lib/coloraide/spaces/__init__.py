@@ -2,13 +2,17 @@
 from abc import ABCMeta, abstractmethod
 from ..channels import Channel
 from ..css import serialize
-from ..util import deprecated
+from ..deprecate import deprecated
 from ..types import VectorLike, Vector, Plugin
 from typing import Tuple, Dict, Optional, Union, Any, List, TYPE_CHECKING
 import math
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
+
+
+class Regular:
+    """Regular 3D color space usually with a range between 0 - 1."""
 
 
 class Cylindrical:
@@ -22,21 +26,21 @@ class Cylindrical:
     def hue_index(self) -> int:  # pragma: no cover
         """Get hue index."""
 
-        return self.get_channel_index(self.hue_name())  # type: ignore
+        return self.get_channel_index(self.hue_name())  # type: ignore[no-any-return, attr-defined]
 
 
-class RGBish:
+class RGBish(Regular):
     """RGB-ish space."""
 
     def names(self) -> Tuple[str, ...]:
         """Return RGB-ish names in order R G B."""
 
-        return self.channels[:-1]  # type: ignore
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
 
     def indexes(self) -> List[int]:
         """Return the index of RGB-ish channels."""
 
-        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
 class HSLish(Cylindrical):
@@ -45,12 +49,12 @@ class HSLish(Cylindrical):
     def names(self) -> Tuple[str, ...]:
         """Return HSL-ish names in order H S L."""
 
-        return self.channels[:-1]  # type: ignore
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
 
     def indexes(self) -> List[int]:
         """Return the index of HSL-ish channels."""
 
-        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
 class HSVish(Cylindrical):
@@ -59,12 +63,26 @@ class HSVish(Cylindrical):
     def names(self) -> Tuple[str, ...]:
         """Return HSV-ish names in order H S V."""
 
-        return self.channels[:-1]  # type: ignore
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
 
     def indexes(self) -> List[int]:
         """Return the index of HSV-ish channels."""
 
-        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
+
+
+class HWBish(Cylindrical):
+    """HWB-ish space."""
+
+    def names(self) -> Tuple[str, ...]:
+        """Return HWB-ish names in order H W B."""
+
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
+
+    def indexes(self) -> List[int]:
+        """Return the index of HWB-ish channels."""
+
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
 class Labish:
@@ -85,12 +103,12 @@ class Labish:
     def names(self) -> Tuple[str, ...]:
         """Return Lab-ish names in the order L a b."""
 
-        return self.channels[:-1]  # type: ignore
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
 
     def labish_indexes(self) -> List[int]:  # pragma: no cover
         """Return the index of the Lab-ish channels."""
 
-        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
 class LChish(Cylindrical):
@@ -111,12 +129,12 @@ class LChish(Cylindrical):
     def names(self) -> Tuple[str, ...]:
         """Return LCh-ish names in the order L c h."""
 
-        return self.channels[:-1]  # type: ignore
+        return self.channels[:-1]  # type: ignore[no-any-return, attr-defined]
 
     def indexes(self) -> List[int]:
         """Return the index of the Lab-ish channels."""
 
-        return [self.get_channel_index(name) for name in self.names()]  # type: ignore
+        return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
 alpha_channel = Channel('alpha', 0.0, 1.0, bound=True, limit=(0.0, 1.0))

@@ -1,10 +1,7 @@
 """Utilities."""
 import math
-import warnings
-from functools import wraps
 from . import algebra as alg
 from .types import Vector, VectorLike
-from typing import Any, Callable
 
 DEF_PREC = 5
 DEF_FIT_TOLERANCE = 0.000075
@@ -162,14 +159,14 @@ def pq_st2084_eotf(
     return adjusted
 
 
-def xyz_d65_to_absxyzd65(xyzd65: VectorLike, yw: float = YW) -> Vector:
-    """XYZ D65 to Absolute XYZ D65."""
+def xyz_to_absxyz(xyzd65: VectorLike, yw: float = YW) -> Vector:
+    """XYZ to Absolute XYZ."""
 
     return [max(c * yw, 0) for c in xyzd65]
 
 
-def absxyzd65_to_xyz_d65(absxyzd65: VectorLike, yw: float = YW) -> Vector:
-    """Absolute XYZ D65 XYZ D65."""
+def absxyz_to_xyz(absxyzd65: VectorLike, yw: float = YW) -> Vector:
+    """Absolute XYZ to XYZ."""
 
     return [max(c / yw, 0) for c in absxyzd65]
 
@@ -177,7 +174,7 @@ def absxyzd65_to_xyz_d65(absxyzd65: VectorLike, yw: float = YW) -> Vector:
 def constrain_hue(hue: float) -> float:
     """Constrain hue to [0, 360)."""
 
-    return hue % 360 if not alg.is_nan(hue) else hue
+    return hue % 360 if not math.isnan(hue) else hue
 
 
 def cmp_coords(c1: VectorLike, c2: VectorLike) -> bool:
@@ -198,44 +195,10 @@ def fmt_float(f: float, p: int = 0, percent: float = 0.0, offset: float = 0.0) -
     <positive number>: precision level
     """
 
-    if alg.is_nan(f):
+    if math.isnan(f):
         return "none"
 
     value = alg.round_to((f + offset) / (percent * 0.01) if percent else f, p)
-    string = ('{{:{}f}}'.format('.53' if p == -1 else '.' + str(p))).format(value)
-    s = string if value.is_integer() and p == 0 else string.rstrip('0').rstrip('.')
-    return '{}%'.format(s) if percent else s
-
-
-def deprecated(message: str, stacklevel: int = 2) -> Callable[..., Any]:  # pragma: no cover
-    """
-    Raise a `DeprecationWarning` when wrapped function/method is called.
-
-    Usage:
-
-        @deprecated("This method will be removed in version X; use Y instead.")
-        def some_method()"
-            pass
-    """
-
-    def _wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
-        @wraps(func)
-        def _deprecated_func(*args: Any, **kwargs: Any) -> Any:
-            warnings.warn(
-                "'{}' is deprecated. {}".format(func.__name__, message),
-                category=DeprecationWarning,
-                stacklevel=stacklevel
-            )
-            return func(*args, **kwargs)
-        return _deprecated_func
-    return _wrapper
-
-
-def warn_deprecated(message: str, stacklevel: int = 2) -> None:  # pragma: no cover
-    """Warn deprecated."""
-
-    warnings.warn(
-        message,
-        category=DeprecationWarning,
-        stacklevel=stacklevel
-    )
+    if p == -1:
+        p = 17  # double precision
+    return ('{{:{}{}g}}{}'.format('' if abs(value) >= 10 ** p else '.', p, '%' if percent else '')).format(value)

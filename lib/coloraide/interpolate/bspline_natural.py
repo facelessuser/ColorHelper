@@ -7,7 +7,7 @@ from .. interpolate import Interpolate, Interpolator
 from .bspline import InterpolatorBSpline
 from .. import algebra as alg
 from ..types import Vector
-from typing import List, Sequence, Any, Optional, Union, Mapping, Callable, Dict, Type, TYPE_CHECKING
+from typing import List, Sequence, Any, Optional, Union, Mapping, Callable, Dict, Tuple, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -51,6 +51,7 @@ class NaturalBSpline(Interpolate):
         premultiplied: bool,
         extrapolate: bool = False,
         domain: Optional[List[float]] = None,
+        padding: Optional[Union[float, Tuple[float, float]]] = None,
         **kwargs: Any
     ) -> Interpolator:
         """Return the natural B-spline interpolator."""
@@ -67,5 +68,6 @@ class NaturalBSpline(Interpolate):
             premultiplied,
             extrapolate,
             domain,
+            padding,
             **kwargs
         )

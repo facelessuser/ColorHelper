@@ -242,7 +242,7 @@ class ColorHelperBlendModeCommand(_ColorMixin, sublime_plugin.TextCommand):
         """Run command."""
 
         self.base = util.get_base_color()
-        colors = evaluate(color_helper_blend_mode, self.base)
+        colors = evaluate(self.base, color_helper_blend_mode)
         color = None
         if colors:
             color = colors[-1]
