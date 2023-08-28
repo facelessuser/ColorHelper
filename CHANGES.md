@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.3.1
+
+- **FIX**: Update to ColorAide 2.9.1 which uses the exact CSS HWB
+  algorithm instead of the HSV -> HWB algorithm.
+
 ## 6.3.0
 
 - **NEW**: Upgrade to ColorAide 2.9.

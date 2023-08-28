@@ -1069,6 +1069,7 @@ class Color(metaclass=ColorMeta):
         space: Optional[str] = None,
         out_space: Optional[str] = None,
         premultiplied: bool = True,
+        powerless: Optional[bool] = None,
         **kwargs: Any
     ) -> 'Color':
         """Average the colors."""
@@ -1079,7 +1080,13 @@ class Color(metaclass=ColorMeta):
         if out_space is None:
             out_space = space
 
-        return average.average(cls, colors, space, premultiplied).convert(out_space, in_place=True)
+        return average.average(
+            cls,
+            colors,
+            space,
+            premultiplied,
+            powerless if powerless is not None else cls.POWERLESS,
+        ).convert(out_space, in_place=True)
 
     def filter(  # noqa: A003
         self,
