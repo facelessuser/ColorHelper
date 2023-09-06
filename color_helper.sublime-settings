@@ -107,7 +107,7 @@
     // to extend the range by. Padding is applied on both sides. So padding
     // by 20 rows pads by 20 on the top and 20 on the bottom. Large padding
     // could cause lag with typing or scrolling.
-    "preview_window_padding": [20, 20],
+    "preview_window_padding": [0, 0],
 
     // The gamut space to render previews in.
     // Supported spaces are: `srgb`, `display-p3`, `rec2020`,
