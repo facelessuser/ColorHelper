@@ -15,7 +15,7 @@ Previews can be positioned to the left or right of a color. Set this value to "l
     "inline_preview_position": "left",
 ```
 
-## 
+## `preview_window_padding`
 
 Color previews are processed in a sliding window. Without any padding it exactly matches the visible region. This allows
 you to extend the window and process content just out of visible range. It should be noted though that large padding
@@ -28,7 +28,7 @@ could cause typing or scrolling lag.
     // to extend the range by. Padding is applied on both sides. So padding
     // by 20 rows pads by 20 on the top and 20 on the bottom. Large padding
     // could cause lag with typing or scrolling.
-    "preview_window_padding": [20, 20],
+    "preview_window_padding": [0, 0],
 ````
 
 ## `preview_on_select`
