@@ -29,7 +29,7 @@ class xyY(Space):
     def is_achromatic(self, coords: Vector) -> bool:
         """Test if color is achromatic."""
 
-        if math.isclose(0.0, coords[-1], abs_tol=1e-4):
+        if alg.isclose(0.0, coords[-1], abs_tol=1e-4, dims=alg.SC):
             return True
 
         for x in alg.vcross(coords[:-1], self.WHITE):

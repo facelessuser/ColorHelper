@@ -67,7 +67,7 @@ class sRGB(RGBish, Space):
 
         white = [1, 1, 1]
         for x in alg.vcross(coords, white):
-            if not math.isclose(0.0, x, abs_tol=1e-5):
+            if not alg.isclose(0.0, x, abs_tol=1e-5, dims=alg.SC):
                 return False
         return True
 

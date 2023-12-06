@@ -86,7 +86,7 @@ M141 = [1, 4, 1]
 ################################
 # General math
 ################################
-def isclose(a, b, rel_tol=1e-9, abs_tol=0.0):
+def _math_isclose(a, b, rel_tol=1e-9, abs_tol=0.0):
     """Test if values are close."""
 
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -555,12 +555,12 @@ def monotone(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
     m2 = (s1 + s2) * 0.5
 
     # Center segment should be horizontal as there is no increase/decrease between the two points
-    if math.isclose(p1, p2):
+    if _math_isclose(p1, p2):
         m1 = m2 = 0.0
     else:
 
         # Gradient is zero if segment is horizontal or if the left hand secant differs in sign from current.
-        if math.isclose(p0, p1) or (math.copysign(1.0, s0) != math.copysign(1.0, s1)):
+        if _math_isclose(p0, p1) or (math.copysign(1.0, s0) != math.copysign(1.0, s1)):
             m1 = 0.0
 
         # Ensure gradient magnitude is either 3 times the left or current secant (smaller being preferred).
@@ -568,7 +568,7 @@ def monotone(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
             m1 *= min(3.0 * s0 / m1, min(3.0 * s1 / m1, 1.0))
 
         # Gradient is zero if segment is horizontal or if the right hand secant differs in sign from current.
-        if math.isclose(p2, p3) or (math.copysign(1.0, s1) != math.copysign(1.0, s2)):
+        if _math_isclose(p2, p3) or (math.copysign(1.0, s1) != math.copysign(1.0, s2)):
             m2 = 0.0
 
         # Ensure gradient magnitude is either 3 times the current or right secant (smaller being preferred).
@@ -1778,7 +1778,7 @@ def linspace(start: Union[ArrayLike, float], stop: Union[ArrayLike, float], num:
 def _isclose(a: float, b: float, *, equal_nan: bool = False, **kwargs: Any) -> bool:
     """Check if values are close."""
 
-    close = math.isclose(a, b, **kwargs)
+    close = _math_isclose(a, b, **kwargs)
     return (math.isnan(a) and math.isnan(b)) if not close and equal_nan else close
 
 

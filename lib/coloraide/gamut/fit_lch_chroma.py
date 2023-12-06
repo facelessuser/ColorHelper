@@ -51,7 +51,10 @@ class LChChroma(Fit):
 
         # Return white or black if lightness is out of dynamic range for lightness.
         # Extreme light case only applies to SDR, but dark case applies to all ranges.
-        if sdr and (lightness >= self.MAX_LIGHTNESS or alg.isclose(lightness, self.MAX_LIGHTNESS, abs_tol=1e-6)):
+        if (
+            sdr and
+            (lightness >= self.MAX_LIGHTNESS or alg.isclose(lightness, self.MAX_LIGHTNESS, abs_tol=1e-6, dims=alg.SC))
+        ):
             clip_channels(color.update('xyz-d65', WHITE, mapcolor[-1]))
             return
         elif lightness <= self.MIN_LIGHTNESS:
