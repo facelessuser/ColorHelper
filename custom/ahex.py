@@ -36,8 +36,7 @@ class ASRGB(sRGB):
 
     COLOR_FORMAT = False
 
-    @classmethod
-    def match(cls, string, start=0, fullmatch=True):
+    def match(self, string, start=0, fullmatch=True):
         """Match a CSS color string."""
 
         m = MATCH.match(string, start)
@@ -45,9 +44,8 @@ class ASRGB(sRGB):
             return split_channels(m.group(0)), m.end(0)
         return None
 
-    @classmethod
     def to_string(
-        cls, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs
+        self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to Hex format."""
 

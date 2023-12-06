@@ -1,7 +1,9 @@
 """Utilities."""
 import math
+from functools import wraps
 from . import algebra as alg
 from .types import Vector, VectorLike
+from typing import Any, Callable
 
 DEF_PREC = 5
 DEF_FIT_TOLERANCE = 0.000075
@@ -16,6 +18,7 @@ DEF_AVERAGE = 'srgb-linear'
 DEF_CHROMATIC_ADAPTATION = "bradford"
 DEF_CONTRAST = "wcag21"
 DEF_CCT = "robertson-1968"
+DEF_INTERPOLATOR = "linear"
 
 # Maximum luminance in PQ is 10,000 cd/m^2
 # Relative XYZ has Y=1 for media white
@@ -202,3 +205,18 @@ def fmt_float(f: float, p: int = 0, percent: float = 0.0, offset: float = 0.0) -
     if p == -1:
         p = 17  # double precision
     return ('{{:{}{}g}}{}'.format('' if abs(value) >= 10 ** p else '.', p, '%' if percent else '')).format(value)
+
+
+def debug(func:  Callable[..., Any]) -> Callable[..., Any]:  # pragma: no cover
+    """Intercept function call and print arguments and results."""
+
+    @wraps(func)
+    def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        """Print debug information about the function."""
+
+        print("<debug> Calling '{}' with args={} and kwargs={}".format(func.__name__, args, kwargs))
+        result = func(*args, **kwargs)
+        print("<debug> '{}' returned {}".format(func.__name__, result))
+        return result
+
+    return _wrapper

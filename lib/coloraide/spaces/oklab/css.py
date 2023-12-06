@@ -3,7 +3,7 @@ from .. import oklab as base
 from ...css import parse
 from ...css import serialize
 from ...types import Vector
-from typing import Union, Optional, Tuple, Any, TYPE_CHECKING
+from typing import Union, Optional, Tuple, Any, TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...color import Color
@@ -21,7 +21,7 @@ class Oklab(base.Oklab):
         fit: Union[str, bool] = True,
         none: bool = False,
         color: bool = False,
-        percent: bool = False,
+        percent: Union[bool, Sequence] = False,
         **kwargs: Any
     ) -> str:
         """Convert to CSS."""

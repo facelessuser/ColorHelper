@@ -2,7 +2,7 @@
 from .. import srgb as base
 from ...css import parse
 from ...css import serialize
-from typing import Optional, Union, Any, Tuple, TYPE_CHECKING
+from typing import Optional, Union, Any, Tuple, TYPE_CHECKING, Sequence
 from ...types import Vector
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -25,7 +25,7 @@ class sRGB(base.sRGB):
         names: bool = False,
         comma: bool = False,
         upper: bool = False,
-        percent: bool = False,
+        percent: Union[bool, Sequence] = False,
         compress: bool = False,
         **kwargs: Any
     ) -> str:

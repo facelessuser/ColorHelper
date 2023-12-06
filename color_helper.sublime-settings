@@ -257,7 +257,8 @@
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true, "precision": 3}},
-                {"space": "hsl", "format": {"comma": true, "precision": 3}}
+                {"space": "hsl", "format": {"comma": true, "precision": 3}},
+                {"space": "hwb", "format": {"comma": true, "precision": 3}}
             ]
         },
         "tmtheme": {

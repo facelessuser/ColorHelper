@@ -184,32 +184,34 @@ def handle_vars(string, variables, parents=None):
 class HWB(HWBORIG):
     """HWB class that allows commas."""
 
-    @classmethod
-    def match(cls, string, start=0, fullmatch=True):
+    def match(self, string, start=0, fullmatch=True):
         """Match a CSS color string."""
 
         m = HWB_MATCH.match(string, start)
         if m is not None and (not fullmatch or m.end(0) == len(string)):
             return parse.parse_channels(
                 list(RE_CHAN_VALUE.findall(string[m.end(1) + 1:m.end(0) - 1])),
-                cls.CHANNELS, scaled=True
+                self.CHANNELS, scaled=True
             ), m.end(0)
         return None
 
-    @classmethod
     def to_string(
         cls,
         parent,
         *,
         alpha=None,
         precision=None,
-        percent: bool = True,
+        percent=None,
         fit=True,
         none=False,
+        color: bool = False,
         comma: bool = False,
         **kwargs
     ) -> str:
         """Convert to CSS."""
+
+        if percent is None:
+            percent = False if color else True
 
         return serialize.serialize_css(
             parent,

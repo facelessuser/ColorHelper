@@ -1,7 +1,7 @@
 """Delta E 76."""
 from ..distance import DeltaE, distance_euclidean
-from typing import TYPE_CHECKING, Any
-
+from typing import TYPE_CHECKING, Any, Optional
+from ..spaces.lab import CIELab
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
@@ -10,9 +10,19 @@ class DE76(DeltaE):
     """Delta E 76 class."""
 
     NAME = "76"
-    SPACE = "lab-d65"
 
-    def distance(self, color: 'Color', sample: 'Color', **kwargs: Any) -> float:
+    def __init__(self, space: str = 'lab-d65'):
+        """Initialize."""
+
+        self.space = space
+
+    def distance(
+        self,
+        color: 'Color',
+        sample: 'Color',
+        space: Optional[str] = None,
+        **kwargs: Any
+    ) -> float:
         """
         Delta E 1976 color distance formula.
 
@@ -21,5 +31,10 @@ class DE76(DeltaE):
         Basically this is Euclidean distance in the Lab space.
         """
 
+        if space is None:
+            space = self.space
+        if not isinstance(color.CS_MAP[space], CIELab):
+            raise ValueError("Distance color space must be a CIE Lab color space.")
+
         # Equation (1)
-        return distance_euclidean(color, sample, space=self.SPACE)
+        return distance_euclidean(color, sample, space=space)

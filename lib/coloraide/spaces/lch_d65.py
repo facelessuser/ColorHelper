@@ -1,10 +1,10 @@
 """LCh D65 class."""
 from ..cat import WHITES
-from .lch import LCh
+from .lch import CIELCh
 from ..channels import Channel, FLG_ANGLE
 
 
-class LChD65(LCh):
+class LChD65(CIELCh):
     """LCh D65 class."""
 
     BASE = "lab-d65"

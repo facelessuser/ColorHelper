@@ -2,11 +2,7 @@
 from .bspline import InterpolatorBSpline
 from ..interpolate import Interpolator, Interpolate
 from .. import algebra as alg
-from ..types import Vector
-from typing import Optional, Callable, Mapping, List, Union, Sequence, Dict, Tuple, Any, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no cover
-    from ..color import Color
+from typing import Any
 
 
 class InterpolatorMonotone(InterpolatorBSpline):
@@ -24,36 +20,7 @@ class Monotone(Interpolate):
 
     NAME = "monotone"
 
-    def interpolator(
-        self,
-        coordinates: List[Vector],
-        channel_names: Sequence[str],
-        create: Type['Color'],
-        easings: List[Optional[Callable[..., float]]],
-        stops: Dict[int, float],
-        space: str,
-        out_space: str,
-        progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]],
-        premultiplied: bool,
-        extrapolate: bool = False,
-        domain: Optional[List[float]] = None,
-        padding: Optional[Union[float, Tuple[float, float]]] = None,
-        **kwargs: Any
-    ) -> Interpolator:
+    def interpolator(self, *args: Any, **kwargs: Any) -> Interpolator:
         """Return the monotone interpolator."""
 
-        return InterpolatorMonotone(
-            coordinates,
-            channel_names,
-            create,
-            easings,
-            stops,
-            space,
-            out_space,
-            progress,
-            premultiplied,
-            extrapolate,
-            domain,
-            padding,
-            **kwargs
-        )
+        return InterpolatorMonotone(*args, **kwargs)

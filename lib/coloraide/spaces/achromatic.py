@@ -2,7 +2,7 @@
 from .. import algebra as alg
 import bisect
 from typing import Any
-from ..types import Vector
+from ..types import Vector, VectorLike
 from abc import ABCMeta, abstractmethod
 import math
 from typing import List, Tuple, Optional
@@ -59,7 +59,7 @@ class Achromatic(metaclass=ABCMeta):
             return list(zip(*self.spline.points))
         else:
             # Strip off the data points used to coerce the spline through the end.
-            return list(zip(*self.spline.points))[1:-1]
+            return list(zip(*self.spline.points))[1:-1]  # type: ignore[return-value]
 
     @abstractmethod
     def convert(self, coords: Vector, **kwargs: Any) -> Vector:

@@ -26,15 +26,15 @@ from typing import Tuple
 
 # XYZ transform matrices
 xyz_to_lms_m = [
-    [0.359132, 0.697604, -0.03578],
-    [-0.19218800000000003, 1.1003800000000001, 0.07554],
-    [0.006956, 0.074916, 0.8433400000000001]
+    [0.3592832590121218, 0.6976051147779497, -0.0358915932320289],
+    [-0.19208084637049927, 1.1004767970374318, 0.07537486585191187],
+    [0.0070797844607477164, 0.07483966621863658, 0.8433265453898765]
 ]
 
 lms_to_xyz_mi = [
-    [2.070508203420414, -1.32670394499891, 0.20668057903526466],
-    [0.3650251372337387, 0.6804585253538308, -0.04546355870112316],
-    [-0.04950397021841151, -0.049503970218411505, 1.1880952852418765]
+    [2.0701522183894223, -1.3263473389671556, 0.20665104762940512],
+    [0.36473852097480713, 0.6805660249472276, -0.04530454592203474],
+    [-0.04974720753581203, -0.04926096669661379, 1.1880659249923042]
 ]
 
 # LMS to Izazbz matrices
@@ -55,13 +55,13 @@ def ictcp_to_xyz_d65(ictcp: Vector) -> Vector:
     """From ICtCp to XYZ."""
 
     # Convert to LMS prime
-    pqlms = alg.dot(ictcp_to_lms_p_mi, ictcp, dims=alg.D2_D1)
+    pqlms = alg.matmul(ictcp_to_lms_p_mi, ictcp, dims=alg.D2_D1)
 
     # Decode PQ LMS to LMS
     lms = util.pq_st2084_eotf(pqlms)
 
     # Convert back to absolute XYZ D65
-    absxyz = alg.dot(lms_to_xyz_mi, lms, dims=alg.D2_D1)
+    absxyz = alg.matmul(lms_to_xyz_mi, lms, dims=alg.D2_D1)
 
     # Convert back to normal XYZ D65
     return util.absxyz_to_xyz(absxyz)
@@ -70,17 +70,17 @@ def ictcp_to_xyz_d65(ictcp: Vector) -> Vector:
 def xyz_d65_to_ictcp(xyzd65: Vector) -> Vector:
     """From XYZ to ICtCp."""
 
-    # Convert from XYZ D65 to an absolute XYZ D5
+    # Convert from XYZ D65 to an absolute XYZ D65
     absxyz = util.xyz_to_absxyz(xyzd65)
 
     # Convert to LMS
-    lms = alg.dot(xyz_to_lms_m, absxyz, dims=alg.D2_D1)
+    lms = alg.matmul(xyz_to_lms_m, absxyz, dims=alg.D2_D1)
 
     # PQ encode the LMS
     pqlms = util.pq_st2084_oetf(lms)
 
     # Calculate Izazbz
-    return alg.dot(lms_p_to_ictcp_m, pqlms, dims=alg.D2_D1)
+    return alg.matmul(lms_p_to_ictcp_m, pqlms, dims=alg.D2_D1)
 
 
 class ICtCp(Lab):

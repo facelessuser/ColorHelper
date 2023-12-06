@@ -6,6 +6,7 @@ https://de.wikipedia.org/wiki/DIN99-Farbraum
 from ..cat import WHITES
 from .lab import Lab
 import math
+from .. import algebra as alg
 from ..types import Vector
 from ..channels import Channel, FLG_MIRROR_PERCENT
 
@@ -38,8 +39,8 @@ def lab_to_din99o(lab: Vector) -> Vector:
     """XYZ to DIN99o."""
 
     l, a, b = lab
-    val = 1 + abs(C2 * l)
-    l99o = C1 * math.copysign(1, l) * math.log(val) / KE
+    val = 1 + C2 * l
+    l99o = C1 * math.log(val) / KE if val >= 0 else alg.nan
 
     if a == 0 and b == 0:
         a99o = b99o = 0.0

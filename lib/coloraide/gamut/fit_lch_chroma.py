@@ -34,7 +34,7 @@ class LChChroma(Fit):
     EPSILON = 0.1
     LIMIT = 2.0
     DE = "2000"
-    DE_OPTIONS = {}  # type: Dict[str, Any]
+    DE_OPTIONS = {'space': 'lab-d65'}  # type: Dict[str, Any]
     SPACE = "lch-d65"
     MIN_LIGHTNESS = 0
     MAX_LIGHTNESS = 100

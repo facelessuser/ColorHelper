@@ -1,7 +1,7 @@
 """Delta E 94."""
 from ..distance import DeltaE
 import math
-from .. import algebra as alg
+from ..spaces.lab import CIELab
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -17,13 +17,15 @@ class DE94(DeltaE):
         self,
         kl: float = 1,
         k1: float = 0.045,
-        k2: float = 0.015
+        k2: float = 0.015,
+        space: str = 'lab-d65'
     ):
         """Initialize."""
 
         self.kl = kl
         self.k1 = k1
         self.k2 = k2
+        self.space = space
 
     def distance(
         self,
@@ -32,6 +34,7 @@ class DE94(DeltaE):
         kl: Optional[float] = None,
         k1: Optional[float] = None,
         k2: Optional[float] = None,
+        space: Optional[str] = None,
         **kwargs: Any
     ) -> float:
         """
@@ -49,8 +52,13 @@ class DE94(DeltaE):
         if k2 is None:
             k2 = self.k2
 
-        l1, a1, b1 = color.convert("lab").coords(nans=False)
-        l2, a2, b2 = sample.convert("lab").coords(nans=False)
+        if space is None:
+            space = self.space
+        if not isinstance(color.CS_MAP[space], CIELab):
+            raise ValueError("Distance color space must be a CIE Lab color space.")
+
+        l1, a1, b1 = color.convert(space).coords(nans=False)
+        l2, a2, b2 = sample.convert(space).coords(nans=False)
 
         # Equation (5)
         c1 = math.sqrt(a1 ** 2 + b1 ** 2)

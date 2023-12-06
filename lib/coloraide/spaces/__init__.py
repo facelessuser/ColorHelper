@@ -1,10 +1,10 @@
 """Color base."""
 from abc import ABCMeta, abstractmethod
-from ..channels import Channel
+from ..channels import Channel, FLG_OPT_PERCENT
 from ..css import serialize
 from ..deprecate import deprecated
 from ..types import VectorLike, Vector, Plugin
-from typing import Tuple, Dict, Optional, Union, Any, List, TYPE_CHECKING
+from typing import Tuple, Dict, Optional, Union, Any, List, TYPE_CHECKING, Sequence
 import math
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -137,7 +137,7 @@ class LChish(Cylindrical):
         return [self.get_channel_index(name) for name in self.names()]  # type: ignore[attr-defined]
 
 
-alpha_channel = Channel('alpha', 0.0, 1.0, bound=True, limit=(0.0, 1.0))
+alpha_channel = Channel('alpha', 0.0, 1.0, bound=True, limit=(0.0, 1.0), flags=FLG_OPT_PERCENT)
 
 
 class SpaceMeta(ABCMeta):
@@ -189,6 +189,7 @@ class Space(Plugin, metaclass=SpaceMeta):
 
         self.channels = self.CHANNELS + (alpha_channel,)
         self._color_ids = (self.NAME,) if not self.SERIALIZE else self.SERIALIZE
+        self._percents = ([True] * (len(self.channels) - 1)) + [False]
 
     def get_channel_index(self, name: str) -> int:
         """Get channel index."""
@@ -233,6 +234,7 @@ class Space(Plugin, metaclass=SpaceMeta):
         precision: Optional[int] = None,
         fit: Union[bool, str] = True,
         none: bool = False,
+        percent: Union[bool, Sequence[bool]] = False,
         **kwargs: Any
     ) -> str:
         """Convert to CSS 'color' string: `color(space coords+ / alpha)`."""
@@ -243,7 +245,8 @@ class Space(Plugin, metaclass=SpaceMeta):
             alpha=alpha,
             precision=precision,
             fit=fit,
-            none=none
+            none=none,
+            percent=percent
         )
 
     def match(

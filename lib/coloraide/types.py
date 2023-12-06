@@ -9,12 +9,25 @@ ColorInput = Union['Color', str, Mapping[str, Any]]
 # Vectors, Matrices, and Arrays are assumed to be mutable lists
 Vector = List[float]
 Matrix = List[Vector]
-Array = Union[Matrix, Vector]
+Tensor = List[List[List[Union[float, Any]]]]
+Array = Union[Matrix, Vector, Tensor]
 
 # Anything that resembles a sequence will be considered "like" one of our types above
 VectorLike = Sequence[float]
 MatrixLike = Sequence[VectorLike]
-ArrayLike = Union[VectorLike, MatrixLike]
+TensorLike = Sequence[Sequence[Sequence[Union[float, Any]]]]
+ArrayLike = Union[VectorLike, MatrixLike, TensorLike]
+
+# Vectors, Matrices, and Arrays of various, specific types
+VectorBool = List[bool]
+MatrixBool = List[VectorBool]
+TensorBool = List[List[List[Union[bool, Any]]]]
+ArrayBool = Union[MatrixBool, VectorBool, TensorBool]
+
+VectorInt = List[int]
+MatrixInt = List[VectorInt]
+TensorInt = List[List[List[Union[int, Any]]]]
+ArrayInt = Union[MatrixInt, VectorInt, TensorInt]
 
 # General algebra types
 Shape = Tuple[int, ...]
@@ -24,7 +37,7 @@ DimHints = Tuple[int, int]
 # For times when we must explicitly say we support `int` and `float`
 SupportsFloatOrInt = TypeVar('SupportsFloatOrInt', float, int)
 
-MathType= TypeVar('MathType', float, VectorLike, MatrixLike)
+MathType = TypeVar('MathType', float, VectorLike, MatrixLike, TensorLike)
 
 
 class Plugin:

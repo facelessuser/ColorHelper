@@ -11,7 +11,7 @@ import bisect
 from .. import util
 from .. import algebra as alg
 from ..spaces import Space, LChish
-from ..cat import WHITES
+from ..cat import WHITES, CAT16
 from ..channels import Channel, FLG_ANGLE
 from .achromatic import Achromatic as _Achromatic
 from .srgb_linear import lin_srgb_to_xyz
@@ -20,11 +20,7 @@ from ..types import Vector, VectorLike
 from typing import List, Tuple, Any, Optional
 
 # CAT16
-M16 = [
-    [0.401288, 0.650173, -0.051461],
-    [-0.250268, 1.204414, 0.045854],
-    [-0.002079, 0.048952, 0.953127]
-]
+M16 = CAT16.MATRIX
 
 MI6_INV = alg.inv(M16)
 
@@ -329,7 +325,7 @@ class Environment:
         yw = xyz_w[1]
 
         # Cone response for reference white
-        rgb_w = alg.dot(M16, xyz_w, dims=alg.D2_D1)
+        rgb_w = alg.matmul(M16, xyz_w, dims=alg.D2_D1)
 
         # Surround: dark, dim, and average
         f, self.c, self.nc = SURROUND[self.surround]
@@ -438,9 +434,9 @@ def cam16_to_xyz_d65(
     b = r * sin_h
 
     # Calculate back from cone response to XYZ
-    rgb_c = unadapt(alg.multiply(alg.dot(M1, [p2, a, b], dims=alg.D2_D1), 1 / 1403, dims=alg.D1_SC), env.fl)
+    rgb_c = unadapt(alg.multiply(alg.matmul(M1, [p2, a, b], dims=alg.D2_D1), 1 / 1403, dims=alg.D1_SC), env.fl)
     return alg.divide(
-        alg.dot(MI6_INV, alg.multiply(rgb_c, env.d_rgb_inv, dims=alg.D1), dims=alg.D2_D1),
+        alg.matmul(MI6_INV, alg.multiply(rgb_c, env.d_rgb_inv, dims=alg.D1), dims=alg.D2_D1),
         100,
         dims=alg.D1_SC
     )
@@ -452,7 +448,7 @@ def xyz_d65_to_cam16(xyzd65: Vector, env: Environment) -> Vector:
     # Cone response
     rgb_a = adapt(
         alg.multiply(
-            alg.dot(M16, alg.multiply(xyzd65, 100, dims=alg.D1_SC), dims=alg.D2_D1),
+            alg.matmul(M16, alg.multiply(xyzd65, 100, dims=alg.D1_SC), dims=alg.D2_D1),
             env.d_rgb,
             dims=alg.D1
         ),

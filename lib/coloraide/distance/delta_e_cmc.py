@@ -1,6 +1,7 @@
 """Delta E CMC."""
 from ..distance import DeltaE
 import math
+from ..spaces.lab import CIELab
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -15,12 +16,14 @@ class DECMC(DeltaE):
     def __init__(
         self,
         l: float = 2,
-        c: float = 1
+        c: float = 1,
+        space: str = 'lab-d65'
     ):
         """Initialize."""
 
         self.l = l
         self.c = c
+        self.space = space
 
     def distance(
         self,
@@ -28,6 +31,7 @@ class DECMC(DeltaE):
         sample: 'Color',
         l: Optional[float] = None,
         c: Optional[float] = None,
+        space: Optional[str] = None,
         **kwargs: Any
     ) -> float:
         """
@@ -42,8 +46,13 @@ class DECMC(DeltaE):
         if c is None:
             c = self.c
 
-        l1, a1, b1 = color.convert("lab").coords(nans=False)
-        l2, a2, b2 = sample.convert("lab").coords(nans=False)
+        if space is None:
+            space = self.space
+        if not isinstance(color.CS_MAP[space], CIELab):
+            raise ValueError("Distance color space must be a CIE Lab color space.")
+
+        l1, a1, b1 = color.convert(space).coords(nans=False)
+        l2, a2, b2 = sample.convert(space).coords(nans=False)
 
         # Equation (3)
         c1 = math.sqrt(a1 ** 2 + b1 ** 2)

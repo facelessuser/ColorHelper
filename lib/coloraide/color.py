@@ -59,6 +59,7 @@ from .filters.w3c_filter_effects import Sepia, Brightness, Contrast, Saturate, O
 from .filters.cvd import Protan, Deutan, Tritan
 from .interpolate import Interpolator, Interpolate
 from .interpolate.linear import Linear
+from .interpolate.css_linear import CSSLinear
 from .interpolate.continuous import Continuous
 from .interpolate.bspline import BSpline
 from .interpolate.bspline_natural import NaturalBSpline
@@ -138,6 +139,7 @@ class Color(metaclass=ColorMeta):
     PRECISION = util.DEF_PREC
     FIT = util.DEF_FIT
     INTERPOLATE = util.DEF_INTERPOLATE
+    INTERPOLATOR = util.DEF_INTERPOLATOR
     DELTA_E = util.DEF_DELTA_E
     HARMONY = util.DEF_HARMONY
     AVERAGE = util.DEF_AVERAGE
@@ -976,6 +978,7 @@ class Color(metaclass=ColorMeta):
         max_steps: int = 1000,
         max_delta_e: float = 0,
         delta_e: Optional[str] = None,
+        delta_e_args: Optional[Dict[str, Any]] = None,
         **interpolate_args: Any
     ) -> List['Color']:
         """Discrete steps."""
@@ -985,7 +988,7 @@ class Color(metaclass=ColorMeta):
         if domain is not None:
             interpolate_args['domain'] = interpolate.normalize_domain(domain)
 
-        return cls.interpolate(colors, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e)
+        return cls.interpolate(colors, **interpolate_args).steps(steps, max_steps, max_delta_e, delta_e, delta_e_args)
 
     @classmethod
     def discrete(
@@ -998,6 +1001,7 @@ class Color(metaclass=ColorMeta):
         max_steps: int = 1000,
         max_delta_e: float = 0,
         delta_e: Union[str, None] = None,
+        delta_e_args: Optional[Dict[str, Any]] = None,
         domain: Optional[List[float]] = None,
         **interpolate_args: Any
     ) -> Interpolator:
@@ -1007,7 +1011,7 @@ class Color(metaclass=ColorMeta):
         num = sum((not callable(c) or not isinstance(c, interpolate.stop)) for c in colors) if steps is None else steps
         i = cls.interpolate(colors, space=space, **interpolate_args)
         # Convert the interpolation into a discretized interpolation with the requested number of steps
-        i.discretize(num, max_steps, max_delta_e, delta_e)
+        i.discretize(num, max_steps, max_delta_e, delta_e, delta_e_args)
         if domain is not None:
             i.domain(domain)
         if out_space is not None:
@@ -1045,7 +1049,7 @@ class Color(metaclass=ColorMeta):
         """
 
         return interpolate.interpolator(
-            method,
+            method if method is not None else cls.INTERPOLATOR,
             cls,
             colors=colors,
             space=space,
@@ -1107,7 +1111,8 @@ class Color(metaclass=ColorMeta):
         name: str,
         *,
         space: Optional[str] = None,
-        out_space: Optional[str] = None
+        out_space: Optional[str] = None,
+        **kwargs: Any
     ) -> List['Color']:
         """Acquire the specified color harmonies."""
 
@@ -1377,6 +1382,7 @@ Color.register(
 
         # Interpolation
         Linear(),
+        CSSLinear(),
         Continuous(),
         BSpline(),
         NaturalBSpline(),
