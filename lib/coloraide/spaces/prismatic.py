@@ -56,12 +56,12 @@ class Prismatic(Space):
     def is_achromatic(self, coords: Vector) -> bool:
         """Test if color is achromatic."""
 
-        if math.isclose(0.0, coords[0], abs_tol=1e-4):
+        if alg.isclose(0.0, coords[0], abs_tol=1e-4, dims=alg.SC):
             return True
 
         white = [1, 1, 1]
         for x in alg.vcross(coords[:-1], white):
-            if not math.isclose(0.0, x, abs_tol=1e-5):
+            if not alg.isclose(0.0, x, abs_tol=1e-5, dims=alg.SC):
                 return False
         return True
 

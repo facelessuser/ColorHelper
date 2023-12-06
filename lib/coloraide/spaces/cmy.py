@@ -43,7 +43,7 @@ class CMY(Space):
 
         black = [1, 1, 1]
         for x in alg.vcross(coords, black):
-            if not math.isclose(0.0, x, abs_tol=1e-4):
+            if not alg.isclose(0.0, x, abs_tol=1e-4, dims=algs.SC):
                 return False
         return True
 
