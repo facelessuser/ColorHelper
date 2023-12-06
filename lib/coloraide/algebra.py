@@ -86,6 +86,11 @@ M141 = [1, 4, 1]
 ################################
 # General math
 ################################
+def isclose(a, b, rel_tol=1e-9, abs_tol=0.0):
+    """Test if values are close."""
+
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
 @deprecated("Please use math.isnan or alg.isnan for a generic approach for vectors and matrices")
 def is_nan(obj: float) -> bool:
     """Check if "not a number"."""

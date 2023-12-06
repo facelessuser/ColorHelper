@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 6.3.2
+
+- **FIX**: Fix missing requirement for `math.isclose` in ColorAide  
+  (Python 3.3).
+- **FIX**: Do not pad preview by default due to performance impact.
+
 ## 6.3.1
 
 - **FIX**: Update to ColorAide 2.9.1 which uses the exact CSS HWB
