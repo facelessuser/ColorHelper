@@ -501,7 +501,8 @@
             "scanning": [
                 "constant.other.color.rgb-value.css",
                 "constant.color.w3c-standard-color-name.css",
-                "meta.property-value.css"
+                "meta.property-value.css",
+                "support.function.color.css"
             ]
         },
         {
