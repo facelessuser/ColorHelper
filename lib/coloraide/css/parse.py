@@ -1,12 +1,12 @@
 """Parse utilities."""
+from __future__ import annotations
 import re
 import math
 from .. import algebra as alg
 from ..types import Vector
 from . import color_names
 from ..channels import Channel, FLG_ANGLE
-from typing import Optional, Tuple
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import functools
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -37,7 +37,7 @@ def norm_float(string: str) -> float:
     """Normalize a float value."""
 
     if string == "none":
-        return alg.nan
+        return math.nan
     return float(string)
 
 
@@ -114,7 +114,7 @@ def norm_angle_channel(angle: str) -> float:
     return value
 
 
-def parse_hex(color: str) -> Tuple[Vector, float]:
+def parse_hex(color: str) -> tuple[Vector, float]:
     """Parse hexadecimal color."""
 
     length = len(color)
@@ -138,7 +138,7 @@ def parse_hex(color: str) -> Tuple[Vector, float]:
         )
 
 
-def parse_rgb_channels(color: List[str], boundry: Tuple[Channel, ...]) -> Tuple[Vector, float]:
+def parse_rgb_channels(color: list[str], boundry: tuple[Channel, ...]) -> tuple[Vector, float]:
     """Parse CSS RGB format."""
 
     channels = []
@@ -152,7 +152,7 @@ def parse_rgb_channels(color: List[str], boundry: Tuple[Channel, ...]) -> Tuple[
     return channels, alpha
 
 
-def parse_channels(color: List[str], boundry: Tuple[Channel, ...], scaled: bool = False) -> Tuple[Vector, float]:
+def parse_channels(color: list[str], boundry: tuple[Channel, ...], scaled: bool = False) -> tuple[Vector, float]:
     """Parse CSS channel format."""
 
     channels = []
@@ -173,7 +173,7 @@ def parse_channels(color: List[str], boundry: Tuple[Channel, ...], scaled: bool 
     return channels, alpha
 
 
-def parse_color(tokens: Dict[str, Any], space: 'Space') -> Optional[Tuple[Vector, float]]:
+def parse_color(tokens: dict[str, Any], space: Space) -> tuple[Vector, float] | None:
     """Parse the color function."""
 
     # Iterate the spaces and see if we find the color serialization identifier
@@ -193,17 +193,20 @@ def parse_color(tokens: Dict[str, Any], space: 'Space') -> Optional[Tuple[Vector
     for i in range(num_channels):
         c = tokens['func']['values'][i]['value']
         channel = properties[i]
-        channels.append(norm_color_channel(c.lower(), channel.span, channel.offset))
+        if channel.flags & FLG_ANGLE:
+            channels.append(norm_angle_channel(c))
+        else:
+            channels.append(norm_color_channel(c.lower(), channel.span, channel.offset))
     return (channels, alpha)
 
 
-def validate_color(tokens: Dict[str, Any]) -> bool:
+def validate_color(tokens: dict[str, Any]) -> bool:
     """Validate the color function syntax."""
 
-    return not any(v['type'] == 'degree' for v in tokens['func']['values'])
+    return True
 
 
-def validate_srgb(tokens: Dict[str, Any]) -> bool:
+def validate_srgb(tokens: dict[str, Any]) -> bool:
     """Validate the RGB color functions."""
 
     length = len(tokens['func']['values'])
@@ -225,7 +228,7 @@ def validate_srgb(tokens: Dict[str, Any]) -> bool:
     return True
 
 
-def validate_cylindrical_srgb(tokens: Dict[str, Any]) -> bool:
+def validate_cylindrical_srgb(tokens: dict[str, Any]) -> bool:
     """Validate cylindrical sRGB."""
 
     length = len(tokens['func']['values'])
@@ -256,7 +259,7 @@ def validate_cylindrical_srgb(tokens: Dict[str, Any]) -> bool:
     return True
 
 
-def validate_lab(tokens: Dict[str, Any]) -> bool:
+def validate_lab(tokens: dict[str, Any]) -> bool:
     """Validate CSS Lab variant color spaces."""
 
     length = len(tokens['func']['values'])
@@ -277,7 +280,7 @@ def validate_lab(tokens: Dict[str, Any]) -> bool:
     return True
 
 
-def validate_lch(tokens: Dict[str, Any]) -> bool:
+def validate_lch(tokens: dict[str, Any]) -> bool:
     """Validate CSS LCh variant color spaces."""
 
     length = len(tokens['func']['values'])
@@ -302,10 +305,10 @@ def validate_lch(tokens: Dict[str, Any]) -> bool:
 
 
 @functools.lru_cache(maxsize=1)
-def tokenize_css(css: str, start: int = 0) -> Dict[str, Any]:
+def tokenize_css(css: str, start: int = 0) -> dict[str, Any]:
     """Tokenize the CSS string."""
 
-    tokens = {}  # type: Dict[str, Any]
+    tokens = {}  # type: dict[str, Any]
     # `mypy` will get confused, just set to Any
     m = RE_HEX.match(css, start)  # type: Any
     if m:
@@ -410,7 +413,7 @@ def tokenize_css(css: str, start: int = 0) -> Dict[str, Any]:
         # Do basic validation on the supported color functions
         tokens['end'] = m.end()
         if func_name == 'color' and not validate_color(tokens):
-            return {}
+            return {}  # pragma: no cover
 
         elif func_name.startswith('rgb'):
             tokens['id'] = 'srgb'
@@ -439,12 +442,12 @@ def tokenize_css(css: str, start: int = 0) -> Dict[str, Any]:
 
 
 def parse_css(
-    cspace: 'Space',
+    cspace: Space,
     string: str,
     start: int = 0,
     fullmatch: bool = True,
     color: bool = False
-) -> Optional[Tuple[Tuple[Vector, float], int]]:
+) -> tuple[tuple[Vector, float], int] | None:
     """Match a CSS color string."""
 
     target = cspace.SERIALIZE

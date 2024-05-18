@@ -23,6 +23,7 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 """
+from __future__ import annotations
 from ..spaces import Space, HSLish
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
@@ -78,7 +79,7 @@ class Cubehelix(HSLish, Space):
     NAME = "cubehelix"
     SERIALIZE = ("--cubehelix",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
         Channel("s", 0.0, MAX_SAT, bound=True),
         Channel("l", 0.0, 1.0, bound=True)
     )
@@ -88,6 +89,16 @@ class Cubehelix(HSLish, Space):
         "lightness": "l"
     }
     WHITE = WHITES['2deg']['D65']
+    GAMUT_CHECK = 'srgb'
+
+    def normalize(self, coords: Vector) -> Vector:
+        """Normalize coordinates."""
+
+        if coords[1] < 0:
+            coords[1] *= -1.0
+            coords[0] += 180.0
+        coords[0] %= 360.0
+        return coords
 
     def is_achromatic(self, coords: Vector) -> bool:
         """Check if color is achromatic."""

@@ -3,6 +3,7 @@ HSI class.
 
 https://en.wikipedia.org/wiki/HSL_and_HSV#Saturation
 """
+from __future__ import annotations
 import math
 from .hsv import HSV
 from ..cat import WHITES
@@ -45,15 +46,7 @@ def hsi_to_srgb(hsi: Vector) -> Vector:
     x = c * z
 
     if math.isnan(h):  # pragma: no cover
-        # In our current setup, this will not occur. If colors are naturally achromatic,
-        # they will resolve to zeros automatically even without this check. This case
-        # would be a shortcut normally.
-        #
-        # Unnatural cases, such as explicitly setting of hue to undefined, could cause this,
-        # but the conversion pipeline converts all undefined values to zero. We'd have to
-        # encounter a natural case due to conversion to or from HSI mid pipeline to trigger
-        # this, and we are not currently in a position where that would occur with sRGB being
-        # the only pass-through.
+        # NaN values are resolved before this point, so this will never execute.
         rgb = [0.0] * 3
     elif 0 <= h <= 1:
         rgb = [c, x, 0]
@@ -79,7 +72,7 @@ class HSI(HSV):
     NAME = "hsi"
     SERIALIZE = ("--hsi",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
         Channel("s", 0.0, 1.0, bound=True),
         Channel("i", 0.0, 1.0, bound=True)
     )
@@ -90,6 +83,7 @@ class HSI(HSV):
     }
     WHITE = WHITES['2deg']['D65']
     GAMUT_CHECK = "srgb"
+    CLIP_SPACE = None
 
     def to_base(self, coords: Vector) -> Vector:
         """To sRGB from HSI."""

@@ -25,6 +25,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 from .hsl import HSL
 from ..channels import Channel, FLG_ANGLE
 from .. import util
@@ -33,7 +34,6 @@ import sys
 from .. import algebra as alg
 from ..types import Vector, Matrix
 from . oklab import OKLAB_TO_LMS3
-from typing import Optional, List
 
 SRGBL_TO_LMS = [
     [0.4122214694707629, 0.5363325372617349, 0.051445993267502196],
@@ -67,9 +67,9 @@ SRGBL_COEFF = [
         # Limit
         [0.13110758, 1.81333971],
         # `Kn` coefficients
-        [1.35691251, -0.00926975, -1.15076744, -0.50647251, 0.00645585]
+        [1.35733652, -0.00915799, -1.1513021, -0.50559606, 0.00692167]
     ]
-]  # type: List[List[Vector]]
+]  # type: list[Matrix]
 
 FLT_MAX = sys.float_info.max
 
@@ -142,9 +142,9 @@ def oklab_to_linear_rgb(lab: Vector, lms_to_rgb: Matrix) -> Vector:
     that transform the LMS values to the linear RGB space.
     """
 
-    return alg.dot(
+    return alg.matmul(
         lms_to_rgb,
-        [c ** 3 for c in alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
+        [c ** 3 for c in alg.matmul(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
         dims=alg.D2_D1
     )
 
@@ -153,7 +153,7 @@ def find_cusp(
     a: float,
     b: float,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """
     Finds L_cusp and C_cusp for a given hue.
@@ -179,8 +179,8 @@ def find_gamut_intersection(
     c1: float,
     l0: float,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]],
-    cusp: Optional[Vector] = None
+    ok_coeff: list[Matrix],
+    cusp: Vector | None = None,
 ) -> float:
     """
     Finds intersection of the line.
@@ -273,7 +273,7 @@ def find_gamut_intersection(
 def get_cs(
     lab: Vector,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """Get Cs."""
 
@@ -309,7 +309,7 @@ def compute_max_saturation(
     a: float,
     b: float,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> float:
     """
     Finds the maximum saturation possible for a given hue that fits in RGB.
@@ -376,7 +376,7 @@ def compute_max_saturation(
 def okhsl_to_oklab(
     hsl: Vector,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """Convert Okhsl to Oklab."""
 
@@ -387,8 +387,8 @@ def okhsl_to_oklab(
     a = b = 0.0
 
     if L != 0.0 and L != 1.0 and s != 0:
-        a_ = math.cos(alg.tau * h)
-        b_ = math.sin(alg.tau * h)
+        a_ = math.cos(math.tau * h)
+        b_ = math.sin(math.tau * h)
 
         c_0, c_mid, c_max = get_cs([L, a_, b_], lms_to_rgb, ok_coeff)
 
@@ -425,7 +425,7 @@ def okhsl_to_oklab(
 def oklab_to_okhsl(
     lab: Vector,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """Oklab to Okhsl."""
 
@@ -434,7 +434,7 @@ def oklab_to_okhsl(
     l = toe(L)
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
-    h = 0.5 + math.atan2(-lab[2], -lab[1]) / alg.tau
+    h = 0.5 + math.atan2(-lab[2], -lab[1]) / math.tau
 
     if l != 0.0 and l != 1.0 and c != 0:
         a_ = lab[1] / c
@@ -470,7 +470,7 @@ class Okhsl(HSL):
     NAME = "okhsl"
     SERIALIZE = ("--okhsl",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
         Channel("s", 0.0, 1.0, bound=True),
         Channel("l", 0.0, 1.0, bound=True)
     )
@@ -479,6 +479,16 @@ class Okhsl(HSL):
         "saturation": "s",
         "lightness": "l"
     }
+    GAMUT_CHECK = None
+    CLIP_SPACE = None
+
+    def normalize(self, coords: Vector) -> Vector:
+        """Normalize coordinates."""
+
+        if coords[1] < 0:
+            return self.from_base(self.to_base(coords))
+        coords[0] %= 360.0
+        return coords
 
     def to_base(self, coords: Vector) -> Vector:
         """To Oklab from Okhsl."""

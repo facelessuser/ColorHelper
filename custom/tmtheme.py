@@ -695,9 +695,8 @@ def name2hex(name):
 class SRGBX11(sRGB):
     """sRGB class."""
 
-    @classmethod
     def to_string(
-        cls, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
+        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS."""
 
@@ -727,8 +726,7 @@ class SRGBX11(sRGB):
 
         return value
 
-    @classmethod
-    def match(cls, string, start=0, fullmatch=True):
+    def match(self, string, start=0, fullmatch=True):
         """Match a CSS color string."""
 
         m = MATCH.match(string, start)

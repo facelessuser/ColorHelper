@@ -1,6 +1,6 @@
 """Linear A98 RGB color class."""
-from ..cat import WHITES
-from .srgb import sRGB
+from __future__ import annotations
+from .srgb_linear import sRGBLinear
 from .. import algebra as alg
 from ..types import Vector
 
@@ -27,22 +27,21 @@ def lin_a98rgb_to_xyz(rgb: Vector) -> Vector:
     https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf
     """
 
-    return alg.dot(RGB_TO_XYZ, rgb, dims=alg.D2_D1)
+    return alg.matmul(RGB_TO_XYZ, rgb, dims=alg.D2_D1)
 
 
 def xyz_to_lin_a98rgb(xyz: Vector) -> Vector:
     """Convert XYZ to linear-light a98-rgb."""
 
-    return alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
+    return alg.matmul(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
 
 
-class A98RGBLinear(sRGB):
+class A98RGBLinear(sRGBLinear):
     """Linear A98 RGB class."""
 
     BASE = "xyz-d65"
     NAME = "a98-rgb-linear"
     SERIALIZE = ('--a98-rgb-linear',)
-    WHITE = WHITES['2deg']['D65']
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from A98 RGB."""

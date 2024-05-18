@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Color vision deficiency."""
+from __future__ import annotations
 from .. import algebra as alg
 from ..filters import Filter
 from ..types import Vector, Matrix
-from typing import Any, Optional, Dict, Tuple, Callable, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -32,7 +33,7 @@ BRETTEL_PROTAN = (
         [0.0, -0.4913704825845725, 69.55210571887513]
     ],
     [0.0, 0.016813516536000002, -0.344781556122]
-)  # type: Tuple[Matrix, Matrix, Vector]
+)  # type: tuple[Matrix, Matrix, Vector]
 
 BRETTEL_DEUTAN = (
     [
@@ -46,7 +47,7 @@ BRETTEL_DEUTAN = (
         [-0.2250635463221503, 0.0, 68.24609126806706]
     ],
     [-0.016813516536000002, 0.0, 0.6551784438780001]
-)  # type: Tuple[Matrix, Matrix, Vector]
+)  # type: tuple[Matrix, Matrix, Vector]
 
 BRETTEL_TRITAN = (
     [
@@ -60,7 +61,7 @@ BRETTEL_TRITAN = (
         [-0.2150297288038942, 3.3090019545637928, 0.0]
     ],
     [0.344781556122, -0.6551784438780001, 0.0]
-)  # type: Tuple[Matrix, Matrix, Vector]
+)  # type: tuple[Matrix, Matrix, Vector]
 
 VIENOT_PROTAN = [
     [0.11238276122216405, 0.8876172387778362, 5.551115123125783e-17],
@@ -92,7 +93,7 @@ MACHADO_PROTAN = {
     8: [[0.259411, 0.923008, -0.182420], [0.110296, 0.804340, 0.085364], [-0.006276, -0.034346, 1.040622]],
     9: [[0.203876, 0.990338, -0.194214], [0.112975, 0.794542, 0.092483], [-0.005222, -0.041043, 1.046265]],
     10: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]]
-}  # type: Dict[int, Matrix]
+}  # type: dict[int, Matrix]
 
 MACHADO_DEUTAN = {
     0: [[1.000000, 0.000000, -0.000000], [0.000000, 1.000000, 0.000000], [-0.000000, -0.000000, 1.000000]],
@@ -107,7 +108,7 @@ MACHADO_DEUTAN = {
     9: [[0.392952, 0.823610, -0.216562], [0.263559, 0.690210, 0.046232], [-0.011910, 0.040281, 0.971630]],
     10: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.011820, 0.042940, 0.968881]],
 
-}  # type: Dict[int, Matrix]
+}  # type: dict[int, Matrix]
 
 MACHADO_TRITAN = {
     0: [[1.000000, 0.000000, -0.000000], [0.000000, 1.000000, 0.000000], [-0.000000, -0.000000, 1.000000]],
@@ -121,10 +122,10 @@ MACHADO_TRITAN = {
     8: [[1.257728, -0.139648, -0.118081], [-0.078003, 0.975409, 0.102594], [-0.003316, 0.501214, 0.502102]],
     9: [[1.278864, -0.125333, -0.153531], [-0.084748, 0.957674, 0.127074], [-0.000989, 0.601151, 0.399838]],
     10: [[1.255528, -0.076749, -0.178779], [-0.078411, 0.930809, 0.147602], [0.004733, 0.691367, 0.303900]],
-}  # type: Dict[int, Matrix]
+}  # type: dict[int, Matrix]
 
 
-def brettel(color: 'Color', severity: float, wings: Tuple[Matrix, Matrix, Vector]) -> None:
+def brettel(color: Color, severity: float, wings: tuple[Matrix, Matrix, Vector]) -> None:
     """
     Calculate color blindness using Brettel 1997.
 
@@ -136,11 +137,11 @@ def brettel(color: 'Color', severity: float, wings: Tuple[Matrix, Matrix, Vector
     w1, w2, sep = wings
 
     # Convert to LMS
-    lms_c = alg.dot(LRGB_TO_LMS, color[:-1], dims=alg.D2_D1)
+    lms_c = alg.matmul(LRGB_TO_LMS, color[:-1], dims=alg.D2_D1)
 
     # Apply appropriate wing filter based on which side of the separator we are on.
     # Tritanopia filter and LMS to sRGB conversion are included in the same matrix.
-    coords = alg.dot(w2 if alg.dot(lms_c, sep) > 0 else w1, lms_c, dims=alg.D2_D1)
+    coords = alg.matmul(w2 if alg.matmul(lms_c, sep) > 0 else w1, lms_c, dims=alg.D2_D1)
 
     if severity < 1:
         color[:-1] = [alg.lerp(a, b, severity) for a, b in zip(color[:-1], coords)]
@@ -148,7 +149,7 @@ def brettel(color: 'Color', severity: float, wings: Tuple[Matrix, Matrix, Vector
         color[:-1] = coords
 
 
-def vienot(color: 'Color', severity: float, transform: Matrix) -> None:
+def vienot(color: Color, severity: float, transform: Matrix) -> None:
     """
     Calculate color blindness using the Viénot, Brettel, and Mollon 1999 approach, best for protanopia and deuteranopia.
 
@@ -164,14 +165,14 @@ def vienot(color: 'Color', severity: float, transform: Matrix) -> None:
     then we interpolate against the original color.
     """
 
-    coords = alg.dot(transform, color[:-1], dims=alg.D2_D1)
+    coords = alg.matmul(transform, color[:-1], dims=alg.D2_D1)
     if severity < 1:
         color[:-1] = [alg.lerp(c1, c2, severity) for c1, c2 in zip(color[:-1], coords)]
     else:
         color[:-1] = coords
 
 
-def machado(color: 'Color', severity: float, matrices: Dict[int, Matrix]) -> None:
+def machado(color: Color, severity: float, matrices: dict[int, Matrix]) -> None:
     """
     Machado approach to protanopia, deuteranopia, and tritanopia.
 
@@ -187,7 +188,7 @@ def machado(color: 'Color', severity: float, matrices: Dict[int, Matrix]) -> Non
 
     # Filter the color according to the severity
     m1 = matrices[severity1]
-    coords = alg.dot(m1, color[:-1], dims=alg.D2_D1)
+    coords = alg.matmul(m1, color[:-1], dims=alg.D2_D1)
 
     # If severity was not exact, and it also isn't max severity,
     # let's calculate the next most severity and interpolate
@@ -204,7 +205,7 @@ def machado(color: 'Color', severity: float, matrices: Dict[int, Matrix]) -> Non
         # but it ends up being faster just modifying the color on both the high
         # and low matrix and interpolating the color than interpolating the matrix
         # and then applying it to the color. The results are identical as well.
-        coords2 = alg.dot(m2, color[:-1], dims=alg.D2_D1)
+        coords2 = alg.matmul(m2, color[:-1], dims=alg.D2_D1)
         coords = [alg.lerp(c1, c2, weight) for c1, c2 in zip(coords, coords2)]
 
     # Return the altered color
@@ -222,23 +223,23 @@ class Protan(Filter):
     VIENOT = VIENOT_PROTAN
     MACHADO = MACHADO_PROTAN
 
-    def __init__(self, severe: str = 'vienot', anomalous: str = 'machado') -> None:
+    def __init__(self, severe: str = 'vienot', anomalous: str = 'machado', **kwargs: Any) -> None:
         """Initialize."""
 
         self.severe = severe
         self.anomalous = anomalous
 
-    def brettel(self, color: 'Color', severity: float) -> None:
+    def brettel(self, color: Color, severity: float) -> None:
         """Tritanopia vision deficiency using Brettel method."""
 
         brettel(color, severity, self.BRETTEL)
 
-    def vienot(self, color: 'Color', severity: float) -> None:
+    def vienot(self, color: Color, severity: float) -> None:
         """Tritanopia vision deficiency using Viénot method."""
 
         vienot(color, severity, self.VIENOT)
 
-    def machado(self, color: 'Color', severity: float) -> None:
+    def machado(self, color: Color, severity: float) -> None:
         """Tritanopia vision deficiency using Machado method."""
 
         machado(color, severity, self.MACHADO)
@@ -255,17 +256,17 @@ class Protan(Filter):
         else:
             raise ValueError("Unrecognized CVD filter method '{}'".format(method))
 
-    def get_best_filter(self, method: Optional[str], max_severity: bool) -> Callable[..., None]:
+    def get_best_filter(self, method: str | None, max_severity: bool) -> Callable[..., None]:
         """Get the best filter based on the situation."""
 
         if method is None:
             method = self.severe if max_severity else self.anomalous
         return self.select_filter(method)
 
-    def filter(self, color: 'Color', amount: Optional[float] = None, **kwargs: Any) -> None:  # noqa: A003
+    def filter(self, color: Color, amount: float | None = None, **kwargs: Any) -> None:  # noqa: A003
         """Filter the color."""
 
-        method = kwargs.get('method')  # type: Optional[str]
+        method = kwargs.get('method')  # type: str | None
         amount = alg.clamp(1 if amount is None else amount, 0, 1)
         self.get_best_filter(method, amount == 1)(color, amount)
 

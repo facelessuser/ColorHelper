@@ -1,7 +1,13 @@
-"""Lab class."""
+"""
+Lab class.
+
+https://ia802802.us.archive.org/23/items/gov.law.cie.15.2004/cie.15.2004.pdf
+http://www.brucelindbloom.com/Eqn_Lab_to_XYZ.html
+"""
+from __future__ import annotations
 from ...spaces import Space, Labish
 from ...cat import WHITES
-from ...channels import Channel, FLG_OPT_PERCENT, FLG_MIRROR_PERCENT
+from ...channels import Channel, FLG_MIRROR_PERCENT
 from ... import util
 from ... import algebra as alg
 from ...types import VectorLike, Vector
@@ -14,14 +20,7 @@ KE = 8  # KAPPA * EPSILON = 8
 
 
 def lab_to_xyz(lab: Vector, white: VectorLike) -> Vector:
-    """
-    Convert Lab to D50-adapted XYZ.
-
-    http://www.brucelindbloom.com/Eqn_Lab_to_XYZ.html
-
-    While the derivation is different than the specification, the results are the same as Appendix D:
-    https://www.cdvplus.cz/file/3-publikace-cie15-2004/
-    """
+    """Convert CIE Lab to XYZ using the reference white."""
 
     l, a, b = lab
 
@@ -42,14 +41,7 @@ def lab_to_xyz(lab: Vector, white: VectorLike) -> Vector:
 
 
 def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
-    """
-    Assuming XYZ is relative to D50, convert to CIELab from CIE standard.
-
-    http://www.brucelindbloom.com/Eqn_XYZ_to_Lab.html
-
-    While the derivation is different than the specification, the results are the same:
-    https://www.cdvplus.cz/file/3-publikace-cie15-2004/
-    """
+    """Convert XYZ to CIE Lab using the reference white."""
 
     # compute `xyz`, which is XYZ scaled relative to reference white
     xyz = alg.divide(xyz, white, dims=alg.D1)
@@ -66,18 +58,14 @@ def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
 class Lab(Labish, Space):
     """Lab class."""
 
-    BASE = "xyz-d50"
-    NAME = "lab"
-    SERIALIZE = ("--lab",)
     CHANNELS = (
-        Channel("l", 0.0, 100.0, flags=FLG_OPT_PERCENT),
-        Channel("a", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT),
-        Channel("b", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT)
+        Channel("l", 0.0, 1.0),
+        Channel("a", 1.0, 1.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", 1.0, 1.0, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "lightness": "l"
     }
-    WHITE = WHITES['2deg']['D50']
 
     def is_achromatic(self, coords: Vector) -> bool:
         """Check if color is achromatic."""
@@ -93,3 +81,17 @@ class Lab(Labish, Space):
         """From XYZ D50 to Lab."""
 
         return xyz_to_lab(coords, util.xy_to_xyz(self.white()))
+
+
+class CIELab(Lab):
+    """CIE Lab D50."""
+
+    BASE = "xyz-d50"
+    NAME = "lab"
+    SERIALIZE = ("--lab",)
+    CHANNELS = (
+        Channel("l", 0.0, 100.0),
+        Channel("a", -125.0, 125.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -125.0, 125.0, flags=FLG_MIRROR_PERCENT)
+    )
+    WHITE = WHITES['2deg']['D50']

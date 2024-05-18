@@ -32,8 +32,7 @@ def split_channels(color: str):
 class AssABGR(sRGB):
     """ASS `ABGR` color space."""
 
-    @classmethod
-    def match(cls, string: str, start: int = 0, fullmatch: bool = True):
+    def match(self, string: str, start: int = 0, fullmatch: bool = True):
         """Match a color string."""
 
         m = MATCH.match(string, start)
@@ -41,8 +40,7 @@ class AssABGR(sRGB):
             return split_channels(m.group("color")), m.end(0)
         return None
 
-    @classmethod
-    def to_string(cls, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
+    def to_string(self, parent, *, options=None, alpha=None, precision=None, fit=True, none=False, **kwargs):
         """Convert color to `&HAABBGGRR`."""
 
         options = kwargs

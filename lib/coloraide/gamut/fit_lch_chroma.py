@@ -1,16 +1,25 @@
 """Fit by compressing chroma in LCh."""
+from __future__ import annotations
+import functools
 from ..gamut import Fit, clip_channels
 from ..cat import WHITES
 from .. import util
 import math
 from .. import algebra as alg
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
 
 WHITE = util.xy_to_xyz(WHITES['2deg']['D65'])
 BLACK = [0, 0, 0]
+
+
+@functools.lru_cache(maxsize=10)
+def calc_epsilon(jnd: float) -> float:
+    """Calculate the epsilon to 2 degrees smaller than the specified JND."""
+
+    return float("1e{:d}".format(alg.order(jnd) - 2))
 
 
 class LChChroma(Fit):
@@ -31,30 +40,33 @@ class LChChroma(Fit):
 
     NAME = "lch-chroma"
 
-    EPSILON = 0.1
+    EPSILON = 0.01
     LIMIT = 2.0
     DE = "2000"
-    DE_OPTIONS = {}  # type: Dict[str, Any]
+    DE_OPTIONS = {'space': 'lab-d65'}  # type: dict[str, Any]
     SPACE = "lch-d65"
     MIN_LIGHTNESS = 0
     MAX_LIGHTNESS = 100
     MIN_CONVERGENCE = 0.0001
 
-    def fit(self, color: 'Color', **kwargs: Any) -> None:
+    def fit(self, color: Color, space: str, *, jnd: float | None = None, **kwargs: Any) -> None:
         """Gamut mapping via CIELCh chroma."""
 
-        space = color.space()
-        mapcolor = color.convert(self.SPACE, norm=False)
+        orig = color.space()
+        mapcolor = color.convert(self.SPACE, norm=False) if orig != self.SPACE else color.clone().normalize(nans=False)
+        gamutcolor = color.convert(space, norm=False) if orig != space else color.clone().normalize(nans=False)
         l, c = mapcolor._space.indexes()[:2]  # type: ignore[attr-defined]
         lightness = mapcolor[l]
-        sdr = color._space.DYNAMIC_RANGE == 'sdr'
+        sdr = gamutcolor._space.DYNAMIC_RANGE == 'sdr'
+        if jnd is None:
+            jnd = self.LIMIT
+            epsilon = self.EPSILON
+        else:
+            epsilon = calc_epsilon(jnd)
 
         # Return white or black if lightness is out of dynamic range for lightness.
         # Extreme light case only applies to SDR, but dark case applies to all ranges.
-        if (
-            sdr and
-            (lightness >= self.MAX_LIGHTNESS or alg.isclose(lightness, self.MAX_LIGHTNESS, abs_tol=1e-6, dims=alg.SC))
-        ):
+        if sdr and (lightness >= self.MAX_LIGHTNESS or math.isclose(lightness, self.MAX_LIGHTNESS, abs_tol=1e-6)):
             clip_channels(color.update('xyz-d65', WHITE, mapcolor[-1]))
             return
         elif lightness <= self.MIN_LIGHTNESS:
@@ -64,10 +76,10 @@ class LChChroma(Fit):
         # Set initial chroma boundaries
         low = 0.0
         high = mapcolor[c]
-        clip_channels(color._hotswap(mapcolor.convert(space, norm=False)))
+        clip_channels(gamutcolor._hotswap(mapcolor.convert(space, norm=False)))
 
         # Adjust chroma if we are not under the JND yet.
-        if mapcolor.delta_e(color, method=self.DE, **self.DE_OPTIONS) >= self.LIMIT:
+        if mapcolor.delta_e(gamutcolor, method=self.DE, **self.DE_OPTIONS) >= jnd:
             # Perform "in gamut" checks until we know our lower bound is no longer in gamut.
             lower_in_gamut = True
 
@@ -80,12 +92,12 @@ class LChChroma(Fit):
                 if lower_in_gamut and mapcolor.in_gamut(space, tolerance=0):
                     low = mapcolor[c]
                 else:
-                    clip_channels(color._hotswap(mapcolor.convert(space, norm=False)))
-                    de = mapcolor.delta_e(color, method=self.DE, **self.DE_OPTIONS)
-                    if de < self.LIMIT:
+                    clip_channels(gamutcolor._hotswap(mapcolor.convert(space, norm=False)))
+                    de = mapcolor.delta_e(gamutcolor, method=self.DE, **self.DE_OPTIONS)
+                    if de < jnd:
                         # Kick out as soon as we are close enough to the JND.
                         # Too far below and we may reduce chroma too aggressively.
-                        if (self.LIMIT - de) < self.EPSILON:
+                        if (jnd - de) < epsilon:
                             break
 
                         # Our lower bound is now out of gamut, so all future searches are
@@ -97,4 +109,4 @@ class LChChroma(Fit):
                     else:
                         # We are still outside the gamut and outside the JND
                         high = mapcolor[c]
-        color.normalize()
+        color._hotswap(gamutcolor.convert(orig, norm=False)).normalize()

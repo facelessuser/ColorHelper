@@ -3,14 +3,11 @@ Natural B-Spline interpolation.
 
 https://www.math.ucla.edu/~baker/149.1.02w/handouts/dd_splines.pdf.
 """
+from __future__ import annotations
 from .. interpolate import Interpolate, Interpolator
 from .bspline import InterpolatorBSpline
 from .. import algebra as alg
-from ..types import Vector
-from typing import List, Sequence, Any, Optional, Union, Mapping, Callable, Dict, Tuple, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no cover
-    from ..color import Color
+from typing import Any
 
 
 class InterpolatorNaturalBSpline(InterpolatorBSpline):
@@ -38,36 +35,7 @@ class NaturalBSpline(Interpolate):
 
     NAME = "natural"
 
-    def interpolator(
-        self,
-        coordinates: List[Vector],
-        channel_names: Sequence[str],
-        create: Type['Color'],
-        easings: List[Optional[Callable[..., float]]],
-        stops: Dict[int, float],
-        space: str,
-        out_space: str,
-        progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]],
-        premultiplied: bool,
-        extrapolate: bool = False,
-        domain: Optional[List[float]] = None,
-        padding: Optional[Union[float, Tuple[float, float]]] = None,
-        **kwargs: Any
-    ) -> Interpolator:
+    def interpolator(self, *args: Any, **kwargs: Any) -> Interpolator:
         """Return the natural B-spline interpolator."""
 
-        return InterpolatorNaturalBSpline(
-            coordinates,
-            channel_names,
-            create,
-            easings,
-            stops,
-            space,
-            out_space,
-            progress,
-            premultiplied,
-            extrapolate,
-            domain,
-            padding,
-            **kwargs
-        )
+        return InterpolatorNaturalBSpline(*args, **kwargs)

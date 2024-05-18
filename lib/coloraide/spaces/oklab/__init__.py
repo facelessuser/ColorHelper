@@ -25,8 +25,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 from ...cat import WHITES
-from ...channels import Channel, FLG_OPT_PERCENT, FLG_MIRROR_PERCENT
+from ...channels import Channel, FLG_MIRROR_PERCENT
 from ... import algebra as alg
 from ...types import Vector
 from ..lab import Lab
@@ -63,9 +64,9 @@ LMS_TO_XYZD65 = [
 def oklab_to_xyz_d65(lab: Vector) -> Vector:
     """Convert from Oklab to XYZ D65."""
 
-    return alg.dot(
+    return alg.matmul(
         LMS_TO_XYZD65,
-        [c ** 3 for c in alg.dot(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
+        [c ** 3 for c in alg.matmul(OKLAB_TO_LMS3, lab, dims=alg.D2_D1)],
         dims=alg.D2_D1
     )
 
@@ -73,9 +74,9 @@ def oklab_to_xyz_d65(lab: Vector) -> Vector:
 def xyz_d65_to_oklab(xyz: Vector) -> Vector:
     """XYZ D65 to Oklab."""
 
-    return alg.dot(
+    return alg.matmul(
         LMS3_TO_OKLAB,
-        [alg.nth_root(c, 3) for c in alg.dot(XYZD65_TO_LMS, xyz, dims=alg.D2_D1)],
+        [alg.nth_root(c, 3) for c in alg.matmul(XYZD65_TO_LMS, xyz, dims=alg.D2_D1)],
         dims=alg.D2_D1
     )
 
@@ -87,9 +88,9 @@ class Oklab(Lab):
     NAME = "oklab"
     SERIALIZE = ("--oklab",)
     CHANNELS = (
-        Channel("l", 0.0, 1.0, flags=FLG_OPT_PERCENT),
-        Channel("a", -0.4, 0.4, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT),
-        Channel("b", -0.4, 0.4, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT)
+        Channel("l", 0.0, 1.0),
+        Channel("a", -0.4, 0.4, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -0.4, 0.4, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "lightness": "l"

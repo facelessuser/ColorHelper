@@ -1,27 +1,27 @@
 """Average colors together."""
+from __future__ import annotations
 import math
-from . import algebra as alg
 from .types import ColorInput
-from typing import Iterable, TYPE_CHECKING, Type
+from typing import Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from .color import Color
 
 
 def average(
-    create: Type['Color'],
+    create: type[Color],
     colors: Iterable[ColorInput],
     space: str,
     premultiplied: bool = True,
     powerless: bool = False
-) -> 'Color':
+) -> Color:
     """Average a list of colors together."""
 
     obj = create(space, [])
 
     # Get channel information
     cs = obj.CS_MAP[space]
-    hue_index = cs.hue_index() if hasattr(cs, 'hue_index') else -1
+    hue_index = cs.hue_index() if cs.is_polar() else -1  # type: ignore[attr-defined]
     channels = cs.channels
     chan_count = len(channels)
     alpha_index = chan_count - 1
@@ -36,7 +36,7 @@ def average(
         obj.update(c)
         # If cylindrical color is achromatic, ensure hue is undefined
         if powerless and hue_index >= 0 and not math.isnan(obj[hue_index]) and obj.is_achromatic():
-            obj[hue_index] = alg.nan
+            obj[hue_index] = math.nan
         coords = obj[:]
         alpha = coords[-1]
         if math.isnan(alpha):
@@ -59,16 +59,17 @@ def average(
     # Get the mean
     alpha = sums[-1]
     alpha_t = totals[-1]
-    sums[-1] = alg.nan if not alpha_t else alpha / alpha_t
+    sums[-1] = math.nan if not alpha_t else alpha / alpha_t
     alpha = sums[-1]
     if math.isnan(alpha) or alpha in (0.0, 1.0):
         alpha = 1.0
     for i in range(chan_count - 1):
         total = totals[i]
         if not total:
-            sums[i] = alg.nan
+            sums[i] = math.nan
         elif i == hue_index:
-            sums[i] = math.degrees(math.atan2(sin / total, cos / total))
+            avg_theta = math.degrees(math.atan2(sin / total, cos / total))
+            sums[i] = (avg_theta + 360) if avg_theta < 0 else avg_theta
         else:
             sums[i] /= total * alpha if premultiplied else total
 

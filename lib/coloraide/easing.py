@@ -38,9 +38,10 @@ x'(t) = 3axt2 + 2bxt + cx
 
 This greatly simplifies things and makes it faster.
 """
+from __future__ import annotations
 import functools
-from typing import Tuple, Callable
-from . import algebra as alg
+import math
+from typing import Callable
 
 EPSILON = 1e-6
 MAX_ITER = 8
@@ -74,7 +75,7 @@ def _solve_bezier(target: float, a: float, b: float, c: float) -> float:
     # Try Newtons method to see if we can find a suitable value
     x = 0.0
     t = 0.5
-    last = alg.nan
+    last = math.nan
     for _ in range(MAX_ITER):
         # See how close we are to the desired `x`
         x = _bezier(t, a, b, c) - target
@@ -118,7 +119,7 @@ def _solve_bezier(target: float, a: float, b: float, c: float) -> float:
     return t  # pragma: no cover
 
 
-def _extrapolate(t: float, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
+def _extrapolate(t: float, p1: tuple[float, float], p2: tuple[float, float]) -> float:
     """
     Extrapolate.
 
@@ -159,11 +160,11 @@ def _extrapolate(t: float, p1: Tuple[float, float], p2: Tuple[float, float]) -> 
 
 def _calc_bezier(
     target: float,
-    a: Tuple[float, float],
-    b: Tuple[float, float],
-    c: Tuple[float, float],
-    p1: Tuple[float, float],
-    p2: Tuple[float, float]
+    a: tuple[float, float],
+    b: tuple[float, float],
+    c: tuple[float, float],
+    p1: tuple[float, float],
+    p2: tuple[float, float]
 ) -> float:
     """
     Calculate the y value of the bezier curve with the given `x`.

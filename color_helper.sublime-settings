@@ -117,7 +117,7 @@
     "gamut_space": "srgb",
 
     // Gamut mapping approach
-    // Supported methods are: `lch-chroma`, `oklch-chroma`, and `clip` (default).
+    // Supported methods are: `lch-chroma`, `oklch-chroma`, `oklch-raytrace`, and `clip` (default).
     // `lch-chroma` was the original default before this was configurable.
     "gamut_map": "clip",
 
@@ -135,7 +135,6 @@
         // "ColorHelper.lib.coloraide.spaces.acescc.ACEScc",
         // "ColorHelper.lib.coloraide.spaces.acescg.ACEScg",
         // "ColorHelper.lib.coloraide.spaces.acescct.ACEScct",
-        // "ColorHelper.lib.coloraide.spaces.cam16.CAM16",
         // "ColorHelper.lib.coloraide.spaces.cam16_jmh.CAM16JMh",
         // "ColorHelper.lib.coloraide.spaces.cam16_ucs.CAM16UCS",
         // "ColorHelper.lib.coloraide.spaces.cam16_ucs.CAM16SCD",
@@ -149,7 +148,7 @@
         // "ColorHelper.lib.coloraide.spaces.hunter_lab.HunterLab",
         // "ColorHelper.lib.coloraide.spaces.ictcp.ICtCp",
         // "ColorHelper.lib.coloraide.spaces.igtgpg.IgTgPg",
-        // "ColorHelper.lib.coloraide.spaces.itp.ITP",
+        // "ColorHelper.lib.coloraide.spaces.ipt.IPT",
         // "ColorHelper.lib.coloraide.spaces.jzazbz.Jzazbz",
         // "ColorHelper.lib.coloraide.spaces.jzczhz.JzCzhz",
         // "ColorHelper.lib.coloraide.spaces.lch99o.LCh99o",
@@ -158,6 +157,7 @@
         // "ColorHelper.lib.coloraide.spaces.rec2100_hlg.Rec2100HLG",
         // "ColorHelper.lib.coloraide.spaces.rec2100_pq.Rec2100PQ",
         // "ColorHelper.lib.coloraide.spaces.rlab.RLAB",
+        // "ColorHelper.lib.coloraide.spaces.ryb.RYB",
         // "ColorHelper.lib.coloraide.spaces.xyb.XYB",
         // "ColorHelper.lib.coloraide.spaces.xyy.xyY",
         "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
@@ -257,7 +257,8 @@
             "output": [
                 {"space": "srgb", "format": {"hex": true}},
                 {"space": "srgb", "format": {"comma": true, "precision": 3}},
-                {"space": "hsl", "format": {"comma": true, "precision": 3}}
+                {"space": "hsl", "format": {"comma": true, "precision": 3}},
+                {"space": "hwb", "format": {"comma": true, "precision": 3}}
             ]
         },
         "tmtheme": {

@@ -25,6 +25,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 from .hsv import HSV
 from ..channels import FLG_ANGLE, Channel
 from .. import util
@@ -32,13 +33,12 @@ from .okhsl import toe, toe_inv, find_cusp, to_st, oklab_to_linear_rgb, LMS_TO_S
 import math
 from .. import algebra as alg
 from ..types import Vector, Matrix
-from typing import List
 
 
 def okhsv_to_oklab(
     hsv: Vector,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """Convert from Okhsv to Oklab."""
 
@@ -51,8 +51,8 @@ def okhsv_to_oklab(
 
     # Avoid processing gray or colors with undefined hues
     if l != 0.0 and s != 0.0:
-        a_ = math.cos(alg.tau * h)
-        b_ = math.sin(alg.tau * h)
+        a_ = math.cos(math.tau * h)
+        b_ = math.sin(math.tau * h)
 
         cusp = find_cusp(a_, b_, lms_to_rgb, ok_coeff)
         s_max, t_max = to_st(cusp)
@@ -92,7 +92,7 @@ def okhsv_to_oklab(
 def oklab_to_okhsv(
     lab: Vector,
     lms_to_rgb: Matrix,
-    ok_coeff: List[List[Vector]]
+    ok_coeff: list[Matrix]
 ) -> Vector:
     """Oklab to Okhsv."""
 
@@ -101,7 +101,7 @@ def oklab_to_okhsv(
     v = toe(l)
 
     c = math.sqrt(lab[1] ** 2 + lab[2] ** 2)
-    h = 0.5 + math.atan2(-lab[2], -lab[1]) / alg.tau
+    h = 0.5 + math.atan2(-lab[2], -lab[1]) / math.tau
 
     if l != 0.0 and l != 1 and c != 0.0:
         a_ = lab[1] / c
@@ -144,7 +144,7 @@ class Okhsv(HSV):
     NAME = "okhsv"
     SERIALIZE = ("--okhsv",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
         Channel("s", 0.0, 1.0, bound=True),
         Channel("v", 0.0, 1.0, bound=True)
     )
@@ -153,6 +153,8 @@ class Okhsv(HSV):
         "saturation": "s",
         "value": "v"
     }
+    GAMUT_CHECK = None
+    CLIP_SPACE = None
 
     def to_base(self, okhsv: Vector) -> Vector:
         """To Oklab from Okhsv."""

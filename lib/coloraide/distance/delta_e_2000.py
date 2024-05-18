@@ -1,7 +1,8 @@
 """Delta E 2000."""
+from __future__ import annotations
 import math
-from .. import algebra as alg
 from ..distance import DeltaE
+from ..spaces.lab import CIELab
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -12,26 +13,30 @@ class DE2000(DeltaE):
     """Delta E 2000 class."""
 
     NAME = "2000"
-
-    # CSS uses D50 because that is the only Lab in the spec,
-    # but most implementation use D65. Typically D50 is the
-    # choice for reflective (i.e. Paper) or transmissive readings,
-    # while displays would typically use a measured white reference,
-    # or D65. If a CSS compliant variant is desired, simply subclass
-    # and set `LAB` to `lab-d50`. If the intent is not to override,
-    # then set `NAME` to something like `NAME="2000-D50"`.
-    LAB = "lab-d65"
-
     G_CONST = 25 ** 7
 
-    @classmethod
-    def distance(
-        cls,
-        color: 'Color',
-        sample: 'Color',
+    def __init__(
+        self,
         kl: float = 1,
         kc: float = 1,
         kh: float = 1,
+        space: str = 'lab-d65'
+    ):
+        """Initialize."""
+
+        self.kl = kl
+        self.kc = kc
+        self.kh = kh
+        self.space = space
+
+    def distance(
+        self,
+        color: Color,
+        sample: Color,
+        kl: float | None = None,
+        kc: float | None = None,
+        kh: float | None = None,
+        space: str | None = None,
         **kwargs: Any
     ) -> float:
         """
@@ -43,8 +48,22 @@ class DE2000(DeltaE):
         http://www2.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
         """
 
-        l1, a1, b1 = color.convert(cls.LAB).coords(nans=False)
-        l2, a2, b2 = sample.convert(cls.LAB).coords(nans=False)
+        if kl is None:
+            kl = self.kl
+
+        if kc is None:
+            kc = self.kc
+
+        if kh is None:
+            kh = self.kh
+
+        if space is None:
+            space = self.space
+        if not isinstance(color.CS_MAP[space], CIELab):
+            raise ValueError("Distance color space must be a CIE Lab color space.")
+
+        l1, a1, b1 = color.convert(space).coords(nans=False)
+        l2, a2, b2 = sample.convert(space).coords(nans=False)
 
         # Equation (2)
         c1 = math.sqrt(a1 ** 2 + b1 ** 2)
@@ -55,7 +74,7 @@ class DE2000(DeltaE):
 
         # Equation (4)
         c7 = cm ** 7
-        g = 0.5 * (1 - math.sqrt(c7 / (c7 + cls.G_CONST)))
+        g = 0.5 * (1 - math.sqrt(c7 / (c7 + self.G_CONST)))
 
         # Equation (5)
         ap1 = (1 + g) * a1
@@ -68,8 +87,8 @@ class DE2000(DeltaE):
         # Equation (7)
         hp1 = 0 if (ap1 == 0 and b1 == 0) else math.atan2(b1, ap1)
         hp2 = 0 if (ap2 == 0 and b2 == 0) else math.atan2(b2, ap2)
-        hp1 = math.degrees(hp1 + alg.tau if hp1 < 0.0 else hp1)
-        hp2 = math.degrees(hp2 + alg.tau if hp2 < 0.0 else hp2)
+        hp1 = math.degrees(hp1 + math.tau if hp1 < 0.0 else hp1)
+        hp2 = math.degrees(hp2 + math.tau if hp2 < 0.0 else hp2)
 
         # Equation (8)
         dl = l1 - l2
@@ -124,7 +143,7 @@ class DE2000(DeltaE):
 
         # Equation (17)
         cpm7 = cpm ** 7
-        rc = 2 * math.sqrt(cpm7 / (cpm7 + cls.G_CONST))
+        rc = 2 * math.sqrt(cpm7 / (cpm7 + self.G_CONST))
 
         # Equation (18)
         l_temp = (lpm - 50) ** 2

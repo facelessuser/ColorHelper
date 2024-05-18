@@ -4,6 +4,8 @@ RLAB.
 https://scholarworks.rit.edu/cgi/viewcontent.cgi?article=1153&context=article
 Compared against http://markfairchild.org/files/AppModEx.xls
 """
+from __future__ import annotations
+import math
 from ..cat import WHITES
 from .. import util
 from ..spaces.lab import Lab
@@ -25,7 +27,7 @@ M = [
 ]
 
 # Defaults
-YN = 318.0  # `318 cd / m^2`
+YN = 1000 / math.pi  # `1000 lux == ~318.31 cd / m^2`
 
 # Sigma is usually defined as 1 / x, but we are using x due to the way we use them
 SURROUND = {
@@ -49,20 +51,27 @@ D = {
 class Environment:
     """RLAB environment."""
 
-    def __init__(self, white: VectorLike, adapting_luminance: float, surround: float, discounting: float) -> None:
+    def __init__(
+        self,
+        *,
+        white: VectorLike,
+        adapting_luminance: float,
+        surround: str,
+        discounting: str
+    ) -> None:
         """Initialize."""
 
-        self.xyz_w = util.xy_to_xyz(white)
-        self.surround = surround
+        self.ref_white = util.xy_to_xyz(white)
+        self.surround = SURROUND[surround]
         self.yn = adapting_luminance
-        self.d = discounting
+        self.d = alg.clamp(D[discounting] if isinstance(discounting, str) else discounting, 0.0, 1.0)
         self.ram = self.calc_ram()
         self.iram = alg.inv(self.ram)
 
     def calc_ram(self) -> Matrix:
         """Calculate RAM."""
 
-        lms = alg.dot(M, self.xyz_w)
+        lms = alg.matmul(M, self.ref_white, dims=alg.D2_D1)
         a = []  # type: Vector
         s = sum(lms)
         for c in lms:
@@ -77,16 +86,16 @@ def rlab_to_xyz(rlab: Vector, env: Environment) -> Vector:
     """RLAB to XYZ."""
 
     LR, aR, bR = rlab
-    yr = LR / 100
-    xr = alg.npow((aR / 430) + yr, env.surround)
-    zr = alg.npow(yr - (bR / 170), env.surround)
-    return alg.dot(env.iram, [xr, alg.npow(yr, env.surround), zr], dims=alg.D2_D1)
+    yr = LR * 0.01
+    xr = alg.spow((aR / 430) + yr, env.surround)
+    zr = alg.spow(yr - (bR / 170), env.surround)
+    return alg.matmul(env.iram, [xr, alg.spow(yr, env.surround), zr], dims=alg.D2_D1)
 
 
 def xyz_to_rlab(xyz: Vector, env: Environment) -> Vector:
     """XYZ to RLAB."""
 
-    xyz_ref = alg.dot(env.ram, xyz, dims=alg.D2_D1)
+    xyz_ref = alg.matmul(env.ram, xyz, dims=alg.D2_D1)
     xr, yr, zr = [alg.nth_root(c, env.surround) for c in xyz_ref]
     LR = 100 * yr
     aR = 430 * (xr - yr)
@@ -108,7 +117,16 @@ class RLAB(Lab):
     )
     # Using less than full discounting would require special achromatic handling
     # to identify achromatic colors as `a == b == 0.0` would no longer be true.
-    ENV = Environment(WHITE, YN, SURROUND['average'], D['hard-copy'])
+    ENV = Environment(
+        # D65 white point.
+        white=WHITE,
+        # 1000 lux or `~318.31 cd/m2`
+        adapting_luminance=YN,
+        # Average surround
+        surround='average',
+        # "Hard copy" or a degree of discount of 1, a.k.a full discounting of illuminant.
+        discounting='hard-copy'
+    )
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Hunter Lab."""

@@ -3,14 +3,15 @@ Handle pointer gamut.
 
 Data used for the gamut: https://www.rit-mcsl.org/UsefulData/PointerData.xls.
 """
+from __future__ import annotations
 import math
 import bisect
 from ..spaces.lab import xyz_to_lab, lab_to_xyz
 from ..spaces.lch import lab_to_lch, lch_to_lab
 from .. import algebra as alg
 from .. import util
-from ..types import Vector
-from typing import TYPE_CHECKING, Tuple, List, Optional
+from ..types import Vector, Matrix
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -68,7 +69,7 @@ def lch_sc_to_xyY(lch: Vector) -> Vector:
     return util.xyz_to_xyY(lab_to_xyz(lch_to_lab(lch), XYZ_W), XYZ_W)
 
 
-def to_lch_sc(color: 'Color') -> Vector:
+def to_lch_sc(color: Color) -> Vector:
     """Convert a color to LCh with an SC illuminant."""
 
     xyz = color.convert('xyz-d65').normalize(nans=False)
@@ -76,7 +77,7 @@ def to_lch_sc(color: 'Color') -> Vector:
     return lab_to_lch(xyz_to_lab(xyz_sc, util.xy_to_xyz(WHITE_POINT_SC)))
 
 
-def from_lch_sc(color: 'Color', lch: Vector) -> 'Color':
+def from_lch_sc(color: Color, lch: Vector) -> Color:
     """Convert a color from LCh with an SC illuminant."""
 
     xyz_sc = lab_to_xyz(lch_to_lab(lch), util.xy_to_xyz(WHITE_POINT_SC))
@@ -84,7 +85,7 @@ def from_lch_sc(color: 'Color', lch: Vector) -> 'Color':
     return color.update('xyz-d65', xyz_d65, color[-1])
 
 
-def closest_lightness(l: float) -> Tuple[int, float]:
+def closest_lightness(l: float) -> tuple[int, float]:
     """Calculate the two closest lightness values and return the first index and interpolation factor."""
 
     # Handle too low lightness inside tolerance
@@ -106,7 +107,7 @@ def closest_lightness(l: float) -> Tuple[int, float]:
     return li, lf
 
 
-def closest_hue(h: float) -> Tuple[int, float]:
+def closest_hue(h: float) -> tuple[int, float]:
     """Calculate the two closest hues and return the first index and interpolation factor."""
 
     hi = 0
@@ -141,7 +142,7 @@ def get_chroma_limit(l: float, h: float) -> float:
     return alg.lerp(alg.lerp(row1[li], row1[li + 1], lf), alg.lerp(row2[li], row2[li + 1], lf), hf)
 
 
-def fit_pointer_gamut(color: 'Color') -> 'Color':
+def fit_pointer_gamut(color: Color) -> Color:
     """Fit a color to the Pointer gamut."""
 
     # Convert to CIE LCh with the SC illuminant
@@ -159,7 +160,7 @@ def fit_pointer_gamut(color: 'Color') -> 'Color':
     return from_lch_sc(color, [new_l, new_c, h]) if adjusted else color
 
 
-def in_pointer_gamut(color: 'Color', tolerance: float) -> bool:
+def in_pointer_gamut(color: Color, tolerance: float) -> bool:
     """
     See if color is within the pointer gamut.
 
@@ -180,7 +181,7 @@ def in_pointer_gamut(color: 'Color', tolerance: float) -> bool:
     return c <= (get_chroma_limit(l, h) + tolerance)
 
 
-def pointer_gamut_boundary(lightness: Optional[float] = None) -> List[Vector]:
+def pointer_gamut_boundary(lightness: float | None = None) -> Matrix:
     """
     Calculate the Pointer gamut boundary points for the given lightness.
 
@@ -191,7 +192,7 @@ def pointer_gamut_boundary(lightness: Optional[float] = None) -> List[Vector]:
     # Maximum Pointer gamut boundary
     # For each hue, find the lightness/chroma point that is furthest away from the white point.
     if lightness is None:
-        max_gamut = []  # type: list[Vector]
+        max_gamut = []  # type: Matrix
         for i, h in enumerate(LCH_H):
             max_dxy = 0.0
             max_xyy = [0.0, 0.0, 0.0]

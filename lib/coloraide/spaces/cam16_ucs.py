@@ -5,11 +5,15 @@ https://observablehq.com/@jrus/cam16
 https://arxiv.org/abs/1802.06067
 https://doi.org/10.1002/col.22131
 """
+from __future__ import annotations
 import math
-from . cam16 import CAM16
-from ..types import Vector
+from .cam16_jmh import CAM16JMh, xyz_d65_to_cam16, cam16_to_xyz_d65, Environment
+from ..spaces import Space, Labish
+from .lch import ACHROMATIC_THRESHOLD
+from ..cat import WHITES
+from .. import util
 from ..channels import Channel, FLG_MIRROR_PERCENT
-from .. import algebra as alg
+from ..types import Vector
 
 COEFFICENTS = {
     'lcd': (0.77, 0.007, 0.0053),
@@ -18,7 +22,7 @@ COEFFICENTS = {
 }
 
 
-def cam16_to_cam16_ucs(jab: Vector, model: str) -> Vector:
+def cam16_jmh_to_cam16_ucs(jmh: Vector, model: str, env: Environment) -> Vector:
     """
     CAM16 (Jab) to CAM16 UCS (Jab).
 
@@ -26,26 +30,34 @@ def cam16_to_cam16_ucs(jab: Vector, model: str) -> Vector:
     and then adding the new adjusted multiplier. Then we can just adjust lightness.
     """
 
-    J, a, b = jab
-    M = math.sqrt(a ** 2 + b ** 2)
+    J, M, h = jmh
+
+    if J == 0.0:
+        return [0.0, 0.0, 0.0]
+
+    # Account for negative colorfulness by reconverting
+    if M < 0:
+        cam16 = xyz_d65_to_cam16(cam16_to_xyz_d65(J=J, M=M, h=h, env=env), env=env)
+        J, M, h = cam16[0], cam16[5], cam16[2]
 
     c1, c2 = COEFFICENTS[model][1:]
 
-    if M != 0:
-        a /= M
-        b /= M
-        M = math.log(1 + c2 * M) / c2
-        a *= M
-        b *= M
+    # Only in extreme cases (outside the visible spectrum)
+    # can the input value for log become negative.
+    # Avoid domain error by forcing zero.
+    M = math.log(max(1 + c2 * M, 1.0)) / c2
+    a = M * math.cos(math.radians(h))
+    b = M * math.sin(math.radians(h))
 
+    absj = abs(J)
     return [
-        (1 + 100 * c1) * J / (1 + c1 * J),
+        math.copysign((1 + 100 * c1) * absj / (1 + c1 * absj), J),
         a,
         b
     ]
 
 
-def cam16_ucs_to_cam16(ucs: Vector, model: str) -> Vector:
+def cam16_ucs_to_cam16_jmh(ucs: Vector, model: str) -> Vector:
     """
     CAM16 UCS (Jab) to CAM16 (Jab).
 
@@ -54,53 +66,58 @@ def cam16_ucs_to_cam16(ucs: Vector, model: str) -> Vector:
     """
 
     J, a, b = ucs
-    M = math.sqrt(a ** 2 + b ** 2)
+
+    if J == 0.0:
+        return [0.0, 0.0, 0.0]
 
     c1, c2 = COEFFICENTS[model][1:]
 
-    if M != 0:
-        a /= M
-        b /= M
-        M = (math.exp(M * c2) - 1) / c2
-        a *= M
-        b *= M
+    M = math.sqrt(a ** 2 + b ** 2)
+    M = (math.exp(M * c2) - 1) / c2
+    h = math.degrees(math.atan2(b, a))
 
+    absj = abs(J)
     return [
-        J / (1 - c1 * (J - 100)),
-        a,
-        b
+        math.copysign(absj / (1 - c1 * (absj - 100)), J),
+        M,
+        util.constrain_hue(h)
     ]
 
 
-class CAM16UCS(CAM16):
+class CAM16UCS(Labish, Space):
     """CAM16 UCS (Jab) class."""
 
-    BASE = "cam16"
+    BASE = "cam16-jmh"
     NAME = "cam16-ucs"
     SERIALIZE = ("--cam16-ucs",)
     MODEL = 'ucs'
     CHANNELS = (
-        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("j", 0.0, 100.0),
         Channel("a", -50.0, 50.0, flags=FLG_MIRROR_PERCENT),
         Channel("b", -50.0, 50.0, flags=FLG_MIRROR_PERCENT)
     )
+    CHANNEL_ALIASES = {
+        "lightness": "j"
+    }
+    WHITE = WHITES['2deg']['D65']
+    # Use the same environment as CAM16JMh
+    ENV = CAM16JMh.ENV
 
     def is_achromatic(self, coords: Vector) -> bool:
         """Check if color is achromatic."""
 
-        j, a, b = cam16_ucs_to_cam16(coords, self.MODEL)
-        m, h = alg.rect_to_polar(a, b)
-        return coords[0] == 0.0 or self.ACHROMATIC.test(j, m, h)
+        j, m = cam16_ucs_to_cam16_jmh(coords, self.MODEL)[:-1]
+        return j == 0 or abs(m) < ACHROMATIC_THRESHOLD
 
     def to_base(self, coords: Vector) -> Vector:
-        """To XYZ from CAM16."""
+        """To CAM16 JMh from CAM16."""
 
-        return cam16_ucs_to_cam16(coords, self.MODEL)
+        return cam16_ucs_to_cam16_jmh(coords, self.MODEL)
 
     def from_base(self, coords: Vector) -> Vector:
-        """From XYZ to CAM16."""
+        """From CAM16 JMh to CAM16."""
 
-        return cam16_to_cam16_ucs(coords, self.MODEL)
+        return cam16_jmh_to_cam16_ucs(coords, self.MODEL, self.ENV)
 
 
 class CAM16LCD(CAM16UCS):
@@ -110,7 +127,7 @@ class CAM16LCD(CAM16UCS):
     SERIALIZE = ("--cam16-lcd",)
     MODEL = 'lcd'
     CHANNELS = (
-        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("j", 0.0, 100.0),
         Channel("a", -70.0, 70.0, flags=FLG_MIRROR_PERCENT),
         Channel("b", -70.0, 70.0, flags=FLG_MIRROR_PERCENT)
     )
@@ -123,7 +140,7 @@ class CAM16SCD(CAM16UCS):
     SERIALIZE = ("--cam16-scd",)
     MODEL = 'scd'
     CHANNELS = (
-        Channel("j", 0.0, 100.0, limit=(0.0, None)),
+        Channel("j", 0.0, 100.0),
         Channel("a", -40.0, 40.0, flags=FLG_MIRROR_PERCENT),
         Channel("b", -40.0, 40.0, flags=FLG_MIRROR_PERCENT)
     )

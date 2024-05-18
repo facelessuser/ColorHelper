@@ -7,7 +7,8 @@ but uses the same gamma correction as Rec. 2020, just at 10 bit precision.
 - https://en.wikipedia.org/wiki/Rec._709
 - https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.709-6-201506-I!!PDF-E.pdf
 """
-from .srgb import sRGB
+from __future__ import annotations
+from .srgb_linear import sRGBLinear
 import math
 from .. import algebra as alg
 from ..types import Vector
@@ -54,12 +55,17 @@ def gam_709(rgb: Vector) -> Vector:
     return result
 
 
-class Rec709(sRGB):
+class Rec709(sRGBLinear):
     """Rec. 709 class."""
 
     BASE = "srgb-linear"
     NAME = "rec709"
     SERIALIZE = ("--rec709",)
+
+    def linear(self) -> str:
+        """Return linear version of the RGB (if available)."""
+
+        return self.BASE
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Rec. 709."""

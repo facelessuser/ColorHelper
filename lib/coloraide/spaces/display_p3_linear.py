@@ -1,6 +1,6 @@
 """Linear Display-p3 color class."""
-from ..cat import WHITES
-from .srgb import sRGB
+from __future__ import annotations
+from .srgb_linear import sRGBLinear
 from .. import algebra as alg
 from ..types import Vector
 
@@ -25,22 +25,21 @@ def lin_p3_to_xyz(rgb: Vector) -> Vector:
     """
 
     # 0 was computed as -3.972075516933488e-17
-    return alg.dot(RGB_TO_XYZ, rgb, dims=alg.D2_D1)
+    return alg.matmul(RGB_TO_XYZ, rgb, dims=alg.D2_D1)
 
 
 def xyz_to_lin_p3(xyz: Vector) -> Vector:
     """Convert XYZ to linear-light P3."""
 
-    return alg.dot(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
+    return alg.matmul(XYZ_TO_RGB, xyz, dims=alg.D2_D1)
 
 
-class DisplayP3Linear(sRGB):
+class DisplayP3Linear(sRGBLinear):
     """Linear Display-p3 class."""
 
     BASE = "xyz-d65"
     NAME = "display-p3-linear"
     SERIALIZE = ('--display-p3-linear',)
-    WHITE = WHITES['2deg']['D65']
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Linear Display P3."""

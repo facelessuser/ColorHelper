@@ -109,7 +109,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, value = alg.no_nans(self.color.convert(mode)[:-1])
+        hue, saturation, value = self.color.convert(mode).coords(nans=False)
 
         r_sat = saturation
         r_val = value
@@ -248,7 +248,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         global default_border
         global color_scale
 
-        hue, saturation, lightness = alg.no_nans(self.color.convert(mode)[:-1])
+        hue, saturation, lightness = self.color.convert(mode).coords(nans=False)
 
         r_sat = saturation
         r_lit = lightness

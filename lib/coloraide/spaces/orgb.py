@@ -3,13 +3,13 @@ oRGB color space.
 
 https://graphics.stanford.edu/~boulos/papers/orgb_sig.pdf
 """
+from __future__ import annotations
 import math
 from .. import algebra as alg
 from ..spaces import Space, Labish
 from ..types import Vector
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
-from typing import Tuple
 
 RGB_TO_LC1C2 = [
     [0.2990, 0.5870, 0.1140],
@@ -26,13 +26,13 @@ def rotate(v: Vector, d: float) -> Vector:
     m = alg.identity(3)
     m[1][1:] = math.cos(d), -math.sin(d)
     m[2][1:] = math.sin(d), math.cos(d)
-    return alg.dot(m, v, dims=alg.D2_D1)
+    return alg.matmul(m, v, dims=alg.D2_D1)
 
 
 def srgb_to_orgb(rgb: Vector) -> Vector:
     """Convert sRGB to oRGB."""
 
-    lcc = alg.dot(RGB_TO_LC1C2, rgb, dims=alg.D2_D1)
+    lcc = alg.matmul(RGB_TO_LC1C2, rgb, dims=alg.D2_D1)
     theta = math.atan2(lcc[2], lcc[1])
     theta0 = theta
     atheta = abs(theta)
@@ -55,7 +55,7 @@ def orgb_to_srgb(lcc: Vector) -> Vector:
     elif (math.pi / 2) <= atheta0 <= math.pi:
         theta = math.copysign((math.pi / 3) + (4 / 3) * (atheta0 - math.pi / 2), theta0)
 
-    return alg.dot(LC1C2_TO_RGB, rotate(lcc, theta - theta0), dims=alg.D2_D1)
+    return alg.matmul(LC1C2_TO_RGB, rotate(lcc, theta - theta0), dims=alg.D2_D1)
 
 
 class oRGB(Labish, Space):
@@ -74,6 +74,7 @@ class oRGB(Labish, Space):
     CHANNEL_ALIASES = {
         "luma": "l"
     }
+    GAMUT_CHECK = 'srgb'
 
     def to_base(self, coords: Vector) -> Vector:
         """To base from oRGB."""

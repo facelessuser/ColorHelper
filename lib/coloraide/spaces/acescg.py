@@ -3,11 +3,11 @@ ACEScg color space.
 
 https://www.oscars.org/science-technology/aces/aces-documentation
 """
+from __future__ import annotations
 from ..channels import Channel
-from ..spaces.srgb import sRGB
+from ..spaces.srgb_linear import sRGBLinear
 from .. import algebra as alg
 from ..types import Vector
-from typing import Tuple
 
 AP1_TO_XYZ = [
     [0.6624541811085053, 0.13400420645643313, 0.15618768700490782],
@@ -25,21 +25,21 @@ XYZ_TO_AP1 = [
 def acescg_to_xyz(acescg: Vector) -> Vector:
     """Convert ACEScc to XYZ."""
 
-    return alg.dot(AP1_TO_XYZ, acescg, dims=alg.D2_D1)
+    return alg.matmul(AP1_TO_XYZ, acescg, dims=alg.D2_D1)
 
 
 def xyz_to_acescg(xyz: Vector) -> Vector:
     """Convert XYZ to ACEScc."""
 
-    return alg.dot(XYZ_TO_AP1, xyz, dims=alg.D2_D1)
+    return alg.matmul(XYZ_TO_AP1, xyz, dims=alg.D2_D1)
 
 
-class ACEScg(sRGB):
+class ACEScg(sRGBLinear):
     """The ACEScg color class."""
 
     BASE = "xyz-d65"
     NAME = "acescg"
-    SERIALIZE = ("--acescg",)  # type: Tuple[str, ...]
+    SERIALIZE = ("--acescg",)  # type: tuple[str, ...]
     WHITE = (0.32168, 0.33767)
     CHANNELS = (
         Channel("r", 0.0, 65504.0, bound=True),

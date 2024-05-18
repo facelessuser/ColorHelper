@@ -3,6 +3,7 @@ The xyY color space.
 
 https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
 """
+from __future__ import annotations
 from ..spaces import Space
 from ..channels import Channel
 from ..cat import WHITES
@@ -10,7 +11,6 @@ from .. import util
 from ..types import Vector
 from .. import algebra as alg
 import math
-from typing import Tuple
 
 
 class xyY(Space):
@@ -29,12 +29,11 @@ class xyY(Space):
     def is_achromatic(self, coords: Vector) -> bool:
         """Test if color is achromatic."""
 
-        if alg.isclose(0.0, coords[-1], abs_tol=1e-4, dims=alg.SC):
+        if math.isclose(0.0, coords[-1], abs_tol=1e-4):
             return True
 
-        for x in alg.vcross(coords[:-1], self.WHITE):
-            if not math.isclose(0.0, x, abs_tol=1e-6):
-                return False
+        if not math.isclose(0.0, alg.vcross(coords[:-1], self.WHITE), abs_tol=1e-6):
+            return False
         return True
 
     def to_base(self, coords: Vector) -> Vector:
