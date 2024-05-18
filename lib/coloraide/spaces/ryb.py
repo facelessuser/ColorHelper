@@ -4,6 +4,7 @@ RYB color space.
 Gosset and Chen
 http://bahamas10.github.io/ryb/assets/ryb.pdf
 """
+from __future__ import annotations
 import math
 from ..spaces import Regular, Space
 from .. import algebra as alg
@@ -76,7 +77,7 @@ class RYB(Regular, Space):
 
         coords = self.to_base(coords)
         for x in alg.vcross(coords, [1, 1, 1]):
-            if not alg.isclose(0.0, x, abs_tol=1e-5, dims=alg.SC):
+            if not math.isclose(0.0, x, abs_tol=1e-5):
                 return False
         return True
 

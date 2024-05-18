@@ -3,13 +3,13 @@ oRGB color space.
 
 https://graphics.stanford.edu/~boulos/papers/orgb_sig.pdf
 """
+from __future__ import annotations
 import math
 from .. import algebra as alg
 from ..spaces import Space, Labish
 from ..types import Vector
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
-from typing import Tuple
 
 RGB_TO_LC1C2 = [
     [0.2990, 0.5870, 0.1140],
@@ -74,6 +74,7 @@ class oRGB(Labish, Space):
     CHANNEL_ALIASES = {
         "luma": "l"
     }
+    GAMUT_CHECK = 'srgb'
 
     def to_base(self, coords: Vector) -> Vector:
         """To base from oRGB."""

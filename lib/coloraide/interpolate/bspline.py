@@ -5,6 +5,7 @@ https://en.wikipedia.org/wiki/B-spline
 https://www.math.ucla.edu/~baker/149.1.02w/handouts/dd_splines.pdf
 http://www2.cs.uregina.ca/~anima/408/Notes/Interpolation/UniformBSpline.htm
 """
+from __future__ import annotations
 from .. import algebra as alg
 from .continuous import InterpolatorContinuous
 from ..interpolate import Interpolator, Interpolate

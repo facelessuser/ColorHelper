@@ -23,9 +23,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 from ..lch import LCh
 from ...cat import WHITES
-from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
+from ...channels import Channel, FLG_ANGLE
 
 
 class OkLCh(LCh):
@@ -35,8 +36,8 @@ class OkLCh(LCh):
     NAME = "oklch"
     SERIALIZE = ("--oklch",)
     CHANNELS = (
-        Channel("l", 0.0, 1.0, flags=FLG_OPT_PERCENT),
-        Channel("c", 0.0, 0.4, limit=(0.0, None), flags=FLG_OPT_PERCENT),
+        Channel("l", 0.0, 1.0),
+        Channel("c", 0.0, 0.4),
         Channel("h", 0.0, 360.0, flags=FLG_ANGLE)
     )
     CHANNEL_ALIASES = {

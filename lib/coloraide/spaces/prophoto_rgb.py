@@ -1,6 +1,7 @@
 """Pro Photo RGB color class."""
+from __future__ import annotations
 from ..cat import WHITES
-from .srgb import sRGB
+from .srgb_linear import sRGBLinear
 from .. import algebra as alg
 from ..types import Vector
 
@@ -23,7 +24,7 @@ def lin_prophoto(rgb: Vector) -> Vector:
         if abs(i) < ET2:
             result.append(i / 16.0)
         else:
-            result.append(alg.npow(i, 1.8))
+            result.append(alg.spow(i, 1.8))
     return result
 
 
@@ -46,12 +47,17 @@ def gam_prophoto(rgb: Vector) -> Vector:
     return result
 
 
-class ProPhotoRGB(sRGB):
+class ProPhotoRGB(sRGBLinear):
     """Pro Photo RGB class."""
 
     BASE = "prophoto-rgb-linear"
     NAME = "prophoto-rgb"
     WHITE = WHITES['2deg']['D50']
+
+    def linear(self) -> str:
+        """Return linear version of the RGB (if available)."""
+
+        return self.BASE
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Pro Photo RGB."""

@@ -1,7 +1,8 @@
 """LCh class."""
+from __future__ import annotations
 from ...spaces import Space, LChish
 from ...cat import WHITES
-from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
+from ...channels import Channel, FLG_ANGLE
 from ... import util
 import math
 from ...types import Vector
@@ -36,8 +37,8 @@ class LCh(LChish, Space):
     """LCh class."""
 
     CHANNELS = (
-        Channel("l", 0.0, 1.0, flags=FLG_OPT_PERCENT),
-        Channel("c", 0.0, 1.0, limit=(0.0, None), flags=FLG_OPT_PERCENT),
+        Channel("l", 0.0, 1.0),
+        Channel("c", 0.0, 1.0),
         Channel("h", 0.0, 360.0, flags=FLG_ANGLE)
     )
     CHANNEL_ALIASES = {
@@ -46,10 +47,20 @@ class LCh(LChish, Space):
         "hue": "h"
     }
 
-    def is_achromatic(self, coords: Vector) -> bool:
+    def normalize(self, coords: Vector) -> Vector:
+        """Normalize coordinates."""
+
+        if coords[1] < 0:
+            coords[1] *= -1.0
+            coords[2] += 180.0
+        coords[2] %= 360.0
+        return coords
+
+    def is_achromatic(self, coords: Vector) -> bool | None:
         """Check if color is achromatic."""
 
-        return coords[1] < ACHROMATIC_THRESHOLD
+        # Account for both positive and negative chroma
+        return abs(coords[1]) < ACHROMATIC_THRESHOLD
 
     def to_base(self, coords: Vector) -> Vector:
         """To Lab from LCh."""
@@ -69,8 +80,8 @@ class CIELCh(LCh):
     NAME = "lch"
     SERIALIZE = ("--lch",)
     CHANNELS = (
-        Channel("l", 0.0, 100.0, flags=FLG_OPT_PERCENT),
-        Channel("c", 0.0, 150.0, limit=(0.0, None), flags=FLG_OPT_PERCENT),
+        Channel("l", 0.0, 100.0),
+        Channel("c", 0.0, 150.0),
         Channel("h", 0.0, 360.0, flags=FLG_ANGLE)
     )
     CHANNEL_ALIASES = {

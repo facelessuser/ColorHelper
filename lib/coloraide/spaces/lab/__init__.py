@@ -4,9 +4,10 @@ Lab class.
 https://ia802802.us.archive.org/23/items/gov.law.cie.15.2004/cie.15.2004.pdf
 http://www.brucelindbloom.com/Eqn_Lab_to_XYZ.html
 """
+from __future__ import annotations
 from ...spaces import Space, Labish
 from ...cat import WHITES
-from ...channels import Channel, FLG_OPT_PERCENT, FLG_MIRROR_PERCENT
+from ...channels import Channel, FLG_MIRROR_PERCENT
 from ... import util
 from ... import algebra as alg
 from ...types import VectorLike, Vector
@@ -89,8 +90,8 @@ class CIELab(Lab):
     NAME = "lab"
     SERIALIZE = ("--lab",)
     CHANNELS = (
-        Channel("l", 0.0, 100.0, flags=FLG_OPT_PERCENT),
-        Channel("a", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT),
-        Channel("b", -125.0, 125.0, flags=FLG_MIRROR_PERCENT | FLG_OPT_PERCENT)
+        Channel("l", 0.0, 100.0),
+        Channel("a", -125.0, 125.0, flags=FLG_MIRROR_PERCENT),
+        Channel("b", -125.0, 125.0, flags=FLG_MIRROR_PERCENT)
     )
     WHITE = WHITES['2deg']['D50']

@@ -1,9 +1,9 @@
 """Uncalibrated, naive CMY color space."""
-from ..spaces import Space
+from __future__ import annotations
+from ..spaces import Regular, Space
 from ..channels import Channel
 from ..cat import WHITES
 from ..types import Vector
-from typing import Tuple
 from .. import algebra as alg
 import math
 
@@ -20,12 +20,12 @@ def cmy_to_srgb(cmy: Vector) -> Vector:
     return [1 - c for c in cmy]
 
 
-class CMY(Space):
+class CMY(Regular, Space):
     """The CMY color class."""
 
     BASE = "srgb"
     NAME = "cmy"
-    SERIALIZE = ("--cmy",)  # type: Tuple[str, ...]
+    SERIALIZE = ("--cmy",)  # type: tuple[str, ...]
     CHANNELS = (
         Channel("c", 0.0, 1.0, bound=True),
         Channel("m", 0.0, 1.0, bound=True),
@@ -43,7 +43,7 @@ class CMY(Space):
 
         black = [1, 1, 1]
         for x in alg.vcross(coords, black):
-            if not alg.isclose(0.0, x, abs_tol=1e-4, dims=algs.SC):
+            if not math.isclose(0.0, x, abs_tol=1e-4):
                 return False
         return True
 

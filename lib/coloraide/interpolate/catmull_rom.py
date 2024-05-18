@@ -3,6 +3,7 @@ Catmull-Rom interpolation.
 
 http://www2.cs.uregina.ca/~anima/408/Notes/Interpolation/Parameterized-Curves-Summary.htm
 """
+from __future__ import annotations
 from .bspline import InterpolatorBSpline
 from ..interpolate import Interpolator, Interpolate
 from .. import algebra as alg

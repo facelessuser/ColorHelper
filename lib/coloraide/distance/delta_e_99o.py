@@ -3,6 +3,7 @@ Delta E 99o.
 
 https://de.wikipedia.org/wiki/DIN99-Farbraum
 """
+from __future__ import annotations
 from ..distance import DeltaE, distance_euclidean
 from typing import TYPE_CHECKING, Any
 
@@ -15,7 +16,7 @@ class DE99o(DeltaE):
 
     NAME = '99o'
 
-    def distance(self, color: 'Color', sample: 'Color', **kwargs: Any) -> float:
+    def distance(self, color: Color, sample: Color, **kwargs: Any) -> float:
         """Get delta E 99o."""
 
         return distance_euclidean(color, sample, space='din99o')

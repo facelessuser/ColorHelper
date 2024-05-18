@@ -13,14 +13,14 @@ color.js.
 Original Authors: Lea Verou, Chris Lilley
 License: MIT (As noted in https://github.com/LeaVerou/color.js/blob/master/package.json)
 """
+from __future__ import annotations
 import math
 import functools
 from abc import ABCMeta, abstractmethod
-from .. import util
 from .. import algebra as alg
 from .. spaces import HSVish, HSLish, Cylindrical, RGBish, LChish, Labish
-from ..types import Vector, ColorInput, Plugin
-from typing import Callable, Dict, Tuple, Optional, Type, Sequence, Union, Mapping, List, Any, TYPE_CHECKING
+from ..types import Matrix, Vector, ColorInput, Plugin
+from typing import Callable, Sequence, Mapping, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -43,7 +43,7 @@ class stop:
 def midpoint(t: float, h: float = 0.5) -> float:
     """Midpoint easing function."""
 
-    return 0.0 if h <= 0 or h >= 1 else alg.npow(t, math.log(0.5) / math.log(h))
+    return 0.0 if h <= 0 or h >= 1 else alg.spow(t, math.log(0.5) / math.log(h))
 
 
 def hint(mid: float) -> Callable[..., float]:
@@ -52,7 +52,7 @@ def hint(mid: float) -> Callable[..., float]:
     return functools.partial(midpoint, h=mid)
 
 
-def normalize_domain(d: List[float]) -> List[float]:
+def normalize_domain(d: Vector) -> Vector:
     """Normalize domain between 0 and 1."""
 
     total = d[-1] - d[0]
@@ -70,18 +70,18 @@ class Interpolator(metaclass=ABCMeta):
 
     def __init__(
         self,
-        coordinates: List[Vector],
+        coordinates: Matrix,
         channel_names: Sequence[str],
-        create: Type['Color'],
-        easings: List[Optional[Callable[..., float]]],
-        stops: Dict[int, float],
+        create: type[Color],
+        easings: list[Callable[..., float] | None],
+        stops: dict[int, float],
         space: str,
         out_space: str,
-        progress: Optional[Union[Callable[..., float], Mapping[str, Callable[..., float]]]],
+        progress: Mapping[str, Callable[..., float]] | Callable[..., float] | None,
         premultiplied: bool,
         extrapolate: bool = False,
-        domain: Optional[Sequence[float]] = None,
-        padding: Optional[Union[float, Tuple[float, float]]] = None,
+        domain: Sequence[float] | None = None,
+        padding: float | tuple[float, float] | None = None,
         hue: str = 'shorter',
         **kwargs: Any
     ):
@@ -99,22 +99,22 @@ class Interpolator(metaclass=ABCMeta):
         self.space = space
         self._out_space = out_space
         self.extrapolate = extrapolate
-        self.current_easing = None  # type: Optional[Union[Callable[..., float], Mapping[str, Callable[..., float]]]]
+        self.current_easing = None  # type: Mapping[str, Callable[..., float]] | Callable[..., float] | None
         self.hue = hue
         cs = self.create.CS_MAP[space]
-        if isinstance(cs, Cylindrical):
-            self.hue_index = cs.hue_index()
+        if cs.is_polar():
+            self.hue_index = cs.hue_index()  # type: ignore[attr-defined]
         else:
             self.hue_index = -1
         self.premultiplied = premultiplied
 
         # Calculate padded start and end
-        self._padding = None  # type: Optional[Tuple[float, float]]
+        self._padding = None  # type: tuple[float, float] | None
         if padding is not None:
             self.padding(padding)
 
         # Set the domain
-        self._domain = []  # type: List[float]
+        self._domain = []  # type: Vector
         if domain is not None:
             self.domain(domain)
 
@@ -125,13 +125,18 @@ class Interpolator(metaclass=ABCMeta):
         steps: int = 2,
         max_steps: int = 1000,
         max_delta_e: float = 0,
-        delta_e: Optional[str] = None,
-        delta_e_args: Optional[Dict[str, Any]] = None,
-    ) -> None:
+        delta_e: str | None = None,
+        delta_e_args: dict[str, Any] | None = None,
+    ) -> Interpolator:
         """Make the interpolation a discretized interpolation."""
+
+        from .linear import Linear
 
         # Get the discrete steps for the new discrete interpolation
         colors = self.steps(steps, max_steps, max_delta_e, delta_e, delta_e_args)
+
+        if not colors:
+            raise ValueError('Discrete interpolation requires at least 1 discrete step.')
 
         # Calculate new coordinate list and discrete stops
         total = len(colors)
@@ -149,21 +154,28 @@ class Interpolator(metaclass=ABCMeta):
             coords.extend([step1, step2])
             count += 2
 
-        # Update colors and stops
-        self.coordinates = coords
-        self.length = len(self.coordinates)
-        self.stops = stops
-        self.start = self.stops[0]
-        self.end = self.stops[len(self.stops) - 1]
+        hue = self.hue
+        if total == 1:
+            coords.extend([colors[-1][:], colors[-1][:]])
+            stops[0] = 0.0
+            stops[1] = 1.0
+            hue = 'shorter'
 
-        # Reset features that were used to generate the discrete steps
-        self.easings = [None] * (self.length - 1)
-        self.progress = None
-        self.current_easing = None
-        self._padding = None
-        self._domain = []
-
-        self.setup()
+        return Linear().interpolator(
+            coordinates=coords,
+            channel_names=self.channel_names,
+            create=self.create,
+            easings=[None] * (len(coords) - 1),
+            stops=stops,
+            space=self.space,
+            out_space=self._out_space,
+            progress=self.progress,
+            premultiplied=self.premultiplied,
+            extrapolate=self.extrapolate,
+            domain=[],
+            padding=None,
+            hue = hue
+        )
 
     def out_space(self, space: str) -> None:
         """Set output space."""
@@ -172,7 +184,7 @@ class Interpolator(metaclass=ABCMeta):
             raise ValueError("'{}' is not a valid color space".format(space))
         self._out_space = space
 
-    def padding(self, padding: Union[float, Sequence[float]]) -> None:
+    def padding(self, padding: float | Sequence[float]) -> None:
         """Add/adjust padding."""
 
         # Make sure it is a sequence
@@ -206,7 +218,7 @@ class Interpolator(metaclass=ABCMeta):
 
         # Ensure domain ascends.
         # If we have a domain of length 1, we will duplicate it.
-        d = []  # type: List[float]
+        d = []  # type: Vector
         if domain:
             length = len(domain)
 
@@ -240,9 +252,9 @@ class Interpolator(metaclass=ABCMeta):
         steps: int = 2,
         max_steps: int = 1000,
         max_delta_e: float = 0,
-        delta_e: Optional[str] = None,
-        delta_e_args: Optional[Dict[str, Any]] = None
-    ) -> List['Color']:
+        delta_e: str | None = None,
+        delta_e_args: dict[str, Any] | None = None,
+    ) -> list[Color]:
         """Steps."""
 
         actual_steps = steps
@@ -258,7 +270,7 @@ class Interpolator(metaclass=ABCMeta):
         if max_steps is not None:
             actual_steps = min(actual_steps, max_steps)
 
-        ret = []  # type: List[Tuple[float, Color]]
+        ret = []  # type: list[tuple[float, Color]]
         if actual_steps == 1:
             ret = [(0.5, self(0.5))]
         elif actual_steps > 1:
@@ -307,7 +319,7 @@ class Interpolator(metaclass=ABCMeta):
 
         return [i[1] for i in ret]
 
-    def premultiply(self, coords: Vector, alpha: Optional[float] = None) -> None:
+    def premultiply(self, coords: Vector, alpha: float | None = None) -> None:
 
         if alpha is not None:
             coords[-1] = alpha
@@ -341,7 +353,7 @@ class Interpolator(metaclass=ABCMeta):
 
             coords[i] = value / alpha
 
-    def begin(self, point: float, first: float, last: float, index: int) -> 'Color':
+    def begin(self, point: float, first: float, last: float, index: int) -> Color:
         """
         Begin interpolation.
 
@@ -417,7 +429,7 @@ class Interpolator(metaclass=ABCMeta):
             point = size * index + (adjusted * size)
         return point
 
-    def __call__(self, point: float) -> 'Color':
+    def __call__(self, point: float) -> Color:
         """Find which leg of the interpolation the request is between."""
 
         if self._domain:
@@ -458,25 +470,25 @@ class Interpolate(Plugin, metaclass=ABCMeta):
     @abstractmethod
     def interpolator(
         self,
-        coordinates: List[Vector],
+        coordinates: Matrix,
         channel_names: Sequence[str],
-        create: Type['Color'],
-        easings: List[Optional[Callable[..., float]]],
-        stops: Dict[int, float],
+        create: type[Color],
+        easings: list[Callable[..., float] | None],
+        stops: dict[int, float],
         space: str,
         out_space: str,
-        progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]],
+        progress: Mapping[str, Callable[..., float]] | Callable[..., float] | None,
         premultiplied: bool,
         extrapolate: bool = False,
-        domain: Optional[List[float]] = None,
-        padding: Optional[Union[float, Tuple[float, float]]] = None,
+        domain: Vector | None = None,
+        padding: float | tuple[float, float] | None = None,
         hue: str = 'shorter',
         **kwargs: Any
     ) -> Interpolator:
         """Get the interpolator object."""
 
 
-def calc_stops(stops: Dict[int, float], count: int) -> Dict[int, float]:
+def calc_stops(stops: dict[int, float], count: int) -> dict[int, float]:
     """Calculate stops."""
 
     # Ensure the first stop is set to zero if not explicitly set
@@ -542,9 +554,9 @@ def calc_stops(stops: Dict[int, float], count: int) -> Dict[int, float]:
 
 
 def process_mapping(
-    progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]],
+    progress: Mapping[str, Callable[..., float]] | Callable[..., float] | None,
     aliases: Mapping[str, str]
-) -> Optional[Union[Callable[..., float], Mapping[str, Callable[..., float]]]]:
+) -> Mapping[str, Callable[..., float]] | Callable[..., float] | None:
     """Process a mapping, such that it is not using aliases."""
 
     if not isinstance(progress, Mapping):
@@ -552,7 +564,7 @@ def process_mapping(
     return {aliases.get(k, k): v for k, v in progress.items()}
 
 
-def carryforward_convert(color: 'Color', space: str, hue_index: int, powerless: bool) -> None:  # pragma: no cover
+def carryforward_convert(color: Color, space: str, hue_index: int, powerless: bool) -> None:  # pragma: no cover
     """Carry forward undefined values during conversion."""
 
     carry = []
@@ -632,26 +644,26 @@ def carryforward_convert(color: 'Color', space: str, hue_index: int, powerless: 
 
         # Carry the undefined values forward
         for i in carry:
-            color[i] = alg.nan
+            color[i] = math.nan
 
     # Normalize hue if cylindrical and achromatic
     # Carry forward is not needed as nothing was lost through conversion
     elif powerless and hue_index >= 0 and color.is_achromatic():
-        color[hue_index] = alg.nan
+        color[hue_index] = math.nan
 
 
 def interpolator(
     interpolator: str,
-    create: Type['Color'],
-    colors: Sequence[Union[ColorInput, stop, Callable[..., float]]],
-    space: Optional[str],
-    out_space: Optional[str],
-    progress: Optional[Union[Mapping[str, Callable[..., float]], Callable[..., float]]],
+    create: type[Color],
+    colors: Sequence[ColorInput | stop | Callable[..., float]],
+    space: str | None,
+    out_space: str | None,
+    progress: Mapping[str, Callable[..., float]] | Callable[..., float] | None,
     hue: str,
     premultiplied: bool,
     extrapolate: bool,
-    domain: Optional[List[float]] = None,
-    padding: Optional[Union[float, Tuple[float, float]]] = None,
+    domain: Vector | None = None,
+    padding: float | tuple[float, float] | None = None,
     carryforward: bool = False,
     powerless: bool = False,
     **kwargs: Any
@@ -667,6 +679,9 @@ def interpolator(
 
     if space is None:
         space = create.INTERPOLATE
+
+    if not colors:
+        raise ValueError('At least one color must be specified.')
 
     if isinstance(colors[0], stop):
         current = create(colors[0].color)
@@ -689,7 +704,7 @@ def interpolator(
     elif space != current.space():
         current.convert(space, in_place=True)
     elif powerless and is_cyl and current.is_achromatic():
-        current[hue_index] = alg.nan
+        current[hue_index] = math.nan
 
     easing = None  # type: Any
     easings = []  # type: Any
@@ -717,7 +732,7 @@ def interpolator(
         elif space != color.space():
             color.convert(space, in_place=True)
         elif powerless and is_cyl and color.is_achromatic():
-            color[hue_index] = alg.nan
+            color[hue_index] = math.nan
 
         # Create an entry interpolating the current color and the next color
         coords.append(color[:])
@@ -728,8 +743,12 @@ def interpolator(
         current = color
 
     i += 1
-    if i < 2:
-        raise ValueError('Need at least two colors to interpolate')
+    if i == 1:
+        coords.append(coords[-1][:])
+        easings.append(None)
+        stops[i] = None
+        hue = 'shorter'
+        i += 1
 
     # Calculate stops
     stops = calc_stops(stops, i)

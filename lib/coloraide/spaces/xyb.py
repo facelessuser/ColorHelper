@@ -3,12 +3,12 @@ XYB color space.
 
 https://ds.jpeg.org/whitepapers/jpeg-xl-whitepaper.pdf
 """
+from __future__ import annotations
 from .. import algebra as alg
 from ..spaces import Space, Labish
 from ..types import Vector
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
-from typing import Tuple
 
 BIAS = 0.00379307325527544933
 BIAS_CBRT = alg.nth_root(BIAS, 3)
@@ -82,7 +82,7 @@ class XYB(Labish, Space):
         Channel("b", -0.45, 0.45, flags=FLG_MIRROR_PERCENT)
     )
 
-    def names(self) -> Tuple[str, ...]:
+    def names(self) -> tuple[str, ...]:
         """Return Lab-ish names in the order L a b."""
 
         channels = self.channels

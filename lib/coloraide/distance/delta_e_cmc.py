@@ -1,8 +1,9 @@
 """Delta E CMC."""
+from __future__ import annotations
 from ..distance import DeltaE
-import math
 from ..spaces.lab import CIELab
-from typing import TYPE_CHECKING, Any, Optional
+import math
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -27,11 +28,11 @@ class DECMC(DeltaE):
 
     def distance(
         self,
-        color: 'Color',
-        sample: 'Color',
-        l: Optional[float] = None,
-        c: Optional[float] = None,
-        space: Optional[str] = None,
+        color: Color,
+        sample: Color,
+        l: float | None = None,
+        c: float | None = None,
+        space: str | None = None,
         **kwargs: Any
     ) -> float:
         """

@@ -6,6 +6,7 @@ Uses Robertson 1968 method.
 - https://en.wikipedia.org/wiki/Correlated_color_temperature#Robertson's_method
 - http://www.brucelindbloom.com/index.html?Math.html
 """
+from __future__ import annotations
 import math
 from . import planck
 from .. import algebra as alg
@@ -14,7 +15,7 @@ from .. import cat
 from .. import cmfs
 from ..temperature import CCT
 from ..types import Vector, VectorLike
-from typing import TYPE_CHECKING, Any, Tuple, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -33,7 +34,7 @@ class Robertson1968(CCT):
 
     def __init__(
         self,
-        cmfs: Dict[int, Tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
+        cmfs: dict[int, tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
         white: VectorLike = cat.WHITES['2deg']['D65'],
         mired: VectorLike = MIRED_EXTENDED,
         sigfig: int = 5,
@@ -46,12 +47,12 @@ class Robertson1968(CCT):
 
     def generate_table(
         self,
-        cmfs: Dict[int, Tuple[float, float, float]],
+        cmfs: dict[int, tuple[float, float, float]],
         white: VectorLike,
         mired: VectorLike,
         sigfig: int,
         planck_step: int,
-    ) -> List[Tuple[float, float, float, float]]:
+    ) -> list[tuple[float, float, float, float]]:
         """
         Generate the necessary table for the Robertson1968 method.
 
@@ -69,7 +70,7 @@ class Robertson1968(CCT):
         """
 
         xyzw = util.xy_to_xyz(white)
-        table = []  # type: List[Tuple[float, float, float, float]]
+        table = []  # type: list[tuple[float, float, float, float]]
         to_uv = util.xy_to_uv_1960 if self.CHROMATICITY == 'uv-1960' else util.xy_to_uv
         for t in mired:
             uv1 = to_uv(planck.temp_to_xy_planckian_locus(1e6 / (t - 0.01), cmfs, xyzw, step=planck_step))
@@ -99,7 +100,7 @@ class Robertson1968(CCT):
                 table.append((t, uv[0], uv[1], m))
         return table
 
-    def to_cct(self, color: 'Color', **kwargs: Any) -> Vector:
+    def to_cct(self, color: Color, **kwargs: Any) -> Vector:
         """Calculate a color's CCT."""
 
         u, v = color.split_chromaticity(self.CHROMATICITY)[:-1]
@@ -132,7 +133,7 @@ class Robertson1968(CCT):
                 # Calculate the temperature, if the mired value is zero
                 # assume the maximum temperature of 100000K.
                 mired = alg.lerp(previous[0], current[0], factor)
-                temp = 1.0E6 / mired if mired > 0 else alg.inf
+                temp = 1.0E6 / mired if mired > 0 else math.inf
 
                 # Interpolate the slope vectors
                 dup = 1 / previous_denom
@@ -160,14 +161,14 @@ class Robertson1968(CCT):
 
     def from_cct(
         self,
-        color: Type['Color'],
+        color: type[Color],
         space: str,
         kelvin: float,
         duv: float,
         scale: bool,
-        scale_space: Optional[str],
+        scale_space: str | None,
         **kwargs: Any
-    ) -> 'Color':
+    ) -> Color:
         """Calculate a color that satisfies the CCT."""
 
         # Find inverse temperature to use as index.

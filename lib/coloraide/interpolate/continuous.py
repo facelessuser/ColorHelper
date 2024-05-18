@@ -1,12 +1,13 @@
 """Continuous interpolation."""
+from __future__ import annotations
 import math
 from .. import algebra as alg
 from ..interpolate import Interpolator, Interpolate
 from ..types import Vector
-from typing import Any, Tuple, Optional
+from typing import Any
 
 
-def adjust_shorter(h1: float, h2: float, offset: float) -> Tuple[float, float]:
+def adjust_shorter(h1: float, h2: float, offset: float) -> tuple[float, float]:
     """Adjust the given hues."""
 
     d = h2 - h1
@@ -19,7 +20,7 @@ def adjust_shorter(h1: float, h2: float, offset: float) -> Tuple[float, float]:
     return h2, offset
 
 
-def adjust_longer(h1: float, h2: float, offset: float) -> Tuple[float, float]:
+def adjust_longer(h1: float, h2: float, offset: float) -> tuple[float, float]:
     """Adjust the given hues."""
 
     d = h2 - h1
@@ -32,7 +33,7 @@ def adjust_longer(h1: float, h2: float, offset: float) -> Tuple[float, float]:
     return h2, offset
 
 
-def adjust_increase(h1: float, h2: float, offset: float) -> Tuple[float, float]:
+def adjust_increase(h1: float, h2: float, offset: float) -> tuple[float, float]:
     """Adjust the given hues."""
 
     if h2 < h1:
@@ -41,7 +42,7 @@ def adjust_increase(h1: float, h2: float, offset: float) -> Tuple[float, float]:
     return h2, offset
 
 
-def adjust_decrease(h1: float, h2: float, offset: float) -> Tuple[float, float]:
+def adjust_decrease(h1: float, h2: float, offset: float) -> tuple[float, float]:
     """Adjust the given hues."""
 
     if h2 > h1:
@@ -56,11 +57,11 @@ class InterpolatorContinuous(Interpolator):
     def normalize_hue(
         self,
         color1: Vector,
-        color2: Optional[Vector],
+        color2: Vector | None,
         offset: float,
         hue: str,
-        fallback: Optional[float]
-    ) -> Tuple[Vector, float]:
+        fallback: float | None
+    ) -> tuple[Vector, float]:
         """
         Normalize hues according the hue specifier.
 

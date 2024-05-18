@@ -1,10 +1,10 @@
 """Chromatic adaptation transforms."""
+from __future__ import annotations
 from . import util
 from abc import ABCMeta, abstractmethod
 from . import algebra as alg
 import functools
 from .types import Matrix, VectorLike, Vector, Plugin
-from typing import Type, Tuple  # noqa: F401
 
 # From CIE 2004 Colorimetry T.3 and T.8
 # B from https://en.wikipedia.org/wiki/Standard_illuminant#White_point
@@ -40,10 +40,10 @@ WHITES = {
 
 
 def calc_adaptation_matrices(
-    w1: Tuple[float, float],
-    w2: Tuple[float, float],
+    w1: tuple[float, float],
+    w2: tuple[float, float],
     m: Matrix,
-) -> Tuple[Matrix, Matrix]:
+) -> tuple[Matrix, Matrix]:
     """
     Get the von Kries based adaptation matrix based on the method and illuminants.
 
@@ -72,7 +72,7 @@ class CAT(Plugin, metaclass=ABCMeta):
     NAME = ''
 
     @abstractmethod
-    def adapt(self, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
+    def adapt(self, w1: tuple[float, float], w2: tuple[float, float], xyz: VectorLike) -> Vector:
         """Adapt a given XYZ color using the provided white points."""
 
 
@@ -95,15 +95,15 @@ class VonKries(CAT):
     @classmethod
     @functools.lru_cache(maxsize=20)
     def get_adaptation_matrices(
-        cls: Type['VonKries'],
-        w1: Tuple[float, float],
-        w2: Tuple[float, float]
-    ) -> Tuple[Matrix, Matrix]:
+        cls: type[VonKries],
+        w1: tuple[float, float],
+        w2: tuple[float, float]
+    ) -> tuple[Matrix, Matrix]:
         """Get the adaptation matrices."""
 
         return calc_adaptation_matrices(w1, w2, cls.MATRIX)
 
-    def adapt(self, w1: Tuple[float, float], w2: Tuple[float, float], xyz: VectorLike) -> Vector:
+    def adapt(self, w1: tuple[float, float], w2: tuple[float, float], xyz: VectorLike) -> Vector:
         """
         Adapt a given XYZ color using the provided white points.
 

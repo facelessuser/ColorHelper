@@ -1,4 +1,5 @@
 """Piecewise linear interpolation."""
+from __future__ import annotations
 import math
 from .. import algebra as alg
 from ..interpolate import Interpolator, Interpolate
@@ -127,7 +128,7 @@ class InterpolatorLinear(Interpolator):
 
             # Both values are undefined, so return undefined
             if math.isnan(a) and math.isnan(b):
-                value = alg.nan
+                value = math.nan
 
             # One channel is undefined, take the one that is not
             elif math.isnan(a):

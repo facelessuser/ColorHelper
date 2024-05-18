@@ -1,10 +1,6 @@
 """Everything and the kitchen sink."""
+from __future__ import annotations
 from .color import Color as Base
-from .spaces.rec2100_pq import Rec2100PQ
-from .spaces.rec2100_hlg import Rec2100HLG
-from .spaces.jzazbz import Jzazbz
-from .spaces.jzczhz import JzCzhz
-from .spaces.ictcp import ICtCp
 from .spaces.din99o import DIN99o
 from .spaces.lch99o import LCh99o
 from .spaces.luv import Luv
@@ -30,14 +26,13 @@ from .spaces.acescc import ACEScc
 from .spaces.acescct import ACEScct
 from .spaces.cam16_jmh import CAM16JMh
 from .spaces.cam16_ucs import CAM16UCS, CAM16LCD, CAM16SCD
+from .spaces.zcam_jmh import ZCAMJMh
 from .spaces.hct import HCT
 from .spaces.ucs import UCS
 from .spaces.rec709 import Rec709
 from .spaces.ryb import RYB, RYBBiased
 from .spaces.cubehelix import Cubehelix
-from .distance.delta_e_itp import DEITP
 from .distance.delta_e_99o import DE99o
-from .distance.delta_e_z import DEZ
 from .distance.delta_e_cam16 import DECAM16
 from .distance.delta_e_hct import DEHCT
 from .gamut.fit_hct_chroma import HCTChroma
@@ -59,11 +54,6 @@ ColorAll.register(
     [
         # Spaces
         Rec709(),
-        Rec2100PQ(),
-        Rec2100HLG(),
-        Jzazbz(),
-        JzCzhz(),
-        ICtCp(),
         DIN99o(),
         LCh99o(),
         Luv(),
@@ -96,11 +86,10 @@ ColorAll.register(
         RYB(),
         RYBBiased(),
         Cubehelix(),
+        ZCAMJMh(),
 
         # Delta E
-        DEITP(),
         DE99o(),
-        DEZ(),
         DECAM16(),
         DEHCT(),
 

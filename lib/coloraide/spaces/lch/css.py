@@ -1,9 +1,10 @@
 """LCh class."""
+from __future__ import annotations
 from .. import lch as base
 from ...css import parse
 from ...css import serialize
 from ...types import Vector
-from typing import Union, Optional, Tuple, Any, TYPE_CHECKING, Sequence
+from typing import Any, TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...color import Color
@@ -14,14 +15,14 @@ class LCh(base.CIELCh):
 
     def to_string(
         self,
-        parent: 'Color',
+        parent: Color,
         *,
-        alpha: Optional[bool] = None,
-        precision: Optional[int] = None,
-        fit: Union[str, bool] = True,
+        alpha: bool | None = None,
+        precision: int | None = None,
+        fit: bool | str | dict[str, Any] = True,
         none: bool = False,
         color: bool = False,
-        percent: Union[bool, Sequence] = False,
+        percent: bool | Sequence[bool] = False,
         **kwargs: Any
     ) -> str:
         """Convert to CSS."""
@@ -42,7 +43,7 @@ class LCh(base.CIELCh):
         string: str,
         start: int = 0,
         fullmatch: bool = True
-    ) -> Optional[Tuple[Tuple[Vector, float], int]]:
+    ) -> tuple[tuple[Vector, float], int] | None:
         """Match a CSS color string."""
 
         return parse.parse_css(self, string, start, fullmatch)

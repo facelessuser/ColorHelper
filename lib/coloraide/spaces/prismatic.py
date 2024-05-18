@@ -6,13 +6,13 @@ Creates a Maxwell color triangle with a lightness component.
 http://psgraphics.blogspot.com/2015/10/prismatic-color-model.html
 https://studylib.net/doc/14656976/the-prismatic-color-space-for-rgb-computations
 """
+from __future__ import annotations
 from ..spaces import Space
 from ..channels import Channel
 from ..cat import WHITES
 from ..types import Vector
 from .. import algebra as alg
 import math
-from typing import Tuple
 
 
 def srgb_to_lrgb(rgb: Vector) -> Vector:
@@ -37,7 +37,7 @@ class Prismatic(Space):
 
     BASE = "srgb"
     NAME = "prismatic"
-    SERIALIZE = ("--prismatic",)  # type: Tuple[str, ...]
+    SERIALIZE = ("--prismatic",)  # type: tuple[str, ...]
     EXTENDED_RANGE = False
     CHANNELS = (
         Channel("l", 0.0, 1.0, bound=True),
@@ -52,16 +52,18 @@ class Prismatic(Space):
         "blue": 'b'
     }
     WHITE = WHITES['2deg']['D65']
+    GAMUT_CHECK = 'srgb'
+    CLIP_SPACE = 'prismatic'
 
     def is_achromatic(self, coords: Vector) -> bool:
         """Test if color is achromatic."""
 
-        if alg.isclose(0.0, coords[0], abs_tol=1e-4, dims=alg.SC):
+        if math.isclose(0.0, coords[0], abs_tol=1e-4):
             return True
 
         white = [1, 1, 1]
         for x in alg.vcross(coords[:-1], white):
-            if not alg.isclose(0.0, x, abs_tol=1e-5, dims=alg.SC):
+            if not math.isclose(0.0, x, abs_tol=1e-5):
                 return False
         return True
 

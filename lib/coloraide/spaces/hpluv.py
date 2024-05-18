@@ -24,24 +24,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 from ..spaces import Space, HSLish
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
 from .lab import EPSILON, KAPPA
 from .srgb_linear import XYZ_TO_RGB
 import math
+from .. import algebra as alg
 from .. import util
 from ..types import Vector
-from typing import Tuple, List
 
 
-def distance_line_from_origin(line: Tuple[float, float]) -> float:
+def distance_line_from_origin(line: tuple[float, float]) -> float:
     """Distance line from origin."""
 
     return abs(line[1]) / math.sqrt(line[0] ** 2 + 1)
 
 
-def get_bounds(l: float) -> List[Tuple[float, float]]:
+def get_bounds(l: float) -> list[tuple[float, float]]:
     """Get bounds."""
 
     result = []
@@ -70,7 +71,7 @@ def max_safe_chroma_for_l(l: float) -> float:
     return min(distance_line_from_origin(bound) for bound in get_bounds(l))
 
 
-def hpluv_to_lch(hpluv: Vector) -> Vector:
+def hpluv_to_luv(hpluv: Vector) -> Vector:
     """Convert HPLuv to LCh."""
 
     h, s, l = hpluv
@@ -81,14 +82,16 @@ def hpluv_to_lch(hpluv: Vector) -> Vector:
         l = 0.0
     else:
         _hx_max = max_safe_chroma_for_l(l)
-        c = _hx_max / 100 * s
-    return [l, c, util.constrain_hue(h)]
+        c = _hx_max * 0.01 * s
+    a, b = alg.polar_to_rect(c, h)
+    return [l, a, b]
 
 
-def lch_to_hpluv(lch: Vector) -> Vector:
+def luv_to_hpluv(luv: Vector) -> Vector:
     """Convert LCh to HPLuv."""
 
-    l, c, h = lch
+    l = luv[0]
+    c, h = alg.rect_to_polar(luv[1], luv[2])
     s = 0.0
     if l > 100 - 1e-7:
         l = 100
@@ -103,11 +106,11 @@ def lch_to_hpluv(lch: Vector) -> Vector:
 class HPLuv(HSLish, Space):
     """HPLuv class."""
 
-    BASE = 'lchuv'
+    BASE = 'luv'
     NAME = "hpluv"
     SERIALIZE = ("--hpluv",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
         Channel("p", 0.0, 100.0, bound=True),
         Channel("l", 0.0, 100.0, bound=True)
     )
@@ -118,6 +121,14 @@ class HPLuv(HSLish, Space):
     }
     WHITE = WHITES['2deg']['D65']
 
+    def normalize(self, coords: Vector) -> Vector:
+        """Normalize coordinates."""
+
+        if coords[1] < 0:
+            return self.from_base(self.to_base(coords))
+        coords[0] %= 360.0
+        return coords
+
     def is_achromatic(self, coords: Vector) -> bool:
         """Check if color is achromatic."""
 
@@ -126,9 +137,14 @@ class HPLuv(HSLish, Space):
     def to_base(self, coords: Vector) -> Vector:
         """To LChuv from HPLuv."""
 
-        return hpluv_to_lch(coords)
+        return hpluv_to_luv(coords)
 
     def from_base(self, coords: Vector) -> Vector:
         """From LChuv to HPLuv."""
 
-        return lch_to_hpluv(coords)
+        return luv_to_hpluv(coords)
+
+    def radial_name(self) -> str:
+        """Radial name."""
+
+        return "p"

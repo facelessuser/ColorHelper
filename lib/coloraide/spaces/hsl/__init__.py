@@ -1,7 +1,8 @@
 """HSL class."""
-from ...spaces import Space, HSLish
+from __future__ import annotations
+from ...spaces import HSLish, Space
 from ...cat import WHITES
-from ...channels import Channel, FLG_ANGLE, FLG_OPT_PERCENT
+from ...channels import Channel, FLG_ANGLE
 from ... import util
 from ...types import Vector
 
@@ -26,6 +27,11 @@ def srgb_to_hsl(rgb: Vector) -> Vector:
             h = (r - g) / c + 4.0
         s = 0 if l == 0.0 or l == 1.0 else (mx - l) / min(l, 1 - l)
         h *= 60.0
+
+    # Adjust for negative saturation
+    if s < 0:
+        s *= -1.0
+        h += 180.0
 
     return [util.constrain_hue(h), s, l]
 
@@ -56,9 +62,9 @@ class HSL(HSLish, Space):
     NAME = "hsl"
     SERIALIZE = ("--hsl",)
     CHANNELS = (
-        Channel("h", 0.0, 360.0, bound=True, flags=FLG_ANGLE),
-        Channel("s", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT),
-        Channel("l", 0.0, 1.0, bound=True, flags=FLG_OPT_PERCENT)
+        Channel("h", 0.0, 360.0, flags=FLG_ANGLE),
+        Channel("s", 0.0, 1.0, bound=True),
+        Channel("l", 0.0, 1.0, bound=True)
     )
     CHANNEL_ALIASES = {
         "hue": "h",
@@ -66,9 +72,19 @@ class HSL(HSLish, Space):
         "lightness": "l"
     }
     WHITE = WHITES['2deg']['D65']
-    GAMUT_CHECK = "srgb"
+    GAMUT_CHECK = "srgb"  # type: str | None
+    CLIP_SPACE = "hsl"  # type: str | None
 
-    def is_achromatic(self, coords: Vector) -> bool:
+    def normalize(self, coords: Vector) -> Vector:
+        """Normalize coordinates."""
+
+        if coords[1] < 0:
+            coords[1] *= -1.0
+            coords[0] += 180.0
+        coords[0] %= 360.0
+        return coords
+
+    def is_achromatic(self, coords: Vector) -> bool | None:
         """Check if color is achromatic."""
 
         return abs(coords[1]) < 1e-4 or coords[2] == 0.0 or abs(1 - coords[2]) < 1e-7

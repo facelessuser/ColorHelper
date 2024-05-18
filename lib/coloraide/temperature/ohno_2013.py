@@ -3,6 +3,7 @@ Ohno 2013 CCT calculations.
 
 https://www.researchgate.net/publication/263373260_Practical_Use_and_Calculation_of_CCT_and_Duv
 """
+from __future__ import annotations
 import math
 from . import planck
 from .. import cat
@@ -11,7 +12,7 @@ from .. import util
 from .. import algebra as alg
 from ..temperature import CCT
 from ..types import Vector, VectorLike
-from typing import TYPE_CHECKING, Any, List, Tuple, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -30,7 +31,7 @@ class BlackBodyCurve:
 
     def __init__(
         self,
-        cmfs: Dict[int, Tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
+        cmfs: dict[int, tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
         white: VectorLike = cat.WHITES['2deg']['D65'],
         planck_step: int = 5,
         chromaticity: str = 'uv-1960'
@@ -148,7 +149,7 @@ class Ohno2013(CCT):
 
     def __init__(
         self,
-        cmfs: Dict[int, Tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
+        cmfs: dict[int, tuple[float, float, float]] = cmfs.CIE_1931_2DEG,
         white: VectorLike = cat.WHITES['2deg']['D65'],
         planck_step: int = 5
     ):
@@ -159,7 +160,7 @@ class Ohno2013(CCT):
 
     def to_cct(
         self,
-        color: 'Color',
+        color: Color,
         start: float = 1000,
         end: float = 100000,
         samples: int = 10,
@@ -172,12 +173,12 @@ class Ohno2013(CCT):
         u, v = color.split_chromaticity(self.CHROMATICITY)[:-1]
         last = samples - 1
         index = 0
-        table = []  # type: List[Tuple[float, float, float, float]]
+        table = []  # type: list[tuple[float, float, float, float]]
 
         # Each iteration we narrow the range until we are close enough
         for _ in range(iterations):
             table.clear()
-            lowest = alg.inf
+            lowest = math.inf
             index = 0
 
             # Generate the Planckian table while tracking lowest distance
@@ -251,14 +252,14 @@ class Ohno2013(CCT):
 
     def from_cct(
         self,
-        color: Type['Color'],
+        color: type[Color],
         space: str,
         kelvin: float,
         duv: float,
         scale: bool,
-        scale_space: Optional[str],
+        scale_space: str | None,
         **kwargs: Any
-    ) -> 'Color':
+    ) -> Color:
         """Calculate a color that satisfies the CCT using Planck's law."""
 
         u0, v0 = self.blackbody(kelvin, exact=True)

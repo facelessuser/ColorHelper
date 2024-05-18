@@ -1,4 +1,5 @@
 """Piecewise linear interpolation."""
+from __future__ import annotations
 import math
 from .linear import InterpolatorLinear
 from ..interpolate import Interpolator, Interpolate

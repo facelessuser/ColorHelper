@@ -1,4 +1,5 @@
 """XYZ D65 class."""
+from __future__ import annotations
 import math
 from ..spaces import Space, RGBish
 from ..cat import WHITES
@@ -6,7 +7,6 @@ from ..channels import Channel
 from .. import util
 from .. import algebra as alg
 from ..types import Vector
-from typing import Tuple
 
 
 class XYZD65(RGBish, Space):
@@ -14,7 +14,7 @@ class XYZD65(RGBish, Space):
 
     BASE = "xyz-d65"
     NAME = "xyz-d65"
-    SERIALIZE = ("xyz-d65", 'xyz')  # type: Tuple[str, ...]
+    SERIALIZE = ("xyz-d65", 'xyz')  # type: tuple[str, ...]
     CHANNELS = (
         Channel("x", 0.0, 1.0),
         Channel("y", 0.0, 1.0),
@@ -26,7 +26,7 @@ class XYZD65(RGBish, Space):
         """Is achromatic."""
 
         for x in alg.vcross(coords, util.xy_to_xyz(self.white())):
-            if not alg.isclose(0.0, x, abs_tol=1e-5, dims=alg.SC):
+            if not math.isclose(0.0, x, abs_tol=1e-5):
                 return False
         return True
 

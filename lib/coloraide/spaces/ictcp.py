@@ -3,13 +3,13 @@ ICtCp class.
 
 https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
 """
+from __future__ import annotations
 from .lab import Lab
 from ..cat import WHITES
 from ..channels import Channel, FLG_MIRROR_PERCENT
 from .. import util
 from .. import algebra as alg
 from ..types import Vector
-from typing import Tuple
 
 # All PQ Values are equivalent to defaults as stated in link below:
 # https://en.wikipedia.org/wiki/High-dynamic-range_video#Perceptual_quantizer
@@ -50,6 +50,8 @@ ictcp_to_lms_p_mi = [
     [1.0, 0.5600313357106791, -0.32062717498731885]
 ]
 
+YW = 203
+
 
 def ictcp_to_xyz_d65(ictcp: Vector) -> Vector:
     """From ICtCp to XYZ."""
@@ -64,14 +66,14 @@ def ictcp_to_xyz_d65(ictcp: Vector) -> Vector:
     absxyz = alg.matmul(lms_to_xyz_mi, lms, dims=alg.D2_D1)
 
     # Convert back to normal XYZ D65
-    return util.absxyz_to_xyz(absxyz)
+    return util.absxyz_to_xyz(absxyz, YW)
 
 
 def xyz_d65_to_ictcp(xyzd65: Vector) -> Vector:
     """From XYZ to ICtCp."""
 
     # Convert from XYZ D65 to an absolute XYZ D65
-    absxyz = util.xyz_to_absxyz(xyzd65)
+    absxyz = util.xyz_to_absxyz(xyzd65, YW)
 
     # Convert to LMS
     lms = alg.matmul(xyz_to_lms_m, absxyz, dims=alg.D2_D1)
@@ -88,11 +90,11 @@ class ICtCp(Lab):
 
     BASE = "xyz-d65"
     NAME = "ictcp"
-    SERIALIZE = ("--ictcp",)
+    SERIALIZE = ("ictcp", "--ictcp",)
     CHANNELS = (
         Channel("i", 0.0, 1.0),
-        Channel("ct", -0.5, 0.5, flags=FLG_MIRROR_PERCENT),
-        Channel("cp", -0.5, 0.5, flags=FLG_MIRROR_PERCENT)
+        Channel("ct", -1.0, 1.0, flags=FLG_MIRROR_PERCENT),
+        Channel("cp", -1.0, 1.0, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "intensity": "i",

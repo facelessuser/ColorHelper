@@ -3,10 +3,10 @@ Planckian curve.
 
 https://en.wikipedia.org/wiki/Planckian_locus#The_Planckian_locus_in_the_XYZ_color_space
 """
+from __future__ import annotations
 import math
 from ..types import VectorLike, Vector
 from .. import util
-from typing import Dict, Tuple
 
 # Constants for Planck's Law
 # Precise calculation
@@ -24,7 +24,7 @@ C2 = 1.4388e-2
 
 def temp_to_xy_planckian_locus(
     temp: float,
-    cmfs: Dict[int, Tuple[float, float, float]],
+    cmfs: dict[int, tuple[float, float, float]],
     white: VectorLike,
     start: int = 360,
     end: int = 830,

@@ -1,9 +1,9 @@
 """Delta E 2000."""
+from __future__ import annotations
 import math
-from .. import algebra as alg
 from ..distance import DeltaE
 from ..spaces.lab import CIELab
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -31,12 +31,12 @@ class DE2000(DeltaE):
 
     def distance(
         self,
-        color: 'Color',
-        sample: 'Color',
-        kl: Optional[float] = None,
-        kc: Optional[float] = None,
-        kh: Optional[float] = None,
-        space: Optional[str] = None,
+        color: Color,
+        sample: Color,
+        kl: float | None = None,
+        kc: float | None = None,
+        kh: float | None = None,
+        space: str | None = None,
         **kwargs: Any
     ) -> float:
         """
@@ -87,8 +87,8 @@ class DE2000(DeltaE):
         # Equation (7)
         hp1 = 0 if (ap1 == 0 and b1 == 0) else math.atan2(b1, ap1)
         hp2 = 0 if (ap2 == 0 and b2 == 0) else math.atan2(b2, ap2)
-        hp1 = math.degrees(hp1 + alg.tau if hp1 < 0.0 else hp1)
-        hp2 = math.degrees(hp2 + alg.tau if hp2 < 0.0 else hp2)
+        hp1 = math.degrees(hp1 + math.tau if hp1 < 0.0 else hp1)
+        hp2 = math.degrees(hp2 + math.tau if hp2 < 0.0 else hp2)
 
         # Equation (8)
         dl = l1 - l2

@@ -1,12 +1,13 @@
 """String serialization."""
+from __future__ import annotations
 import re
 import math
 from .. import util
 from .. import algebra as alg
 from .color_names import to_name
-from ..channels import FLG_PERCENT, FLG_OPT_PERCENT, FLG_ANGLE
+from ..channels import FLG_ANGLE
 from ..types import Vector
-from typing import Optional, Union, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..color import Color
@@ -21,9 +22,9 @@ EMPTY = ''
 
 def named_color(
     obj: 'Color',
-    alpha: Optional[bool],
-    fit: Union[str, bool]
-) -> Optional[str]:
+    alpha: bool | None,
+    fit: str | bool | dict[str, Any]
+) -> str | None:
     """Get the CSS color name."""
 
     a = get_alpha(obj, alpha, False, False)
@@ -34,12 +35,12 @@ def named_color(
 
 def color_function(
     obj: 'Color',
-    func: str,
-    alpha: Optional[bool],
+    func: str | None,
+    alpha: bool | None,
     precision: int,
-    fit: Union[str, bool],
+    fit: str | bool | dict[str, Any],
     none: bool,
-    percent: Union[bool, Sequence[bool]],
+    percent: bool | Sequence[bool],
     legacy: bool,
     scale: float
 ) -> str:
@@ -82,7 +83,7 @@ def color_function(
             string.append(COMMA if legacy else SPACE)
         channel = channels[idx]
 
-        if channel.flags & FLG_PERCENT or (plist and plist[idx] and channel.flags & FLG_OPT_PERCENT):
+        if not (channel.flags & FLG_ANGLE) and plist and plist[idx]:
             span, offset = channel.span, channel.offset
         else:
             span = offset = 0.0
@@ -104,22 +105,30 @@ def color_function(
 
 def get_coords(
     obj: 'Color',
-    fit: Union[str, bool],
+    fit: bool | str | dict[str, Any],
     none: bool,
     legacy: bool
 ) -> Vector:
     """Get the coordinates."""
 
-    color = (obj.fit(method=None if not isinstance(fit, str) else fit) if fit else obj)
+    if fit:
+        if fit is True:
+            color = obj.fit()
+        elif isinstance(fit, str):
+            color = obj.fit(method=fit)
+        else:
+            color = obj.fit(**fit)
+    else:
+        color = obj
     return color.coords(nans=False if legacy or not none else True)
 
 
 def get_alpha(
     obj: 'Color',
-    alpha: Optional[bool],
+    alpha: bool | None,
     none: bool,
     legacy: bool
-) -> Optional[float]:
+) -> float | None:
     """Get the alpha if required."""
 
     a = obj.alpha(nans=False if not none or legacy else True)
@@ -129,8 +138,8 @@ def get_alpha(
 
 def hexadecimal(
     obj: 'Color',
-    alpha: Optional[bool] = None,
-    fit: Union[str, bool] = True,
+    alpha: bool | None = None,
+    fit: str | bool | dict[str, Any] = True,
     upper: bool = False,
     compress: bool = False
 ) -> str:
@@ -167,11 +176,11 @@ def serialize_css(
     obj: 'Color',
     func: str = '',
     color: bool = False,
-    alpha: Optional[bool] = None,
-    precision: Optional[int] = None,
-    fit: Union[str, bool] = True,
+    alpha: bool | None = None,
+    precision: int | None = None,
+    fit: bool | str | dict[str, Any] = True,
     none: bool = False,
-    percent: Union[bool, Sequence[bool]] = False,
+    percent: bool | Sequence[bool] = False,
     hexa: bool = False,
     upper: bool = False,
     compress: bool = False,
