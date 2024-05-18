@@ -88,7 +88,7 @@ else in the code.
 
 ```js
     // Gamut mapping approach
-    // Supported methods are: `lch-chroma`, `oklch-chroma`, and `clip` (default).
+    // Supported methods are: `lch-chroma`, `oklch-chroma`, `oklch-raytrace`, and `clip` (default).
     // `lch-chroma` was the original default before this was configurable.
     "gamut_map": "clip",
 ```

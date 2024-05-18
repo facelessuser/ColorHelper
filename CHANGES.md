@@ -1,5 +1,12 @@
 # ColorHelper
 
+## 6.4
+
+-   **NEW**: Upgrade ColorAide.
+-   **NEW**: Note in documentation and settings a new gamut mapping  
+    method, `oklch-raytrace`, which does a chroma reduction much  
+    faster and closer than the current suggested CSS algorithm.
+
 ## 6.3.2
 
 - **FIX**: Fix missing requirement for `math.isclose` in ColorAide  
