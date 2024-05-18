@@ -696,7 +696,7 @@ class SRGBX11(sRGB):
     """sRGB class."""
 
     def to_string(
-        cls, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
+        self, parent, *, alpha=None, precision=None, fit=True, none=False, **kwargs
     ):
         """Convert to CSS."""
 

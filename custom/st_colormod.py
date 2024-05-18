@@ -196,7 +196,7 @@ class HWB(HWBORIG):
         return None
 
     def to_string(
-        cls,
+        self,
         parent,
         *,
         alpha=None,
