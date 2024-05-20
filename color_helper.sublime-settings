@@ -513,6 +513,14 @@
             "scanning": ["constant.other.color"],
             "color_class": "ass_abgr",
             "color_trigger": "(?:&H|(?<=\\\\[1-4]c)|(?<=\\\\c))[0-9a-fA-F]"
+        },
+        {
+            // INI (based on https://packagecontrol.io/packages/INI)
+            "name": "INI",
+            "syntax_files": ["INI/INI"],
+            "base_scopes": ["source.ini"],
+            "color_class": "css-level-4",
+            "scanning": ["meta.mapping.value.ini"]
         }
     ],
 
