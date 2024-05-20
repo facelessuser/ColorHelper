@@ -520,7 +520,6 @@
             "base_scopes": ["source.ini",],
             "color_class": "css-level-4",
             "scanning": ["meta.mapping.value.ini"],
-            "color_trigger": "(?i)(?:\\b(?<![-#&])(?:color|hsla?|hwb|lab|lch|oklab|oklch|rgba?)\\(|\b(?<![-#&])[\\w]{3,}(?!\\()\\b|(?<![&])#)",
         }
     ],
 
