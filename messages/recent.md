@@ -17,3 +17,4 @@ related to the upgrade to stable `coloraide`.
     method, `oklch-raytrace`, which does a chroma reduction much  
     faster and closer than the current suggested CSS algorithm.
 -   **NEW**: Add color rule for `ini` files.
+-   **FIX**: Fix Less rule.
