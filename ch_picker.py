@@ -502,7 +502,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone = self.color.clone()
         show_alpha = color_filter == 'alpha'
 
-        coord = alg.no_nan(clone[color_filter])
+        coord = clone.get(color_filter, nans=False)
         if color_filter != 'hue':
             rounded = alg.round_half_up(coord, 2 if mode != 'hsluv' else 0)
             clone[color_filter] = rounded
@@ -514,7 +514,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         first = True
         while count:
-            coord = alg.no_nan(clone[color_filter]) - step
+            coord = clone.get(color_filter, nans=False) - step
             clone[color_filter] = coord
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):
@@ -564,7 +564,7 @@ class ColorHelperPickerCommand(_ColorMixin, sublime_plugin.TextCommand):
         clone.update(self.color)
         clone[color_filter] = rounded
         while count:
-            coord = alg.no_nan(clone[color_filter]) + step
+            coord = clone.get(color_filter, nans=False) + step
             clone[color_filter] = coord
 
             if color_filter != "hue" and (coord < 0 or coord > (1 * scale)):

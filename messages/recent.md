@@ -9,6 +9,7 @@ A restart of Sublime Text is **strongly** encouraged.
 
 Please report any issues as we _might_ have missed some required updates  
 related to the upgrade to stable `coloraide`.
+
 ## 6.4.0
 
 -   **NEW**: Opt into Python 3.8.
