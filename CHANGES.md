@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.4.1
+
+-   **FIX**: Fix regression due to not accounting to API change when  
+    upgrading to latest ColorAide.
+
 ## 6.4.0
 
 -   **NEW**: Opt into Python 3.8.
