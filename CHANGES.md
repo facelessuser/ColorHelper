@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.4.2
+
+-   **FIX**: Fix regression in Sublime ColorMod parsing.
+
 ## 6.4.1
 
 -   **FIX**: Fix regression due to not accounting to API change when  

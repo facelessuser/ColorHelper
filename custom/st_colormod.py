@@ -697,7 +697,7 @@ class Color(BASE):
         if is_mod:
             if variables:
                 string = handle_vars(string, variables)
-            obj, match_end = ColorMod(fullmatch).adjust(string, start)
+            obj, match_end = ColorMod(False).adjust(string, start)
             if obj is not None:
                 return obj._space, obj[:-1], obj[-1], start, (end if end is not None else match_end)
         else:
