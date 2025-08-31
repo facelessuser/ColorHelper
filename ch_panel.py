@@ -245,7 +245,7 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.os_color_picker:
             self.view.hide_popup()
-            new_color = native_picker(self.base(color).convert("srgb", fit=self.gamut_map))
+            new_color = native_picker(self.base(color).convert("srgb").fit(**self.gamut_map))
             if new_color is not None:
                 sublime.set_timeout(
                     lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(

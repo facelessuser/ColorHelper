@@ -1,13 +1,13 @@
 """LCh class."""
 from __future__ import annotations
+from ... import algebra as alg
 from ...spaces import Space, LChish
 from ...cat import WHITES
 from ...channels import Channel, FLG_ANGLE
 from ... import util
 import math
 from ...types import Vector
-
-ACHROMATIC_THRESHOLD = 1e-4
+from typing import Any
 
 
 def lab_to_lch(lab: Vector) -> Vector:
@@ -47,6 +47,13 @@ class LCh(LChish, Space):
         "hue": "h"
     }
 
+    def __init__(self, **kwargs: Any):
+        """Initialize."""
+
+        super().__init__(**kwargs)
+        order = alg.order(round(self.channels[self.indexes()[0]].high, 5))
+        self.achromatic_threshold = (1 * 10.0 ** order) / 1_000_000
+
     def normalize(self, coords: Vector) -> Vector:
         """Normalize coordinates."""
 
@@ -60,7 +67,7 @@ class LCh(LChish, Space):
         """Check if color is achromatic."""
 
         # Account for both positive and negative chroma
-        return abs(coords[1]) < ACHROMATIC_THRESHOLD
+        return abs(coords[1]) < self.achromatic_threshold
 
     def to_base(self, coords: Vector) -> Vector:
         """To Lab from LCh."""

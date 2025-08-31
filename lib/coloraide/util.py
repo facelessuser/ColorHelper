@@ -4,9 +4,10 @@ import math
 from functools import wraps
 from . import algebra as alg
 from .types import Vector, VectorLike
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 DEF_PREC = 5
+DEF_ROUND_MODE = 'digits'
 DEF_FIT_TOLERANCE = 0.000075
 DEF_ALPHA = 1.0
 DEF_MIX = 0.5
@@ -20,6 +21,9 @@ DEF_CHROMATIC_ADAPTATION = "bradford"
 DEF_CONTRAST = "wcag21"
 DEF_CCT = "robertson-1968"
 DEF_INTERPOLATOR = "linear"
+
+ACHROMATIC_THRESHOLD = 1e-4
+ACHROMATIC_THRESHOLD_SM = 1e-6
 
 # PQ Constants
 # https://en.wikipedia.org/wiki/High-dynamic-range_video#Perceptual_quantizer
@@ -74,13 +78,7 @@ def xy_to_uv_1960(xy: VectorLike) -> Vector:
 
     x, y = xy
     denom = (12 * y - 2 * x + 3)
-    if denom != 0:
-        u = (4 * x) / denom
-        v = (6 * y) / denom
-    else:
-        u = v = 0
-
-    return [u, v]
+    return [0.0, 0.0] if denom == 0 else [(4 * x) / denom, (6 * y) / denom]
 
 
 def uv_1960_to_xy(uv: VectorLike) -> Vector:
@@ -88,16 +86,10 @@ def uv_1960_to_xy(uv: VectorLike) -> Vector:
 
     u, v = uv
     denom = (2 * u - 8 * v + 4)
-    if denom != 0:
-        x = (3 * u) / denom
-        y = (2 * v) / denom
-    else:
-        x = y = 0
-
-    return [x, y]
+    return [0.0, 0.0] if denom == 0 else [(3 * u) / denom, (2 * v) / denom]
 
 
-def pq_st2084_oetf(
+def inverse_eotf_st2084(
     values: VectorLike,
     c1: float = C1,
     c2: float = C2,
@@ -105,7 +97,7 @@ def pq_st2084_oetf(
     m1: float = M1,
     m2: float = M2
 ) -> Vector:
-    """Perceptual quantizer (SMPTE ST 2084) - OETF."""
+    """Perceptual quantizer (SMPTE ST 2084) - inverse EOTF."""
 
     adjusted = []
     for c in values:
@@ -114,7 +106,7 @@ def pq_st2084_oetf(
     return adjusted
 
 
-def pq_st2084_eotf(
+def eotf_st2084(
     values: VectorLike,
     c1: float = C1,
     c2: float = C2,
@@ -161,7 +153,7 @@ def scale100(coords: Vector) -> Vector:
 
 
 def scale1(coords: Vector) -> Vector:
-    """Scale from 1 to 100."""
+    """Scale from 100 to 1."""
 
     return [c * 0.01 for c in coords]
 
@@ -184,6 +176,15 @@ def constrain_hue(hue: float) -> float:
     return hue % 360 if not math.isnan(hue) else hue
 
 
+def get_index(obj: Sequence[Any], idx: int, default: Any = None) -> Any:
+    """Get sequence value at index or return default if not present."""
+
+    try:
+        return obj[idx]
+    except IndexError:
+        return default
+
+
 def cmp_coords(c1: VectorLike, c2: VectorLike) -> bool:
     """Compare coordinates."""
 
@@ -193,31 +194,40 @@ def cmp_coords(c1: VectorLike, c2: VectorLike) -> bool:
         return all(map(lambda a, b: (math.isnan(a) and math.isnan(b)) or a == b, c1, c2))
 
 
-def fmt_float(f: float, p: int = 0, percent: float = 0.0, offset: float = 0.0) -> str:
+def fmt_float(f: float, p: int = 0, rounding: str = 'digits', percent: float = 0.0, offset: float = 0.0) -> str:
     """
     Set float precision and trim precision zeros.
 
-    0: Round to whole integer
-    -1: Full precision
-    <positive number>: precision level
+    -   `p`: Rounding precision.
+
+    -   `rounding`: Specify specific rounding mode.
+
+    -   `percent`: Treat as a percent.
+
+    -   `offset`: Apply an offset (used in conjunction with `percent`).
+
     """
 
+    # Undefined values should be none
     if math.isnan(f):
         return "none"
 
-    value = alg.round_to((f + offset) / (percent * 0.01) if percent else f, p)
-    if p == -1:
-        p = 17  # ~double precision
+    # Infinite values do not get rounded
+    if not math.isfinite(f):
+        raise ValueError(f'Cannot format non-finite number {f}')
 
-    # Calculate actual print decimal precision
-    whole = int(value)
-    if whole:
-        whole = int(math.log10(-whole if whole < 0 else whole)) + 1
-        if p:
-            p = max(p - whole, 0)
+    # Apply rounding
+    f = (f + offset) / (percent * 0.01) if percent else f
+    start, p = alg._round_location(f, p, rounding)
+    value = alg.round_half_up(f, p)
 
-    # Format the string
-    s = '{{:{}{}f}}'.format('' if whole >= p else '.', p).format(value).rstrip('0').rstrip('.')
+    # Format the string.
+    if (p - start + 1) > 17:
+        # If we are outputting numbers beyond 17 digits, just use normal output.
+        s = str(value).removesuffix('.0')
+    else:
+        # Avoid scientific notation for numbers with 17 digits (double-precision number of decimals).
+        s = f"{{:0.{1 if p < 1 else p}f}}".format(value).rstrip('0').rstrip('.')
     return s + '%' if percent else s
 
 

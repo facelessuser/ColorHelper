@@ -117,8 +117,10 @@
     "gamut_space": "srgb",
 
     // Gamut mapping approach
-    // Supported methods are: `lch-chroma`, `oklch-chroma`, `oklch-raytrace`, and `clip` (default).
+    // Supported methods are: `lch-chroma`, `oklch-chroma`, `raytrace`, and `clip` (default).
     // `lch-chroma` was the original default before this was configurable.
+    // If you need to set options within the gamut mapping, you can use a dictionary:
+    // `{"method": "raytrace", "pspace": "oklch"}`
     "gamut_map": "clip",
 
     //////////////////
@@ -135,10 +137,17 @@
         // "ColorHelper.lib.coloraide.spaces.acescc.ACEScc",
         // "ColorHelper.lib.coloraide.spaces.acescg.ACEScg",
         // "ColorHelper.lib.coloraide.spaces.acescct.ACEScct",
-        // "ColorHelper.lib.coloraide.spaces.cam16_jmh.CAM16JMh",
+        // "ColorHelper.lib.coloraide.spaces.cam16.CAM16JMh",
         // "ColorHelper.lib.coloraide.spaces.cam16_ucs.CAM16UCS",
         // "ColorHelper.lib.coloraide.spaces.cam16_ucs.CAM16SCD",
         // "ColorHelper.lib.coloraide.spaces.cam16_ucs.CAM16LCD",
+        // "ColorHelper.lib.coloraide.spaces.cam02.CAM02JMh",
+        // "ColorHelper.lib.coloraide.spaces.cam02_ucs.CAM02UCS",
+        // "ColorHelper.lib.coloraide.spaces.cam02_ucs.CAM02SCD",
+        // "ColorHelper.lib.coloraide.spaces.cam02_ucs.CAM02LCD",
+        // "ColorHelper.lib.coloraide.spaces.zcam.ZCAMJMh",
+        // "ColorHelper.lib.coloraide.spaces.hellwig.HellwigJMh",
+        // "ColorHelper.lib.coloraide.spaces.hellwig.HellwigHKJMh",
         // "ColorHelper.lib.coloraide.spaces.cmy.CMY",
         // "ColorHelper.lib.coloraide.spaces.cmyk.CMYK",
         // "ColorHelper.lib.coloraide.spaces.din99o.DIN99o",
@@ -146,11 +155,11 @@
         // "ColorHelper.lib.coloraide.spaces.hpluv.HPLuv",
         // "ColorHelper.lib.coloraide.spaces.hsi.HSI",
         // "ColorHelper.lib.coloraide.spaces.hunter_lab.HunterLab",
-        // "ColorHelper.lib.coloraide.spaces.ictcp.ICtCp",
+        // "ColorHelper.lib.coloraide.spaces.ictcp.css.ICtCp",
         // "ColorHelper.lib.coloraide.spaces.igtgpg.IgTgPg",
         // "ColorHelper.lib.coloraide.spaces.ipt.IPT",
-        // "ColorHelper.lib.coloraide.spaces.jzazbz.Jzazbz",
-        // "ColorHelper.lib.coloraide.spaces.jzczhz.JzCzhz",
+        // "ColorHelper.lib.coloraide.spaces.jzazbz.css.Jzazbz",
+        // "ColorHelper.lib.coloraide.spaces.jzczhz.css.JzCzhz",
         // "ColorHelper.lib.coloraide.spaces.lch99o.LCh99o",
         // "ColorHelper.lib.coloraide.spaces.orgb.oRGB",
         // "ColorHelper.lib.coloraide.spaces.prismatic.Prismatic",
@@ -160,6 +169,8 @@
         // "ColorHelper.lib.coloraide.spaces.ryb.RYB",
         // "ColorHelper.lib.coloraide.spaces.xyb.XYB",
         // "ColorHelper.lib.coloraide.spaces.xyy.xyY",
+        // "ColorHelper.lib.coloraide.spaces.oklrab.Oklrab",
+        // "ColorHelper.lib.coloraide.spaces.oklrch.OkLrCh",
         "ColorHelper.lib.coloraide.spaces.hsluv.HSLuv",
         "ColorHelper.lib.coloraide.spaces.lchuv.LChuv",
         "ColorHelper.lib.coloraide.spaces.luv.Luv",
@@ -220,7 +231,7 @@
     "color_classes": {
         "css-level-4": {
             "filters": [
-                "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "rec2020",
+                "srgb", "hsl", "hwb", "lch", "lab", "display-p3", "display-p3-linear", "rec2020",
                 "prophoto-rgb", "a98-rgb", "xyz-d65", "xyz-d50", "srgb-linear",
                 "oklab", "oklch"
             ],
@@ -231,6 +242,7 @@
                 {"space": "hwb", "format": {"comma": false}},
                 {"space": "a98-rgb", "format": {}},
                 {"space": "display-p3", "format": {}},
+                {"space": "display-p3-linear", "format": {}},
                 {"space": "prophoto-rgb", "format": {}},
                 {"space": "rec2020", "format": {}},
                 {"space": "srgb-linear", "format": {}},

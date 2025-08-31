@@ -3,10 +3,8 @@ from __future__ import annotations
 from ..distance import DeltaE
 import math
 from ..spaces import Labish
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:  # pragma: no cover
-    from ..color import Color
+from ..types import AnyColor
+from typing import Any
 
 
 class DEHyAB(DeltaE):
@@ -19,7 +17,7 @@ class DEHyAB(DeltaE):
 
         self.space = space
 
-    def distance(self, color: Color, sample: Color, space: str | None = None, **kwargs: Any) -> float:
+    def distance(self, color: AnyColor, sample: AnyColor, space: str | None = None, **kwargs: Any) -> float:
         """
         HyAB distance for Lab-ish spaces.
 
@@ -33,7 +31,7 @@ class DEHyAB(DeltaE):
         sample = sample.convert(space)
 
         if not isinstance(color._space, Labish):
-            raise ValueError("The space '{}' is not a 'lab-ish' color space and cannot use HyAB".format(space))
+            raise ValueError(f"The space '{space}' is not a 'lab-ish' color space and cannot use HyAB")
 
         names = color._space.names()
         l1, a1, b1 = color.get(names, nans=False)

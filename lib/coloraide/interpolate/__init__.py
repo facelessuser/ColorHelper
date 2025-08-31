@@ -18,14 +18,14 @@ import math
 import functools
 from abc import ABCMeta, abstractmethod
 from .. import algebra as alg
-from .. spaces import HSVish, HSLish, Cylindrical, RGBish, LChish, Labish
-from ..types import Matrix, Vector, ColorInput, Plugin
-from typing import Callable, Sequence, Mapping, Any, TYPE_CHECKING
+from .. spaces import HSVish, HSLish, RGBish, LChish, Labish
+from ..types import Matrix, Vector, ColorInput, Plugin, AnyColor
+from typing import Callable, Sequence, Mapping, Any, Generic, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
-__all__ = ('stop', 'hint', 'get_interpolator')
+__all__ = ('stop', 'hint', 'interpolator', 'Interpolate', 'Interpolator')
 
 
 class stop:
@@ -65,14 +65,14 @@ def normalize_domain(d: Vector) -> Vector:
     return values
 
 
-class Interpolator(metaclass=ABCMeta):
+class Interpolator(Generic[AnyColor], metaclass=ABCMeta):
     """Interpolator."""
 
     def __init__(
         self,
         coordinates: Matrix,
         channel_names: Sequence[str],
-        create: type[Color],
+        color_cls: type[AnyColor],
         easings: list[Callable[..., float] | None],
         stops: dict[int, float],
         space: str,
@@ -94,14 +94,14 @@ class Interpolator(metaclass=ABCMeta):
         self.coordinates = coordinates
         self.length = len(self.coordinates)
         self.channel_names = channel_names
-        self.create = create
+        self.color_cls = color_cls
         self.progress = progress
         self.space = space
         self._out_space = out_space
         self.extrapolate = extrapolate
         self.current_easing = None  # type: Mapping[str, Callable[..., float]] | Callable[..., float] | None
         self.hue = hue
-        cs = self.create.CS_MAP[space]
+        cs = self.color_cls.CS_MAP[space]
         if cs.is_polar():
             self.hue_index = cs.hue_index()  # type: ignore[attr-defined]
         else:
@@ -127,13 +127,13 @@ class Interpolator(metaclass=ABCMeta):
         max_delta_e: float = 0,
         delta_e: str | None = None,
         delta_e_args: dict[str, Any] | None = None,
-    ) -> Interpolator:
+    ) -> Interpolator[AnyColor]:
         """Make the interpolation a discretized interpolation."""
 
         from .linear import Linear
 
         # Get the discrete steps for the new discrete interpolation
-        colors = self.steps(steps, max_steps, max_delta_e, delta_e, delta_e_args)
+        colors = self.steps(steps, max_steps, max_delta_e, delta_e, delta_e_args)  # type: list[AnyColor]
 
         if not colors:
             raise ValueError('Discrete interpolation requires at least 1 discrete step.')
@@ -154,17 +154,15 @@ class Interpolator(metaclass=ABCMeta):
             coords.extend([step1, step2])
             count += 2
 
-        hue = self.hue
         if total == 1:
             coords.extend([colors[-1][:], colors[-1][:]])
             stops[0] = 0.0
             stops[1] = 1.0
-            hue = 'shorter'
 
         return Linear().interpolator(
             coordinates=coords,
             channel_names=self.channel_names,
-            create=self.create,
+            color_cls=self.color_cls,
             easings=[None] * (len(coords) - 1),
             stops=stops,
             space=self.space,
@@ -174,21 +172,21 @@ class Interpolator(metaclass=ABCMeta):
             extrapolate=self.extrapolate,
             domain=[],
             padding=None,
-            hue = hue
+            hue = 'shorter'
         )
 
     def out_space(self, space: str) -> None:
         """Set output space."""
 
-        if space not in self.create.CS_MAP:
-            raise ValueError("'{}' is not a valid color space".format(space))
+        if space not in self.color_cls.CS_MAP:
+            raise ValueError(f"'{space}' is not a valid color space")
         self._out_space = space
 
     def padding(self, padding: float | Sequence[float]) -> None:
         """Add/adjust padding."""
 
         # Make sure it is a sequence
-        padding = [padding] if not isinstance(padding, Sequence) else list(padding)
+        padding = [padding] if not isinstance(padding, Sequence) else [*padding]
 
         # If it is empty
         if not padding:
@@ -254,7 +252,7 @@ class Interpolator(metaclass=ABCMeta):
         max_delta_e: float = 0,
         delta_e: str | None = None,
         delta_e_args: dict[str, Any] | None = None,
-    ) -> list[Color]:
+    ) -> list[AnyColor]:
         """Steps."""
 
         actual_steps = steps
@@ -270,7 +268,7 @@ class Interpolator(metaclass=ABCMeta):
         if max_steps is not None:
             actual_steps = min(actual_steps, max_steps)
 
-        ret = []  # type: list[tuple[float, Color]]
+        ret = []  # type: list[tuple[float, AnyColor]]
         if actual_steps == 1:
             ret = [(0.5, self(0.5))]
         elif actual_steps > 1:
@@ -317,9 +315,10 @@ class Interpolator(metaclass=ABCMeta):
                     total += 1
                     index += 2
 
-        return [i[1] for i in ret]
+        return [ri[1] for ri in ret]
 
     def premultiply(self, coords: Vector, alpha: float | None = None) -> None:
+        """Apply premultiplication to semi-transparent colors."""
 
         if alpha is not None:
             coords[-1] = alpha
@@ -353,7 +352,7 @@ class Interpolator(metaclass=ABCMeta):
 
             coords[i] = value / alpha
 
-    def begin(self, point: float, first: float, last: float, index: int) -> Color:
+    def begin(self, point: float, first: float, last: float, index: int) -> AnyColor:
         """
         Begin interpolation.
 
@@ -383,7 +382,7 @@ class Interpolator(metaclass=ABCMeta):
             self.postdivide(coords)
 
         # Create the color and ensure it is in the correct color space.
-        color = self.create(self.space, coords[:-1], coords[-1])
+        color = self.color_cls(self.space, coords[:-1], coords[-1])
         return color.convert(self._out_space, in_place=True)
 
     def ease(self, t: float, channel_index: int) -> float:
@@ -429,7 +428,7 @@ class Interpolator(metaclass=ABCMeta):
             point = size * index + (adjusted * size)
         return point
 
-    def __call__(self, point: float) -> Color:
+    def __call__(self, point: float) -> AnyColor:
         """Find which leg of the interpolation the request is between."""
 
         if self._domain:
@@ -459,10 +458,10 @@ class Interpolator(metaclass=ABCMeta):
 
         # We shouldn't ever hit this, but provided for typing.
         # If we do hit this, it would be a bug.
-        raise RuntimeError('Iterpolation could not be found for {}'.format(point))  # pragma: no cover
+        raise RuntimeError(f'Iterpolation could not be found for {point}')  # pragma: no cover
 
 
-class Interpolate(Plugin, metaclass=ABCMeta):
+class Interpolate(Generic[AnyColor], Plugin, metaclass=ABCMeta):
     """Interpolation plugin."""
 
     NAME = ""
@@ -472,7 +471,7 @@ class Interpolate(Plugin, metaclass=ABCMeta):
         self,
         coordinates: Matrix,
         channel_names: Sequence[str],
-        create: type[Color],
+        color_cls: type[AnyColor],
         easings: list[Callable[..., float] | None],
         stops: dict[int, float],
         space: str,
@@ -484,8 +483,19 @@ class Interpolate(Plugin, metaclass=ABCMeta):
         padding: float | tuple[float, float] | None = None,
         hue: str = 'shorter',
         **kwargs: Any
-    ) -> Interpolator:
+    ) -> Interpolator[AnyColor]:
         """Get the interpolator object."""
+
+    def get_space(self, space: str | None, color_cls: type[AnyColor]) -> str:
+        """
+        Get and validate the color space for interpolation.
+
+        If no space is defined, return an appropriate default color space.
+        """
+
+        if space is None:
+            space = color_cls.INTERPOLATE
+        return space
 
 
 def calc_stops(stops: dict[int, float], count: int) -> dict[int, float]:
@@ -600,8 +610,8 @@ def carryforward_convert(color: Color, space: str, hue_index: int, powerless: bo
             for i, name in zip(cs1.indexes(), ('H', 'C', 'V')):
                 if math.isnan(color[i]):
                     channels[name] = True
-        elif isinstance(cs1, Cylindrical):
-            if math.isnan(color[cs1.hue_index()]):
+        elif cs1.is_polar():
+            if math.isnan(color[cs1.hue_index()]):  # type: ignore[attr-defined]
                 channels['H'] = True
 
         # Carry alpha forward if undefined
@@ -653,8 +663,8 @@ def carryforward_convert(color: Color, space: str, hue_index: int, powerless: bo
 
 
 def interpolator(
+    color_cls: type[AnyColor],
     interpolator: str,
-    create: type[Color],
     colors: Sequence[ColorInput | stop | Callable[..., float]],
     space: str | None,
     out_space: str | None,
@@ -667,27 +677,26 @@ def interpolator(
     carryforward: bool = False,
     powerless: bool = False,
     **kwargs: Any
-) -> Interpolator:
+) -> Interpolator[AnyColor]:
     """Get desired blend mode."""
 
-    plugin = create.INTERPOLATE_MAP.get(interpolator)
+    plugin = color_cls.INTERPOLATE_MAP.get(interpolator)
     if not plugin:
-        raise ValueError("'{}' is not a recognized interpolator".format(interpolator))
+        raise ValueError(f"'{interpolator}' is not a recognized interpolator")
 
     # Construct piecewise interpolation object
     stops = {}  # type: Any
 
-    if space is None:
-        space = create.INTERPOLATE
+    space = plugin.get_space(space, color_cls)
 
     if not colors:
         raise ValueError('At least one color must be specified.')
 
     if isinstance(colors[0], stop):
-        current = create(colors[0].color)
+        current = color_cls(colors[0].color)
         stops[0] = colors[0].stop
     elif not callable(colors[0]):
-        current = create(colors[0])
+        current = color_cls(colors[0])
         stops[0] = None
     else:
         raise ValueError('Cannot have an easing function as the first item in an interpolation list')
@@ -697,7 +706,7 @@ def interpolator(
 
     # Adjust to space
     cs = current.CS_MAP[space]
-    is_cyl = isinstance(cs, Cylindrical)
+    is_cyl = cs.is_polar()
     hue_index = cs.hue_index() if is_cyl else -1  # type: ignore[attr-defined]
     if carryforward:
         carryforward_convert(current, space, hue_index, powerless)
@@ -758,7 +767,7 @@ def interpolator(
     return plugin.interpolator(
         coords,
         current._space.channels,
-        create,
+        color_cls,
         easings,
         stops,
         space,

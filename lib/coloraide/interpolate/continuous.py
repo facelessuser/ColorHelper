@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from .. import algebra as alg
 from ..interpolate import Interpolator, Interpolate
-from ..types import Vector
+from ..types import Vector, AnyColor
 from typing import Any
 
 
@@ -51,7 +51,7 @@ def adjust_decrease(h1: float, h2: float, offset: float) -> tuple[float, float]:
     return h2, offset
 
 
-class InterpolatorContinuous(Interpolator):
+class InterpolatorContinuous(Interpolator[AnyColor]):
     """Interpolate with continuous piecewise."""
 
     def normalize_hue(
@@ -88,9 +88,9 @@ class InterpolatorContinuous(Interpolator):
         elif hue == 'decreasing':
             adjuster = adjust_decrease
         else:
-            raise ValueError("Unknown hue adjuster '{}'".format(hue))
+            raise ValueError(f"Unknown hue adjuster '{hue}'")
 
-        c1 = color1[index] + offset
+        c1 = color1[index]
         c2 = (color2[index] % 360) + offset
 
         # Adjust hue, handle gaps across `NaN`s
@@ -156,7 +156,8 @@ class InterpolatorContinuous(Interpolator):
                 # Two good values, store the last good value and continue
                 if not a_nan and not b_nan:
                     if self.premultiplied and i == alpha:
-                        self.premultiply(c1)
+                        if x == 1:
+                            self.premultiply(c1)
                         self.premultiply(c2)
                     last = b
                     continue
@@ -235,12 +236,12 @@ class InterpolatorContinuous(Interpolator):
         return channels
 
 
-class Continuous(Interpolate):
+class Continuous(Interpolate[AnyColor]):
     """Continuous interpolation plugin."""
 
     NAME = "continuous"
 
-    def interpolator(self, *args: Any, **kwargs: Any) -> Interpolator:
+    def interpolator(self, *args: Any, **kwargs: Any) -> Interpolator[AnyColor]:
         """Return the continuous interpolator."""
 
         return InterpolatorContinuous(*args, **kwargs)

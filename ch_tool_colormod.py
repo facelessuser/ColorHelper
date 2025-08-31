@@ -106,7 +106,7 @@ class ColorHelperColorModInputHandler(tools._ColorInputHandler):
                     check_space = self.gamut_space
                 if not pcolor.in_gamut(check_space):
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
-                pcolor.convert(self.gamut_space, fit=self.gamut_map, in_place=True)
+                pcolor.convert(self.gamut_space, in_place=True).fit(**self.gamut_map)
                 preview = pcolor.clone().set('alpha', 1)
                 preview_alpha = pcolor
                 preview_border = self.default_border

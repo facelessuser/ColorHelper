@@ -10,10 +10,10 @@ from ..spaces.lab import xyz_to_lab, lab_to_xyz
 from ..spaces.lch import lab_to_lch, lch_to_lab
 from .. import algebra as alg
 from .. import util
-from ..types import Vector, Matrix
+from ..types import Vector, Matrix, AnyColor
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
 # White point C as defined in the Pointer data spreadsheet
@@ -21,8 +21,8 @@ XYZ_W = (98.0722647623506, 100.0, 118.225418982695)
 WHITE_POINT_SC = tuple(util.xyz_to_xyY(XYZ_W)[:-1])  # type: tuple[float, float]  # type: ignore[assignment]
 # Rows: hue 0 - 350 at steps of 10
 # Columns: lightness 15 - 90 at steps of 5
-LCH_L = list(range(15, 91, 5))
-LCH_H = list(range(0, 351, 10))
+LCH_L = [*range(15, 91, 5)]
+LCH_H = [*range(0, 351, 10)]
 LCH_POINTER = [
     [10, 30, 43, 56, 68, 77, 79, 77, 72, 65, 57, 50, 40, 30, 19, 8],
     [15, 30, 45, 56, 64, 70, 73, 73, 71, 65, 57, 48, 39, 30, 18, 7],
@@ -77,7 +77,7 @@ def to_lch_sc(color: Color) -> Vector:
     return lab_to_lch(xyz_to_lab(xyz_sc, util.xy_to_xyz(WHITE_POINT_SC)))
 
 
-def from_lch_sc(color: Color, lch: Vector) -> Color:
+def from_lch_sc(color: AnyColor, lch: Vector) -> AnyColor:
     """Convert a color from LCh with an SC illuminant."""
 
     xyz_sc = lab_to_xyz(lch_to_lab(lch), util.xy_to_xyz(WHITE_POINT_SC))
@@ -142,7 +142,7 @@ def get_chroma_limit(l: float, h: float) -> float:
     return alg.lerp(alg.lerp(row1[li], row1[li + 1], lf), alg.lerp(row2[li], row2[li + 1], lf), hf)
 
 
-def fit_pointer_gamut(color: Color) -> Color:
+def fit_pointer_gamut(color: AnyColor) -> AnyColor:
     """Fit a color to the Pointer gamut."""
 
     # Convert to CIE LCh with the SC illuminant
@@ -214,4 +214,4 @@ def pointer_gamut_boundary(lightness: float | None = None) -> Matrix:
 
     # Lightness exceeds threshold
     else:
-        raise ValueError('Lightness must be between {} and {}, but was {}'.format(LCH_L[0], LCH_L[-1], lightness))
+        raise ValueError(f'Lightness must be between {LCH_L[0]} and {LCH_L[-1]}, but was {lightness}')

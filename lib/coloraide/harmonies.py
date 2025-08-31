@@ -3,57 +3,18 @@ from __future__ import annotations
 import math
 from abc import ABCMeta, abstractmethod
 from . import algebra as alg
-from .spaces import Cylindrical, Labish, Regular, Space  # noqa: F401
-from .spaces.hsl import HSL
-from .spaces.lch import LCh
+from .spaces import Labish, Luminant, Prism, Space  # noqa: F401
+from .spaces.hsl import hsl_to_srgb, srgb_to_hsl
 from .cat import WHITES
 from . import util
-from .types import Vector
-from typing import TYPE_CHECKING, Any
+from .types import Vector, AnyColor
+from typing import Any, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from .color import Color
 
 WHITE = util.xy_to_xyz(WHITES['2deg']['D65'])
 BLACK = [0, 0, 0]
-
-
-class _HarmonyLCh(LCh):
-    """Special LCh mapping class for harmonies."""
-
-    INDEXES = [0, 1, 2]
-
-    def to_base(self, coords: Vector) -> Vector:
-        """Convert to the base."""
-
-        ordered = [0.0, 0.0, 0.0]
-        for e, c in enumerate(super().to_base(coords)):
-            ordered[self.INDEXES[e]] = c
-        return ordered
-
-    def from_base(self, coords: Vector) -> Vector:
-        """Convert from the base."""
-
-        return super().from_base([coords[i] for i in self.INDEXES])
-
-
-class _HarmonyHSL(HSL):
-    """Special HSL mapping class for harmonies."""
-
-    INDEXES = [0, 1, 2]
-
-    def to_base(self, coords: Vector) -> Vector:
-        """Convert to the base."""
-
-        ordered = [0.0, 0.0, 0.0]
-        for e, c in enumerate(super().to_base(coords)):
-            ordered[self.INDEXES[e]] = c
-        return ordered
-
-    def from_base(self, coords: Vector) -> Vector:
-        """Convert from the base."""
-
-        return super().from_base([coords[i] for i in self.INDEXES])
 
 
 def adjust_hue(hue: float, deg: float) -> float:
@@ -62,75 +23,95 @@ def adjust_hue(hue: float, deg: float) -> float:
     return hue + deg
 
 
+def get_cylinder(color: Color) -> tuple[Vector, int]:
+    """Return cylindrical values from a select number of color spaces on the fly."""
+
+    space = color.space()
+
+    if color._space.is_polar():
+        return color[:-1], color._space.hue_index()  # type: ignore[attr-defined]
+
+    cs = color.CS_MAP[color.space()]  # type: Space
+    achromatic = color.is_achromatic()
+
+    if isinstance(cs, Labish):
+        idx = cs.indexes()
+        values = color[:-1]
+        c, h = alg.rect_to_polar(values[idx[1]], values[idx[2]])
+        return [values[idx[0]], c, h if not achromatic else alg.NaN], 2
+
+    if isinstance(cs, Prism) and not isinstance(cs, Luminant):
+        coords = color[:-1]
+        idx = cs.indexes()
+        offset_1 = cs.channels[idx[0]].low
+        offset_2 = cs.channels[idx[1]].low
+        offset_3 = cs.channels[idx[2]].low
+
+        scale_1 = cs.channels[idx[0]].high
+        scale_2 = cs.channels[idx[1]].high
+        scale_3 = cs.channels[idx[2]].high
+        coords = [coords[i] for i in idx]
+        # Scale and offset the values such that channels are between 0 - 1
+        coords[0] = (coords[0] - offset_1) / (scale_1 - offset_1)
+        coords[1] = (coords[1] - offset_2) / (scale_2 - offset_2)
+        coords[2] = (coords[2] - offset_3) / (scale_3 - offset_3)
+        hsl = srgb_to_hsl(coords)
+        if achromatic:
+            hsl[0] = alg.NaN
+        return hsl, 0
+
+    raise ValueError(f'Unsupported color space type {space}')  # pragma: no cover
+
+
+def from_cylinder(color: AnyColor, coords: Vector) -> AnyColor:
+    """From a cylinder values, convert back to the original color."""
+
+    space = color.space()
+    if color._space.is_polar():
+        return color.new(space, coords, color[-1])
+
+    cs = color.CS_MAP[color.space()]  # type: Space
+
+    if isinstance(cs, Labish):
+        a, b = alg.polar_to_rect(coords[1], 0 if math.isnan(coords[2]) else coords[2])
+        idx = cs.indexes()
+        lab = [0.0] * 3
+        lab[idx[0]] = coords[0]
+        lab[idx[1]] = a
+        lab[idx[2]] = b
+        return color.new(space, lab, color[-1])
+
+    if isinstance(cs, Prism):
+        if math.isnan(coords[0]):
+            coords[0] = 0
+        coords = hsl_to_srgb(coords)
+        idx = cs.indexes()
+        offset_1 = cs.channels[idx[0]].low
+        offset_2 = cs.channels[idx[1]].low
+        offset_3 = cs.channels[idx[2]].low
+
+        scale_1 = cs.channels[idx[0]].high
+        scale_2 = cs.channels[idx[1]].high
+        scale_3 = cs.channels[idx[2]].high
+        # Scale and offset the values back to the origin space's configuration
+        coords[0] = coords[0] * (scale_1 - offset_1) + offset_1
+        coords[1] = coords[1] * (scale_2 - offset_2) + offset_2
+        coords[2] = coords[2] * (scale_3 - offset_3) + offset_3
+        ordered = [0.0, 0.0, 0.0]
+        # Consistently order a given color spaces points based on its type
+        for e, c in enumerate(coords):
+            ordered[idx[e]] = c
+        return color.new(space, ordered, color[-1])
+
+    raise ValueError(f'Unsupported color space type {space}')  # pragma: no cover
+
+
 class Harmony(metaclass=ABCMeta):
     """Color harmony."""
 
     @abstractmethod
-    def harmonize(self, color: Color, space: str) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str) -> list[AnyColor]:
         """Get color harmonies."""
-
-    def get_cylinder(self, color: Color, space: str) -> Color:
-        """Create a cylinder from a select number of color spaces on the fly."""
-
-        color = color.convert(space, norm=False).normalize()
-
-        if isinstance(color._space, Cylindrical):
-            return color
-
-        if isinstance(color._space, Labish):
-            cs = color._space  # type: Space
-            name = color.space()
-
-            class HarmonyLCh(_HarmonyLCh):
-                NAME = '-harmony-cylinder'
-                SERIALIZE = ('---harmoncy-cylinder',)
-                BASE = name
-                WHITE = cs.WHITE
-                DYAMIC_RANGE = cs.DYNAMIC_RANGE
-                INDEXES = cs.indexes()  # type: ignore[attr-defined]
-                ORIG_SPACE = cs
-
-                def is_achromatic(self, coords: Vector) -> bool | None:
-                    """Check if space is achromatic."""
-
-                    return self.ORIG_SPACE.is_achromatic(self.to_base(coords))
-
-            class ColorCyl(type(color)):  # type: ignore[misc]
-                """Custom color."""
-
-            ColorCyl.register(HarmonyLCh())
-
-            return ColorCyl(color).convert('-harmony-cylinder')  # type: ignore[no-any-return]
-
-        if isinstance(color._space, Regular):
-
-            cs = color._space
-            name = color.space()
-
-            class HarmonyHSL(_HarmonyHSL, HSL):
-                NAME = '-harmony-cylinder'
-                SERIALIZE = ('---harmoncy-cylinder',)
-                BASE = name
-                GAMUT_CHECK = name
-                CLIP_SPACE = None
-                WHITE = cs.WHITE
-                DYAMIC_RANGE = cs.DYNAMIC_RANGE
-                INDEXES = cs.indexes() if hasattr(cs, 'indexes') else [0, 1, 2]
-                ORIG_SPACE = cs
-
-                def is_achromatic(self, coords: Vector) -> bool | None:
-                    """Check if space is achromatic."""
-
-                    return self.ORIG_SPACE.is_achromatic(self.to_base(coords))
-
-            class ColorCyl(type(color)):  # type: ignore[no-redef, misc]
-                """Custom color."""
-
-            ColorCyl.register(HarmonyHSL())
-
-            return ColorCyl(color).convert('-harmony-cylinder')  # type: ignore[no-any-return]
-
-        raise ValueError('Unsupported color space type {}'.format(color.space()))
 
 
 class Monochromatic(Harmony):
@@ -148,19 +129,20 @@ class Monochromatic(Harmony):
 
     DELTA_E = '2000'
 
-    def harmonize(self, color: Color, space: str, count: int = 5) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str, count: int = 5) -> list[AnyColor]:
         """Get color harmonies."""
 
         if count < 1:
-            raise ValueError('Cannot generate a monochromatic palette of {} colors.'.format(count))
+            raise ValueError(f'Cannot generate a monochromatic palette of {count} colors.')
 
         # Convert color space
         color1 = color.convert(space, norm=False).normalize()
 
-        is_cyl = isinstance(color1._space, Cylindrical)
+        is_cyl = color1._space.is_polar()
 
-        if not is_cyl and not isinstance(color1._space, (Labish, Regular)):
-            raise ValueError('Unsupported color space type {}'.format(color.space()))
+        cs = color1._space
+        if not is_cyl and not isinstance(cs, Labish) and not (isinstance(cs, Prism) and not isinstance(cs, Luminant)):
+            raise ValueError(f'Unsupported color space type {color.space()}')
 
         # If only one color is requested, just return the current color.
         if count == 1:
@@ -245,37 +227,31 @@ class Geometric(Harmony):
     def __init__(self) -> None:
         """Initialize the count."""
 
+        super().__init__()
         self.count = 12
 
-    def harmonize(self, color: Color, space: str) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str) -> list[AnyColor]:
         """Get color harmonies."""
 
         # Get the color cylinder
-        color1 = self.get_cylinder(color, space)
-        output = space
-        space = color1.space()
+        color = color.convert(space, norm=False).normalize()
+        coords, h_idx = get_cylinder(color)
 
-        name = color1._space.hue_name()  # type: ignore[attr-defined]
-
+        # Adjusts hue and convert to the final color
         degree = current = 360.0 / self.count
-        colors = []
+        colors = [from_cylinder(color, coords)]
         for _ in range(self.count - 1):
-            colors.append(
-                color1.clone().set(name, lambda x, value=current: adjust_hue(x, value))
-            )
+            coords2 = coords[:]
+            coords2[h_idx] = adjust_hue(coords2[h_idx], current)
+            colors.append(from_cylinder(color, coords2))
             current += degree
-        colors.insert(0, color1)
-
-        # Using a dynamic cylinder, convert back to original color space
-        if output != space:
-            colors = [color.new(c.convert(output, in_place=True)) for c in colors]
         return colors
 
 
 class Wheel(Geometric):
     """Generate a color wheel."""
 
-    def harmonize(self, color: Color, space: str, count: int = 12) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str, count: int = 12) -> list[AnyColor]:
         """Generate a color wheel with the given count."""
 
         self.count = count
@@ -312,66 +288,63 @@ class TetradicSquare(Geometric):
 class SplitComplementary(Harmony):
     """Split Complementary colors."""
 
-    def harmonize(self, color: Color, space: str) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str) -> list[AnyColor]:
         """Get color harmonies."""
 
         # Get the color cylinder
-        color1 = self.get_cylinder(color, space)
-        output = space
-        space = color1.space()
-        name = color1._space.hue_name()  # type: ignore[attr-defined]
+        color = color.convert(space, norm=False).normalize()
+        coords, h_idx = get_cylinder(color)
 
-        color2 = color1.clone().set(name, lambda x: adjust_hue(x, 210))
-        color3 = color1.clone().set(name, lambda x: adjust_hue(x, -210))
-
-        # Using a dynamic cylinder, convert back to original color space
-        colors = [color1, color2, color3]
-        if output != space:
-            colors = [color.new(c.convert(output, in_place=True)) for c in colors]
+        # Adjusts hue and convert to the final color
+        colors = [from_cylinder(color, coords)]
+        clone = coords[:]
+        clone[h_idx] = adjust_hue(clone[h_idx], -210)
+        colors.append(from_cylinder(color, clone))
+        coords[h_idx] = adjust_hue(coords[h_idx], 210)
+        colors.insert(0, from_cylinder(color, coords))
         return colors
 
 
 class Analogous(Harmony):
     """Analogous colors."""
 
-    def harmonize(self, color: Color, space: str) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str) -> list[AnyColor]:
         """Get color harmonies."""
 
-        color1 = self.get_cylinder(color, space)
-        output = space
-        space = color1.space()
-        name = color1._space.hue_name()  # type: ignore[attr-defined]
+        # Get the color cylinder
+        color = color.convert(space, norm=False).normalize()
+        coords, h_idx = get_cylinder(color)
 
-        color2 = color1.clone().set(name, lambda x: adjust_hue(x, 30))
-        color3 = color1.clone().set(name, lambda x: adjust_hue(x, -30))
-
-        # Using a dynamic cylinder, convert back to original color space
-        colors = [color1, color2, color3]
-        if output != space:
-            colors = [color.new(c.convert(output, in_place=True)) for c in colors]
+        # Adjusts hue and convert to the final color
+        colors = [from_cylinder(color, coords)]
+        clone = coords[:]
+        clone[h_idx] = adjust_hue(clone[h_idx], 30)
+        colors.append(from_cylinder(color, clone))
+        coords[h_idx] = adjust_hue(coords[h_idx], -30)
+        colors.insert(0, from_cylinder(color, coords))
         return colors
 
 
 class TetradicRect(Harmony):
     """Tetradic (rectangular) colors."""
 
-    def harmonize(self, color: Color, space: str) -> list[Color]:
+    def harmonize(self, color: AnyColor, space: str) -> list[AnyColor]:
         """Get color harmonies."""
 
         # Get the color cylinder
-        color1 = self.get_cylinder(color, space)
-        output = space
-        space = color1.space()
-        name = color1._space.hue_name()  # type: ignore[attr-defined]
+        color = color.convert(space, norm=False).normalize()
+        coords, h_idx = get_cylinder(color)
 
-        color2 = color1.clone().set(name, lambda x: adjust_hue(x, 30))
-        color3 = color1.clone().set(name, lambda x: adjust_hue(x, 180))
-        color4 = color1.clone().set(name, lambda x: adjust_hue(x, 210))
-
-        # Using a dynamic cylinder, convert back to original color space
-        colors = [color1, color2, color3, color4]
-        if output != space:
-            colors = [color.new(c.convert(output, in_place=True)) for c in colors]
+        # Adjusts hue and convert to the final color
+        colors = [from_cylinder(color, coords)]
+        clone = coords[:]
+        clone[h_idx] = adjust_hue(clone[h_idx], 30)
+        colors.append(from_cylinder(color, clone))
+        clone = coords[:]
+        clone[h_idx] = adjust_hue(clone[h_idx], 180)
+        colors.append(from_cylinder(color, clone))
+        coords[h_idx] = adjust_hue(coords[h_idx], 210)
+        colors.append(from_cylinder(color, coords))
         return colors
 
 
@@ -387,11 +360,11 @@ SUPPORTED = {
 }  # type: dict[str, Harmony]
 
 
-def harmonize(color: Color, name: str, space: str, **kwargs: Any) -> list[Color]:
+def harmonize(color: AnyColor, name: str, space: str, **kwargs: Any) -> list[AnyColor]:
     """Get specified color harmonies."""
 
     h = SUPPORTED.get(name)
     if not h:
-        raise ValueError("The color harmony '{}' cannot be found".format(name))
+        raise ValueError(f"The color harmony '{name}' cannot be found")
 
     return h.harmonize(color, space, **kwargs)

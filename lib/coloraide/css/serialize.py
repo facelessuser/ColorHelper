@@ -7,9 +7,9 @@ from .. import algebra as alg
 from .color_names import to_name
 from ..channels import FLG_ANGLE
 from ..types import Vector
-from typing import TYPE_CHECKING, Sequence, Any
+from typing import Sequence, Any, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
 RE_COMPRESS = re.compile(r'(?i)^#([a-f0-9])\1([a-f0-9])\2([a-f0-9])\3(?:([a-f0-9])\4)?$')
@@ -21,7 +21,7 @@ EMPTY = ''
 
 
 def named_color(
-    obj: 'Color',
+    obj: Color,
     alpha: bool | None,
     fit: str | bool | dict[str, Any]
 ) -> str | None:
@@ -34,10 +34,11 @@ def named_color(
 
 
 def color_function(
-    obj: 'Color',
+    obj: Color,
     func: str | None,
     alpha: bool | None,
-    precision: int,
+    precision: int | Sequence[int],
+    rounding: str,
     fit: str | bool | dict[str, Any],
     none: bool,
     percent: bool | Sequence[bool],
@@ -54,7 +55,7 @@ def color_function(
 
     # `color` should include the color space serialized name.
     if func is None:
-        string = ['color({} '.format(obj._space._serialize()[0])]
+        string = [f'color({obj._space._serialize()[0]} ']
     # Create the function `name` or `namea` if old legacy form.
     else:
         string = ['{}{}('.format(func, 'a' if legacy and a is not None else EMPTY)]
@@ -69,10 +70,10 @@ def color_function(
     # - A list of booleans will attempt formatting the associated channel as percent,
     #   anything not specified is assumed `False`.
     if isinstance(percent, bool):
-        plist = obj._space._percents if percent else []
-    else:
-        diff = l - len(percent)
-        plist = list(percent) + ([False] * diff) if diff > 0 else list(percent)
+        percent = obj._space._percents if percent else []
+
+    # Ensure precision list is filled
+    is_precision_list = not isinstance(precision, int)
 
     # Iterate the coordinates formatting them by scaling the values, formatting for percent, etc.
     for idx, value in enumerate(coords):
@@ -83,7 +84,7 @@ def color_function(
             string.append(COMMA if legacy else SPACE)
         channel = channels[idx]
 
-        if not (channel.flags & FLG_ANGLE) and plist and plist[idx]:
+        if not (channel.flags & FLG_ANGLE) and percent and util.get_index(percent, idx, False):
             span, offset = channel.span, channel.offset
         else:
             span = offset = 0.0
@@ -93,7 +94,8 @@ def color_function(
         string.append(
             util.fmt_float(
                 value,
-                precision,
+                util.get_index(precision, idx, obj.PRECISION) if is_precision_list else precision,  # type: ignore[arg-type]
+                rounding,
                 span,
                 offset
             )
@@ -104,7 +106,7 @@ def color_function(
 
 
 def get_coords(
-    obj: 'Color',
+    obj: Color,
     fit: bool | str | dict[str, Any],
     none: bool,
     legacy: bool
@@ -124,7 +126,7 @@ def get_coords(
 
 
 def get_alpha(
-    obj: 'Color',
+    obj: Color,
     alpha: bool | None,
     none: bool,
     legacy: bool
@@ -137,7 +139,7 @@ def get_alpha(
 
 
 def hexadecimal(
-    obj: 'Color',
+    obj: Color,
     alpha: bool | None = None,
     fit: str | bool | dict[str, Any] = True,
     upper: bool = False,
@@ -145,7 +147,7 @@ def hexadecimal(
 ) -> str:
     """Get the hex `RGB` value."""
 
-    coords = get_coords(obj, fit, False, False)
+    coords = get_coords(obj, fit if fit else True, False, False)
     a = get_alpha(obj, alpha, False, False)
 
     if a is not None:
@@ -173,11 +175,12 @@ def hexadecimal(
 
 
 def serialize_css(
-    obj: 'Color',
+    obj: Color,
     func: str = '',
     color: bool = False,
     alpha: bool | None = None,
-    precision: int | None = None,
+    precision: int | Sequence[int] | None = None,
+    rounding: str | None = None,
     fit: bool | str | dict[str, Any] = True,
     none: bool = False,
     percent: bool | Sequence[bool] = False,
@@ -193,9 +196,12 @@ def serialize_css(
     if precision is None:
         precision = obj.PRECISION
 
+    if rounding is None:
+        rounding = obj.ROUNDING
+
     # Color format
     if color:
-        return color_function(obj, None, alpha, precision, fit, none, percent, False, 1.0)
+        return color_function(obj, None, alpha, precision, rounding, fit, none, percent, False, 1.0)
 
     # CSS color names
     if name:
@@ -209,6 +215,6 @@ def serialize_css(
 
     # Normal CSS named function format
     if func:
-        return color_function(obj, func, alpha, precision, fit, none, percent, legacy, scale)
+        return color_function(obj, func, alpha, precision, rounding, fit, none, percent, legacy, scale)
 
     raise RuntimeError('Could not identify a CSS format to serialize to')  # pragma: no cover

@@ -4,10 +4,10 @@ import math
 from ..channels import FLG_ANGLE
 from abc import ABCMeta, abstractmethod
 from ..types import Plugin
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 from . import pointer
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
 __all__ = ('clip_channels', 'verify', 'Fit', 'pointer')
@@ -21,7 +21,7 @@ def clip_channels(color: Color, nans: bool = True) -> bool:
     cs = color._space
     for i, value in enumerate(cs.normalize(color[:-1])):
 
-        chan = cs.CHANNELS[i]
+        chan = cs.channels[i]
 
         # Ignore angles, undefined, or unbounded channels
         if not chan.bound or math.isnan(value) or chan.flags & FLG_ANGLE:
@@ -47,7 +47,7 @@ def verify(color: Color, tolerance: float) -> bool:
 
     cs = color._space
     for i, value in enumerate(cs.normalize(color[:-1])):
-        chan = cs.CHANNELS[i]
+        chan = cs.channels[i]
 
         # Ignore undefined channels, angles which wrap, and unbounded channels
         if not chan.bound or math.isnan(value) or chan.flags & FLG_ANGLE:

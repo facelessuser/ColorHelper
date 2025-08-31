@@ -186,10 +186,10 @@ class ColorHelperDifferenceInputHandler(tools._ColorInputHandler):
                 else:
                     check_space = self.gamut_space
                 if not orig.in_gamut(check_space):
-                    orig.fit(self.gamut_space, method=self.gamut_map)
+                    orig.fit(self.gamut_space, **self.gamut_map)
                     message = '<br><em style="font-size: 0.9em;">* preview out of gamut</em>'
                     color_string = "<strong>Gamut Mapped</strong>: {}<br>".format(orig.to_string())
-                orig.convert(self.gamut_space, fit=self.gamut_map, in_place=True)
+                orig.convert(self.gamut_space, in_place=True).fit(**self.gamut_map)
                 color_string += "<strong>Color</strong>: {}".format(color.to_string(**util.DEFAULT))
                 preview = orig.clone().set('alpha', 1)
                 preview_alpha = orig

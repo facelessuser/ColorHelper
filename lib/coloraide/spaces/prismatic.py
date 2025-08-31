@@ -7,7 +7,8 @@ http://psgraphics.blogspot.com/2015/10/prismatic-color-model.html
 https://studylib.net/doc/14656976/the-prismatic-color-space-for-rgb-computations
 """
 from __future__ import annotations
-from ..spaces import Space
+from .. import util
+from ..spaces import Space, Luminant
 from ..channels import Channel
 from ..cat import WHITES
 from ..types import Vector
@@ -32,13 +33,12 @@ def lrgb_to_srgb(lrgb: Vector) -> Vector:
     return [(l * c) / mx for c in rgb] if mx != 0 else [0, 0, 0]
 
 
-class Prismatic(Space):
+class Prismatic(Luminant, Space):
     """The Prismatic color class."""
 
     BASE = "srgb"
     NAME = "prismatic"
     SERIALIZE = ("--prismatic",)  # type: tuple[str, ...]
-    EXTENDED_RANGE = False
     CHANNELS = (
         Channel("l", 0.0, 1.0, bound=True),
         Channel("r", 0.0, 1.0, bound=True),
@@ -58,12 +58,12 @@ class Prismatic(Space):
     def is_achromatic(self, coords: Vector) -> bool:
         """Test if color is achromatic."""
 
-        if math.isclose(0.0, coords[0], abs_tol=1e-4):
+        if math.isclose(0.0, coords[0], abs_tol=util.ACHROMATIC_THRESHOLD_SM):
             return True
 
         white = [1, 1, 1]
         for x in alg.vcross(coords[:-1], white):
-            if not math.isclose(0.0, x, abs_tol=1e-5):
+            if not math.isclose(0.0, x, abs_tol=util.ACHROMATIC_THRESHOLD_SM):
                 return False
         return True
 
