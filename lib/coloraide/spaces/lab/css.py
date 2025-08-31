@@ -4,9 +4,9 @@ from .. import lab as base
 from ...css import parse
 from ...css import serialize
 from ...types import Vector
-from typing import Any, TYPE_CHECKING, Sequence
+from typing import Any, Sequence, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ...color import Color
 
 
@@ -18,7 +18,8 @@ class Lab(base.CIELab):
         parent: Color,
         *,
         alpha: bool | None = None,
-        precision: int | None = None,
+        precision: int | Sequence[int] | None = None,
+        rounding: str | None = None,
         fit: bool | str | dict[str, Any] = True,
         none: bool = False,
         color: bool = False,
@@ -32,6 +33,7 @@ class Lab(base.CIELab):
             func='lab',
             alpha=alpha,
             precision=precision,
+            rounding=rounding,
             fit=fit,
             none=none,
             color=color,

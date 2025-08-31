@@ -4,7 +4,7 @@ The xyY color space.
 https://en.wikipedia.org/wiki/CIE_1931_color_space#CIE_xy_chromaticity_diagram_and_the_CIE_xyY_color_space
 """
 from __future__ import annotations
-from ..spaces import Space
+from ..spaces import Space, Prism, Luminant
 from ..channels import Channel
 from ..cat import WHITES
 from .. import util
@@ -13,7 +13,7 @@ from .. import algebra as alg
 import math
 
 
-class xyY(Space):
+class xyY(Luminant, Prism, Space):
     """The xyY class."""
 
     BASE = "xyz-d65"
@@ -32,7 +32,7 @@ class xyY(Space):
         if math.isclose(0.0, coords[-1], abs_tol=1e-4):
             return True
 
-        if not math.isclose(0.0, alg.vcross(coords[:-1], self.WHITE), abs_tol=1e-6):
+        if not math.isclose(0.0, alg.vcross(coords[:-1], self.WHITE), abs_tol=util.ACHROMATIC_THRESHOLD_SM):
             return False
         return True
 
@@ -45,3 +45,8 @@ class xyY(Space):
         """From XYZ."""
 
         return util.xyz_to_xyY(coords, self.white())
+
+    def lightness_name(self) -> str:
+        """Get lightness name."""
+
+        return "Y"

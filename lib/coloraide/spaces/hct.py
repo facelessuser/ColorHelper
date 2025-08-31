@@ -5,11 +5,6 @@ This implements the HCT color space as described. This is not a port of the Mate
 We simply, as described, create a color space with CIELAB L* and CAM16's C and h components.
 Environment settings are calculated with the assumption of L* 50.
 
-As ColorAide usually cares about setting powerless hues as NaN, especially for good interpolation,
-we've also calculated the cut off for chromatic colors and will properly enforce achromatic, powerless
-hues. This is because CAM16 actually resolves colors as achromatic before chroma reaches zero as
-lightness increases. In the SDR range, a Tone of 100 will have a cut off as high as ~2.87 chroma.
-
 Generally, the HCT color space is restricted to sRGB and SDR range in the Material library, but we do
 not have such restrictions.
 
@@ -43,12 +38,11 @@ color(--hct 256.79 31.766 33.344 / 1)
 """
 from __future__ import annotations
 from .. import algebra as alg
-from ..spaces import Space, LChish
+from .lch import LCh
 from ..cat import WHITES
 from ..channels import Channel, FLG_ANGLE
-from .cam16_jmh import Environment, cam16_to_xyz_d65, xyz_d65_to_cam16
+from .cam16 import Environment, cam_to_xyz, xyz_to_cam
 from .lab import EPSILON, KAPPA, KE
-from .lch import ACHROMATIC_THRESHOLD
 from ..types import Vector
 import math
 
@@ -82,8 +76,7 @@ def hct_to_xyz(coords: Vector, env: Environment) -> Vector:
 
     h, c, t = coords[:]
 
-    # Shortcut out for black
-    if t == 0:
+    if t == 0 and c == 0:
         return [0.0, 0.0, 0.0]
 
     # Calculate the Y we need to target
@@ -91,33 +84,32 @@ def hct_to_xyz(coords: Vector, env: Environment) -> Vector:
 
     # Try to start with a reasonable initial guess for J
     # Calculated by curve fitting J vs T.
-    if t > 0:
-        j = 0.00379058511492914 * t ** 2 + 0.608983189401032 * t + 0.9155088574762233
+    if t >= 0:
+        j = 0.00379058511492914 * t * t + 0.608983189401032 * t + 0.9155088574762233
     else:
-        j = 9.514440756550361e-06 * t ** 2 + 0.08693057439788597 * t -21.928975842194614
+        j = 9.514440756550361e-06 * t * t + 0.08693057439788597 * t -21.928975842194614
 
-    # Threshold of how close is close enough, and max number of attempts.
-    # More precision and more attempts means more time spent iterating.
-    # Higher required precision gives more accuracy but also increases the
-    # chance of not hitting the goal. 2e-12 allows us to convert round trip
-    # with reasonable accuracy of six decimal places or more.
-    threshold = 2e-12
-    max_attempt = 15
+    epsilon = 2e-12
 
-    attempt = 0
+    maxiter = 16
     last = math.inf
     best = j
+    xyz = [0.0] * 3
 
     # Try to find a J such that the returned y matches the returned y of the L*
-    while attempt <= max_attempt:
-        xyz = cam16_to_xyz_d65(J=j, C=c, h=h, env=env)
+    for _ in range(maxiter):
+        prev = j
+        xyz[:] = cam_to_xyz(J=j, C=c, h=h, env=env)
 
         # If we are within range, return XYZ
         # If we are closer than last time, save the values
-        delta = abs(xyz[1] - y)
+        f0 = xyz[1] - y
+        delta = abs(f0)
+
+        if delta < epsilon:
+            return xyz
+
         if delta < last:
-            if delta <= threshold:
-                return xyz
             best = j
             last = delta
 
@@ -127,26 +119,38 @@ def hct_to_xyz(coords: Vector, env: Environment) -> Vector:
         # f(j_root) = Y = y / 100
         # f(j) = (y ** 2) / j - 1
         # f'(j) = (2 * y) / j
+        # f'(j) = dx
+        # j = j - f0 / dx
         # ```
-        j = j - (xyz[1] - y) * j / (2 * xyz[1])
 
-        attempt += 1
+        # Newton: 2nd order convergence
+        # `dx` fraction is flipped so we can multiply by the derivative instead of divide
+        j -= f0 * alg.zdiv(j, 2 * xyz[1])
+
+        # If J is zero, the next round will yield zero, so quit
+        if j == 0 or abs(prev - j) < epsilon:  # pragma: no cover
+            break
 
     # We could not acquire the precision we desired, return our closest attempt.
-    return cam16_to_xyz_d65(J=best, C=c, h=h, env=env)  # pragma: no cover
+    xyz[:] = cam_to_xyz(J=best, C=c, h=h, env=env)
+
+    # ```
+    # if not converged:
+    #     print('FAIL:', [h, c, t], xyz[1], y)
+    # ```
+
+    return xyz
 
 
 def xyz_to_hct(coords: Vector, env: Environment) -> Vector:
     """Convert XYZ to HCT."""
 
     t = y_to_lstar(coords[1])
-    if t == 0.0:
-        return [0.0, 0.0, 0.0]
-    c, h = xyz_d65_to_cam16(coords, env)[1:3]
+    c, h = xyz_to_cam(coords, env)[1:3]
     return [h, c, t]
 
 
-class HCT(LChish, Space):
+class HCT(LCh):
     """HCT class."""
 
     BASE = "xyz-d65"
@@ -178,6 +182,11 @@ class HCT(LChish, Space):
         Channel("t", 0.0, 100.0)
     )
 
+    def lightness_name(self) -> str:
+        """Get lightness name."""
+
+        return "t"
+
     def normalize(self, coords: Vector) -> Vector:
         """Normalize."""
 
@@ -186,13 +195,7 @@ class HCT(LChish, Space):
         coords[0] %= 360.0
         return coords
 
-    def is_achromatic(self, coords: Vector) -> bool | None:
-        """Check if color is achromatic."""
-
-        # Account for both positive and negative chroma
-        return coords[2] == 0 or abs(coords[1]) < ACHROMATIC_THRESHOLD
-
-    def names(self) -> tuple[str, ...]:
+    def names(self) -> tuple[Channel, ...]:
         """Return LCh-ish names in the order L C h."""
 
         channels = self.channels

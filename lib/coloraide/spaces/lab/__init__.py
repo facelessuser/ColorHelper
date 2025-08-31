@@ -11,8 +11,8 @@ from ...channels import Channel, FLG_MIRROR_PERCENT
 from ... import util
 from ... import algebra as alg
 from ...types import VectorLike, Vector
+from typing import Any
 
-ACHROMATIC_THRESHOLD = 1e-4
 EPSILON = 216 / 24389  # `6^3 / 29^3`
 EPSILON3 = 6 / 29  # Cube root of EPSILON
 KAPPA = 24389 / 27
@@ -37,16 +37,16 @@ def lab_to_xyz(lab: Vector, white: VectorLike) -> Vector:
     ]
 
     # Compute XYZ by scaling `xyz` by reference `white`
-    return alg.multiply(xyz, white, dims=alg.D1)
+    return alg.multiply_x3(xyz, white, dims=alg.D1)
 
 
 def xyz_to_lab(xyz: Vector, white: VectorLike) -> Vector:
     """Convert XYZ to CIE Lab using the reference white."""
 
     # compute `xyz`, which is XYZ scaled relative to reference white
-    xyz = alg.divide(xyz, white, dims=alg.D1)
+    xyz = alg.divide_x3(xyz, white, dims=alg.D1)
     # Compute `fx`, `fy`, and `fz`
-    fx, fy, fz = [alg.nth_root(i, 3) if i > EPSILON else (KAPPA * i + 16) / 116 for i in xyz]
+    fx, fy, fz = (alg.nth_root(i, 3) if i > EPSILON else (KAPPA * i + 16) / 116 for i in xyz)
 
     return [
         (116.0 * fy) - 16.0,
@@ -67,10 +67,17 @@ class Lab(Labish, Space):
         "lightness": "l"
     }
 
+    def __init__(self, **kwargs: Any):
+        """Initialize."""
+
+        super().__init__(**kwargs)
+        order = alg.order(round(self.channels[self.indexes()[0]].high, 5))
+        self.achromatic_threshold = (1 * 10.0 ** order) / 1_000_000
+
     def is_achromatic(self, coords: Vector) -> bool:
         """Check if color is achromatic."""
 
-        return alg.rect_to_polar(coords[1], coords[2])[0] < ACHROMATIC_THRESHOLD
+        return alg.rect_to_polar(coords[1], coords[2])[0] < self.achromatic_threshold
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ D50 from Lab."""

@@ -4,12 +4,12 @@ ICtCp class.
 https://professional.dolby.com/siteassets/pdfs/ictcp_dolbywhitepaper_v071.pdf
 """
 from __future__ import annotations
-from .lab import Lab
-from ..cat import WHITES
-from ..channels import Channel, FLG_MIRROR_PERCENT
-from .. import util
-from .. import algebra as alg
-from ..types import Vector
+from ..lab import Lab
+from ...cat import WHITES
+from ...channels import Channel, FLG_MIRROR_PERCENT
+from ... import util
+from ... import algebra as alg
+from ...types import Vector
 
 # All PQ Values are equivalent to defaults as stated in link below:
 # https://en.wikipedia.org/wiki/High-dynamic-range_video#Perceptual_quantizer
@@ -57,13 +57,13 @@ def ictcp_to_xyz_d65(ictcp: Vector) -> Vector:
     """From ICtCp to XYZ."""
 
     # Convert to LMS prime
-    pqlms = alg.matmul(ictcp_to_lms_p_mi, ictcp, dims=alg.D2_D1)
+    pqlms = alg.matmul_x3(ictcp_to_lms_p_mi, ictcp, dims=alg.D2_D1)
 
     # Decode PQ LMS to LMS
-    lms = util.pq_st2084_eotf(pqlms)
+    lms = util.eotf_st2084(pqlms)
 
     # Convert back to absolute XYZ D65
-    absxyz = alg.matmul(lms_to_xyz_mi, lms, dims=alg.D2_D1)
+    absxyz = alg.matmul_x3(lms_to_xyz_mi, lms, dims=alg.D2_D1)
 
     # Convert back to normal XYZ D65
     return util.absxyz_to_xyz(absxyz, YW)
@@ -76,13 +76,13 @@ def xyz_d65_to_ictcp(xyzd65: Vector) -> Vector:
     absxyz = util.xyz_to_absxyz(xyzd65, YW)
 
     # Convert to LMS
-    lms = alg.matmul(xyz_to_lms_m, absxyz, dims=alg.D2_D1)
+    lms = alg.matmul_x3(xyz_to_lms_m, absxyz, dims=alg.D2_D1)
 
     # PQ encode the LMS
-    pqlms = util.pq_st2084_oetf(lms)
+    pqlms = util.inverse_eotf_st2084(lms)
 
     # Calculate Izazbz
-    return alg.matmul(lms_p_to_ictcp_m, pqlms, dims=alg.D2_D1)
+    return alg.matmul_x3(lms_p_to_ictcp_m, pqlms, dims=alg.D2_D1)
 
 
 class ICtCp(Lab):
@@ -90,11 +90,11 @@ class ICtCp(Lab):
 
     BASE = "xyz-d65"
     NAME = "ictcp"
-    SERIALIZE = ("ictcp", "--ictcp",)
+    SERIALIZE = ("--ictcp", "ictcp")
     CHANNELS = (
         Channel("i", 0.0, 1.0),
-        Channel("ct", -1.0, 1.0, flags=FLG_MIRROR_PERCENT),
-        Channel("cp", -1.0, 1.0, flags=FLG_MIRROR_PERCENT)
+        Channel("ct", -0.5, 0.5, flags=FLG_MIRROR_PERCENT),
+        Channel("cp", -0.5, 0.5, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "intensity": "i",
@@ -103,6 +103,11 @@ class ICtCp(Lab):
     }
     WHITE = WHITES['2deg']['D65']
     DYNAMIC_RANGE = 'hdr'
+
+    def lightness_name(self) -> str:
+        """Get lightness name."""
+
+        return "i"
 
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from ICtCp."""

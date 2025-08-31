@@ -4,8 +4,8 @@ from .types import Vector
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .color import Color
     from .spaces import Space
+    from .color import Color
 
 # XYZ is the absolute base, meaning that XYZ is the final base in any conversion chain.
 # This is a design expectation regardless of whether someone assigns a different base to XYZ or not.
@@ -27,7 +27,7 @@ def calc_path_to_xyz(
 
     obj = color.CS_MAP.get(space)
     if obj is None:
-        raise ValueError("'{}' is not a valid color space".format(space))
+        raise ValueError(f"'{space}' is not a valid color space")
 
     # Create a worse case conversion chain from XYZ to the target
     temp = obj
@@ -83,7 +83,7 @@ def get_convert_chain(
             base_space = color.CS_MAP[current.BASE]
 
             # Do we need to chromatically adapt towards XYZ D65?
-            adapt = base_space.NAME == ABSOLUTE_BASE
+            adapt = base_space.NAME == ABSOLUTE_BASE and current.WHITE != base_space.WHITE
 
             # Add conversion chain entry
             chain.append((current, base_space, 0, adapt))
@@ -105,13 +105,13 @@ def get_convert_chain(
         # Start in the chain where the current color resides
         start = from_color_index[current.NAME] - 1
 
-        # Do we need to chromatically adapt away from XYZ D65?
-        adapt = current.NAME == ABSOLUTE_BASE
-
-        # Moving away from XYZ D65, convert towards are desired target
+        # Moving away from XYZ D65, convert towards our desired target
         for index in range(start, -1, -1):
             base_space = current
             current = from_color[index]
+
+            # Do we need to chromatically adapt away from XYZ D65?
+            adapt = base_space.NAME == ABSOLUTE_BASE and current.WHITE != base_space.WHITE
 
             # Add the conversion chain entry
             chain.append((base_space, current, 1, adapt))
