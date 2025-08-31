@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Color vision deficiency."""
 from __future__ import annotations
 from .. import algebra as alg
@@ -6,7 +5,7 @@ from ..filters import Filter
 from ..types import Vector, Matrix
 from typing import Any, Callable, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
 LRGB_TO_LMS = [
@@ -137,11 +136,11 @@ def brettel(color: Color, severity: float, wings: tuple[Matrix, Matrix, Vector])
     w1, w2, sep = wings
 
     # Convert to LMS
-    lms_c = alg.matmul(LRGB_TO_LMS, color[:-1], dims=alg.D2_D1)
+    lms_c = alg.matmul_x3(LRGB_TO_LMS, color[:-1], dims=alg.D2_D1)
 
     # Apply appropriate wing filter based on which side of the separator we are on.
     # Tritanopia filter and LMS to sRGB conversion are included in the same matrix.
-    coords = alg.matmul(w2 if alg.matmul(lms_c, sep) > 0 else w1, lms_c, dims=alg.D2_D1)
+    coords = alg.matmul_x3(w2 if alg.matmul_x3(lms_c, sep, dims=alg.D1) > 0 else w1, lms_c, dims=alg.D2_D1)
 
     if severity < 1:
         color[:-1] = [alg.lerp(a, b, severity) for a, b in zip(color[:-1], coords)]
@@ -165,7 +164,7 @@ def vienot(color: Color, severity: float, transform: Matrix) -> None:
     then we interpolate against the original color.
     """
 
-    coords = alg.matmul(transform, color[:-1], dims=alg.D2_D1)
+    coords = alg.matmul_x3(transform, color[:-1], dims=alg.D2_D1)
     if severity < 1:
         color[:-1] = [alg.lerp(c1, c2, severity) for c1, c2 in zip(color[:-1], coords)]
     else:
@@ -188,7 +187,7 @@ def machado(color: Color, severity: float, matrices: dict[int, Matrix]) -> None:
 
     # Filter the color according to the severity
     m1 = matrices[severity1]
-    coords = alg.matmul(m1, color[:-1], dims=alg.D2_D1)
+    coords = alg.matmul_x3(m1, color[:-1], dims=alg.D2_D1)
 
     # If severity was not exact, and it also isn't max severity,
     # let's calculate the next most severity and interpolate
@@ -205,7 +204,7 @@ def machado(color: Color, severity: float, matrices: dict[int, Matrix]) -> None:
         # but it ends up being faster just modifying the color on both the high
         # and low matrix and interpolating the color than interpolating the matrix
         # and then applying it to the color. The results are identical as well.
-        coords2 = alg.matmul(m2, color[:-1], dims=alg.D2_D1)
+        coords2 = alg.matmul_x3(m2, color[:-1], dims=alg.D2_D1)
         coords = [alg.lerp(c1, c2, weight) for c1, c2 in zip(coords, coords2)]
 
     # Return the altered color
@@ -254,7 +253,7 @@ class Protan(Filter):
         elif method == 'machado':
             return self.machado
         else:
-            raise ValueError("Unrecognized CVD filter method '{}'".format(method))
+            raise ValueError(f"Unrecognized CVD filter method '{method}'")
 
     def get_best_filter(self, method: str | None, max_severity: bool) -> Callable[..., None]:
         """Get the best filter based on the situation."""

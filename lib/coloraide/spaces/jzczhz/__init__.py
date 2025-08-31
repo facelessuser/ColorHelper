@@ -4,9 +4,9 @@ JzCzhz class.
 https://www.osapublishing.org/oe/fulltext.cfm?uri=oe-25-13-15131&id=368272
 """
 from __future__ import annotations
-from ..cat import WHITES
-from .lch import LCh
-from ..channels import Channel, FLG_ANGLE
+from ...cat import WHITES
+from ..lch import LCh
+from ...channels import Channel, FLG_ANGLE
 
 
 class JzCzhz(LCh):
@@ -18,7 +18,7 @@ class JzCzhz(LCh):
 
     BASE = "jzazbz"
     NAME = "jzczhz"
-    SERIALIZE = ("jzczhz", "--jzczhz",)
+    SERIALIZE = ("--jzczhz", "jzczhz")
     WHITE = WHITES['2deg']['D65']
     DYNAMIC_RANGE = 'hdr'
     CHANNEL_ALIASES = {
@@ -31,9 +31,14 @@ class JzCzhz(LCh):
     }
     CHANNELS = (
         Channel("jz", 0.0, 1.0),
-        Channel("cz", 0.0, 1.0),
+        Channel("cz", 0.0, 0.26),
         Channel("hz", 0.0, 360.0, flags=FLG_ANGLE)
     )
+
+    def lightness_name(self) -> str:
+        """Get lightness name."""
+
+        return "jz"
 
     def hue_name(self) -> str:
         """Hue name."""

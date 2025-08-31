@@ -7,6 +7,7 @@ from __future__ import annotations
 from ..channels import Channel
 from ..spaces.srgb_linear import sRGBLinear
 from .. import algebra as alg
+from ..cat import WHITES
 from ..types import Vector
 
 AP0_TO_XYZ = [
@@ -28,13 +29,13 @@ MAX = 1.0
 def aces_to_xyz(aces: Vector) -> Vector:
     """Convert ACEScc to XYZ."""
 
-    return alg.matmul(AP0_TO_XYZ, aces, dims=alg.D2_D1)
+    return alg.matmul_x3(AP0_TO_XYZ, aces, dims=alg.D2_D1)
 
 
 def xyz_to_aces(xyz: Vector) -> Vector:
     """Convert XYZ to ACEScc."""
 
-    return alg.matmul(XYZ_TO_AP0, xyz, dims=alg.D2_D1)
+    return alg.matmul_x3(XYZ_TO_AP0, xyz, dims=alg.D2_D1)
 
 
 class ACES20651(sRGBLinear):
@@ -43,7 +44,7 @@ class ACES20651(sRGBLinear):
     BASE = "xyz-d65"
     NAME = "aces2065-1"
     SERIALIZE = ("--aces2065-1",)
-    WHITE = (0.32168, 0.33767)
+    WHITE = WHITES['2deg']['ACES-D60']
     CHANNELS = (
         Channel("r", 0.0, 65504.0, bound=True),
         Channel("g", 0.0, 65504.0, bound=True),

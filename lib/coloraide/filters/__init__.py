@@ -1,10 +1,10 @@
 """Provides a plugin system for filtering colors."""
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from ..types import Plugin
+from ..types import Plugin, AnyColor
 from typing import Any, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  #pragma: no cover
     from ..color import Color
 
 
@@ -21,26 +21,26 @@ class Filter(Plugin, metaclass=ABCMeta):
 
 
 def filters(
-    color: Color,
+    color: AnyColor,
     name: str,
     amount: float | None = None,
     space: str | None = None,
     out_space: str | None = None,
     in_place: bool = False,
     **kwargs: Any
-) -> Color:
+) -> AnyColor:
     """Filter."""
 
     f = color.FILTER_MAP.get(name)
     if not f:
-        raise ValueError("'{}' filter is not supported".format(name))
+        raise ValueError(f"'{name}' filter is not supported")
 
     if space is None:
         space = f.DEFAULT_SPACE
 
     if space not in f.ALLOWED_SPACES:
         raise ValueError(
-            "The '{}' only supports filtering in the {} spaces, not '{}'".format(name, str(f.ALLOWED_SPACES), space)
+            f"The '{name}' only supports filtering in the {f.ALLOWED_SPACES!s} spaces, not '{space}'"
         )
 
     if out_space is None:

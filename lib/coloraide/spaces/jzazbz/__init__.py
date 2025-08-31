@@ -10,13 +10,12 @@ This is confirmed here: https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-
 If at some time that these assumptions are incorrect, we will be happy to alter the model.
 """
 from __future__ import annotations
-from ..spaces import Space
-from ..cat import WHITES
-from ..channels import Channel, FLG_MIRROR_PERCENT
-from .. import util
-from .. import algebra as alg
-from ..types import Vector, Matrix  # noqa: F401
-from .lab import Lab
+from ...cat import WHITES
+from ...channels import Channel, FLG_MIRROR_PERCENT
+from ... import util
+from ... import algebra as alg
+from ...types import Vector, Matrix  # noqa: F401
+from ..lab import Lab
 
 B = 1.15
 G = 0.66
@@ -66,7 +65,7 @@ IZAZBZ_TO_LMS_P = [
 ]
 
 
-def xyz_d65_to_izazbz(xyz: Vector, lms_matrix: Matrix, m2: float) -> Vector:
+def xyz_to_izazbz(xyz: Vector, lms_matrix: Matrix, m2: float) -> Vector:
     """Absolute XYZ to Izazbz."""
 
     xa, ya, za = xyz
@@ -74,33 +73,33 @@ def xyz_d65_to_izazbz(xyz: Vector, lms_matrix: Matrix, m2: float) -> Vector:
     ym = (G * ya) - ((G - 1) * xa)
 
     # Convert to LMS
-    lms = alg.matmul(XYZ_TO_LMS, [xm, ym, za], dims=alg.D2_D1)
+    lms = alg.matmul_x3(XYZ_TO_LMS, [xm, ym, za], dims=alg.D2_D1)
 
     # PQ encode the LMS
-    pqlms = util.pq_st2084_oetf(lms, m2=m2)
+    pqlms = util.inverse_eotf_st2084(lms, m2=m2)
 
     # Calculate Izazbz
-    return alg.matmul(lms_matrix, pqlms, dims=alg.D2_D1)
+    return alg.matmul_x3(lms_matrix, pqlms, dims=alg.D2_D1)
 
 
-def izazbz_to_xyz_d65(izazbz: Vector, lms_matrix: Matrix, m2: float) -> Vector:
+def izazbz_to_xyz(izazbz: Vector, lms_matrix: Matrix, m2: float) -> Vector:
     """Izazbz to absolute XYZ."""
 
     # Convert to LMS prime
-    pqlms = alg.matmul(lms_matrix, izazbz, dims=alg.D2_D1)
+    pqlms = alg.matmul_x3(lms_matrix, izazbz, dims=alg.D2_D1)
 
     # Decode PQ LMS to LMS
-    lms = util.pq_st2084_eotf(pqlms, m2=m2)
+    lms = util.eotf_st2084(pqlms, m2=m2)
 
     # Convert back to absolute XYZ D65
-    xm, ym, za = alg.matmul(LMS_TO_XYZ, lms, dims=alg.D2_D1)
+    xm, ym, za = alg.matmul_x3(LMS_TO_XYZ, lms, dims=alg.D2_D1)
     xa = (xm + ((B - 1) * za)) / B
     ya = (ym + ((G - 1) * xa)) / G
 
     return [xa, ya, za]
 
 
-def jzazbz_to_xyz_d65(jzazbz: Vector) -> Vector:
+def jzazbz_to_xyz(jzazbz: Vector) -> Vector:
     """From Jzazbz to XYZ."""
 
     jz, az, bz = jzazbz
@@ -109,29 +108,29 @@ def jzazbz_to_xyz_d65(jzazbz: Vector) -> Vector:
     iz = alg.zdiv((jz + D0), (1 + D - D * (jz + D0)))
 
     # Convert back to normal XYZ D65
-    return util.absxyz_to_xyz(izazbz_to_xyz_d65([iz, az, bz], IZAZBZ_TO_LMS_P, M2), YW)
+    return util.absxyz_to_xyz(izazbz_to_xyz([iz, az, bz], IZAZBZ_TO_LMS_P, M2), YW)
 
 
-def xyz_d65_to_jzazbz(xyzd65: Vector) -> Vector:
+def xyz_to_jzazbz(xyz: Vector) -> Vector:
     """From XYZ to Jzazbz."""
 
-    iz, az, bz = xyz_d65_to_izazbz(util.xyz_to_absxyz(xyzd65, YW), LMS_P_TO_IZAZBZ,  M2)
+    iz, az, bz = xyz_to_izazbz(util.xyz_to_absxyz(xyz, YW), LMS_P_TO_IZAZBZ,  M2)
 
     # Calculate Jz
     jz = ((1 + D) * iz) / (1 + (D * iz)) - D0
     return [jz, az, bz]
 
 
-class Jzazbz(Lab, Space):
+class Jzazbz(Lab):
     """Jzazbz class."""
 
     BASE = "xyz-d65"
     NAME = "jzazbz"
-    SERIALIZE = ("jzazbz", "--jzazbz",)
+    SERIALIZE = ("--jzazbz", "jzazbz")
     CHANNELS = (
         Channel("jz", 0.0, 1.0),
-        Channel("az", -1.0, 1.0, flags=FLG_MIRROR_PERCENT),
-        Channel("bz", -1.0, 1.0, flags=FLG_MIRROR_PERCENT)
+        Channel("az", -0.21, 0.21, flags=FLG_MIRROR_PERCENT),
+        Channel("bz", -0.21, 0.21, flags=FLG_MIRROR_PERCENT)
     )
     CHANNEL_ALIASES = {
         "lightness": 'jz',
@@ -142,12 +141,17 @@ class Jzazbz(Lab, Space):
     WHITE = WHITES['2deg']['D65']
     DYNAMIC_RANGE = 'hdr'
 
+    def lightness_name(self) -> str:
+        """Get lightness name."""
+
+        return "jz"
+
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Jzazbz."""
 
-        return jzazbz_to_xyz_d65(coords)
+        return jzazbz_to_xyz(coords)
 
     def from_base(self, coords: Vector) -> Vector:
         """From XYZ to Jzazbz."""
 
-        return xyz_d65_to_jzazbz(coords)
+        return xyz_to_jzazbz(coords)
