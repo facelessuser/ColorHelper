@@ -1,5 +1,10 @@
 # ColorHelper
 
+## 6.4.3
+
+-   **FIX**: Fix issue where a newly opened file will not show previews  
+    until the file is scrolled or resized.
+
 ## 6.4.2
 
 -   **FIX**: Fix regression in Sublime ColorMod parsing.

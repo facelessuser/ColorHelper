@@ -4,7 +4,7 @@ repo_url: https://github.com/facelessuser/ColorHelper
 edit_uri: tree/master/docs/src/markdown
 site_description: Popup tooltips and previews for stylesheet colors.
 copyright: |
-  Copyright &copy; 2015 - 2023 <a href="https://github.com/facelessuser"  target="_blank" rel="noopener">Isaac Muse</a>
+  Copyright &copy; 2015 - 2025 <a href="https://github.com/facelessuser"  target="_blank" rel="noopener">Isaac Muse</a>
 
 docs_dir: docs/src/markdown
 theme:
@@ -148,8 +148,6 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/facelessuser
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/TWs8Tgr
 
 plugins:
   - search

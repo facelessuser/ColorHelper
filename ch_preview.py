@@ -358,8 +358,8 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         )
 
         # If we don't need to force previews,
-        # quit if visible region is the same as last time
-        if not force and self.previous_region[view_id] == bounds:
+        # quit if visible region is the same as last time or there is no region to scan
+        if (not force and self.previous_region[view_id] == bounds) or visible_region.size() == 0:
             return
         self.previous_region[view_id] = bounds
 
@@ -376,7 +376,7 @@ class ColorHelperPreviewCommand(sublime_plugin.WindowCommand):
         # Get the scan scopes
         scanning = rules.get("scanning")
         classes = rules.get("color_class", "css-level-4")
-        if show_preview and visible_region.size() and scanning and classes:
+        if show_preview and scanning and classes:
             # Get out of gamut related options
             self.setup_gamut_options()
 
@@ -884,7 +884,6 @@ def plugin_loaded():
     """Setup plugin."""
 
     global ch_settings
-    global ch_last_updated
 
     # Setup settings
     ch_settings = sublime.load_settings('color_helper.sublime-settings')
@@ -893,9 +892,6 @@ def plugin_loaded():
     ch_settings.clear_on_change('reload')
     ch_settings.add_on_change('reload', settings_reload)
     settings_reload()
-
-    # Start event thread
-    setup_previews()
 
 
 def plugin_unloaded():
