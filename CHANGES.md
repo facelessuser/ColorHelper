@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.4.4
+
+-   **FIX**: Fix regression in Sublime color parsing.
+
 ## 6.4.3
 
 -   **FIX**: Fix issue where a newly opened file will not show previews  

@@ -37,8 +37,7 @@ TOKENS = {
 
 RE_ADJUSTERS = {
     "alpha": re.compile(
-        r"""
-        (?xi)
+        r"""(?xi)
         \s+a(?:lpha)?\(\s*
         (?:(\+\s+|\-\s+)?({strict_percent}|{strict_float})|(\*)?\s*({strict_percent}|{strict_float}))
         \s*\)
