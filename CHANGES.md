@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.4.5
+
+-   **FIX**: Fix SCSS support.
+
 ## 6.4.4
 
 -   **FIX**: Fix regression in Sublime color parsing.

@@ -422,7 +422,8 @@
             "color_class": "css-level-4",
             "scanning": [
                 "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
-                "source.scss meta.property-value.css -comment -string -variable.declaration.sass"
+                "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
+                "source.scss meta.declaration.value.scss -comment -string -variable.declaration.sass"
             ]
         },
         {
