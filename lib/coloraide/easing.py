@@ -40,83 +40,47 @@ This greatly simplifies things and makes it faster.
 """
 from __future__ import annotations
 import functools
-import math
+from . import algebra as alg
 from typing import Callable
 
-EPSILON = 1e-6
-MAX_ITER = 8
 
-
-def _bezier(t: float, a: float, b: float, c: float) -> float:
+def _bezier(a: float, b: float, c: float, y: float = 0.0) -> Callable[[float], float]:
     """
-    Calculate the bezier point.
+    Calculate the Bezier point.
 
     We know that P0 and P3 are always (0, 0) and (1, 1) respectively.
     Knowing this we can simplify the equation by precalculating them in.
     """
 
-    return a * t ** 3 + b * t ** 2 + c * t
+    return lambda x: a * x ** 3 + b * x ** 2 + c * x - y
 
 
-def _bezier_derivative(t: float, a: float, b: float, c: float) -> float:
-    """Derivative of curve."""
-
-    return 3 * a * t ** 2 + 2 * b * t + c
-
-
-def _solve_bezier(target: float, a: float, b: float, c: float) -> float:
+def _solve_bezier(
+    target: float,
+    a: float,
+    b: float,
+    c: float
+) -> float:
     """
-    Solve curve to find a `t` that satisfies our desired `x`.
+    Solve curve to find a `t` that satisfies our desired `x` (target).
 
-    Try a few rounds of Newton's method which is generally faster. If we fail,
-    resort to binary search.
+    The `target` is expected to be within the range of 0 - 1, this will yield a `t` within that same range.
     """
 
-    # Try Newtons method to see if we can find a suitable value
-    x = 0.0
-    t = 0.5
-    last = math.nan
-    for _ in range(MAX_ITER):
-        # See how close we are to the desired `x`
-        x = _bezier(t, a, b, c) - target
+    # These Bezier curves are designed such that beyond the range 0 - 1 the response is linear,
+    # so it is assumed that any values at or exceeding this range `x == t`
+    if target <= 0.0 or target >= 1.0:
+        return target
 
-        # Get the derivative, but bail if it is too small,
-        # we will just keep looping otherwise.
-        dx = _bezier_derivative(t, a, b, c)
+    roots = alg.solve_poly([a, b, c, -target])
+    # Find value within range
+    for r in roots:
+        # Solution is well within range
+        if 0 <= r <= 1:
+            return r
 
-        # Derivative is zero, we can't continue
-        if dx == 0:  # pragma: no cover
-            break
-
-        # Calculate new time and try again
-        t -= (x / dx)
-
-        # We converged on an solution
-        if t == last:  # pragma: no cover
-            return t
-
-        last = t
-
-    # We didn't fully converge but we are close, closer than our bisect epsilon
-    if abs(_bezier(t, a, b, c) - target) < EPSILON:
-        return t
-
-    # We couldn't achieve our desired accuracy with Newton,
-    # so bisect at lower accuracy until we arrive at a suitable value
-    low, high = 0.0, 1.0
-    t = target
-    while abs(high - low) > EPSILON:
-        x = _bezier(t, a, b, c)
-        if abs(x - target) < EPSILON:
-            return t
-        if x > target:
-            high = t
-        else:
-            low = t
-        t = (high + low) * 0.5
-
-    # Just return whatever we got closest to
-    return t  # pragma: no cover
+    # We should never hit this in normal situations
+    raise ValueError(f'Could not find a solution for {a}t ** 3 + {b}t ** 2 + {c} = {target}')
 
 
 def _extrapolate(t: float, p1: tuple[float, float], p2: tuple[float, float]) -> float:
@@ -173,21 +137,15 @@ def _calc_bezier(
     `t` that satisfies the `x` so that we can find the `y`.
     """
 
-    # We'll likely not get a nice round 0 or 1 using the methods below,
-    # but we know 0 and 1 should yield 0 and 1, so shortcut out and
-    # same some calculations.
-    if target in (0, 1):
-        return target
-
-    # Extrapolate per the spec
-    if target > 1 or target < 0:
-        return _extrapolate(target, p1, p2)
-
     # Solve for `t` in relation to `x`
     t = _solve_bezier(target, a[0], b[0], c[0])
 
+    # Extrapolate for `y` per the spec
+    if t > 1 or t < 0:
+        return _extrapolate(t, p1, p2)
+
     # Use the found `t` to locate the `y`
-    y = _bezier(t, a[1], b[1], c[1])
+    y = _bezier(a[1], b[1], c[1])(t)
     return y
 
 

@@ -114,11 +114,11 @@ def evaluate(base, string, gamut_map):
 
         # Package up the color, or the two reference colors along with the mixed.
         if first:
-            colors.append(first.fit('srgb', method=gamut_map))
+            colors.append(first.fit('srgb', **gamut_map))
         if second:
             if second[-1] < 1.0:
                 second[-1] = 1.0
-            colors.append(second.fit('srgb', method=gamut_map))
+            colors.append(second.fit('srgb', **gamut_map))
             if ratio:
                 if first[-1] < 1.0:
                     first = first.compose(second, space="srgb", out_space=first.space())

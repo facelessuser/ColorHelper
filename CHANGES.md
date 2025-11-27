@@ -1,5 +1,11 @@
 # ColorHelper
 
+## 6.5.0
+
+-   **NEW**: Upgrade ColorAide to 6.0.0.
+-   **NEW**: Allow setting gamut map parameters in settings file.
+-   **NEW**: Require Python 3.13 for Sublim Text 4201+.
+
 ## 6.4.5
 
 -   **FIX**: Fix SCSS support.

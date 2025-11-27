@@ -1,50 +1,56 @@
-"""Rec 2020 color class."""
+"""
+Rec. 2020 color space (display referred).
+
+Uses the display referred EOTF as specified in BT.1886.
+
+- https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2020-2-201510-I!!PDF-E.pdf
+- https://www.itu.int/dms_pubrec/itu-r/rec/bt/r-rec-bt.1886-0-201103-i!!pdf-e.pdf
+"""
 from __future__ import annotations
 from .srgb_linear import sRGBLinear
-import math
 from .. import algebra as alg
 from ..types import Vector
 
-ALPHA = 1.09929682680944
-BETA = 0.018053968510807
-BETA45 = BETA * 4.5
-ALPHAM1 = ALPHA - 1
+GAMMA = 2.40
+IGAMMA = 1 / GAMMA
 
 
-def lin_2020(rgb: Vector) -> Vector:
+def inverse_eotf_bt1886(rgb: Vector) -> Vector:
     """
-    Convert an array of rec-2020 RGB values in the range 0.0 - 1.0 to linear light (un-corrected) form.
+    Inverse ITU-R BT.1886 EOTF.
 
-    https://en.wikipedia.org/wiki/Rec._2020#Transfer_characteristics
-    """
+    ```
+    igamma = 1 / gamma
 
-    result = []
-    for i in rgb:
-        # Mirror linear nature of algorithm on the negative axis
-        abs_i = abs(i)
-        if abs_i < BETA45:
-            result.append(i / 4.5)
-        else:
-            result.append(math.copysign(alg.nth_root((abs_i + ALPHAM1) / ALPHA, 0.45), i))
-    return result
+    d = lw ** igamma - lb ** igamma
+    a = d ** gamma
+    b = lb ** igamma / d
+    return [math.copysign(a * alg.spow(abs(l) / a, igamma) - b, l) for l in rgb]
+    ```
 
-
-def gam_2020(rgb: Vector) -> Vector:
-    """
-    Convert an array of linear-light rec-2020 RGB  in the range 0.0-1.0 to gamma corrected form.
-
-    https://en.wikipedia.org/wiki/Rec._2020#Transfer_characteristics
+    When using `lb == 0`, `lw == 1`, and gamma of `2.4`, this simplifies to a simple power of `1 / 2.4`.
     """
 
-    result = []
-    for i in rgb:
-        # Mirror linear nature of algorithm on the negative axis
-        abs_i = abs(i)
-        if abs_i < BETA:
-            result.append(4.5 * i)
-        else:
-            result.append(math.copysign(ALPHA * (abs_i ** 0.45) - ALPHAM1, i))
-    return result
+    return [alg.spow(v, IGAMMA) for v in rgb]
+
+
+def eotf_bt1886(rgb: Vector) -> Vector:
+    """
+    ITU-R BT.1886 EOTF.
+
+    ```
+    igamma = 1 / gamma
+
+    d = lw ** igamma - lb ** igamma
+    a = d ** gamma
+    b = lb ** igamma / d
+    return [math.copysign(a * alg.spow(max(abs(v) + b, 0), gamma), v) for v in rgb]
+    ```
+
+    When using `lb == 0`, `lw == 1`, and gamma of `2.4`, this simplifies to a simple power of `2.4`.
+    """
+
+    return [alg.spow(v, GAMMA) for v in rgb]
 
 
 class Rec2020(sRGBLinear):
@@ -61,9 +67,9 @@ class Rec2020(sRGBLinear):
     def to_base(self, coords: Vector) -> Vector:
         """To XYZ from Rec. 2020."""
 
-        return lin_2020(coords)
+        return eotf_bt1886(coords)
 
     def from_base(self, coords: Vector) -> Vector:
         """From XYZ to Rec. 2020."""
 
-        return gam_2020(coords)
+        return inverse_eotf_bt1886(coords)
