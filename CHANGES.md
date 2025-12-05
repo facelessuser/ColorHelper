@@ -1,5 +1,9 @@
 # ColorHelper
 
+## 6.5.1
+
+-   **NEW**: Fix issues related to ColorAide update.
+
 ## 6.5.0
 
 -   **NEW**: Upgrade ColorAide to 6.0.0.

@@ -290,7 +290,10 @@ class ColorMod:
                 if color is None:
                     m = RE_COLOR_START.match(string, start)
                     if m:
+                        fullmatch = self.fullmatch
+                        self.fullmatch = False
                         color2, start = self._adjust(string, start=start)
+                        self.fullmatch = fullmatch
                         if color2 is None:
                             raise ValueError("Found unterminated or invalid 'color('")
                         color = color2.convert("srgb")
@@ -635,8 +638,9 @@ class Color(BASE):
                 num_data = len(data)
                 if num_data < num_channels:
                     data = list(data) + [alg.NaN] * (num_channels - num_data)
-                coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(space_class.CHANNELS, data)]
-                coords.append(alg.clamp(float(alpha), *space_class.channels[-1].limit))
+                coords = [float(c.limit(v) if c.limit is not None else v) for c, v in zipl(space_class.CHANNELS, data)]
+                limit = space_class.channels[-1].limit
+                coords.append(float(limit(alpha) if limit is not None else alpha))
                 obj = space_class, coords
 
             # Parse a CSS string
@@ -644,10 +648,10 @@ class Color(BASE):
                 m = cls._match(color, fullmatch=True, variables=variables)
                 if m is None:
                     raise ValueError("'{}' is not a valid color".format(color))
-                coords = [alg.clamp(float(v), *c.limit) for c, v in zipl(m[0].CHANNELS, m[1])]
-                coords.append(alg.clamp(float(m[2]), *m[0].channels[-1].limit))
+                coords = [float(c.limit(v) if c.limit is not None else v) for c, v in zipl(m[0].CHANNELS, m[1])]
+                limit = m[0].channels[-1].limit
+                coords.append(float(limit(m[2]) if limit is not None else m[2]))
                 obj = m[0], coords
-
         # Handle a color instance
         elif isinstance(color, BASE):
             space_class = cls.CS_MAP.get(color.space())

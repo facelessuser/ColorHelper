@@ -3,9 +3,9 @@ from ..lib.coloraide.spaces.srgb.css import sRGB
 from ..lib.coloraide.css import parse
 from ..lib.coloraide import algebra as alg
 import re
-from ColorHelper.ch_util import get_base_color
+from ColorHelper.ch_util import get_base_color, COLOR_PARTS
 
-MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**parse.COLOR_PARTS))
+MATCH = re.compile(r"(?i)\#(?:{hex}{{8}}|{hex}{{6}})\b".format(**COLOR_PARTS))
 
 
 def split_channels(color):
