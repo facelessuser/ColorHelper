@@ -53,7 +53,7 @@ def checkered_color(color, background):
     """Mix color with the checkered color."""
 
     checkered = Color(color)
-    return checkered.compose(background, space=checkered.space(), out_space=checkered.space())
+    return Color.layer([checkered, background], space=checkered.space(), out_space=checkered.space())
 
 
 def get_border_size(direction, border_map):

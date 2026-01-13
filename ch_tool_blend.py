@@ -126,7 +126,7 @@ def evaluate(base, string):
                 colors[0] = first.color.convert(space)
         if second:
             colors.append(second.color)
-            colors.append(first.color.compose(second.color, blend=blend_mode, space=space, out_space=space))
+            colors.append(base.layer([first.color, second.color], blend=blend_mode, space=space, out_space=space))
     except Exception:
         colors = []
     return colors

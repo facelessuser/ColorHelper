@@ -121,7 +121,7 @@ def evaluate(base, string, gamut_map):
             colors.append(second.fit('srgb', **gamut_map))
             if ratio:
                 if first[-1] < 1.0:
-                    first = first.compose(second, space="srgb", out_space=first.space())
+                    first = base.layer([first, second], space='srgb', out_space=first.space())
                 hwb_fg = first.convert('hwb').clip()
                 hwb_bg = second.convert('hwb').clip()
                 first.update(hwb_fg)
@@ -140,10 +140,10 @@ def evaluate(base, string, gamut_map):
 
             if first[-1] < 1.0:
                 # Contrasted with current color
-                colors.append(first.compose(second, space="srgb", out_space=first.space()))
+                colors.append(base.layer([first, second], space="srgb", out_space=first.space()))
                 # Contrasted with the two extremes min and max
-                colors.append(first.compose("white", space="srgb", out_space=first.space()))
-                colors.append(first.compose("black", space="srgb", out_space=first.space()))
+                colors.append(base.layer([first, "white"], space="srgb", out_space=first.space()))
+                colors.append(base.layer([first, "black"], space="srgb", out_space=first.space()))
             else:
                 colors.append(first)
     except Exception as e:
