@@ -1,4 +1,4 @@
-<div class="menu" markdown="1">
+/// html | div.menu
 [&#215;](__close__){ .close}
 {%- if plugin.show_picker_menu %}
 [Picker](__color_picker__:{{plugin.generic_color}})
@@ -7,9 +7,9 @@
 [Palettes](__palettes__)
 {%- endif %}
 [Tools](__tools__:{{plugin.edit_color}})
-</div>
+///
 
-<div class="panel" markdown="1">
+/// html | div.panel
 {%- if plugin.click_color_picker %}
 [{{plugin.color_preview}}](__color_picker__:{{plugin.generic_color}})
 {%- elif plugin.click_color_edit %}
@@ -34,4 +34,4 @@
 
 [Convert](__insert__:{{plugin.generic_color}}:__info__){ .button}
 {{plugin.current_color}}
-</div>
+///

@@ -1,10 +1,10 @@
-<div class="menu" markdown="1">
+/// html | div.menu
 [&#215;]({{plugin.back_target}}){.close}
-</div>
+///
 
-<div class="panel" markdown="1">
+/// html | div.panel
 {% for name, tool in plugin.tools %}
 [Open]({{tool}}){ .button} {{name}} 
 
 {% endfor %}
-</div>
+///

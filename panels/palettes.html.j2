@@ -1,4 +1,4 @@
-<div class="menu" markdown="1">
+/// html | div.menu
 [&#215;]({{plugin.back_target}}){.close}
 {%- if plugin.show_delete_menu %}
 [Delete](__delete__palettes__)
@@ -14,9 +14,9 @@
 [New Project Palette](__create_palette__:__project__:{{plugin.color}})
   {%- endif %}
 {%- endif %}
-</div>
+///
 
-<div class="panel" markdown="1">
+/// html | div.panel
 {%- if plugin.show_delete_ui %}
 
 ## Delete Palete {.center}
@@ -30,9 +30,9 @@
 ## View palette {.center}
 
 {%- endif %}
-</div>
+///
 
-<div class="panel center palettes" markdown="1">
+/// html | div.panel.center.palettes
 {%- if plugin.show_favorite_palette %}
 ---
 
@@ -52,4 +52,4 @@
 {{palette}}
 
 {% endfor %}
-</div>
+///

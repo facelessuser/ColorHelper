@@ -95,13 +95,14 @@ FRONTMATTER = mdpopups.format_frontmatter(
         "allow_code_wrap": False,
         "language_map": lang_map,
         "markdown_extensions": [
-            "markdown.extensions.admonition",
             "markdown.extensions.attr_list",
             "markdown.extensions.def_list",
             "markdown.extensions.md_in_html",
             "pymdownx.inlinehilite",
             "pymdownx.betterem",
-            "pymdownx.magiclink"
+            "pymdownx.magiclink",
+            "pymdownx.blocks.admonition",
+            "pymdownx.blocks.html"
         ]
     }
 )

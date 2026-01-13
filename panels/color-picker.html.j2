@@ -1,10 +1,10 @@
-<div class="menu" markdown="1">
+/// html | div.menu
 [&#215;]({{plugin.cancel}}){.close}
 [CSS Color Names](__colornames__)
 [Tools](__tools__)
-</div>
+///
 
-<div class="panel center" markdown="1">
+/// html | div.panel.center
 {% if plugin.box_control %}
 {{plugin.color_picker}}
 {% else %}
@@ -34,8 +34,8 @@
 {% endfor %}
 
 ---
-</div>
+///
 
-<div class="panel buttons" markdown="1">
+/// html | div.panel.buttons
 [Select](__insert__:{{plugin.color_value}}){: .button .left}
-</div>
+///
