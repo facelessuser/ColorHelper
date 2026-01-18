@@ -5,7 +5,7 @@ import math
 from .. import util
 from .. import algebra as alg
 from .color_names import to_name
-from ..channels import FLG_ANGLE
+from ..channels import FLG_ANGLE, ANGLE_DEG, ANGLE_RAD, ANGLE_GRAD, ANGLE_TURN, ANGLE_RANGE
 from ..types import Vector
 from typing import Sequence, Any, TYPE_CHECKING
 
@@ -18,6 +18,20 @@ COMMA = ', '
 SLASH = ' / '
 SPACE = ' '
 EMPTY = ''
+
+POSTFIX = {
+    'deg': '',
+    'rad': 'rad',
+    'grad': 'grad',
+    'turn': 'turn'
+}
+
+ANGLE_MAX = {
+    'deg': ANGLE_RANGE[ANGLE_DEG][1],
+    'rad': ANGLE_RANGE[ANGLE_RAD][1],
+    'grad': ANGLE_RANGE[ANGLE_GRAD][1],
+    'turn': ANGLE_RANGE[ANGLE_TURN][1]
+}
 
 
 def named_color(
@@ -43,7 +57,8 @@ def color_function(
     none: bool,
     percent: bool | Sequence[bool],
     legacy: bool,
-    scale: float
+    scale: float,
+    angle: str
 ) -> str:
     """Translate to CSS function form `name(...)`."""
 
@@ -84,12 +99,19 @@ def color_function(
             string.append(COMMA if legacy else SPACE)
         channel = channels[idx]
 
-        if not (channel.flags & FLG_ANGLE) and percent and util.get_index(percent, idx, False):
-            span, offset = channel.span, channel.offset
-        else:
+        if channel.flags & FLG_ANGLE:
+            hscale = ANGLE_MAX[angle] / channel.high
+            value *= hscale
+            post = POSTFIX[angle]
             span = offset = 0.0
-            if not channel.flags & FLG_ANGLE and not is_last:
-                value *= scale
+        else:
+            post = ''
+            if percent and util.get_index(percent, idx, False):
+                span, offset = channel.span, channel.offset
+            else:
+                span = offset = 0.0
+                if not is_last:
+                    value *= scale
 
         string.append(
             util.fmt_float(
@@ -98,7 +120,7 @@ def color_function(
                 rounding,
                 span,
                 offset
-            )
+            ) + post
         )
 
     string.append(')')
@@ -189,7 +211,8 @@ def serialize_css(
     compress: bool = False,
     name: bool = False,
     legacy: bool = False,
-    scale: float = 1.0
+    scale: float = 1.0,
+    angle: str = 'deg'
 ) -> str:
     """Convert color to CSS."""
 
@@ -201,7 +224,7 @@ def serialize_css(
 
     # Color format
     if color:
-        return color_function(obj, None, alpha, precision, rounding, fit, none, percent, False, 1.0)
+        return color_function(obj, None, alpha, precision, rounding, fit, none, percent, False, 1.0, angle)
 
     # CSS color names
     if name:
@@ -215,6 +238,6 @@ def serialize_css(
 
     # Normal CSS named function format
     if func:
-        return color_function(obj, func, alpha, precision, rounding, fit, none, percent, legacy, scale)
+        return color_function(obj, func, alpha, precision, rounding, fit, none, percent, legacy, scale, angle)
 
     raise RuntimeError('Could not identify a CSS format to serialize to')  # pragma: no cover

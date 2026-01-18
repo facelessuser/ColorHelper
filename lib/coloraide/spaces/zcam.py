@@ -2,7 +2,7 @@
 ZCAM.
 
 ```
-- ZCAM: https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640.
+- ZCAM: https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036.
 - Supplemental ZCAM (inverse transform): https://opticapublishing.figshare.com/articles/journal_contribution/\
   Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927.
 - Two-stage chromatic adaptation by Qiyan Zhai and Ming R. Luo using CAM02: https://opg.optica.org/oe/\
@@ -11,7 +11,6 @@ ZCAM.
 """
 from __future__ import annotations
 import math
-import bisect
 from .. import util
 from .. import algebra as alg
 from ..cat import WHITES
@@ -19,6 +18,7 @@ from ..channels import Channel, FLG_ANGLE
 from ..types import Vector, VectorLike
 from .lch import LCh
 from .jzazbz import izazbz_to_xyz, xyz_to_izazbz
+from .cam16 import hue_quadrature, inv_hue_quadrature
 from .. import cat
 
 DEF_ILLUMINANT_BI = util.xyz_to_absxyz(util.xy_to_xyz(cat.WHITES['2deg']['E']), yw=100.0)
@@ -50,38 +50,6 @@ HUE_QUADRATURE = {
     "e": (0.68, 0.64, 1.52, 0.77, 0.68),
     "H": (0.0, 100.0, 200.0, 300.0, 400.0)
 }
-
-
-def hue_quadrature(h: float) -> float:
-    """
-    Hue to hue quadrature.
-
-    https://onlinelibrary.wiley.com/doi/pdf/10.1002/col.22324
-    """
-
-    hp = util.constrain_hue(h)
-    if hp <= HUE_QUADRATURE['h'][0]:
-        hp += 360
-
-    i = bisect.bisect_left(HUE_QUADRATURE['h'], hp) - 1
-    hi, hii = HUE_QUADRATURE['h'][i:i + 2]
-    ei, eii = HUE_QUADRATURE['e'][i:i + 2]
-    Hi = HUE_QUADRATURE['H'][i]
-
-    t = (hp - hi) / ei
-    return Hi + (100 * t) / (t + (hii - hp) / eii)
-
-
-def inv_hue_quadrature(Hz: float) -> float:
-    """Hue quadrature to hue."""
-
-    Hp = (Hz % 400 + 400) % 400
-    i = math.floor(0.01 * Hp)
-    Hp = Hp % 100
-    hi, hii = HUE_QUADRATURE['h'][i:i + 2]
-    ei, eii = HUE_QUADRATURE['e'][i:i + 2]
-
-    return util.constrain_hue((Hp * (eii * hi - ei * hii) - 100 * hi * eii) / (Hp * (eii - ei) - 100 * eii))
 
 
 def adapt(
@@ -260,7 +228,7 @@ def zcam_to_xyz(
     # Break hue into Cartesian components
     h_rad = 0.0
     if hz is None:
-        hz = inv_hue_quadrature(Hz)  # type: ignore[arg-type]
+        hz = inv_hue_quadrature(Hz, HUE_QUADRATURE)  # type: ignore[arg-type]
     h_rad = math.radians(hz % 360)
     cos_h = math.cos(h_rad)
     sin_h = math.sin(h_rad)
@@ -323,7 +291,7 @@ def xyz_to_zcam(xyz: Vector, env: Environment, calc_hue_quadrature: bool = False
     hz = util.constrain_hue(math.degrees(math.atan2(bz, az)))
 
     # Step 10
-    Hz = hue_quadrature(hz) if calc_hue_quadrature else alg.NaN
+    Hz = hue_quadrature(hz, HUE_QUADRATURE) if calc_hue_quadrature else alg.NaN
 
     # Step 11
     hp = hz
@@ -395,12 +363,10 @@ class ZCAMJMh(LCh):
     }
     WHITE = WHITES['2deg']['D65']
     DYNAMIC_RANGE = 'hdr'
-
-    # Assuming sRGB which has a lux of 64
     ENV = Environment(
-        # D65 white point.
+        # This must be a D65 white point, and will be scaled by 100 to be "absolute".
         white=WHITE,
-        # The reference white in XYZ scaled by 100
+        # The absolute XYZ reference white
         reference_white=util.xyz_to_absxyz(util.xy_to_xyz(WHITE), 100),
         # Assuming sRGB which has a lux of 64: `((E * R) / PI)` where `R = 1`.
         # Divided by 5 (or multiplied by 20%) assuming gray world.
@@ -414,8 +380,8 @@ class ZCAMJMh(LCh):
     )
     CHANNELS = (
         Channel("jz", 0.0, 100.0),
-        Channel("mz", 0, 60.0),
-        Channel("hz", 0.0, 360.0, flags=FLG_ANGLE)
+        Channel("mz", 0.0, 60.0),
+        Channel("hz", flags=FLG_ANGLE)
     )
 
     def normalize(self, coords: Vector) -> Vector:

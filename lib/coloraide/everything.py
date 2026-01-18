@@ -32,6 +32,8 @@ from .spaces.cam16 import CAM16JMh
 from .spaces.cam16_ucs import CAM16UCS, CAM16LCD, CAM16SCD
 from .spaces.hellwig import HellwigJMh, HellwigHKJMh
 from .spaces.zcam import ZCAMJMh
+from .spaces.scam import sCAMJMh
+from .spaces.sucs import sUCS
 from .spaces.hct import HCT
 from .spaces.ucs import UCS
 from .spaces.rec709 import Rec709
@@ -39,6 +41,7 @@ from .spaces.rec709_oetf import Rec709OETF
 from .spaces.ryb import RYB, RYBBiased
 from .spaces.cubehelix import Cubehelix
 from .spaces.rec2020_oetf import Rec2020OETF
+from .spaces.msh import Msh
 from .distance.delta_e_99o import DE99o
 from .distance.delta_e_cam16 import DECAM16
 from .distance.delta_e_cam02 import DECAM02
@@ -105,6 +108,9 @@ ColorAll.register(
         Cubehelix(),
         ZCAMJMh(),
         Rec2020OETF(),
+        Msh(),
+        sCAMJMh(),
+        sUCS(),
 
         # Delta E
         DE99o(),

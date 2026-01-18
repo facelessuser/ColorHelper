@@ -1,6 +1,6 @@
 """Meta related things."""
 from __future__ import annotations
-from collections import namedtuple
+from typing import NamedTuple
 import re
 
 RE_VER = re.compile(
@@ -37,7 +37,19 @@ DEV_STATUS = {
 PRE_REL_MAP = {"a": 'alpha', "b": 'beta', "rc": 'candidate'}
 
 
-class Version(namedtuple("Version", ["major", "minor", "micro", "release", "pre", "post", "dev"])):
+class VersionSpec(NamedTuple):
+    """Version specification."""
+
+    major: int
+    minor: int
+    micro: int
+    release: str
+    pre: int
+    post: int
+    dev: int
+
+
+class Version(VersionSpec):
     """
     Get the version (PEP 440).
 
@@ -77,7 +89,6 @@ class Version(namedtuple("Version", ["major", "minor", "micro", "release", "pre"
     Version(1, 2, 3, ".dev")                     1.2.3.dev0
     Version(1, 2, 3, ".dev", dev=1)              1.2.3.dev1
     ```
-
     """
 
     def __new__(
@@ -193,5 +204,5 @@ def parse_version(ver: str) -> Version:
     return Version(major, minor, micro, release, pre, post, dev)
 
 
-__version_info__ = Version(6, 0, 0, "final")
+__version_info__ = Version(7, 0, 0, "final")
 __version__ = __version_info__._get_canonical()

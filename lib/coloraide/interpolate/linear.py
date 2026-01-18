@@ -34,31 +34,34 @@ class InterpolatorLinear(Interpolator[AnyColor]):
         if hue == "specified":
             return
 
-        c1 %= 360
-        c2 %= 360
+        mx = self.max_hue
+        half = self.half_hue
+
+        c1 %= mx
+        c2 %= mx
 
         if math.isnan(c1) or math.isnan(c2):
             return
 
         if hue == "shorter":
-            if c2 - c1 > 180:
-                c1 += 360
-            elif c2 - c1 < -180:
-                c2 += 360
+            if c2 - c1 > half:
+                c1 += mx
+            elif c2 - c1 < -half:
+                c2 += mx
 
         elif hue == "longer":
-            if 0 < (c2 - c1) < 180:
-                c1 += 360
-            elif -180 < (c2 - c1) <= 0:
-                c2 += 360
+            if 0 < (c2 - c1) < half:
+                c1 += mx
+            elif -half < (c2 - c1) <= 0:
+                c2 += mx
 
         elif hue == "increasing":
             if c2 < c1:
-                c2 += 360
+                c2 += mx
 
         elif hue == "decreasing":
             if c1 < c2:
-                c1 += 360
+                c1 += mx
 
         else:
             raise ValueError(f"Unknown hue adjuster '{hue}'")
@@ -126,14 +129,16 @@ class InterpolatorLinear(Interpolator[AnyColor]):
         for i, values in enumerate(zip(*self.coordinates[i:i + 2])):  # noqa: B020
             a, b = values
 
+            a_nan, b_nan = math.isnan(a), math.isnan(b)
+
             # Both values are undefined, so return undefined
-            if math.isnan(a) and math.isnan(b):
+            if a_nan and b_nan:
                 value = math.nan
 
             # One channel is undefined, take the one that is not
-            elif math.isnan(a):
+            elif a_nan:
                 value = b
-            elif math.isnan(b):
+            elif b_nan:
                 value = a
 
             # Using linear interpolation between the two points
