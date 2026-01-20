@@ -2,8 +2,17 @@
 
 ## 6.7.0
 
--   **NEW**: Rework HTML, CSS, SCSS, SASS handling. As syntax packages
-    have evolved, rework rules to better target colors, combining
+-   **NEW**: Rework HTML, CSS, SCSS, SASS handling. As syntax packages  
+    have evolved, rework rules to better target colors, combining  
+    handling under one rule `HTML/CSS`.
+-   **NEW**: Move handling for old, CSS3 syntax to its own rule.
+
+## 6.4.6
+
+Fixes backported to Python 3.3, Sublime Text <= 4200.
+
+-   **NEW**: Rework HTML, CSS, SCSS, SASS handling. As syntax packages  
+    have evolved, rework rules to better target colors, combining  
     handling under one rule `HTML/CSS`.
 -   **NEW**: Move handling for old, CSS3 syntax to its own rule.
 
