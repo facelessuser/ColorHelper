@@ -355,22 +355,44 @@
     //.- `enable`:         This can be used to disable a color rule entirely. Defaults to `true`.
     "color_rules": [
         {
-            "name": "HTML/CSS",
+            "name": "CSS3",
             "base_scopes": [
-                "source.css",
-                "text.html"
+                "source.css"
+            ],
+            "syntax_files": [
+                "CSS3/CSS3"
             ],
             "color_class": "css-level-4",
             "scanning": [
                 // https://packagecontrol.io/packages/CSS3
-                "meta.declaration-list.css -support.type.property-name.css -comment -string",
-                // CSS, CSS in HTML etc. (based on: Sublime Default)
-                "meta.property-value.css -comment -string",
-                // CSS3, CSS3 in HTML etc. (based on: https://packagecontrol.io/packages/CSS3)
-                "meta.value.css -comment -string",
-                // HTML attributes (based on: Sublime Default)
-                "meta.tag.inline.any.html string.quoted -constant.character.entity.html",
-                "meta.tag.any.html meta.attribute-with-value.style.html"
+                "support.constant.color.w3c-color-name.css",
+                "support.function.color-adjuster-rgb.css",
+                "constant.other.color.rgb-value.css",
+                "support.function.color.css",
+                "support.function.rgba.css",
+                "support.function.hsla.css",
+                "support.function.hwb.css",
+                "support.function.lab.css",
+                "support.function.lch.css"
+            ]
+        },
+        {
+            "name": "HTML/CSS",
+            "base_scopes": [
+                "source.css",
+                "source.sass",
+                "source.scss",
+                "text.html"
+            ],
+            "color_class": "css-level-4",
+            "scanning": [
+                // Sublime default CSS nand HTML. Covers SCSS, POSTCSS, and most of SASS
+                "support.constant.color.w3c.standard.css",
+                "support.constant.color.w3c.extended.css",
+                "support.function.color.css",
+                "constant.other.color.rgb-value.css, constant.other.color.rgba-value.css",
+                // https://packagecontrol.io/packages/SASS
+                "support.function.custom.sass"
             ]
         },
         {
@@ -424,62 +446,6 @@
             "scanning": [
                 "source.css-color -meta.function-call.var.sublime-color-scheme -meta.function-call.var.css",
                 "meta.css.sublime-color-scheme meta.property-value.css -comment -string.quoted.single.css -string.quoted.double.css"
-            ]
-        },
-        {
-            // Sass (based on: https://packagecontrol.io/packages/Sass)
-            "name": "Sass",
-            "syntax_files": ["Sass/Syntaxes/Sass", "Sass/Syntaxes/SCSS"],
-            "base_scopes": [
-                "source.sass",
-                "source.scss"
-            ],
-            "color_class": "css-level-4",
-            "scanning": [
-                "source.sass meta.property-value.css -comment -string -variable.declaration.sass",
-                "source.scss meta.property-value.css -comment -string -variable.declaration.sass",
-                "source.scss meta.declaration.value.scss -comment -string -variable.declaration.sass"
-            ]
-        },
-        {
-            // SCSS (based on https://packagecontrol.io/packages/SCSS)
-            "name": "SCSS",
-            "syntax_files": ["SCSS/SCSS"],
-            "base_scopes": [
-                "source.scss"
-            ],
-            "color_class": "css-level-4",
-            "scanning": [
-                "source.scss -comment -string"
-            ]
-        },
-        {
-            // SCSS (based on https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20Sass)
-            "name": "Syntax Highlighting for Sass",
-            "syntax_files": [
-                "Syntax Highlighting for Sass/Syntaxes/SCSS",
-                "Syntax Highlighting for Sass/Syntaxes/Sass"
-            ],
-            "base_scopes": [
-                "source.scss",
-                "source.sass"
-            ],
-            "color_class": "css-level-4",
-            "scanning": [
-                "source.scss -comment -string -support.type.property-name -variable.declaration",
-                "source.sass -comment -string -support.type.property-name -variable.declaration"
-            ]
-        },
-        {
-            // Sass (based on: https://packagecontrol.io/packages/Syntax%20Highlighting%20for%20PostCSS)
-            "name": "PostCSS",
-            "syntax_files": ["Syntax Highlighting for PostCSS/Syntaxes/PostCSS"],
-            "base_scopes": [
-                "source.postcss"
-            ],
-            "color_class": "css-level-4",
-            "scanning": [
-                "source.postcss meta.property-list.css.postcss -comment -string"
             ]
         },
         {
