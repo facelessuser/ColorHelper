@@ -6,6 +6,8 @@ License: MIT
 """
 import sublime
 import sublime_plugin
+import threading
+import uuid
 import mdpopups
 from .lib import colorbox
 from html.parser import HTMLParser
@@ -20,6 +22,11 @@ PREVIEW_SCALE = 3
 PALETTE_SCALE_X = 6
 PALETTE_SCALE_Y = 2
 BORDER_SIZE = 1
+
+# Set while an OS color picker dialog is open, so a second one is not started.
+_native_picker_busy = threading.Event()
+# Prefix of the key of the hidden region that follows the selection the picker was started from.
+_PICKER_TARGET = "color_helper_picker_target"
 
 
 ###########################
@@ -245,17 +252,62 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
 
         if self.os_color_picker:
             self.view.hide_popup()
-            new_color = native_picker(self.base(color).convert("srgb").fit(**self.gamut_map))
-            if new_color is not None:
-                sublime.set_timeout(
-                    lambda c=new_color.to_string(**util.COLOR_FULL_PREC): self.view.run_command(
-                        "color_helper",
-                        {"color": c, 'mode': 'result', 'result_type': '__color_picker__'}
-                    ),
-                    200
-                )
-            else:
-                sublime.set_timeout(self.show_color_info, 200)
+            if _native_picker_busy.is_set():
+                sublime.status_message("ColorHelper: the color picker dialog is already open")
+                return
+            start = self.base(color).convert("srgb").fit(**self.gamut_map)
+
+            # The native dialog is modal and does not return until it is closed. Run it off the
+            # plugin host's main thread so that Sublime keeps responding while it is open.
+            # Remember where the picker was started: the result belongs there, even if the user
+            # has typed, moved the caret or switched tabs while the dialog was open.
+            view = self.view
+            # Each invocation has its own key, so overlapping pickers (possible after a plugin
+            # reload, which resets the busy flag) can never restore each other's selection.
+            key = _PICKER_TARGET + uuid.uuid4().hex
+            view.add_regions(key, list(view.sel()), flags=sublime.HIDDEN)
+
+            def finish(new_color):
+                try:
+                    regions = view.get_regions(key)
+                    view.erase_regions(key)
+                    window = view.window()
+                    if window is None or not view.is_valid():
+                        # The view was closed while the dialog was open: there is no place for it.
+                        return
+                    window.focus_view(view)
+                    if regions:
+                        view.sel().clear()
+                        view.sel().add_all(regions)
+                        view.show(regions[0])
+                    if new_color is None:
+                        self.show_color_info()
+                    else:
+                        view.run_command(
+                            "color_helper",
+                            {"color": new_color, 'mode': 'result', 'result_type': '__color_picker__'}
+                        )
+                finally:
+                    _native_picker_busy.clear()
+
+            def run():
+                new_color = None
+                try:
+                    new_color = native_picker(start)
+                    if new_color is not None:
+                        new_color = new_color.to_string(**util.COLOR_FULL_PREC)
+                except Exception:
+                    new_color = None
+                finally:
+                    sublime.set_timeout(lambda: finish(new_color), 200)
+
+            _native_picker_busy.set()
+            try:
+                threading.Thread(target=run, daemon=True).start()
+            except Exception:
+                _native_picker_busy.clear()
+                view.erase_regions(key)
+                raise
         else:
             if not self.no_info:
                 on_cancel = {'command': 'color_helper', 'args': {'mode': "info"}}
