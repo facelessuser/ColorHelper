@@ -7,6 +7,7 @@ License: MIT
 import sublime
 import sublime_plugin
 import threading
+import traceback
 import uuid
 import mdpopups
 from .lib import colorbox
@@ -297,6 +298,12 @@ class ColorHelperCommand(_ColorMixin, sublime_plugin.TextCommand):
                     if new_color is not None:
                         new_color = new_color.to_string(**util.COLOR_FULL_PREC)
                 except Exception:
+                    # Do not lose the error: it used to surface from the main thread.
+                    traceback.print_exc()
+                    sublime.set_timeout(
+                        lambda: sublime.status_message("ColorHelper: the color picker failed, see the console"),
+                        0
+                    )
                     new_color = None
                 finally:
                     sublime.set_timeout(lambda: finish(new_color), 200)
